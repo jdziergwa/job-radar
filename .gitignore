@@ -1,0 +1,33 @@
+.env
+data/*.db
+*.db
+*.db-shm
+*.db-wal
+default
+default-shm
+default-wal
+.venv/
+__pycache__/
+*.pyc
+.DS_Store
+
+# Temporary/debug scripts
+tmp/
+
+# Claude Code workspace config
+.claude/
+
+# Web build artifacts
+web/node_modules/
+web/.next/
+web/out/
+web/.env.local
+web/.env.development.local
+web/.env.production.local
+
+# User profiles (except the example template)
+profiles/*/
+!profiles/example/
+
+# Generated reports
+reports/

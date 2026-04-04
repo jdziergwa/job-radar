@@ -1,0 +1,44 @@
+# companies.yaml — companies to scrape directly via their ATS
+# Add entries under the ATS platform key (greenhouse, lever, ashby, workable).
+# The "slug" is the company's identifier in that ATS URL.
+# Find it by visiting jobs.lever.co/<slug> or boards.greenhouse.io/<slug> etc.
+#
+# Copy this file to profiles/default/companies.yaml and customise.
+
+greenhouse:
+- slug: stripe
+  name: Stripe
+- slug: datadog
+  name: Datadog
+- slug: cloudflare
+  name: Cloudflare
+- slug: gitlab
+  name: GitLab
+- slug: figma
+  name: Figma
+- slug: mongodb
+  name: MongoDB
+- slug: elastic
+  name: Elastic
+- slug: twilio
+  name: Twilio
+- slug: dropbox
+  name: Dropbox
+
+lever:
+- slug: spotify
+  name: Spotify
+- slug: vercel
+  name: Vercel
+- slug: supabase
+  name: Supabase
+
+ashby:
+- slug: linear
+  name: Linear
+- slug: posthog
+  name: PostHog
+- slug: ramp
+  name: Ramp
+- slug: notion
+  name: Notion

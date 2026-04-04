@@ -1,0 +1,247 @@
+'use client'
+
+import { useState, useEffect, useCallback } from 'react'
+import { toast } from 'sonner'
+import { api } from '@/lib/api/client'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { Button, buttonVariants } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
+import { Loader2, Play, Terminal, Zap, History, Info } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
+import { Label } from '@/components/ui/label'
+import { PipelineProgressDialog } from './PipelineProgressDialog'
+import type { components } from '@/lib/api/types'
+
+type ProviderInfo = components['schemas']['ProviderInfo']
+
+export function PipelineTrigger({ collapsed = false }: { collapsed?: boolean }) {
+  const [open, setOpen] = useState(false)
+  const [showProgress, setShowProgress] = useState(false)
+  const [activeRun, setActiveRun] = useState<{ running: boolean; run_id: string | null } | null>(null)
+  const [source, setSource] = useState<string>('hybrid')
+  const [dryRun, setDryRun] = useState(false)
+  const [isStarting, setIsStarting] = useState(false)
+  const [providers, setProviders] = useState<ProviderInfo[]>([])
+  const [aggregatorStatus, setAggregatorStatus] = useState<{
+    live_updated_at: string;
+    local_updated_at: string;
+    is_up_to_date: boolean;
+    total_jobs: number;
+  } | null>(null)
+
+  const fetchActive = useCallback(async () => {
+    try {
+      const { data } = await api.GET('/api/pipeline/active', {
+        params: { query: { profile: 'default' } }
+      })
+      if (data) setActiveRun(data as any)
+    } catch (err) {
+      console.error('Failed to fetch active pipeline:', err)
+    }
+  }, [])
+
+  const fetchAggregatorStatus = useCallback(async () => {
+    try {
+      const { data } = await api.GET('/api/pipeline/aggregator/status', {
+        params: { query: { profile: 'default' } }
+      })
+      if (data) setAggregatorStatus(data as any)
+    } catch (err) {
+      console.error('Failed to fetch aggregator status:', err)
+    }
+  }, [])
+
+  const fetchProviders = useCallback(async () => {
+    try {
+      const { data } = await api.GET('/api/pipeline/providers')
+      if (data) setProviders(data as ProviderInfo[])
+    } catch (err) {
+      console.error('Failed to fetch providers:', err)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (open) {
+      fetchActive()
+      fetchAggregatorStatus()
+      fetchProviders()
+    }
+  }, [open, fetchActive, fetchAggregatorStatus, fetchProviders])
+
+  const allOptions: ProviderInfo[] = providers
+
+  const handleStart = async () => {
+    setIsStarting(true)
+    try {
+      let data, error;
+      const res = await api.POST('/api/pipeline/run', {
+        body: {
+          profile: 'default',
+          source,
+          dry_run: dryRun
+        }
+      })
+      data = res.data
+      error = res.error
+
+      if (error) throw new Error(typeof error === 'string' ? error : 'Failed to start pipeline')
+      if (data) {
+        const runId = (data as any).run_id;
+        setActiveRun({ running: true, run_id: runId })
+        setShowProgress(true)
+        setOpen(false)
+      }
+    } catch (err: any) {
+      toast.error(err.message)
+    } finally {
+      setIsStarting(false)
+    }
+  }
+
+  return (
+    <>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogTrigger
+          className={cn(
+            buttonVariants({ variant: collapsed ? "ghost" : "default" }),
+            "w-full group relative overflow-hidden transition-all duration-300",
+            collapsed ? "px-0 justify-center" : "justify-start gap-3 bg-primary/95 hover:bg-primary shadow-lg"
+          )}
+        >
+          {activeRun?.running ? (
+            <Loader2 className="h-4 w-4 animate-spin text-white" />
+          ) : (
+            <Zap className={`h-4 w-4 transition-transform group-hover:scale-110 ${collapsed ? 'text-primary' : 'text-white'}`} />
+          )}
+          {!collapsed && (
+            <div className="flex flex-col items-start leading-none text-left">
+              <span className="text-xs font-bold uppercase tracking-wider">Run Pipeline</span>
+              {activeRun?.running && <span className="text-[10px] opacity-70 animate-pulse mt-0.5">Active...</span>}
+            </div>
+          )}
+        </DialogTrigger>
+        <DialogContent className="sm:max-w-3xl border-border/50 bg-background/85 backdrop-blur-xl shadow-2xl overflow-hidden">
+          <DialogHeader className="pb-4 border-b border-border/50">
+            <div className="flex items-center gap-3">
+               <div className="bg-primary/20 p-2 rounded-xl text-primary">
+                  <Zap className="h-5 w-5" />
+               </div>
+               <div>
+                  <DialogTitle className="text-xl">Job Intelligence Pipeline</DialogTitle>
+                  <DialogDescription>Trigger background collectors and AI scoring agents.</DialogDescription>
+               </div>
+            </div>
+          </DialogHeader>
+
+          <div className="py-8 space-y-8 animate-in fade-in zoom-in-95 duration-300">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-8">
+              <div className="md:col-span-3 space-y-4">
+                <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Execution Strategy</Label>
+                <div className="flex flex-col gap-2">
+                  {allOptions.map((option) => (
+                    <div
+                      key={option.name}
+                      onClick={() => setSource(option.name)}
+                      className={`flex items-center justify-between p-4 rounded-xl border transition-all text-left group cursor-pointer ${
+                        source === option.name
+                          ? 'border-primary bg-primary/5 shadow-sm ring-1 ring-primary/20'
+                          : 'border-border/50 hover:border-border hover:bg-muted/30'
+                      }`}
+                    >
+                      <div className="flex flex-col grow pr-4">
+                        <div className={`text-sm font-bold flex items-center gap-1.5 w-full ${source === option.name ? 'text-primary' : ''}`}>
+                          {option.display_name}
+                          {option.shows_aggregator_badge && aggregatorStatus && (
+                            <div className="ml-auto">
+                              {aggregatorStatus.is_up_to_date ? (
+                                <Badge variant="outline" className="text-[9px] bg-emerald-500/5 text-emerald-500 border-emerald-500/20 py-0 h-4">Up to Date</Badge>
+                              ) : (
+                                <Badge variant="outline" className="text-[9px] bg-amber-500/5 text-amber-500 border-amber-500/20 py-0 h-4 shadow-sm animate-pulse">New Data Available</Badge>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                        <span className="text-[10px] text-muted-foreground mt-1 leading-normal">
+                          {option.name === 'aggregator' && aggregatorStatus
+                            ? `Broad Market: Scans ${aggregatorStatus.total_jobs.toLocaleString()} jobs from the open aggregator.`
+                            : option.description}
+                        </span>
+                      </div>
+                      <div className={`h-2 w-2 rounded-full transition-all ${source === option.name ? 'bg-primary scale-125' : 'bg-muted scale-100'}`} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="md:col-span-2 space-y-6">
+                <div className="space-y-4">
+                  <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Run Type</Label>
+                  <div className="flex flex-col gap-2">
+                    <div
+                      onClick={() => setDryRun(false)}
+                      className={`flex items-center justify-between p-4 rounded-xl border transition-all text-left cursor-pointer ${
+                        !dryRun
+                          ? 'border-primary bg-primary/5 shadow-sm ring-1 ring-primary/20'
+                          : 'border-border/50 hover:border-border hover:bg-muted/30'
+                      }`}
+                    >
+                      <div className="flex flex-col">
+                        <span className={`text-sm font-bold ${!dryRun ? 'text-primary' : ''}`}>Intelligence Pass</span>
+                        <span className="text-[10px] text-muted-foreground mt-0.5">AI scoring · uses API credits</span>
+                      </div>
+                      <div className={`h-2 w-2 rounded-full transition-all ${!dryRun ? 'bg-primary scale-125' : 'bg-muted scale-100'}`} />
+                    </div>
+                    <div
+                      onClick={() => setDryRun(true)}
+                      className={`flex items-center justify-between p-4 rounded-xl border transition-all text-left cursor-pointer ${
+                        dryRun
+                          ? 'border-emerald-500/40 bg-emerald-500/5 shadow-sm ring-1 ring-emerald-500/20'
+                          : 'border-border/50 hover:border-border hover:bg-muted/30'
+                      }`}
+                    >
+                      <div className="flex flex-col">
+                        <span className={`text-sm font-bold ${dryRun ? 'text-emerald-500' : ''}`}>Dry Run</span>
+                        <span className="text-[10px] text-muted-foreground mt-0.5">No LLM calls · free</span>
+                      </div>
+                      <div className={`h-2 w-2 rounded-full transition-all ${dryRun ? 'bg-emerald-500 scale-125' : 'bg-muted scale-100'}`} />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-4 rounded-xl bg-primary/5 border border-primary/10 flex gap-3 text-xs text-muted-foreground leading-relaxed">
+                   <Info className="h-4 w-4 text-primary shrink-0" />
+                   <p>Launching the pipeline will trigger background Python subprocesses. You can safely close this dialog while it runs.</p>
+                </div>
+              </div>
+            </div>
+
+            <Button onClick={handleStart} disabled={isStarting} className="w-full h-14 text-lg font-bold gap-3 shadow-xl hover:scale-[1.01] active:scale-[0.99] transition-all">
+              {isStarting ? <Loader2 className="h-5 w-5 animate-spin" /> : <Play className="h-5 w-5 fill-current" />}
+              {dryRun ? 'Start Dry Run' : 'Start Intelligence Pass'}
+            </Button>
+            {activeRun?.running && (
+              <Button onClick={() => setShowProgress(true)} variant="outline" className="w-full gap-2 italic">
+                <Terminal className="h-4 w-4" /> View active progress logs
+              </Button>
+            )}
+          </div>
+
+          <DialogFooter className={`pt-4 border-t border-border/50 text-[10px] text-muted-foreground flex items-center sm:justify-between`}>
+            <div className="flex items-center gap-2">
+               <History className="h-3 w-3" />
+               Strategy: {source.toUpperCase()}
+            </div>
+            <Badge variant="outline" className="font-mono text-[9px] border-border/30 px-1 opacity-50">v1.2.0-stable</Badge>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <PipelineProgressDialog
+        runId={activeRun?.run_id || null}
+        open={showProgress}
+        onOpenChange={setShowProgress}
+        onComplete={() => fetchActive()}
+      />
+    </>
+  )
+}

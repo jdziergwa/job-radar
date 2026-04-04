@@ -1,0 +1,69 @@
+# Profile configuration template — copy this directory to profiles/default/ and customise.
+# This file controls pre-filtering keywords, LLM scoring settings, and output options.
+
+# ── Pre-filter keywords ─────────────────────────────────────────────
+keywords:
+  # Title patterns (case-insensitive regex).
+  # Split into tiers so you can be precise about your core targets
+  # while still catching adjacent roles.
+  title_patterns:
+    high_confidence:
+      - "\\bstaff\\s+engineer\\b"
+      - "\\bsenior\\s+software\\s+engineer\\b"
+      - "\\bsenior\\s+backend\\s+engineer\\b"
+      - "\\bstaff\\s+software\\s+engineer\\b"
+    broad:
+      - "\\bsoftware\\s+engineer\\b"
+      - "\\bbackend\\s+engineer\\b"
+      - "\\bfull.?stack\\s+engineer\\b"
+      - "\\bplatform\\s+engineer\\b"
+
+  # Job description should contain at least N of these signals.
+  description_signals:
+    min_matches: 1
+    patterns:
+      - "\\b(python|typescript|go|rust|java)\\b"
+      - "\\b(kubernetes|docker|aws|gcp|azure)\\b"
+      - "\\b(postgresql|mysql|redis|kafka)\\b"
+      - "\\b(ci/cd|github\\s+actions|jenkins)\\b"
+      - "\\b(microservices|distributed\\s+systems)\\b"
+      - "\\b(api|rest|grpc|graphql)\\b"
+
+  # Hard exclusions — skip regardless of title match.
+  exclusions:
+    - "\\bintern\\b"
+    - "\\bjunior\\b"
+    - "\\bon-?site\\s+only\\b"
+
+  # Skip jobs whose location string matches these.
+  location_exclusions:
+    - "\\b(us only|usa only|north america only|india|latam|australia|asia)\\b"
+
+  # Jobs must mention at least one of these location strings to pass.
+  location_patterns:
+    - "\\b(europe|eu|uk|germany|netherlands|poland|spain|portugal)\\b"
+    - "\\bemea\\b"
+
+  # Fallback: jobs matching these but not location_patterns are still considered,
+  # just assigned a lower tier.
+  remote_patterns:
+    - "\\b(remote|worldwide|global|distributed|anywhere|flexible)\\b"
+
+  # Tier assigned when a job only matches remote_patterns, not location_patterns.
+  fallback_tier: "signal_match"
+
+# ── Scoring config ──────────────────────────────────────────────────
+scoring:
+  model: "claude-haiku-4-5-20251001"   # Haiku = lowest cost; change to sonnet for higher quality
+  max_description_chars: 3000           # Truncate long descriptions before sending to LLM
+  min_score_to_display: 50             # Hide jobs scoring below this threshold
+  concurrency: 25
+  batch_size: 5
+
+# ── Output config ───────────────────────────────────────────────────
+output:
+  terminal: true
+  markdown_report: true
+  telegram:
+    enabled: false   # Set to true and add TELEGRAM_BOT_TOKEN + TELEGRAM_CHAT_ID to .env
+    top_n: 5
