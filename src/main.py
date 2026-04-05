@@ -281,6 +281,8 @@ async def run() -> None:
     profile_doc = load_profile_doc(profile_dir)
     keywords_config = config.get("keywords", {})
 
+    skip_collection = bool(args.job_id or args.rescore)
+
     # If targeting a single job ID, we skip collection and pre-filtering
     if args.job_id:
         logger.info("Targeting single job ID: %d", args.job_id)
@@ -306,11 +308,17 @@ async def run() -> None:
         raw_jobs = candidates_raw # For stats
         new_jobs = []
         companies_scanned = "single-job"
+    elif args.rescore:
+        raw_jobs = []
+        new_jobs = []
+        companies_scanned = "rescore-all"
         
+    if skip_collection:
         # Skip collection stages in JSON progress
-        if args.json_progress:
-            emit_progress(1, "Collecting", "Skipping collection (single-job target)")
-            emit_progress(2, "Deduplicating", "Skipping deduplication (single-job target)")
+        if args.json_progress and not args.rescore:
+            target_str = "single-job target"
+            emit_progress(1, "Collecting", f"Skipping collection ({target_str})")
+            emit_progress(2, "Deduplicating", f"Skipping deduplication ({target_str})")
         
     def p_callback(current, total, prefix=""):
         if args.json_progress:
@@ -320,7 +328,7 @@ async def run() -> None:
         if args.json_progress:
             emit_progress(step, name, f"{prefix}{current}/{total}", duration=timer.get_stage_duration())
 
-    if not args.job_id:
+    if not skip_collection:
         companies = load_companies(profile_dir)
         ctx = ProviderContext(companies=companies, profile_dir=profile_dir, config=config)
 
@@ -362,7 +370,7 @@ async def run() -> None:
         companies_scanned = sum(len(v) for v in companies.values()) if args.source == "local" else args.source
         timer.reset_stage()
 
-    if not args.job_id:
+    if not skip_collection:
         # Mark stale jobs (absent 7+ days)
         stale_count = store.mark_stale(stale_days=7)
         if stale_count:
@@ -380,46 +388,57 @@ async def run() -> None:
         candidates_raw = store.get_all_new_jobs()
         logger.info("Found %d unscored jobs for filtering", len(candidates_raw))
         
-    # Aggregator/Hybrid mode requires fetching descriptions lazily
-    if args.source in ["aggregator", "hybrid"] and not args.rescore and candidates_raw:
-        # Only fetch for those missing a description (primarily aggregator jobs)
-        to_fetch = [j for j in candidates_raw if not j.description]
-        if to_fetch:
-            from src.fetcher import populate_descriptions
-            
-            def desc_p_callback(curr, tot):
-                if args.json_progress:
-                    emit_progress(3, "Pre-filtering", f"Fetching Descriptions: {curr}/{tot}", duration=timer.get_stage_duration())
-            
-            # This updates the objects in-place
-            await populate_descriptions(to_fetch, progress_callback=desc_p_callback)
-            
-            # Persist successfully fetched descriptions to DB for future UI/detail views
-            for j in to_fetch:
-                if j.description:
-                    store.update_job_description(j.db_id, j.description)
+    if not args.rescore:
+        # Aggregator/Hybrid mode requires fetching descriptions lazily
+        if args.source in ["aggregator", "hybrid"] and candidates_raw:
+            # Only fetch for those missing a description (primarily aggregator jobs)
+            to_fetch = [j for j in candidates_raw if not j.description]
+            if to_fetch:
+                from src.fetcher import populate_descriptions
+                
+                def desc_p_callback(curr, tot):
+                    if args.json_progress:
+                        emit_progress(3, "Pre-filtering", f"Fetching Descriptions: {curr}/{tot}", duration=timer.get_stage_duration())
+                
+                # This updates the objects in-place
+                await populate_descriptions(to_fetch, progress_callback=desc_p_callback)
+                
+                # Persist successfully fetched descriptions to DB for future UI/detail views
+                for j in to_fetch:
+                    if j.description:
+                        store.update_job_description(j.db_id, j.description)
 
-        # Filter out jobs that still have no description (fetch failed)
-        # We skip these as the LLM fits will be poor without content.
-        to_dismiss_no_desc = [j.db_id for j in candidates_raw if not j.description]
-        if to_dismiss_no_desc:
-            logger.info("Dismissing %d jobs due to missing descriptions", len(to_dismiss_no_desc))
-            store.bulk_update_status(to_dismiss_no_desc, "dismissed", reason="Missing Description")
+            # Filter out jobs that still have no description (fetch failed)
+            # We skip these as the LLM fits will be poor without content.
+            to_dismiss_no_desc = [j.db_id for j in candidates_raw if not j.description]
+            if to_dismiss_no_desc:
+                logger.info("Dismissing %d jobs due to missing descriptions", len(to_dismiss_no_desc))
+                store.bulk_update_status(to_dismiss_no_desc, "dismissed", reason="Missing Description")
+            
+            candidates_raw = [j for j in candidates_raw if j.description]
+
+        candidates, rejected = prefilter(candidates_raw, keywords_config, progress_callback=pre_p_callback)
         
-        candidates_raw = [j for j in candidates_raw if j.description]
+        if args.json_progress:
+            emit_progress(3, "Pre-filtering", f"Finalizing {len(rejected) + len(candidates)} results...")
 
-    candidates, rejected = prefilter(candidates_raw, keywords_config, progress_callback=pre_p_callback)
-    
-    if args.json_progress:
-        emit_progress(3, "Pre-filtering", f"Finalizing {len(rejected) + len(candidates)} results...")
+        if rejected:
+            to_dismiss_with_reasons = [(j.db_id, r) for j, r in rejected if j.db_id]
+            store.bulk_update_status_with_reasons(to_dismiss_with_reasons)
+        
+        if args.json_progress:
+            emit_progress(3, "Pre-filtering", f"{len(candidates)} candidates")
+        logger.info("%d candidates after full pre-filter", len(candidates))
+    else:
+        # For rescore, we skip pre-filtering entirely
+        candidates = candidates_raw
+        logger.info("Skipping pre-filtering for rescore run (%d candidates)", len(candidates))
+        if args.json_progress:
+            emit_progress(0, "Starting", "Bypassing pre-filtering for rescore")
 
-    if rejected:
-        to_dismiss_with_reasons = [(j.db_id, r) for j, r in rejected if j.db_id]
-        store.bulk_update_status_with_reasons(to_dismiss_with_reasons)
-    
-    if args.json_progress:
-        emit_progress(3, "Pre-filtering", f"{len(candidates)} candidates")
-    logger.info("%d candidates after full pre-filter", len(candidates))
+    # Choose step indexing for JSON progress
+    scoring_step = 1 if args.rescore else 4
+    done_step = 2 if args.rescore else 5
 
     scan_stats = {
         "companies_scanned": companies_scanned,
@@ -434,29 +453,29 @@ async def run() -> None:
         print_scan_summary(scan_stats)
         print_candidates(candidates, label="DRY RUN")
         if args.json_progress:
-            emit_progress(4, "Skipped", "Scoring skipped (Dry Run)", duration=timer.get_stage_duration())
-            emit_progress(5, "Done", stats=scan_stats, duration=timer.get_total_duration())
+            emit_progress(scoring_step, "Skipped", "Scoring skipped (Dry Run)", duration=timer.get_stage_duration())
+            emit_progress(done_step, "Done", stats=scan_stats, duration=timer.get_total_duration())
         return
 
     # 5. Score with Claude API
     timer.reset_stage()
     if candidates:
         if args.json_progress:
-            emit_progress(4, "Scoring", f"Starting LLM scoring for {len(candidates)} jobs", duration=timer.get_stage_duration())
+            emit_progress(scoring_step, "Scoring", f"Starting LLM scoring for {len(candidates)} jobs", duration=timer.get_stage_duration())
         
         # Early check for API key
-        if not os.getenv("ANTHROPIC_API_KEY"):
-            error_msg = "ANTHROPIC_API_KEY not found in environment or .env file. Scoring skipped."
-            logger.error(error_msg)
-            if args.json_progress:
-                emit_progress(4, "Error", error_msg)
-            else:
-                print(f"\n  ✗ {error_msg}\n")
-            sys.exit(1)
+            if not os.getenv("ANTHROPIC_API_KEY"):
+                error_msg = "ANTHROPIC_API_KEY not found in environment or .env file. Scoring skipped."
+                logger.error(error_msg)
+                if args.json_progress:
+                    emit_progress(scoring_step, "Error", error_msg)
+                else:
+                    print(f"\n  ✗ {error_msg}\n")
+                sys.exit(1)
 
         def score_p_callback(curr, tot):
             if args.json_progress:
-                emit_progress(4, "Scoring", f"{curr}/{tot} scored", duration=timer.get_stage_duration())
+                emit_progress(scoring_step, "Scoring", f"{curr}/{tot} scored", duration=timer.get_stage_duration())
 
         scoring_config = config.get("scoring", {})
         scored = await score_jobs(
@@ -492,13 +511,13 @@ async def run() -> None:
             await send_telegram(good_matches, top_n=top_n)
             
         if args.json_progress:
-            emit_progress(5, "Done", stats=scan_stats, duration=timer.get_total_duration())
+            emit_progress(done_step, "Done", stats=scan_stats, duration=timer.get_total_duration())
     else:
         print("\n  No new candidates today. Run --history to see past results.\n")
         if args.json_progress:
             scan_stats["scored"] = 0
             scan_stats["total_duration"] = format_duration(timer.get_total_duration())
-            emit_progress(5, "Done", stats=scan_stats, duration=timer.get_total_duration())
+            emit_progress(done_step, "Done", stats=scan_stats, duration=timer.get_total_duration())
 
 
 def main() -> None:

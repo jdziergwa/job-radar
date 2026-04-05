@@ -14,6 +14,7 @@ class RunState(TypedDict):
     stats: Optional[dict]
     skipped_steps: list[int]
     error: Optional[str]
+    is_rescore: bool
 
 
 # In-memory state — sufficient for single-user local use
@@ -42,13 +43,14 @@ async def launch_pipeline(
     run_id = str(uuid.uuid4())
     _runs[run_id] = {
         "status": "running",
-        "step": 1,
+        "step": 0,
         "step_name": "Starting",
         "detail": None,
         "duration": 0.0,
         "stats": None,
         "skipped_steps": [],
         "error": None,
+        "is_rescore": rescore_all or job_id is not None,
     }
     _active[profile] = run_id
 
@@ -107,16 +109,11 @@ async def _monitor(run_id: str, profile: str, proc: asyncio.subprocess.Process):
             except json.JSONDecodeError:
                 pass
 
-            # Fallback: detect steps from log lines
-            lower = line.lower()
-            if "collecting" in lower or "fetching" in lower:
-                _runs[run_id].update(step=1, step_name="Collecting")
-            elif "new job" in lower or "dedup" in lower:
-                _runs[run_id].update(step=2, step_name="Deduplicating")
-            elif "candidate" in lower or "pre-filter" in lower:
-                _runs[run_id].update(step=3, step_name="Pre-filtering")
-            elif "scoring" in lower:
-                _runs[run_id].update(step=4, step_name="Scoring")
+            # Fallback: detect steps from log lines (only if not using structured progress)
+            # Actually, structured progress 'continue's above, so this only runs for non-JSON lines.
+            # But the steps here are hardcoded to standard pipeline indices.
+            # Let's disable these fallbacks entirely as src/main now uses --json-progress reliably.
+            pass
 
         await proc.wait()
 
@@ -128,7 +125,8 @@ async def _monitor(run_id: str, profile: str, proc: asyncio.subprocess.Process):
             )
             _cancelled.remove(run_id)
         elif proc.returncode == 0:
-            _runs[run_id].update(status="done", step=5, step_name="Done")
+            done_step = 2 if _runs[run_id].get("is_rescore") else 5
+            _runs[run_id].update(status="done", step=done_step, step_name="Done")
             if not _runs[run_id]["stats"]:
                 _runs[run_id]["stats"] = {"new_jobs": 0, "candidates": 0, "scored": 0}
         else:

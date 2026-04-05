@@ -7,11 +7,17 @@ import { Button } from '@/components/ui/button'
 import { Loader2, CheckCircle2, AlertCircle, Terminal, FastForward, Clock, XCircle, History, Zap } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 
-const STEPS = [
+const PIPELINE_STEPS = [
   'Starting',
   'Collecting',
   'Deduplicating',
   'Pre-filtering',
+  'Scoring',
+  'Done'
+]
+
+const RESCORE_STEPS = [
+  'Starting',
   'Scoring',
   'Done'
 ]
@@ -29,9 +35,17 @@ interface PipelineProgressDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onComplete?: () => void
+  mode?: 'pipeline' | 'rescore'
 }
 
-export function PipelineProgressDialog({ runId, open, onOpenChange, onComplete }: PipelineProgressDialogProps) {
+export function PipelineProgressDialog({ 
+  runId, 
+  open, 
+  onOpenChange, 
+  onComplete,
+  mode = 'pipeline'
+}: PipelineProgressDialogProps) {
+  const STEPS = mode === 'rescore' ? RESCORE_STEPS : PIPELINE_STEPS;
   const [status, setStatus] = useState<any>(null)
   const [isCancelling, setIsCancelling] = useState(false)
   const pollInterval = useRef<NodeJS.Timeout | null>(null)
@@ -94,9 +108,11 @@ export function PipelineProgressDialog({ runId, open, onOpenChange, onComplete }
              </div>
              <div>
                 <DialogTitle className="text-xl">
-                  {status?.status === 'done' ? 'Pipeline Complete' : 'Executing Intelligence Tasks'}
+                  {status?.status === 'done' ? (mode === 'rescore' ? 'Rescore Complete' : 'Pipeline Complete') : (mode === 'rescore' ? 'Rescoring Candidates' : 'Executing Intelligence Tasks')}
                 </DialogTitle>
-                <DialogDescription>AI Agents are processing your request.</DialogDescription>
+                <DialogDescription>
+                  {mode === 'rescore' ? 'AI Agents are re-evaluating matches.' : 'AI Agents are processing your request.'}
+                </DialogDescription>
              </div>
           </div>
         </DialogHeader>

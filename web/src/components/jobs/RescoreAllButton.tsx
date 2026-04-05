@@ -10,6 +10,15 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { PipelineProgressDialog } from '../pipeline/PipelineProgressDialog'
 
 interface RescoreAllButtonProps {
   variant?: 'default' | 'outline' | 'secondary' | 'ghost'
@@ -25,14 +34,12 @@ export function RescoreAllButton({
   showText = true
 }: RescoreAllButtonProps) {
   const [loading, setLoading] = useState(false)
+  const [showProgress, setShowProgress] = useState(false)
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [runId, setRunId] = useState<string | null>(null)
 
   const handleRescoreAll = async () => {
-    const confirmed = window.confirm(
-      "Rescore all jobs? This will re-evaluate every job using the current profile and AI scoring. It may take several minutes."
-    )
-    
-    if (!confirmed) return
-
+    setConfirmOpen(false)
     setLoading(true)
     try {
       // @ts-ignore - fixing argument count lint
@@ -45,9 +52,11 @@ export function RescoreAllButton({
         console.error('Rescore all error:', error)
       } else {
         toast.success('Bulk rescore started in background')
-        // Dispatch event for other components to listen (like page.tsx poller)
+        const id = (data as any)?.run_id
+        setRunId(id)
+        setShowProgress(true)
         window.dispatchEvent(new CustomEvent('pipeline-started', { 
-          detail: { run_id: (data as any)?.run_id } 
+          detail: { run_id: id } 
         }))
       }
     } catch (err) {
@@ -62,7 +71,7 @@ export function RescoreAllButton({
     <Button
       variant={variant}
       size={size}
-      onClick={handleRescoreAll}
+      onClick={() => setConfirmOpen(true)}
       disabled={loading}
       className={`gap-2 ${className}`}
     >
@@ -75,18 +84,50 @@ export function RescoreAllButton({
     </Button>
   )
 
-  if (!showText) {
-    return (
-      <Tooltip>
-        <TooltipTrigger>
-          {buttonContent}
-        </TooltipTrigger>
-        <TooltipContent align="center" side="top">
-          Rescore all jobs in background
-        </TooltipContent>
-      </Tooltip>
-    )
-  }
+  return (
+    <>
+      {!showText ? (
+        <Tooltip>
+          <TooltipTrigger>
+            {buttonContent}
+          </TooltipTrigger>
+          <TooltipContent align="center" side="top">
+            Rescore all jobs in background
+          </TooltipContent>
+        </Tooltip>
+      ) : (
+        buttonContent
+      )}
 
-  return buttonContent
+      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <DialogContent className="sm:max-w-md border-border/50 bg-background/95 backdrop-blur-xl shadow-2xl">
+          <DialogHeader>
+            <DialogTitle>Rescore All Jobs?</DialogTitle>
+            <DialogDescription className="pt-2">
+              This will re-evaluate every job using the current profile and AI scoring. It may take several minutes to complete based on your database size.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0 mt-4">
+            <Button variant="ghost" onClick={() => setConfirmOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleRescoreAll} className="gap-2 bg-primary hover:bg-primary/90 shadow-lg">
+              <Play className="h-4 w-4 fill-current" /> Continue
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <PipelineProgressDialog
+        runId={runId}
+        open={showProgress}
+        onOpenChange={setShowProgress}
+        mode="rescore"
+        onComplete={() => {
+          setShowProgress(false);
+          window.dispatchEvent(new Event('pipeline-finished'));
+        }}
+      />
+    </>
+  )
 }
