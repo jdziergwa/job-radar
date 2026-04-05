@@ -26,6 +26,10 @@ SCORING DIMENSIONS:
    - 20-35: Significant gaps — missing multiple core technologies that define the role's primary focus.
    - 0-15: Almost no overlap with the role's technical requirements.
    CRITICAL RULE: Do NOT inflate this score using "adjacent" or "transferable" skills when the job's headline required technologies are absent from the candidate's profile. If the role's primary technical focus is a known gap for the candidate (see their "Critical Skill Gaps" section), cap this dimension at 50 or below. Also check the candidate's "Exclusions" or "What Lowers Fit" section — if the job explicitly requires skills listed there, apply a meaningful penalty (−15 to −25 points on tech_stack_match).
+   PORTFOLIO VS. COMMERCIAL EXPERIENCE RULE:
+   - If a core required skill for the job is found in the candidate's profile ONLY via portfolio/personal projects and NOT through commercial/professional experience, treat it as "Partial but unproven overlap".
+   - Apply a slight penalty to the tech_stack_match score (reduce it by 5 to 10 points). 
+   - Do NOT penalize it heavily or treat it as a completely missing skill. The candidate possesses the practical capability and is looking to migrate these portfolio skills into professional roles, so these jobs should remain viable.
 
 2. seniority_match (0-100): Does the job's level match the candidate's experience level as described in their profile? 
    - 90-100: Title/level match (e.g., Senior, Lead, Staff) or responsibilities imply the right level of autonomy and leadership.
@@ -39,6 +43,7 @@ SCORING DIMENSIONS:
    - 30-50: Remote but requires significant timezone shift (>3h from candidate's local time).
    - 0-20: On-site only in a location the candidate cannot commute to, or >5h timezone mismatch.
    - RULE: If score is < 30, you MUST set apply_priority to "skip" regardless of other scores.
+   - CITY MISMATCH/UNCERTAINTY RULE: Pay attention to the specific city mentioned in the posting. If the job specifies a city different from the candidate's home city, but does NOT explicitly state whether it is "on-site" or "remote", treat this as uncertainty rather than an automatic hard stop. Score it moderately (40-60) reducing the fit due to the geographic distance, but keeping it viable enough to not trigger an automatic skip, in case they are actually open to remote work.
 
 4. growth_potential (0-100): Does this role align with the candidate's stated career direction and goals?
    - 90-100: Directly aligns with the candidate's stated career goals and trajectory.
@@ -47,13 +52,19 @@ SCORING DIMENSIONS:
    - 20-40: Narrow role with limited growth, or a sideways move that doesn't advance goals.
    - 0-20: Completely unrelated to the candidate's field or future goals.
 
-fit_score: Weighted average — tech_stack_match (30%) + seniority_match (25%) + remote_location_fit (25%) + growth_potential (20%). Round to nearest integer.
+fit_score: Weighted average — tech_stack_match (30%) + seniority_match (25%) + remote_location_fit (25%) + growth_potential (20%). IMPORTANT: Penalize the final score based on the severity of any red flags found:
+- Minor red flags (e.g., missing a nice-to-have skill, slightly unclear terms): apply a small penalty of -2 to -5 points (allowing exceptionally strong matches to remain 'high' >= 80).
+- Major concerns (e.g., missing a core required skill, notable domain mismatch): apply a significant penalty of -10 to -20 points (pulling the score into 'medium' or lower).
+Round the final result to the nearest integer.
 
-APPLY PRIORITY Rules:
-- "high": fit_score >= 80 AND no major red flags
-- "medium": fit_score 60-79, or fit_score >= 80 but with notable concerns
+APPLY PRIORITY Rules (Strictly tied to fit_score):
+- "high": fit_score >= 80
+- "medium": fit_score 60-79
 - "low": fit_score 40-59
 - "skip": fit_score < 40 OR remote_location_fit < 30 (MANDATORY HARD STOP)
+
+GARBAGE / BROKEN DESCRIPTION RULE:
+- If the job description is completely missing, consists mostly of raw JavaScript/code, or is otherwise completely unreadable or nonsensical, you MUST score the job a 0 across all dimensions. Do NOT hallucinate a high score based solely on the job title. Set apply_priority to "skip" and note the broken description in the reasoning.
 
 REASONING FORMAT:
 - Reasoning MUST be a single string. Do NOT use nested objects for reasoning.
