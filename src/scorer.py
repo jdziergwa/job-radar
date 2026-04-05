@@ -73,7 +73,7 @@ def _build_system_prompt(scoring_instructions: str, profile_doc: str, profile_co
     }]
 
 
-def _build_user_message(job: CandidateJob, max_desc_chars: int = 3000) -> str:
+def _build_user_message(job: CandidateJob, max_desc_chars: int = 20000) -> str:
     """Build the user message containing the job posting."""
     from src.collector import strip_html
     
@@ -243,7 +243,7 @@ def _parse_score_response(text: str) -> dict[str, Any]:
     return data
 
 
-def _build_batch_user_message(jobs: list[CandidateJob], max_desc_chars: int = 3000) -> str:
+def _build_batch_user_message(jobs: list[CandidateJob], max_desc_chars: int = 20000) -> str:
     """Build the user message containing multiple job postings."""
     from src.collector import strip_html
     parts = []
@@ -300,7 +300,7 @@ async def score_job(
     job: CandidateJob,
     system_prompt: list[dict[str, Any]],
     model: str = "claude-haiku-4-5-20251001",
-    max_desc_chars: int = 3000,
+    max_desc_chars: int = 20000,
 ) -> ScoredJob:
     """Score a single job using Claude API (Async).
 
@@ -382,7 +382,7 @@ async def score_batch(
     jobs: list[CandidateJob],
     system_prompt: list[dict[str, Any]],
     model: str = "claude-haiku-4-5-20251001",
-    max_desc_chars: int = 3000,
+    max_desc_chars: int = 20000,
 ) -> list[ScoredJob]:
     """Score multiple jobs at once (batching).
     
@@ -469,7 +469,7 @@ class ScorerProtocol(Protocol):
 class AnthropicScorer:
     """Default scorer using Claude Haiku with prompt caching."""
     
-    def __init__(self, model: str = "claude-haiku-4-5-20251001", max_desc_chars: int = 3000):
+    def __init__(self, model: str = "claude-haiku-4-5-20251001", max_desc_chars: int = 20000):
         self.model = model
         self.max_desc_chars = max_desc_chars
         self._client = anthropic.Anthropic()
@@ -522,7 +522,7 @@ async def score_jobs(
     batch_size = scoring_config.get("batch_size", batch_size)
     
     model = scoring_config.get("model", "claude-haiku-4-5-20251001")
-    max_desc_chars = scoring_config.get("max_description_chars", 3000)
+    max_desc_chars = scoring_config.get("max_description_chars", 20000)
 
     # Load scoring instructions
     scoring_instructions = load_scoring_prompt()
