@@ -152,7 +152,7 @@ class ProviderInfo(BaseModel):
 
 class PipelineRunRequest(BaseModel):
     profile: str = "default"
-    source: str = "hybrid"
+    sources: list[str] = ["aggregator", "local"]
     dry_run: bool = False
 
 

@@ -18,7 +18,7 @@ export function PipelineTrigger({ collapsed = false }: { collapsed?: boolean }) 
   const [open, setOpen] = useState(false)
   const [showProgress, setShowProgress] = useState(false)
   const [activeRun, setActiveRun] = useState<{ running: boolean; run_id: string | null } | null>(null)
-  const [source, setSource] = useState<string>('hybrid')
+  const [selectedSources, setSelectedSources] = useState<string[]>([])
   const [dryRun, setDryRun] = useState(false)
   const [isStarting, setIsStarting] = useState(false)
   const [providers, setProviders] = useState<ProviderInfo[]>([])
@@ -54,7 +54,12 @@ export function PipelineTrigger({ collapsed = false }: { collapsed?: boolean }) 
   const fetchProviders = useCallback(async () => {
     try {
       const { data } = await api.GET('/api/pipeline/providers')
-      if (data) setProviders(data as ProviderInfo[])
+      if (data) {
+        const p_list = data as ProviderInfo[];
+        setProviders(p_list)
+        // Default to all selected
+        setSelectedSources(p_list.map(p => p.name))
+      }
     } catch (err) {
       console.error('Failed to fetch providers:', err)
     }
@@ -68,16 +73,29 @@ export function PipelineTrigger({ collapsed = false }: { collapsed?: boolean }) 
     }
   }, [open, fetchActive, fetchAggregatorStatus, fetchProviders])
 
-  const allOptions: ProviderInfo[] = providers
+  const toggleSource = (name: string) => {
+    setSelectedSources(prev => 
+      prev.includes(name) 
+        ? prev.filter(s => s !== name) 
+        : [...prev, name]
+    )
+  }
+
+  const selectAll = () => setSelectedSources(providers.map(p => p.name))
+  const selectNone = () => setSelectedSources([])
 
   const handleStart = async () => {
+    if (selectedSources.length === 0) {
+      toast.error("Please select at least one source")
+      return
+    }
     setIsStarting(true)
     try {
       let data, error;
       const res = await api.POST('/api/pipeline/run', {
         body: {
           profile: 'default',
-          source,
+          sources: selectedSources,
           dry_run: dryRun
         }
       })
@@ -136,20 +154,37 @@ export function PipelineTrigger({ collapsed = false }: { collapsed?: boolean }) 
           <div className="py-8 space-y-8 animate-in fade-in zoom-in-95 duration-300">
             <div className="grid grid-cols-1 md:grid-cols-5 gap-8">
               <div className="md:col-span-3 space-y-4">
-                <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Execution Strategy</Label>
+                <div className="flex items-center justify-between">
+                  <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground whitespace-nowrap">
+                    Execution Strategy {selectedSources.length > 0 && `(${selectedSources.length})`}
+                  </Label>
+                  <button 
+                    onClick={() => {
+                      if (selectedSources.length > 0) selectNone();
+                      else selectAll();
+                    }}
+                    className="text-[10px] font-bold text-primary/80 hover:text-primary transition-all flex items-center gap-1.5 px-2 py-1 rounded-md hover:bg-primary/5 border border-transparent hover:border-primary/10"
+                  >
+                    {selectedSources.length > 0 ? (
+                      <>Deselect All</>
+                    ) : (
+                      <>Select All</>
+                    )}
+                  </button>
+                </div>
                 <div className="flex flex-col gap-2">
-                  {allOptions.map((option) => (
+                  {providers.map((option) => (
                     <div
                       key={option.name}
-                      onClick={() => setSource(option.name)}
+                      onClick={() => toggleSource(option.name)}
                       className={`flex items-center justify-between p-4 rounded-xl border transition-all text-left group cursor-pointer ${
-                        source === option.name
+                        selectedSources.includes(option.name)
                           ? 'border-primary bg-primary/5 shadow-sm ring-1 ring-primary/20'
                           : 'border-border/50 hover:border-border hover:bg-muted/30'
                       }`}
                     >
                       <div className="flex flex-col grow pr-4">
-                        <div className={`text-sm font-bold flex items-center gap-1.5 w-full ${source === option.name ? 'text-primary' : ''}`}>
+                        <div className={`text-sm font-bold flex items-center gap-1.5 w-full ${selectedSources.includes(option.name) ? 'text-primary' : ''}`}>
                           {option.display_name}
                           {option.shows_aggregator_badge && aggregatorStatus && (
                             <div className="ml-auto">
@@ -167,7 +202,17 @@ export function PipelineTrigger({ collapsed = false }: { collapsed?: boolean }) 
                             : option.description}
                         </span>
                       </div>
-                      <div className={`h-2 w-2 rounded-full transition-all ${source === option.name ? 'bg-primary scale-125' : 'bg-muted scale-100'}`} />
+                      <div className={`h-4 w-4 shrink-0 rounded border transition-all flex items-center justify-center ${
+                        selectedSources.includes(option.name) 
+                          ? 'bg-primary border-primary scale-110 shadow-sm' 
+                          : 'bg-transparent border-border scale-100'
+                      }`}>
+                         {selectedSources.includes(option.name) && (
+                           <svg className="h-2.5 w-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={4}>
+                             <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                           </svg>
+                         )}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -212,14 +257,14 @@ export function PipelineTrigger({ collapsed = false }: { collapsed?: boolean }) 
                    <Info className="h-4 w-4 text-primary shrink-0" />
                    <p>Launching the pipeline will trigger background Python subprocesses. You can safely close this dialog while it runs.</p>
                 </div>
-                { (source === 'remotive' || (source === 'hybrid' && providers.some(p => p.name === 'remotive'))) && (
-                  <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 flex gap-2.5 text-[10px] text-amber-600 dark:text-amber-400 leading-tight">
+                { selectedSources.includes('remotive') && (
+                  <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 flex gap-2.5 text-[10px] text-amber-600 dark:text-amber-400 leading-tight animate-in slide-in-from-top-2 duration-300">
                     <Info className="h-3.5 w-3.5 shrink-0" />
                     <p><span className="font-bold">Remotive Note:</span> The public API is limited to the 20 most recent jobs.</p>
                   </div>
                 )}
-                { (source === 'remoteok' || (source === 'hybrid' && providers.some(p => p.name === 'remoteok'))) && (
-                  <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 flex gap-2.5 text-[10px] text-blue-600 dark:text-blue-400 leading-tight">
+                { selectedSources.includes('remoteok') && (
+                  <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 flex gap-2.5 text-[10px] text-blue-600 dark:text-blue-400 leading-tight animate-in slide-in-from-top-2 duration-300">
                     <Info className="h-3.5 w-3.5 shrink-0" />
                     <p><span className="font-bold">Remote OK:</span> Fetches current remote listings (~50-100 items).</p>
                   </div>
@@ -227,9 +272,9 @@ export function PipelineTrigger({ collapsed = false }: { collapsed?: boolean }) 
               </div>
             </div>
 
-            <Button onClick={handleStart} disabled={isStarting} className="w-full h-14 text-lg font-bold gap-3 shadow-xl hover:scale-[1.01] active:scale-[0.99] transition-all">
+            <Button onClick={handleStart} disabled={isStarting || selectedSources.length === 0} className="w-full h-14 text-lg font-bold gap-3 shadow-xl hover:scale-[1.01] active:scale-[0.99] transition-all">
               {isStarting ? <Loader2 className="h-5 w-5 animate-spin" /> : <Play className="h-5 w-5 fill-current" />}
-              {dryRun ? 'Start Dry Run' : 'Start Intelligence Pass'}
+              {selectedSources.length === 0 ? 'Select a source' : (dryRun ? 'Start Dry Run' : 'Start Intelligence Pass')}
             </Button>
             {activeRun?.running && (
               <Button onClick={() => setShowProgress(true)} variant="outline" className="w-full gap-2 italic">
@@ -241,9 +286,9 @@ export function PipelineTrigger({ collapsed = false }: { collapsed?: boolean }) 
           <DialogFooter className={`pt-4 border-t border-border/50 text-[10px] text-muted-foreground flex items-center sm:justify-between`}>
             <div className="flex items-center gap-2">
                <History className="h-3 w-3" />
-               Strategy: {source.toUpperCase()}
+               Selected: {selectedSources.length} source(s)
             </div>
-            <Badge variant="outline" className="font-mono text-[9px] border-border/30 px-1 opacity-50">v1.2.0-stable</Badge>
+            <Badge variant="outline" className="font-mono text-[9px] border-border/30 px-1 opacity-50">v1.3.0-multi</Badge>
           </DialogFooter>
         </DialogContent>
       </Dialog>

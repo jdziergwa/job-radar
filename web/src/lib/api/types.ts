@@ -550,10 +550,10 @@ export interface components {
              */
             profile: string;
             /**
-             * Source
-             * @default hybrid
+             * Sources
+             * @default ["aggregator", "local"]
              */
-            source: string;
+            sources: string[];
             /**
              * Dry Run
              * @default false

@@ -132,8 +132,8 @@ export function PipelineProgressDialog({
 
                    return (
                       <div key={step} className="flex flex-col items-center gap-2 group">
-                         <div className={`h-8 w-8 rounded-full border-2 flex items-center justify-center transition-all duration-500 cursor-default ${
-                           isSkipped ? 'bg-amber-500/10 border-amber-500/50 text-amber-500 shadow-sm' :
+                         <div className={`h-8 w-8 rounded-full border-2 flex items-center justify-center transition-all duration-500 cursor-default relative z-10 ${
+                           isSkipped ? 'bg-background border-amber-500/50 text-amber-500 shadow-sm' :
                            isCompleted ? 'bg-primary border-primary text-white scale-110 shadow-lg' :
                            isActive ? 'bg-background border-primary text-primary shadow-sm scale-110 animate-pulse' :
                            'bg-background border-muted text-muted-foreground opacity-50'
@@ -155,7 +155,7 @@ export function PipelineProgressDialog({
              {/* Terminal View */}
              <div className="bg-black/90 rounded-2xl p-6 font-mono text-sm shadow-2xl border border-white/10 group">
                 <div className="flex items-center gap-2 mb-4 border-b border-white/10 pb-3">
-                   <div className="flex gap-1.5 ml-auto">
+                    <div className="flex gap-1.5 ml-auto">
                       {status?.status === 'running' && (
                         <Button 
                           variant="ghost" 
@@ -168,10 +168,7 @@ export function PipelineProgressDialog({
                           Stop
                         </Button>
                       )}
-                      <div className="h-2 w-2 rounded-full bg-red-500/30" />
-                      <div className="h-2 w-2 rounded-full bg-amber-500/30" />
-                      <div className="h-2 w-2 rounded-full bg-emerald-500/30" />
-                   </div>
+                    </div>
                 </div>
                 <div className="space-y-3 min-h-[160px] max-h-[300px] overflow-auto">
                    {status?.step_name && (

@@ -72,48 +72,6 @@ class JobProvider(Protocol):
 
 
 
-class HybridProvider:
-    """Combines AggregatorProvider + LocalATSProvider in sequence.
-
-    This is a meta-provider that delegates to two sub-providers and merges their results.
-    It exists so 'hybrid' appears as a single selectable option in the UI and CLI.
-    """
-
-    name = "hybrid"
-    display_name = "Comprehensive Scan"
-    description = "Global Aggregator + Targeted Boards: Combines broad market discovery with deep-scanning of your curated company list."
-    shows_aggregator_badge = True
-    last_updated: str = "unknown"
-
-    def __init__(self) -> None:
-        self._aggregator = AggregatorProvider()
-        self._local = LocalATSProvider()
-
-    async def fetch_jobs(
-        self,
-        ctx: ProviderContext,
-        progress_callback: ProgressCallback = None,
-    ) -> list[RawJob]:
-        import logging
-        logger = logging.getLogger(__name__)
-
-        jobs: list[RawJob] = []
-
-        # Aggregator first
-        agg_jobs = await self._aggregator.fetch_jobs(ctx, progress_callback=progress_callback)
-        self.last_updated = self._aggregator.last_updated
-        jobs.extend(agg_jobs)
-
-        # Local ATS second
-        try:
-            local_jobs = await self._local.fetch_jobs(ctx, progress_callback=progress_callback)
-            jobs.extend(local_jobs)
-        except Exception as e:
-            logger.warning("Local company fetch failed (non-fatal): %s", e)
-
-        return jobs
-
-
 # ── Registry ─────────────────────────────────────────────────────────
 
 #: Map of source-name → provider instance.
@@ -139,7 +97,6 @@ def get_all_info() -> list[ProviderInfo]:
     ]
 
 
-register(HybridProvider())
 register(AggregatorProvider())
 register(LocalATSProvider())
 

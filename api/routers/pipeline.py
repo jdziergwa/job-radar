@@ -30,7 +30,7 @@ async def run_pipeline(body: PipelineRunRequest):
     try:
         run_id = await bg.launch_pipeline(
             profile=body.profile,
-            source=body.source,
+            sources=body.sources,
             dry_run=body.dry_run,
         )
     except RuntimeError as e:

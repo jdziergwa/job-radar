@@ -108,8 +108,8 @@ Examples:
         help="Profile name (loads profiles/<name>/). Default: 'default'",
     )
     parser.add_argument(
-        "--source", default="hybrid",
-        help="Data source provider name (e.g. 'hybrid', 'aggregator', 'local'). Must match a registered provider.",
+        "--source", nargs="+", default=["aggregator", "local"],
+        help="Data source provider name(s) (e.g. 'aggregator', 'local'). Must match registered providers.",
     )
     parser.add_argument(
         "--json-progress", action="store_true",
@@ -332,20 +332,28 @@ async def run() -> None:
         companies = load_companies(profile_dir)
         ctx = ProviderContext(companies=companies, profile_dir=profile_dir, config=config)
 
-        if args.source not in PROVIDER_REGISTRY:
-            logger.error("Unknown source '%s'. Available: %s", args.source, list(PROVIDER_REGISTRY))
-            sys.exit(1)
+        logger.info("Step 1: Collecting jobs (sources=%s)...", args.source)
+        raw_jobs = []
+        
+        for source_name in args.source:
+            if source_name not in PROVIDER_REGISTRY:
+                logger.error("Unknown source '%s'. Available: %s", source_name, list(PROVIDER_REGISTRY))
+                continue
 
-        logger.info("Step 1: Collecting jobs (source=%s)...", args.source)
-        provider = PROVIDER_REGISTRY[args.source]
-        raw_jobs = await provider.fetch_jobs(
-            ctx,
-            progress_callback=lambda c, t: p_callback(c, t, f"[{provider.name.title()}] "),
-        )
-        # Persist aggregator version metadata when available (side-channel on provider)
-        if hasattr(provider, "last_updated") and provider.last_updated != "unknown":
-            store.set_metadata("aggregator_version", provider.last_updated)
-        logger.info("Provider '%s': %d jobs fetched", provider.name, len(raw_jobs))
+            provider = PROVIDER_REGISTRY[source_name]
+            logger.info("Source '%s': Fetching jobs...", provider.name)
+            
+            provider_jobs = await provider.fetch_jobs(
+                ctx,
+                progress_callback=lambda c, t, p_name=provider.display_name: p_callback(c, t, f"[{p_name}] "),
+            )
+            
+            # Persist aggregator version metadata when available (side-channel on provider)
+            if hasattr(provider, "last_updated") and provider.last_updated != "unknown":
+                store.set_metadata("aggregator_version", provider.last_updated)
+            
+            logger.info("Source '%s': %d jobs fetched", provider.name, len(provider_jobs))
+            raw_jobs.extend(provider_jobs)
 
         # Soft pre-filter (Title/Loc) to avoid bloating DB
         if args.json_progress:
@@ -367,7 +375,7 @@ async def run() -> None:
             emit_progress(2, "Deduplicating", f"{len(new_jobs)} new jobs identified", duration=timer.get_stage_duration())
         logger.info("Found %d new jobs (from %d raw)", len(new_jobs), len(raw_jobs))
 
-        companies_scanned = sum(len(v) for v in companies.values()) if args.source == "local" else args.source
+        companies_scanned = ", ".join(args.source)
         timer.reset_stage()
 
     if not skip_collection:
@@ -389,8 +397,8 @@ async def run() -> None:
         logger.info("Found %d unscored jobs for filtering", len(candidates_raw))
         
     if not args.rescore:
-        # Aggregator/Hybrid mode requires fetching descriptions lazily
-        if args.source in ["aggregator", "hybrid"] and candidates_raw:
+        # Providers like aggregator/remotive/remoteok may have missing descriptions
+        if candidates_raw:
             # Only fetch for those missing a description (primarily aggregator jobs)
             to_fetch = [j for j in candidates_raw if not j.description]
             if to_fetch:
@@ -441,7 +449,7 @@ async def run() -> None:
     done_step = 2 if args.rescore else 5
 
     scan_stats = {
-        "companies_scanned": companies_scanned,
+        "sources": companies_scanned,
         "total_market_jobs": len(raw_jobs),
         "new_jobs": len(new_jobs),
         "candidates": len(candidates),

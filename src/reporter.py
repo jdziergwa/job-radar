@@ -103,11 +103,11 @@ def print_stats(stats: dict[str, Any]) -> None:
 def print_scan_summary(scan_stats: dict[str, Any]) -> None:
     """Print the high-level summary of the current scan to the terminal."""
     print(f"\n{BOLD}  📊 Scan Summary{RESET}")
-    print(f"  • Companies scope: {scan_stats.get('companies_scanned', 'Unknown')}")
+    print(f"  • Sources:             {scan_stats.get('sources', 'Unknown')}")
     if "total_market_jobs" in scan_stats:
-        print(f"  • Total market jobs: {scan_stats['total_market_jobs']:,}")
-    print(f"  • New targeted roles today: {scan_stats.get('new_jobs', 0)}")
-    print(f"  • Sent to AI assessment: {scan_stats.get('candidates', 0)}\n")
+        print(f"  • Total market jobs:   {scan_stats['total_market_jobs']:,}")
+    print(f"  • New jobs found:      {scan_stats.get('new_jobs', 0)}")
+    print(f"  • Sent to AI:          {scan_stats.get('candidates', 0)}\n")
 
 
 def print_candidates(candidates: list[Any], label: str = "DRY RUN") -> None:
@@ -142,7 +142,7 @@ def write_report(
     # Summary
     lines.append("## Summary\n")
     if scan_stats:
-        lines.append(f"- Companies scanned: {scan_stats.get('companies_scanned', '?')}")
+        lines.append(f"- Sources: {scan_stats.get('sources', '?')}")
         lines.append(f"- New jobs found: {scan_stats.get('new_jobs', '?')}")
         lines.append(f"- Passed pre-filter: {scan_stats.get('candidates', '?')}")
 

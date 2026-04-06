@@ -29,7 +29,7 @@ RUN_TIMEOUT = 300  # seconds
 
 async def launch_pipeline(
     profile: str,
-    source: str = "hybrid",
+    sources: list[str] = ["aggregator", "local"],
     dry_run: bool = False,
     rescore_all: bool = False,
     job_id: Optional[int] = None,
@@ -62,10 +62,9 @@ async def launch_pipeline(
         args += ["--job-id", str(job_id), "--rescore"]
     else:
         # Standard run
-        if source != "hybrid":
-            args += ["--source", source]
-        else:
-            args += ["--source", "hybrid"]
+        if sources:
+            args.append("--source")
+            args.extend(sources)
             
     if dry_run:
         args.append("--dry-run")
