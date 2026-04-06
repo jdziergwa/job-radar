@@ -39,6 +39,7 @@ class JobResponse(BaseModel):
     salary_min: Optional[int] = None
     salary_max: Optional[int] = None
     salary_currency: Optional[str] = None
+    is_sparse: bool = False
 
     @classmethod
     def from_row(cls, row: dict) -> "JobResponse":

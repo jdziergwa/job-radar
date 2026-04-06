@@ -47,6 +47,7 @@ CREATE TABLE IF NOT EXISTS jobs (
     salary_min INTEGER,
     salary_max INTEGER,
     salary_currency TEXT,
+    is_sparse INTEGER DEFAULT 0,
 
     UNIQUE(ats_platform, company_slug, job_id)
 );
@@ -103,6 +104,13 @@ class Store:
                     logger.debug("Migrated DB: Added '%s' column", col)
                 except sqlite3.OperationalError:
                     pass
+
+            # Migration: Add is_sparse if missing
+            try:
+                conn.execute("ALTER TABLE jobs ADD COLUMN is_sparse INTEGER DEFAULT 0")
+                logger.debug("Migrated DB: Added 'is_sparse' column")
+            except sqlite3.OperationalError:
+                pass
 
             logger.debug("Database initialized at %s", self.db_path)
 
@@ -230,9 +238,11 @@ class Store:
         salary_min: int | None = None,
         salary_max: int | None = None,
         salary_currency: str | None = None,
+        is_sparse: bool = False,
     ) -> None:
         """Store LLM scoring results for a job."""
         now = datetime.utcnow().isoformat()
+        is_sparse_int = 1 if is_sparse else 0
         breakdown_json = json.dumps({
             "dimensions": breakdown,
             "key_matches": key_matches or [],
@@ -247,12 +257,13 @@ class Store:
                 """UPDATE jobs
                    SET fit_score = ?, score_reasoning = ?, score_breakdown = ?,
                        scored_at = ?, status = 'scored',
-                       salary = COALESCE(?, salary),
-                       salary_min = COALESCE(?, salary_min),
-                       salary_max = COALESCE(?, salary_max),
-                       salary_currency = COALESCE(?, salary_currency)
+                       salary = ?,
+                       salary_min = ?,
+                       salary_max = ?,
+                       salary_currency = ?,
+                       is_sparse = ?
                    WHERE id = ?""",
-                (fit_score, reasoning, breakdown_json, now, salary, salary_min, salary_max, salary_currency, db_id),
+                (fit_score, reasoning, breakdown_json, now, salary, salary_min, salary_max, salary_currency, is_sparse_int, db_id),
             )
         logger.debug("Scored job %d: %d%%", db_id, fit_score)
 
@@ -496,6 +507,7 @@ class Store:
         page: int = 1,
         per_page: int = 50,
         days: int | None = None,
+        is_sparse: bool | None = None,
     ) -> tuple[list[dict], int]:
         """Filtered, paginated job list for the web API.
         
@@ -505,7 +517,7 @@ class Store:
             "id, ats_platform, company_slug, company_name, job_id, title, "
             "location, url, posted_at, first_seen_at, last_seen_at, "
             "fit_score, score_reasoning, score_breakdown, scored_at, status, dismissal_reason, match_tier, "
-            "salary, salary_min, salary_max, salary_currency"
+            "salary, salary_min, salary_max, salary_currency, is_sparse"
         )
         
         where_clauses: list[str] = []
@@ -539,6 +551,10 @@ class Store:
         if days:
             where_clauses.append("first_seen_at >= datetime('now', ?)")
             params.append(f"-{days} days")
+        
+        if is_sparse is not None:
+            where_clauses.append("is_sparse = ?")
+            params.append(1 if is_sparse else 0)
         
         where_sql = " AND ".join(where_clauses) if where_clauses else "1=1"
         
@@ -816,6 +832,7 @@ class Store:
         apply_priority = "skip"
         skip_reason = "none"
         missing_skills: list[str] = []
+        is_sparse = bool(row["is_sparse"]) if "is_sparse" in row.keys() else False
 
         if breakdown_raw:
             try:
@@ -855,4 +872,5 @@ class Store:
             missing_skills=missing_skills,
             scored_at=row["scored_at"],
             status=row["status"] or "new",
+            is_sparse=is_sparse,
         )

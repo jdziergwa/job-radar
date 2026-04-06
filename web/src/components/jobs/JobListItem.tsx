@@ -3,7 +3,7 @@ import { ScoreRing } from '@/components/score/ScoreRing'
 import { PriorityBadge } from '@/components/score/PriorityBadge'
 import { timeAgo, getPlatformName } from '@/lib/utils/format'
 import { Badge } from '@/components/ui/badge'
-import { MapPin, Building2, ChevronRight, Banknote } from 'lucide-react'
+import { MapPin, Building2, ChevronRight, Banknote, HelpCircle } from 'lucide-react'
 
 const PRIORITY_BORDER: Record<string, string> = {
   high:   'border-l-green-500/70',
@@ -21,8 +21,14 @@ export function JobListItem({ job }: { job: any }) {
       <div className={`group relative flex items-center gap-6 p-4 rounded-xl border border-border/40 border-l-4 ${leftBorder} bg-card/30 hover:bg-card/60 hover:border-primary/30 transition-all duration-300 cursor-pointer shadow-sm backdrop-blur-sm`}>
         {/* Score Section */}
         <div className="flex-shrink-0 flex flex-col items-center gap-1 transition-transform group-hover:scale-105 duration-300">
-          <ScoreRing score={job.fit_score} size={56} strokeWidth={5} />
-          <PriorityBadge priority={priority} />
+          {job.is_sparse ? (
+            <div className="w-[56px] h-[56px] rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500 shadow-inner">
+              <HelpCircle className="h-6 w-6 stroke-[2.5]" />
+            </div>
+          ) : (
+            <ScoreRing score={job.fit_score} size={56} strokeWidth={5} />
+          )}
+          {!job.is_sparse && <PriorityBadge priority={priority} />}
         </div>
 
         {/* Main Content */}
@@ -60,6 +66,11 @@ export function JobListItem({ job }: { job: any }) {
                     </Badge>
                   )}
                 </div>
+              )}
+              {job.is_sparse && (
+                <Badge variant="outline" className="text-[9px] font-bold px-1.5 py-0 h-4 bg-amber-500/5 text-amber-600 dark:text-amber-500 border-amber-500/30 whitespace-nowrap">
+                  ⚠️ Sparse Posting
+                </Badge>
               )}
             </div>
             <h3 className="font-bold truncate text-lg group-hover:text-primary transition-colors leading-tight">

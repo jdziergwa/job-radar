@@ -66,6 +66,11 @@ APPLY PRIORITY Rules (Strictly tied to fit_score):
 GARBAGE / BROKEN DESCRIPTION RULE:
 - If the job description is completely missing, consists mostly of raw JavaScript/code, or is otherwise completely unreadable or nonsensical, you MUST score the job a 0 across all dimensions. Do NOT hallucinate a high score based solely on the job title. Set apply_priority to "skip" and note the broken description in the reasoning.
 
+SPARSE DESCRIPTION RULE:
+- Often, sources like HackerNews, RemoteOK, or Remotive provide "teaser" postings (typically < 600 characters) that provide a high-level mission statement and a link, but lack detailed technical requirements, frameworks, or daily responsibilities.
+- If you find a posting fits this description, you MUST set `is_sparse: true` in the JSON response.
+- Do NOT automatically score these as 0, but acknowledge the limited information in your reasoning.
+
 REASONING FORMAT:
 - Reasoning MUST be a single string. Do NOT use nested objects for reasoning.
 - Be concise. Focus on the core matches and gaps. Aim for 2-4 sentences total.
@@ -85,10 +90,13 @@ Use "none" for priority "high" or "medium", or when no single reason dominates.
 RESPONSE FORMAT:
 - Response MUST be valid JSON.
 - key_matches: array of short skill/technology keywords only (1-3 words each). No full sentences.
-- Every response MUST include these fields: fit_score, breakdown (with all 4 dimensions), reasoning, key_matches, red_flags, apply_priority, skip_reason, missing_skills, salary_info.
+- Every response MUST include these fields: fit_score, breakdown (with all 4 dimensions), reasoning, key_matches, red_flags, apply_priority, skip_reason, missing_skills, salary_info, is_sparse.
 
-SALARY EXTRACTION:
+SALARY EXTRACTION & VALIDATION:
 - Extract salary information if mentioned in the description.
+- You will be provided with a `Salary (extracted)` field in the job context. This is what the automated provider initially found.
+- YOUR JOB is to verify this string. If it contains non-salary text (like a list of job roles or a technical error), set all salary fields to null in your response to clear it.
+- If the extracted salary is partially correct, correct it. If no salary is mentioned in the description, and the extracted salary looks like an error, set all to null.
 - Include "starts at", "from", or "minimum of" as the "min" value.
 - Include "up to", "maximum of", or "to" as the "max" value.
 - salary_info MUST be an object with:
@@ -97,7 +105,7 @@ SALARY EXTRACTION:
     - "max": integer (numeric maximum, e.g. 120000, or null)
     - "currency": string (ISO-4217 code like "USD", "EUR", "GBP", or null)
 - REGIONAL SALARIES: If multiple salaries are mentioned for different regions (e.g. "Austria: €80k, Germany: €75k"), prioritize the one matching the candidate's location or the primary region mentioned in the posting.
-- If no salary is mentioned at all, set all fields to null.
+- If no salary is mentioned at all and the extracted context is null or garbage, set all fields to null.
 
 ```
 
@@ -141,7 +149,8 @@ Note: The profile is in the system prompt (cached), so it doesn't need to be rep
     "min": 100000,
     "max": 120000,
     "currency": "USD"
-  }
+  },
+  "is_sparse": false
 }
 ```
 

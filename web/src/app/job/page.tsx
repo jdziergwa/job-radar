@@ -141,7 +141,7 @@ function JobDetailContent() {
                 <Badge variant="secondary" className="uppercase tracking-widest text-[10px] py-1 px-3 bg-primary/10 text-primary border-none">
                   {job.ats_platform}
                 </Badge>
-                <PriorityBadge priority={job.score_breakdown?.apply_priority} />
+                {!job.is_sparse && <PriorityBadge priority={job.score_breakdown?.apply_priority} />}
                 <Badge variant="outline" className="capitalize px-3 border-border/50 bg-muted/20">
                   Status: {job.status}
                 </Badge>

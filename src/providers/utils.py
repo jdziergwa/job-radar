@@ -82,6 +82,9 @@ def parse_salary_string(salary_str: str | None) -> tuple[int | None, int | None,
     # Clean string: remove commas, lowercase
     s = salary_str.lower().replace(",", "")
     
+    # Hourly detection: /hr, hour, hourly, per hour
+    is_hourly = any(h in s for h in ["/hr", "hour", "per hour"])
+    
     # Currency detection (basic)
     cur = None
     if "$" in s: cur = "USD"
@@ -101,8 +104,19 @@ def parse_salary_string(salary_str: str | None) -> tuple[int | None, int | None,
             continue
     
     if not nums:
-        return None, None, cur
+        return None, None, None # Discard currency if no numbers found
         
     s_min = min(nums)
     s_max = max(nums)
+    
+    # If we found a 'k' in any part, and the min is suspiciously low (e.g. 70 for 70k),
+    # apply the 'k' to the min as well if it's in a range.
+    if any(k == "k" for _, k in patterns) and s_min < 1000:
+        s_min *= 1000
+        
+    # Apply hourly normalization (2080 hours per year)
+    if is_hourly:
+        if s_min < 1000: s_min *= 2080
+        if s_max < 1000: s_max *= 2080
+        
     return s_min, s_max, cur

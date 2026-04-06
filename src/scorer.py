@@ -85,6 +85,7 @@ def _build_user_message(job: CandidateJob, max_desc_chars: int = 20000) -> str:
 Title: {job.title}
 Company: {job.company_name}
 Location: {job.location}
+Salary (extracted): {job.salary}
 URL: {job.url}
 
 Description:
@@ -208,6 +209,7 @@ def _extract_metadata(data: dict) -> dict[str, Any]:
         "salary_min": _parse_numeric_score(s_min) if s_min is not None else None,
         "salary_max": _parse_numeric_score(s_max) if s_max is not None else None,
         "salary_currency": str(s_cur) if s_cur else None,
+        "is_sparse": bool(get_field("is_sparse", False)),
     }
 
 
@@ -359,6 +361,7 @@ async def score_job(
                 salary_min=metadata["salary_min"],
                 salary_max=metadata["salary_max"],
                 salary_currency=metadata["salary_currency"],
+                is_sparse=metadata["is_sparse"],
             )
 
         except json.JSONDecodeError:
@@ -453,6 +456,7 @@ async def score_batch(
                         salary_min=metadata["salary_min"],
                         salary_max=metadata["salary_max"],
                         salary_currency=metadata["salary_currency"],
+                        is_sparse=metadata["is_sparse"],
                     ))
                 return results
 
@@ -585,6 +589,7 @@ async def score_jobs(
                     salary_min=result.salary_min,
                     salary_max=result.salary_max,
                     salary_currency=result.salary_currency,
+                    is_sparse=result.is_sparse,
                 )
 
             completed_count += len(batch)

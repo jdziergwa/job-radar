@@ -25,7 +25,8 @@ import {
   Calendar,
   AlertTriangle,
   Loader2,
-  Banknote
+  Banknote,
+  HelpCircle
 } from 'lucide-react'
 import Link from 'next/link'
 import { 
@@ -194,7 +195,7 @@ function JobDetailContent() {
                 <Badge variant="secondary" className="uppercase tracking-widest text-[10px] py-1 px-3 bg-primary/10 text-primary border-none">
                   {getPlatformName(job.ats_platform)}
                 </Badge>
-                <PriorityBadge priority={job.score_breakdown?.apply_priority} />
+                {!job.is_sparse && <PriorityBadge priority={job.score_breakdown?.apply_priority} />}
                 <Badge variant="outline" className="capitalize px-3 border-border/50 bg-muted/20">
                   Status: {job.status}
                 </Badge>
@@ -228,13 +229,21 @@ function JobDetailContent() {
           </div>
 
           <div className="flex items-center gap-6 p-6 rounded-2xl bg-card border border-border/50 shadow-xl shadow-primary/5">
-            <div className="relative group cursor-help" title="Overall Fit Score">
+            <div className="relative group cursor-help" title={job.is_sparse ? "Manual Review Required" : "Overall Fit Score"}>
                 <div className="absolute inset-0 bg-primary/20 blur-2xl rounded-full scale-75 opacity-0 group-hover:opacity-100 transition-opacity" />
-                <ScoreRing score={job.fit_score} size={110} strokeWidth={9} />
+                {job.is_sparse ? (
+                  <div className="w-[110px] h-[110px] rounded-full bg-amber-500/10 border-2 border-amber-500/20 flex items-center justify-center text-amber-500 shadow-inner">
+                    <HelpCircle className="h-12 w-12 stroke-[2]" />
+                  </div>
+                ) : (
+                  <ScoreRing score={job.fit_score} size={110} strokeWidth={9} />
+                )}
             </div>
             <div className="space-y-2">
               <div className="flex items-center gap-3">
-                <h2 className="text-2xl font-bold tracking-tight">Match Quality: <span className="text-primary capitalize">{getMatchQualityLabel(job.score_breakdown?.apply_priority)}</span></h2>
+                <h2 className="text-2xl font-bold tracking-tight">
+                  Match Quality: <span className="text-primary capitalize">{job.is_sparse ? "Manual Review Required" : getMatchQualityLabel(job.score_breakdown?.apply_priority)}</span>
+                </h2>
                   <Tooltip>
                     <TooltipTrigger 
                        render={(triggerProps) => (
@@ -319,7 +328,7 @@ function JobDetailContent() {
           </Card>
 
           {/* Dimension Breakdown */}
-          {Object.keys(dimensions).length > 0 && (
+          {!job.is_sparse && Object.keys(dimensions).length > 0 && (
             <Card className="border-border/50 bg-card/60 backdrop-blur-xl shadow-xl overflow-hidden">
               <CardContent className="p-5 space-y-4">
                 <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Dimension Breakdown</p>
@@ -339,7 +348,7 @@ function JobDetailContent() {
         <div className="lg:col-span-2 space-y-8">
            <div className="space-y-4">
               <h2 className="text-2xl font-bold tracking-tight underline decoration-primary/30 underline-offset-8 decoration-4">Job Description</h2>
-              <JobDescription content={job.description} />
+              <JobDescription content={job.description} isSparse={job.is_sparse} />
               <div className="flex justify-center pt-4">
                    <a
                       href={job.url}

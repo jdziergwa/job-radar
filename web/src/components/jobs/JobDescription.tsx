@@ -3,6 +3,7 @@ import { cn } from '@/lib/utils'
 
 interface JobDescriptionProps {
   content?: string
+  isSparse?: boolean
   className?: string
 }
 
@@ -126,7 +127,7 @@ function decodeHtmlEntities(str: string): string {
     .replace(/&nbsp;/g, ' ')
 }
 
-export function JobDescription({ content, className }: JobDescriptionProps) {
+export function JobDescription({ content, isSparse, className }: JobDescriptionProps) {
   const renderedContent = useMemo(() => {
     if (!content) return null
 
@@ -171,6 +172,21 @@ export function JobDescription({ content, className }: JobDescriptionProps) {
       "prose-img:rounded-2xl prose-hr:border-border/30",
       className
     )}>
+      {isSparse && (
+        <div className="mb-8 p-4 rounded-2xl bg-amber-500/5 border border-amber-500/20 flex items-start gap-4 animate-in fade-in slide-in-from-top-4 duration-500">
+          <div className="h-10 w-10 rounded-full bg-amber-500/10 flex items-center justify-center flex-shrink-0 text-xl">
+            ⚠️
+          </div>
+          <div>
+            <h4 className="text-amber-600 dark:text-amber-400 font-bold text-sm mb-1">Sparse Posting detected</h4>
+            <p className="text-xs text-muted-foreground leading-relaxed italic">
+              The AI identified this description as a brief summary or "teaser". 
+              Vital details like specific technical requirements or day-to-day responsibilities may be missing from this text.
+              Check the original link for the full context before making a decision.
+            </p>
+          </div>
+        </div>
+      )}
       {/* Decorative background element */}
       <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 blur-[100px] -z-10 rounded-full" />
       <div className="absolute bottom-0 left-0 w-64 h-64 bg-primary/5 blur-[100px] -z-10 rounded-full" />
