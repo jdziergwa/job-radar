@@ -98,7 +98,7 @@ class AggregatorProvider:
         ctx: ProviderContext,
         progress_callback: ProgressCallback = None,
     ) -> list[RawJob]:
-        from src.aggregator import fetch_all_aggregator_jobs
+        from src.providers.aggregator import fetch_all_aggregator_jobs
         jobs, self.last_updated = await fetch_all_aggregator_jobs(progress_callback=progress_callback)
         return jobs
 
@@ -174,7 +174,7 @@ register(HybridProvider())
 register(AggregatorProvider())
 register(LocalATSProvider())
 
-# ── New remote feed providers ──
-from src.remote_feeds.remotive import RemotiveProvider
+# ── New providers ──
+from src.providers.remotive import RemotiveProvider
 
 register(RemotiveProvider())

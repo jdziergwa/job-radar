@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Query
 from api.models import PipelineRunRequest, PipelineRunResponse, PipelineStatusResponse, ProviderInfo
 import api.background as bg
-from src.aggregator import get_aggregator_metadata
+from src.providers.aggregator import get_aggregator_metadata
 from src.providers import get_all_info
 from api.deps import get_store
 
