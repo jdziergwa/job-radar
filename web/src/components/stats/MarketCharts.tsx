@@ -14,8 +14,8 @@ import {
   ChartConfig,
 } from '@/components/ui/chart'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { AlertCircle, Globe, Star, BarChart3 } from 'lucide-react'
-import { SkipReasonStat, CountryStat, SkillCount } from '@/lib/api/types'
+import { AlertCircle, Globe, Star, BarChart3, Banknote } from 'lucide-react'
+import { SkipReasonStat, CountryStat, SkillCount, SalaryStat } from '@/lib/api/types'
 
 // --- Empty state ---
 
@@ -167,6 +167,66 @@ export function MissingSkillsChart({ data }: { data: SkillCount[] }) {
           </ChartContainer>
         ) : (
           <EmptyChart icon={Star} message="Score some jobs to see recurring skill gaps." />
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+// --- Salary Distribution Chart ---
+
+const salaryConfig = {
+  count: { label: 'Jobs', color: 'var(--chart-4)' },
+} satisfies ChartConfig
+
+const SALARY_ORDER = [
+  'Undisclosed',
+  '< 60k',
+  ...Array.from({ length: 14 }, (_, i) => {
+    const min = 60 + i * 10
+    return `${min}k-${min + 10}k`
+  }),
+  '200k+'
+]
+
+export function SalaryChart({ data }: { data: SalaryStat[] }) {
+  const displayData = SALARY_ORDER.map(range => ({
+    range,
+    count: data.find(d => d.range === range)?.count || 0
+  })).filter(d => d.count > 0)
+  
+  const hasData = displayData.length > 0
+
+  const undisclosedCount = data.find(d => d.range === 'Undisclosed')?.count || 0
+  const totalWithData = data.reduce((sum, d) => sum + d.count, 0)
+  const undisclosedPercent = totalWithData > 0 ? (undisclosedCount / totalWithData) * 100 : 0
+  const disclosedPercent = (100 - undisclosedPercent).toFixed(1)
+
+  return (
+    <Card className="border-border/50 bg-background/30 backdrop-blur-md">
+      <CardHeader>
+        <CardTitle className="text-sm font-semibold">Salary Distribution</CardTitle>
+        <CardDescription className="text-xs">
+          Pay transparency: {disclosedPercent}% of analyzed postings include compensation
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {hasData ? (
+          <ChartContainer config={salaryConfig} className="h-[240px] w-full">
+            <BarChart data={displayData} margin={{ top: 20 }}>
+              <CartesianGrid horizontal={false} vertical={false} />
+              <XAxis 
+                dataKey="range" 
+                axisLine={false} 
+                tickLine={false} 
+                className="text-[10px] font-medium"
+              />
+              <YAxis hide />
+              <ChartTooltip content={<ChartTooltipContent hideIndicator />} />
+              <Bar dataKey="count" fill="var(--color-count)" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ChartContainer>
+        ) : (
+          <EmptyChart icon={Banknote} message="Score jobs with salary info to see market benchmarks." />
         )}
       </CardContent>
     </Card>

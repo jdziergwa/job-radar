@@ -21,6 +21,7 @@ const SORT_OPTIONS = [
   { value: 'score', label: 'Score' },
   { value: 'date', label: 'Date' },
   { value: 'company', label: 'Company' },
+  { value: 'salary', label: 'Salary' },
 ]
 
 const MIN_SCORE_OPTIONS = [

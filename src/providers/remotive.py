@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-import re
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
@@ -12,6 +11,7 @@ from src.models import RawJob
 
 if TYPE_CHECKING:
     from src.providers import ProviderContext, ProgressCallback
+from src.providers import parse_salary_string, slugify
 
 logger = logging.getLogger(__name__)
 
@@ -56,8 +56,10 @@ class RemotiveProvider:
 
         for item in jobs:
             company_name = item.get("company_name", "Unknown")
-            # Slugify: lowercase, hyphens, no spaces/special chars
-            company_slug = re.sub(r"[^a-z0-9]+", "-", company_name.lower()).strip("-")
+            company_slug = slugify(company_name)
+            
+            salary_str = item.get("salary")
+            s_min, s_max, s_cur = parse_salary_string(salary_str)
             
             job = RawJob(
                 ats_platform="remotive",
@@ -70,6 +72,10 @@ class RemotiveProvider:
                 description=strip_html(item.get("description", "")),
                 posted_at=item.get("publication_date"),
                 fetched_at=now,
+                salary=salary_str,
+                salary_min=s_min,
+                salary_max=s_max,
+                salary_currency=s_cur,
             )
             raw_jobs.append(job)
 
@@ -78,3 +84,4 @@ class RemotiveProvider:
 
         logger.info("Remotive: Fetched %d jobs", len(raw_jobs))
         return raw_jobs
+

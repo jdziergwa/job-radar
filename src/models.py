@@ -22,6 +22,10 @@ class RawJob:
     status: str = "new"     # "new" | "dismissed"
     dismissal_reason: str | None = None
     match_tier: str | None = None
+    salary: str | None = None
+    salary_min: int | None = None
+    salary_max: int | None = None
+    salary_currency: str | None = None
 
 
 @dataclass
@@ -40,6 +44,10 @@ class CandidateJob:
     posted_at: str | None
     first_seen_at: str
     match_tier: str | None = None
+    salary: str | None = None
+    salary_min: int | None = None
+    salary_max: int | None = None
+    salary_currency: str | None = None
 
 
 @dataclass
@@ -58,6 +66,10 @@ class ScoredJob:
     posted_at: str | None
     first_seen_at: str
     match_tier: str | None = None
+    salary: str | None = None
+    salary_min: int | None = None
+    salary_max: int | None = None
+    salary_currency: str | None = None
 
     # Scoring results
     fit_score: int = 0                          # 0-100

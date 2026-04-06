@@ -460,6 +460,18 @@ export interface components {
              * @default new
              */
             status: string;
+            /** Dismissal Reason */
+            dismissal_reason?: string | null;
+            /** Match Tier */
+            match_tier?: string | null;
+            /** Salary */
+            salary?: string | null;
+            /** Salary Min */
+            salary_min?: number | null;
+            /** Salary Max */
+            salary_max?: number | null;
+            /** Salary Currency */
+            salary_currency?: string | null;
             /** Description */
             description?: string | null;
         };
@@ -510,6 +522,14 @@ export interface components {
              * @default new
              */
             status: string;
+            /** Salary */
+            salary?: string | null;
+            /** Salary Min */
+            salary_min?: number | null;
+            /** Salary Max */
+            salary_max?: number | null;
+            /** Salary Currency */
+            salary_currency?: string | null;
         };
         /** ProviderInfo */
         ProviderInfo: {
@@ -629,6 +649,13 @@ export interface components {
         SkillCount: {
             /** Skill */
             skill: string;
+            /** Count */
+            count: number;
+        };
+        /** SalaryStat */
+        SalaryStat: {
+            /** Range */
+            range: string;
             /** Count */
             count: number;
         };
@@ -1420,10 +1447,16 @@ export type CountryStat = {
   count: number
 }
 
+export type SalaryStat = {
+  range: string
+  count: number
+}
+
 export type MarketIntelligenceResponse = {
   skip_reason_distribution: SkipReasonStat[]
   country_distribution: CountryStat[]
   missing_skills: SkillCount[]
+  salary_distribution: SalaryStat[]
   total_scored: number
   apply_priority_counts: Record<string, number>
 }

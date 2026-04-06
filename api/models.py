@@ -35,6 +35,10 @@ class JobResponse(BaseModel):
     status: str = "new"
     dismissal_reason: Optional[str] = None
     match_tier: Optional[str] = None
+    salary: Optional[str] = None
+    salary_min: Optional[int] = None
+    salary_max: Optional[int] = None
+    salary_currency: Optional[str] = None
 
     @classmethod
     def from_row(cls, row: dict) -> "JobResponse":
@@ -112,12 +116,18 @@ class SkipReasonStat(BaseModel):
     count: int
 
 
+class SalaryStat(BaseModel):
+    range: str
+    count: int
+
+
 class MarketIntelligenceResponse(BaseModel):
     skip_reason_distribution: list[SkipReasonStat] = []
     country_distribution: list[CountryStat] = []
     missing_skills: list[SkillCount] = []
     total_scored: int = 0
     apply_priority_counts: dict[str, int] = {}
+    salary_distribution: list[SalaryStat] = []
 
 
 class InsightsResponse(BaseModel):

@@ -3,7 +3,7 @@ import { ScoreRing } from '@/components/score/ScoreRing'
 import { PriorityBadge } from '@/components/score/PriorityBadge'
 import { timeAgo, getPlatformName } from '@/lib/utils/format'
 import { Badge } from '@/components/ui/badge'
-import { MapPin, Building2, ChevronRight } from 'lucide-react'
+import { MapPin, Building2, ChevronRight, Banknote } from 'lucide-react'
 
 const PRIORITY_BORDER: Record<string, string> = {
   high:   'border-l-green-500/70',
@@ -74,6 +74,12 @@ export function JobListItem({ job }: { job: any }) {
                 <MapPin className="h-3.5 w-3.5" />
                 <span>{job.location}</span>
               </div>
+              {job.salary && (
+                <div className="flex items-center gap-1.5 text-xs text-green-600/80 dark:text-green-400/80 font-medium">
+                  <Banknote className="h-3.5 w-3.5" />
+                  <span>{job.salary}</span>
+                </div>
+              )}
             </div>
           </div>
 

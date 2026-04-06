@@ -54,9 +54,9 @@ async def _generate_insights_report(market_data: dict, days: int, profile: str) 
                 "You are a career market analyst. You help a candidate understand their "
                 "positioning based on their profile and recent job market data. "
                 "Analyze the data and produce a concise markdown report. "
-                "Use exactly these 4 sections with ## headers: "
-                "Market Overview, Primary Blockers, Skill Gaps to Address, Geographic Patterns. "
-                "Use bullet points only — no paragraphs. Be direct and specific. Max 300 words total."
+                "Use exactly these 5 sections with ## headers: "
+                "Market Overview, Salary Expectations, Primary Blockers, Skill Gaps to Address, Geographic Patterns. "
+                "Use bullet points only — no paragraphs. Be direct and specific. Max 400 words total."
             ),
             messages=[{
                 "role": "user",
@@ -87,6 +87,7 @@ def get_market_intelligence(profile: str = Query("default"), days: int = Query(3
         missing_skills=data["missing_skills"],
         total_scored=data["total_scored"],
         apply_priority_counts=data["apply_priority_counts"],
+        salary_distribution=data["salary_distribution"],
     )
 
 

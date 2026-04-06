@@ -43,6 +43,10 @@ CREATE TABLE IF NOT EXISTS jobs (
     status TEXT DEFAULT 'new',
     dismissal_reason TEXT,
     match_tier TEXT,
+    salary TEXT,
+    salary_min INTEGER,
+    salary_max INTEGER,
+    salary_currency TEXT,
 
     UNIQUE(ats_platform, company_slug, job_id)
 );
@@ -86,6 +90,19 @@ class Store:
                 logger.debug("Migrated DB: Added 'match_tier' column")
             except sqlite3.OperationalError:
                 pass
+
+            # Migration: Add salary fields if missing
+            for col, col_type in [
+                ("salary", "TEXT"),
+                ("salary_min", "INTEGER"),
+                ("salary_max", "INTEGER"),
+                ("salary_currency", "TEXT"),
+            ]:
+                try:
+                    conn.execute(f"ALTER TABLE jobs ADD COLUMN {col} {col_type}")
+                    logger.debug("Migrated DB: Added '%s' column", col)
+                except sqlite3.OperationalError:
+                    pass
 
             logger.debug("Database initialized at %s", self.db_path)
 
@@ -173,7 +190,8 @@ class Store:
                         j.ats_platform, j.company_slug, j.job_id,
                         j.company_name, j.title, j.location,
                         j.url, j.description, j.posted_at, now, now,
-                        j.status, j.dismissal_reason, j.match_tier
+                        j.status, j.dismissal_reason, j.match_tier,
+                        j.salary, j.salary_min, j.salary_max, j.salary_currency
                     ))
                 elif j.description and len(j.description) > 50:
                     # Potential backfill for existing jobs with missing descriptions
@@ -181,7 +199,7 @@ class Store:
             
             if to_insert:
                 conn.executemany(
-                    "INSERT INTO jobs (ats_platform, company_slug, job_id, company_name, title, location, url, description, posted_at, first_seen_at, last_seen_at, status, dismissal_reason, match_tier) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    "INSERT INTO jobs (ats_platform, company_slug, job_id, company_name, title, location, url, description, posted_at, first_seen_at, last_seen_at, status, dismissal_reason, match_tier, salary, salary_min, salary_max, salary_currency) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                     to_insert
                 )
             
@@ -208,6 +226,10 @@ class Store:
         apply_priority: str = "skip",
         skip_reason: str = "none",
         missing_skills: list[str] | None = None,
+        salary: str | None = None,
+        salary_min: int | None = None,
+        salary_max: int | None = None,
+        salary_currency: str | None = None,
     ) -> None:
         """Store LLM scoring results for a job."""
         now = datetime.utcnow().isoformat()
@@ -224,9 +246,13 @@ class Store:
             conn.execute(
                 """UPDATE jobs
                    SET fit_score = ?, score_reasoning = ?, score_breakdown = ?,
-                       scored_at = ?, status = 'scored'
+                       scored_at = ?, status = 'scored',
+                       salary = COALESCE(?, salary),
+                       salary_min = COALESCE(?, salary_min),
+                       salary_max = COALESCE(?, salary_max),
+                       salary_currency = COALESCE(?, salary_currency)
                    WHERE id = ?""",
-                (fit_score, reasoning, breakdown_json, now, db_id),
+                (fit_score, reasoning, breakdown_json, now, salary, salary_min, salary_max, salary_currency, db_id),
             )
         logger.debug("Scored job %d: %d%%", db_id, fit_score)
 
@@ -478,7 +504,8 @@ class Store:
         columns = (
             "id, ats_platform, company_slug, company_name, job_id, title, "
             "location, url, posted_at, first_seen_at, last_seen_at, "
-            "fit_score, score_reasoning, score_breakdown, scored_at, status, dismissal_reason, match_tier"
+            "fit_score, score_reasoning, score_breakdown, scored_at, status, dismissal_reason, match_tier, "
+            "salary, salary_min, salary_max, salary_currency"
         )
         
         where_clauses: list[str] = []
@@ -516,7 +543,12 @@ class Store:
         where_sql = " AND ".join(where_clauses) if where_clauses else "1=1"
         
         # Sort validation
-        sort_map = {"score": "fit_score", "date": "first_seen_at", "company": "company_name"}
+        sort_map = {
+            "score": "fit_score",
+            "date": "first_seen_at",
+            "company": "company_name",
+            "salary": "salary_min"
+        }
         sort_col = sort_map.get(sort, "fit_score")
         order_sql = "ASC" if order.lower() == "asc" else "DESC"
         
@@ -629,7 +661,7 @@ class Store:
         """Aggregate skip reasons, country distribution, and missing skills from scored jobs."""
         with self._connect() as conn:
             rows = conn.execute(
-                """SELECT score_breakdown, location FROM jobs
+                """SELECT score_breakdown, location, salary, salary_min, salary_max, salary_currency FROM jobs
                    WHERE scored_at IS NOT NULL
                      AND date(scored_at) >= date('now', ?)""",
                 (f"-{days} days",)
@@ -640,6 +672,7 @@ class Store:
         missing_counter: Counter = Counter()
         country_counter: Counter = Counter()
         priority_counter: Counter = Counter()
+        salary_counter: Counter = Counter()
         total = 0
 
         for row in rows:
@@ -647,6 +680,20 @@ class Store:
             country = Store._parse_country(row["location"] or "")
             if country:
                 country_counter[country] += 1
+
+            s_min = row["salary_min"]
+            if s_min is None or s_min <= 0:
+                bucket = "Undisclosed"
+            elif s_min < 60000:
+                bucket = "< 60k"
+            elif s_min >= 200000:
+                bucket = "200k+"
+            else:
+                # 10k buckets from 60k to 200k
+                base = (s_min // 10000) * 10
+                bucket = f"{base}k-{base+10}k"
+            
+            salary_counter[bucket] += 1
 
             bd = row["score_breakdown"]
             if not bd:
@@ -674,6 +721,10 @@ class Store:
             ],
             "total_scored": total,
             "apply_priority_counts": dict(priority_counter),
+            "salary_distribution": [
+                {"range": r, "count": n}
+                for r, n in salary_counter.items()
+            ],
         }
 
     # ── Rescore support ─────────────────────────────────────────────
@@ -750,6 +801,10 @@ class Store:
             description=row["description"] or "",
             posted_at=row["posted_at"],
             first_seen_at=row["first_seen_at"],
+            salary=row["salary"],
+            salary_min=row["salary_min"],
+            salary_max=row["salary_max"],
+            salary_currency=row["salary_currency"],
         )
 
     @staticmethod
@@ -786,6 +841,10 @@ class Store:
             description=row["description"] or "",
             posted_at=row["posted_at"],
             first_seen_at=row["first_seen_at"],
+            salary=row["salary"],
+            salary_min=row["salary_min"],
+            salary_max=row["salary_max"],
+            salary_currency=row["salary_currency"],
             fit_score=row["fit_score"] or 0,
             reasoning=row["score_reasoning"] or "",
             breakdown=breakdown,

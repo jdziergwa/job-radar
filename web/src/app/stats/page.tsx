@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react'
 import { api } from '@/lib/api/client'
 import { ActivityChart, DistributionChart } from '@/components/stats/TrendCharts'
-import { SkipReasonsChart, CountryChart, MissingSkillsChart } from '@/components/stats/MarketCharts'
+import { SkipReasonsChart, CountryChart, MissingSkillsChart, SalaryChart } from '@/components/stats/MarketCharts'
 import { AIInsightsPanel } from '@/components/stats/AIInsightsPanel'
 import { CompanyTable } from '@/components/stats/CompanyTable'
 import { 
@@ -126,11 +126,12 @@ export default function StatsPage() {
           {/* Job Activity — full width */}
           <ActivityChart data={trends?.daily_counts || []} />
 
-          {/* Market Signal Row — Skip Reasons, Countries, Missing Skills */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Market Signal Row — Skip Reasons, Countries, Missing Skills, Salaries */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             <SkipReasonsChart data={market?.skip_reason_distribution || []} />
             <CountryChart data={market?.country_distribution || []} />
             <MissingSkillsChart data={market?.missing_skills || []} />
+            <SalaryChart data={market?.salary_distribution || []} />
           </div>
 
           {/* Distribution + Company Table */}

@@ -24,7 +24,8 @@ import {
   Building2,
   Calendar,
   AlertTriangle,
-  Loader2
+  Loader2,
+  Banknote
 } from 'lucide-react'
 import Link from 'next/link'
 import { 
@@ -217,6 +218,10 @@ function JobDetailContent() {
             </h1>
             <div className="flex flex-wrap gap-6 text-muted-foreground text-sm font-medium">
               <div className="flex items-center gap-2"><Building2 className="h-4 w-4 text-primary/70" /> {job.company_name}</div>
+              <div className="flex items-center gap-2">
+                <Banknote className="h-4 w-4 text-green-600 dark:text-green-400 opacity-80" /> 
+                <span className="font-semibold text-foreground/80">{job.salary || "Salary Undisclosed"}</span>
+              </div>
               <div className="flex items-center gap-2"><MapPin className="h-4 w-4 text-primary/70" /> {job.location}</div>
               <div className="flex items-center gap-2"><Calendar className="h-4 w-4 text-primary/70" /> First seen {formatDate(job.first_seen_at)}</div>
             </div>

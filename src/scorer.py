@@ -188,12 +188,26 @@ def _extract_metadata(data: dict) -> dict[str, Any]:
     if not isinstance(missing_skills, list):
         missing_skills = []
 
+    salary_info = get_field("salary_info", {})
+    if not isinstance(salary_info, dict):
+        salary_info = {}
+
+    # Flexible extraction: check nested first, then top-level fallbacks
+    salary_str = salary_info.get("salary") or get_field("salary", None)
+    s_min = salary_info.get("min") or get_field("salary_min", None)
+    s_max = salary_info.get("max") or get_field("salary_max", None)
+    s_cur = salary_info.get("currency") or get_field("salary_currency", None)
+
     return {
         "key_matches": get_field("key_matches", []),
         "red_flags": get_field("red_flags", []),
         "apply_priority": get_field("apply_priority", "skip"),
         "skip_reason": skip_reason,
         "missing_skills": missing_skills,
+        "salary": salary_str,
+        "salary_min": _parse_numeric_score(s_min) if s_min is not None else None,
+        "salary_max": _parse_numeric_score(s_max) if s_max is not None else None,
+        "salary_currency": str(s_cur) if s_cur else None,
     }
 
 
@@ -341,6 +355,10 @@ async def score_job(
                 apply_priority=metadata["apply_priority"],
                 skip_reason=metadata["skip_reason"],
                 missing_skills=metadata["missing_skills"],
+                salary=metadata["salary"],
+                salary_min=metadata["salary_min"],
+                salary_max=metadata["salary_max"],
+                salary_currency=metadata["salary_currency"],
             )
 
         except json.JSONDecodeError:
@@ -431,6 +449,10 @@ async def score_batch(
                         apply_priority=metadata["apply_priority"],
                         skip_reason=metadata["skip_reason"],
                         missing_skills=metadata["missing_skills"],
+                        salary=metadata["salary"],
+                        salary_min=metadata["salary_min"],
+                        salary_max=metadata["salary_max"],
+                        salary_currency=metadata["salary_currency"],
                     ))
                 return results
 
@@ -559,6 +581,10 @@ async def score_jobs(
                     apply_priority=result.apply_priority,
                     skip_reason=result.skip_reason,
                     missing_skills=result.missing_skills,
+                    salary=result.salary,
+                    salary_min=result.salary_min,
+                    salary_max=result.salary_max,
+                    salary_currency=result.salary_currency,
                 )
 
             completed_count += len(batch)

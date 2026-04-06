@@ -23,7 +23,8 @@ import {
   Building2, 
   Calendar,
   AlertTriangle,
-  Loader2
+  Loader2,
+  Banknote
 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -51,7 +52,11 @@ function JobDetailContent() {
           path: { job_id: parseInt(jobId) }
         }
       })
-      if (apiError) throw new Error('Failed to load job details')
+      if (apiError) {
+        console.error("API Error in Detail View:", apiError)
+        throw new Error('Failed to load job details')
+      }
+      console.log("DEBUG: Job Data in Detail View:", data)
       setJob(data)
     } catch (err: any) {
       setError(err.message)
@@ -145,7 +150,9 @@ function JobDetailContent() {
               {job.title}
             </h1>
             <div className="flex flex-wrap gap-6 text-muted-foreground text-sm font-medium">
-              <div className="flex items-center gap-2"><Building2 className="h-4 w-4 text-primary/70" /> {job.company_name}</div>
+              <div className="flex items-center gap-2 font-semibold text-green-600 dark:text-green-400 capitalize">
+                <Banknote className="h-4 w-4" /> {job.salary || "Salary Undisclosed"}
+              </div>
               <div className="flex items-center gap-2"><MapPin className="h-4 w-4 text-primary/70" /> {job.location}</div>
               <div className="flex items-center gap-2"><Calendar className="h-4 w-4 text-primary/70" /> First seen {formatDate(job.first_seen_at)}</div>
             </div>

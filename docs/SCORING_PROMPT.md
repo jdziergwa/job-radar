@@ -85,7 +85,19 @@ Use "none" for priority "high" or "medium", or when no single reason dominates.
 RESPONSE FORMAT:
 - Response MUST be valid JSON.
 - key_matches: array of short skill/technology keywords only (1-3 words each). No full sentences.
-- Every response MUST include these fields: fit_score, breakdown (with all 4 dimensions), reasoning, key_matches, red_flags, apply_priority, skip_reason, missing_skills.
+- Every response MUST include these fields: fit_score, breakdown (with all 4 dimensions), reasoning, key_matches, red_flags, apply_priority, skip_reason, missing_skills, salary_info.
+
+SALARY EXTRACTION:
+- Extract salary information if mentioned in the description.
+- Include "starts at", "from", or "minimum of" as the "min" value.
+- Include "up to", "maximum of", or "to" as the "max" value.
+- salary_info MUST be an object with:
+    - "salary": string (the raw or cleaned range as a string, e.g. "€80,000+", "$120k", "50k-70k EUR", or null)
+    - "min": integer (numeric minimum, e.g. 80000, or null)
+    - "max": integer (numeric maximum, e.g. 120000, or null)
+    - "currency": string (ISO-4217 code like "USD", "EUR", "GBP", or null)
+- REGIONAL SALARIES: If multiple salaries are mentioned for different regions (e.g. "Austria: €80k, Germany: €75k"), prioritize the one matching the candidate's location or the primary region mentioned in the posting.
+- If no salary is mentioned at all, set all fields to null.
 
 ```
 
@@ -123,7 +135,13 @@ Note: The profile is in the system prompt (cached), so it doesn't need to be rep
   "red_flags": ["Your region not explicitly in location list", "Missing experience with {Secondary Tech}"],
   "apply_priority": "high",
   "skip_reason": "none",
-  "missing_skills": []
+  "missing_skills": [],
+  "salary_info": {
+    "salary": "$100k - $120k",
+    "min": 100000,
+    "max": 120000,
+    "currency": "USD"
+  }
 }
 ```
 

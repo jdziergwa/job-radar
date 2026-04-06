@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Any, Callable, Optional, Protocol, runtime_checkable
 
 from src.models import RawJob
+from src.providers.utils import parse_salary_string, slugify
 
 
 @dataclass
@@ -43,6 +44,10 @@ class JobProvider(Protocol):
 
     Fetches raw jobs from one source. Does NOT filter, score, or hydrate descriptions.
     Return [] on any error — never raise.
+
+    Standardization:
+      - Use `src.providers.slugify(company_name)` for `company_slug`.
+      - Use `src.providers.parse_salary_string(raw_string)` to populate numeric salary fields.
     """
 
     #: Machine name; used as --source value and registry key.
