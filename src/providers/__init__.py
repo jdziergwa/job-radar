@@ -15,7 +15,9 @@ from pathlib import Path
 from typing import Any, Callable, Optional, Protocol, runtime_checkable
 
 from src.models import RawJob
-from src.providers.utils import parse_salary_string, slugify
+from src.providers.utils import parse_salary_string, slugify, strip_html
+from src.providers.aggregator import AggregatorProvider
+from src.providers.local_ats import LocalATSProvider
 
 
 @dataclass
@@ -68,44 +70,6 @@ class JobProvider(Protocol):
         ...
 
 
-class LocalATSProvider:
-    """Greenhouse, Lever, Ashby, Workable — wraps collector.collect_all()."""
-
-    name = "local"
-    display_name = "Targeted Boards"
-    description = "Direct Source: Scans your curated company list via direct API (Supports Greenhouse, Lever, Ashby, Workable)."
-    shows_aggregator_badge = False
-
-    async def fetch_jobs(
-        self,
-        ctx: ProviderContext,
-        progress_callback: ProgressCallback = None,
-    ) -> list[RawJob]:
-        from src.collector import collect_all
-        return await collect_all(ctx.companies, progress_callback=progress_callback)
-
-
-class AggregatorProvider:
-    """Static chunk downloader (~910k jobs) — wraps aggregator.fetch_all_aggregator_jobs().
-
-    Side-channel: after fetch_jobs() returns, `self.last_updated` holds the aggregator
-    version string. The orchestrator (main.py) reads it to persist version metadata.
-    """
-
-    name = "aggregator"
-    display_name = "Global Aggregator"
-    description = "Broad Market: Scans 910k+ jobs from the open aggregator."
-    shows_aggregator_badge = True
-    last_updated: str = "unknown"
-
-    async def fetch_jobs(
-        self,
-        ctx: ProviderContext,
-        progress_callback: ProgressCallback = None,
-    ) -> list[RawJob]:
-        from src.providers.aggregator import fetch_all_aggregator_jobs
-        jobs, self.last_updated = await fetch_all_aggregator_jobs(progress_callback=progress_callback)
-        return jobs
 
 
 class HybridProvider:

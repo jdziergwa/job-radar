@@ -75,7 +75,7 @@ def _build_system_prompt(scoring_instructions: str, profile_doc: str, profile_co
 
 def _build_user_message(job: CandidateJob, max_desc_chars: int = 20000) -> str:
     """Build the user message containing the job posting."""
-    from src.collector import strip_html
+    from src.providers.utils import strip_html
     
     raw_desc = job.description or "(No description available)"
     # Strip HTML to save tokens and avoid noise for the LLM
@@ -259,7 +259,7 @@ def _parse_score_response(text: str) -> dict[str, Any]:
 
 def _build_batch_user_message(jobs: list[CandidateJob], max_desc_chars: int = 20000) -> str:
     """Build the user message containing multiple job postings."""
-    from src.collector import strip_html
+    from src.providers.utils import strip_html
     parts = []
     for i, job in enumerate(jobs, 1):
         raw_desc = job.description or "(No description available)"

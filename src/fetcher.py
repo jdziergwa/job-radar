@@ -7,7 +7,7 @@ from typing import Any, Optional, Callable
 import certifi
 import httpx
 
-from src.collector import strip_html
+from src.providers.utils import strip_html
 from src.models import RawJob
 
 logger = logging.getLogger(__name__)

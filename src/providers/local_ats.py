@@ -8,8 +8,10 @@ from __future__ import annotations
 import asyncio
 import logging
 from datetime import datetime, timezone
-from html.parser import HTMLParser
-from typing import Any
+from typing import Any, Optional, Callable, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from src.providers import ProviderContext, ProgressCallback
 
 import ssl
 
@@ -28,58 +30,7 @@ REQUEST_TIMEOUT = 10  # seconds
 _ssl_ctx = ssl.create_default_context(cafile=certifi.where())
 
 
-class HTMLStripper(HTMLParser):
-    """Strip HTML tags from a string, keeping only text content."""
 
-    def __init__(self) -> None:
-        super().__init__()
-        self._parts: list[str] = []
-        self._ignore_tags = {"script", "style", "noscript", "head"}
-        self._ignore_depth = 0
-
-    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
-        if tag in self._ignore_tags:
-            self._ignore_depth += 1
-            return
-        
-        if self._ignore_depth > 0:
-            return
-
-        if tag in ["p", "br", "div", "h1", "h2", "h3", "h4", "h5", "h6"]:
-            self._parts.append("\n")
-        elif tag == "li":
-            self._parts.append("\n• ")
-
-    def handle_endtag(self, tag: str) -> None:
-        if tag in self._ignore_tags:
-            self._ignore_depth = max(0, self._ignore_depth - 1)
-
-    def handle_data(self, data: str) -> None:
-        if self._ignore_depth > 0:
-            return
-        # Clean up excessive whitespace in data block but keep newlines we added
-        cleaned = " ".join(data.split())
-        if cleaned:
-            self._parts.append(cleaned)
-
-    def get_text(self) -> str:
-        # Avoid multiple consecutive newlines and leading/trailing whitespace
-        text = "".join(self._parts).strip()
-        while "\n\n\n" in text:
-            text = text.replace("\n\n\n", "\n\n")
-        return text
-
-
-def strip_html(html: str) -> str:
-    """Remove HTML tags and return plain text."""
-    if not html:
-        return ""
-    stripper = HTMLStripper()
-    try:
-        stripper.feed(html)
-        return stripper.get_text().strip()
-    except Exception:
-        return html
 
 
 # ── ATS Fetchers ────────────────────────────────────────────────────
@@ -371,3 +322,19 @@ async def collect_all(
 
     logger.info("Collected %d total jobs from ATS APIs", len(all_jobs))
     return all_jobs
+
+
+class LocalATSProvider:
+    """Greenhouse, Lever, Ashby, Workable — scans curated company list via direct API."""
+
+    name = "local"
+    display_name = "Targeted Boards"
+    description = "Direct Source: Scans your curated company list via direct API (Supports Greenhouse, Lever, Ashby, Workable)."
+    shows_aggregator_badge = False
+
+    async def fetch_jobs(
+        self,
+        ctx: ProviderContext,
+        progress_callback: ProgressCallback = None,
+    ) -> list[RawJob]:
+        return await collect_all(ctx.companies, progress_callback=progress_callback)

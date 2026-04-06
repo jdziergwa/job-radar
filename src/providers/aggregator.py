@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import asyncio
 import gzip
 import io
@@ -14,11 +16,14 @@ logger = logging.getLogger(__name__)
 
 MANIFEST_URL = "https://feashliaa.github.io/job-board-aggregator/data/jobs_manifest.json"
 BASE_DATA_URL = "https://feashliaa.github.io/job-board-aggregator/data/"
+from typing import Callable, Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from src.providers import ProviderContext, ProgressCallback
 
 MAX_CONCURRENT_CHUNKS = 5
 CHUNK_TIMEOUT = 30  # seconds
 
-from typing import Callable, Optional
 
 async def fetch_chunk(client: httpx.AsyncClient, sem: asyncio.Semaphore, chunk_filename: str) -> list[dict]:
     url = BASE_DATA_URL + chunk_filename
@@ -122,3 +127,21 @@ async def fetch_all_aggregator_jobs(progress_callback: Optional[Callable[[int, i
             
     logger.info("Aggregator extraction complete. Yielded %d total jobs.", len(raw_jobs))
     return raw_jobs, last_updated
+
+
+class AggregatorProvider:
+    """Static chunk downloader (~910k jobs) from the global job-board-aggregator."""
+
+    name = "aggregator"
+    display_name = "Global Aggregator"
+    description = "Broad Market: Scans 910k+ jobs from the open aggregator."
+    shows_aggregator_badge = True
+    last_updated: str = "unknown"
+
+    async def fetch_jobs(
+        self,
+        ctx: ProviderContext,
+        progress_callback: ProgressCallback = None,
+    ) -> list[RawJob]:
+        jobs, self.last_updated = await fetch_all_aggregator_jobs(progress_callback=progress_callback)
+        return jobs

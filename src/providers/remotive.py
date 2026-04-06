@@ -30,7 +30,7 @@ class RemotiveProvider:
         progress_callback: ProgressCallback = None,
     ) -> list[RawJob]:
         """Fetch all current jobs from Remotive. No pagination or auth required."""
-        from src.collector import strip_html
+        from src.providers.utils import strip_html
 
         url = "https://remotive.com/api/remote-jobs"
         ssl_context = certifi.where()
