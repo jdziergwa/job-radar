@@ -145,5 +145,7 @@ register(LocalATSProvider())
 
 # ── New providers ──
 from src.providers.remotive import RemotiveProvider
+from src.providers.remoteok import RemoteOKProvider
 
 register(RemotiveProvider())
+register(RemoteOKProvider())

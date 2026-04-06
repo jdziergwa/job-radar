@@ -354,6 +354,21 @@ function JobDetailContent() {
                         Source: {getPlatformName(job.ats_platform)}
                       </p>
                     )}
+                    { job.ats_platform === 'remoteok' && (
+                      <div className="flex flex-col items-center gap-1 mt-4">
+                        <p className="text-[10px] text-muted-foreground opacity-60">
+                          Jobs provided by
+                        </p>
+                        <a 
+                          href="https://remoteok.com" 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-xs font-bold text-primary hover:underline flex items-center gap-1"
+                        >
+                          Remote OK <ExternalLink className="h-3 w-3" />
+                        </a>
+                      </div>
+                    )}
                 </div>
            </div>
         </div>

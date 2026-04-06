@@ -218,6 +218,12 @@ export function PipelineTrigger({ collapsed = false }: { collapsed?: boolean }) 
                     <p><span className="font-bold">Remotive Note:</span> The public API is limited to the 20 most recent jobs.</p>
                   </div>
                 )}
+                { (source === 'remoteok' || (source === 'hybrid' && providers.some(p => p.name === 'remoteok'))) && (
+                  <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 flex gap-2.5 text-[10px] text-blue-600 dark:text-blue-400 leading-tight">
+                    <Info className="h-3.5 w-3.5 shrink-0" />
+                    <p><span className="font-bold">Remote OK:</span> Fetches current remote listings (~50-100 items).</p>
+                  </div>
+                )}
               </div>
             </div>
 

@@ -24,6 +24,7 @@ export function formatScore(score: number | null | undefined): string {
 export function getPlatformName(slug: string): string {
   const mapping: Record<string, string> = {
     'remotive': 'Remotive',
+    'remoteok': 'Remote OK',
     'greenhouse': 'Greenhouse',
     'lever': 'Lever',
     'ashby': 'Ashby',
