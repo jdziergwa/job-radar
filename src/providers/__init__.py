@@ -103,6 +103,8 @@ register(LocalATSProvider())
 # ── New providers ──
 from src.providers.remotive import RemotiveProvider
 from src.providers.remoteok import RemoteOKProvider
+from src.providers.hackernews import HackerNewsProvider
 
 register(RemotiveProvider())
 register(RemoteOKProvider())
+register(HackerNewsProvider())
