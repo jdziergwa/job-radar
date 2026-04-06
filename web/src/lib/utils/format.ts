@@ -15,7 +15,20 @@ export function timeAgo(iso: string): string {
   return `${Math.floor(days / 30)}mo ago`
 }
 
+
 export function formatScore(score: number | null | undefined): string {
   if (score === null || score === undefined) return '—'
   return `${score}`
+}
+
+export function getPlatformName(slug: string): string {
+  const mapping: Record<string, string> = {
+    'remotive': 'Remotive',
+    'greenhouse': 'Greenhouse',
+    'lever': 'Lever',
+    'ashby': 'Ashby',
+    'workable': 'Workable',
+    'aggregator': 'Aggregator',
+  }
+  return mapping[slug.toLowerCase()] || slug.charAt(0).toUpperCase() + slug.slice(1)
 }

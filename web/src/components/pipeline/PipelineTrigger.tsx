@@ -212,6 +212,12 @@ export function PipelineTrigger({ collapsed = false }: { collapsed?: boolean }) 
                    <Info className="h-4 w-4 text-primary shrink-0" />
                    <p>Launching the pipeline will trigger background Python subprocesses. You can safely close this dialog while it runs.</p>
                 </div>
+                { (source === 'remotive' || (source === 'hybrid' && providers.some(p => p.name === 'remotive'))) && (
+                  <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 flex gap-2.5 text-[10px] text-amber-600 dark:text-amber-400 leading-tight">
+                    <Info className="h-3.5 w-3.5 shrink-0" />
+                    <p><span className="font-bold">Remotive Note:</span> The public API is limited to the 20 most recent jobs.</p>
+                  </div>
+                )}
               </div>
             </div>
 

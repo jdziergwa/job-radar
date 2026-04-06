@@ -31,3 +31,6 @@ profiles/*/
 
 # Generated reports
 reports/
+
+# Personal notes
+notes/

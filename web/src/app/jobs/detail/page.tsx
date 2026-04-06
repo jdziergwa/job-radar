@@ -7,7 +7,7 @@ import { getMatchQualityLabel } from '@/lib/utils/score'
 import { ScoreRing } from '@/components/score/ScoreRing'
 import { ScoreBar } from '@/components/score/ScoreBar'
 import { PriorityBadge } from '@/components/score/PriorityBadge'
-import { timeAgo, formatDate } from '@/lib/utils/format'
+import { timeAgo, formatDate, getPlatformName } from '@/lib/utils/format'
 import { Badge } from '@/components/ui/badge'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -191,7 +191,7 @@ function JobDetailContent() {
           <div className="space-y-4">
             <div className="flex flex-wrap items-center gap-3">
                 <Badge variant="secondary" className="uppercase tracking-widest text-[10px] py-1 px-3 bg-primary/10 text-primary border-none">
-                  {job.ats_platform}
+                  {getPlatformName(job.ats_platform)}
                 </Badge>
                 <PriorityBadge priority={job.score_breakdown?.apply_priority} />
                 <Badge variant="outline" className="capitalize px-3 border-border/50 bg-muted/20">
@@ -336,15 +336,20 @@ function JobDetailContent() {
               <h2 className="text-2xl font-bold tracking-tight underline decoration-primary/30 underline-offset-8 decoration-4">Job Description</h2>
               <JobDescription content={job.description} />
               <div className="flex justify-center pt-4">
-                 <a
-                    href={job.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={cn(buttonVariants({ variant: "outline" }), "gap-2 rounded-2xl px-8 h-12 border-primary/20 hover:bg-primary/5 hover:border-primary/40 transition-all")}
-                  >
-                    View Original Posting on {job.ats_platform.charAt(0).toUpperCase() + job.ats_platform.slice(1)} <ExternalLink className="h-4 w-4" />
-                  </a>
-              </div>
+                   <a
+                      href={job.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={cn(buttonVariants({ variant: "outline" }), "gap-2 rounded-2xl px-8 h-12 border-primary/20 hover:bg-primary/5 hover:border-primary/40 transition-all")}
+                    >
+                      View Original Posting on {getPlatformName(job.ats_platform)} <ExternalLink className="h-4 w-4" />
+                    </a>
+                    { job.ats_platform === 'remotive' && (
+                      <p className="text-[10px] text-muted-foreground mt-2 text-center opacity-60">
+                        Source: {getPlatformName(job.ats_platform)}
+                      </p>
+                    )}
+                </div>
            </div>
         </div>
 

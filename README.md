@@ -122,6 +122,7 @@ graph TD
 ## 🙌 Acknowledgments
 
 Aggregator module data sourced from [job-board-aggregator](https://github.com/Feashliaa/job-board-aggregator).
+Remotive source data provided by [Remotive](https://remotive.com).
 
 ---
 

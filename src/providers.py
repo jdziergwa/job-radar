@@ -173,3 +173,8 @@ def get_all_info() -> list[ProviderInfo]:
 register(HybridProvider())
 register(AggregatorProvider())
 register(LocalATSProvider())
+
+# ── New remote feed providers ──
+from src.remote_feeds.remotive import RemotiveProvider
+
+register(RemotiveProvider())

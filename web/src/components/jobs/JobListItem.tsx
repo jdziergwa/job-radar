@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { ScoreRing } from '@/components/score/ScoreRing'
 import { PriorityBadge } from '@/components/score/PriorityBadge'
-import { timeAgo } from '@/lib/utils/format'
+import { timeAgo, getPlatformName } from '@/lib/utils/format'
 import { Badge } from '@/components/ui/badge'
 import { MapPin, Building2, ChevronRight } from 'lucide-react'
 
@@ -30,7 +30,7 @@ export function JobListItem({ job }: { job: any }) {
           <div>
             <div className="flex items-center gap-2 mb-1">
               <span className="text-[10px] uppercase font-mono tracking-widest text-muted-foreground/70 bg-muted/40 px-1.5 py-0.5 rounded">
-                {job.ats_platform}
+                {getPlatformName(job.ats_platform)}
               </span>
               {job.status !== 'new' && (
                 <div className="flex items-center gap-1.5">
