@@ -293,7 +293,7 @@ export default function JobsPage() {
           </div>
         ) : (
           <div className="space-y-8">
-            <div className="space-y-2 max-w-7xl mx-auto">
+            <div className="space-y-2">
               {jobs.map((job) => (
                 <JobListItem key={job.id} job={job} />
               ))}
