@@ -22,6 +22,7 @@ def list_jobs(
     per_page: int = Query(50, ge=1, le=200),
     days: Optional[int] = Query(None, ge=1),
     is_sparse: Optional[bool] = Query(None),
+    today_only: Optional[bool] = Query(None),
 ):
     """List jobs with filtering, sorting, and pagination."""
     store = get_store(profile)
@@ -40,6 +41,7 @@ def list_jobs(
         per_page=per_page,
         days=days,
         is_sparse=is_sparse,
+        today_only=today_only,
     )
     
     jobs = [JobResponse.from_row(row) for row in rows]

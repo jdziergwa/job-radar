@@ -508,6 +508,7 @@ class Store:
         per_page: int = 50,
         days: int | None = None,
         is_sparse: bool | None = None,
+        today_only: bool | None = None,
     ) -> tuple[list[dict], int]:
         """Filtered, paginated job list for the web API.
         
@@ -555,6 +556,10 @@ class Store:
         if is_sparse is not None:
             where_clauses.append("is_sparse = ?")
             params.append(1 if is_sparse else 0)
+        
+        if today_only is True:
+            # Calendar today: first_seen_at matches the current UTC date
+            where_clauses.append("date(first_seen_at) = date('now')")
         
         where_sql = " AND ".join(where_clauses) if where_clauses else "1=1"
         

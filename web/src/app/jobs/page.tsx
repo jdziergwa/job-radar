@@ -1,12 +1,12 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { api } from '@/lib/api/client'
 import { JobListItem } from '@/components/jobs/JobListItem'
 import { DismissalSummary } from '@/components/jobs/DismissalSummary'
 import { RescoreAllButton } from '@/components/jobs/RescoreAllButton'
 import { Button } from '@/components/ui/button'
-import { ChevronLeft, ChevronRight, Loader2, Search, SearchX, SlidersHorizontal, X, HelpCircle, ArrowUpDown, Filter } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ChevronDown, Loader2, Search, SearchX, SlidersHorizontal, X, HelpCircle, ArrowUpDown, Filter, Clock } from 'lucide-react'
 import {
   Tooltip,
   TooltipContent,
@@ -16,7 +16,7 @@ import {
 
 const STATUS_OPTIONS = [
   { value: 'new,scored,applied', label: 'Active' },
-  { value: 'new', label: 'New' },
+  { value: 'new', label: 'Unscored' },
   { value: 'scored', label: 'Scored' },
   { value: 'applied', label: 'Applied' },
   { value: 'dismissed', label: 'Dismissed' },
@@ -51,14 +51,29 @@ export default function JobsPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [search, setSearch] = useState('')
   const [isSparse, setIsSparse] = useState<boolean | null>(null)
+  const [todayOnly, setTodayOnly] = useState(false)
+  const [statusOpen, setStatusOpen] = useState(false)
+  const statusRef = useRef<HTMLDivElement>(null)
 
-  const fetchJobs = async (pageNum: number, opts?: { status?: string; sort?: string; minScore?: string; search?: string; is_sparse?: boolean | null }) => {
+  // Close status dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (statusRef.current && !statusRef.current.contains(e.target as Node)) {
+        setStatusOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  const fetchJobs = async (pageNum: number, opts?: { status?: string; sort?: string; minScore?: string; search?: string; is_sparse?: boolean | null; today_only?: boolean }) => {
     setLoading(true)
     const s = opts?.status ?? status
     const so = opts?.sort ?? sort
     const ms = opts?.minScore ?? minScore
     const sea = opts?.hasOwnProperty('search') ? opts.search : search
     const isp = opts?.hasOwnProperty('is_sparse') ? opts.is_sparse : isSparse
+    const tdo = opts?.hasOwnProperty('today_only') ? opts.today_only : todayOnly
     
     try {
       const query: Record<string, any> = { page: pageNum, per_page: 15, sort: so }
@@ -66,6 +81,7 @@ export default function JobsPage() {
       if (ms) query.min_score = parseInt(ms)
       if (sea) query.search = sea
       if (isp !== null) query.is_sparse = isp
+      if (tdo) query.today_only = true
 
       const { data } = await api.GET('/api/jobs', { params: { query } })
       if (data) {
@@ -110,6 +126,12 @@ export default function JobsPage() {
     setStatus(val)
     setPage(1)
     fetchJobs(1, { status: val })
+  }
+
+  const applyTodayOnly = (val: boolean) => {
+    setTodayOnly(val)
+    setPage(1)
+    fetchJobs(1, { today_only: val })
   }
 
   const applySort = (val: string) => {
@@ -178,24 +200,50 @@ export default function JobsPage() {
       </div>
 
       {/* Filter Bar Row */}
-      <div className="flex flex-wrap items-center gap-3 p-4 rounded-2xl border border-border/40 bg-card/30 backdrop-blur-sm shadow-sm mb-6">
+      <div className="relative z-10 flex flex-wrap items-center gap-3 p-4 rounded-2xl border border-border/40 bg-card/30 backdrop-blur-sm shadow-sm mb-6">
         <SlidersHorizontal className="h-4 w-4 text-muted-foreground shrink-0" />
 
-        {/* Status filter pills */}
+        {/* Status filter dropdown */}
+        <div className="relative" ref={statusRef}>
+          <button
+            onClick={() => setStatusOpen(!statusOpen)}
+            className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-all border bg-primary text-primary-foreground border-primary shadow-sm cursor-pointer"
+          >
+            {STATUS_OPTIONS.find(o => o.value === status)?.label || 'Active'}
+            <ChevronDown className={`h-3 w-3 text-muted-foreground transition-transform ${statusOpen ? 'rotate-180' : ''}`} />
+          </button>
+          {statusOpen && (
+            <div className="absolute top-full left-0 mt-2 min-w-[140px] rounded-xl border border-border/50 bg-popover shadow-2xl z-50 overflow-hidden py-1 animate-in fade-in slide-in-from-top-1 duration-150">
+              {STATUS_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => { applyStatus(opt.value); setStatusOpen(false) }}
+                  className={`w-full text-left px-3 py-1.5 text-xs font-semibold transition-colors block ${
+                    status === opt.value
+                      ? 'text-primary bg-primary/10'
+                      : 'text-popover-foreground/70 hover:text-popover-foreground hover:bg-muted/40'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Discovery Timing filter */}
         <div className="flex items-center gap-1">
-          {STATUS_OPTIONS.map((opt) => (
-            <button
-              key={opt.value}
-              onClick={() => applyStatus(opt.value)}
-              className={`px-3 py-1 rounded-full text-xs font-semibold transition-all border ${
-                status === opt.value
-                  ? 'bg-primary text-primary-foreground border-primary shadow-sm'
-                  : 'bg-muted/30 text-muted-foreground border-border/50 hover:border-primary/40 hover:text-foreground'
-              }`}
-            >
-              {opt.label}
-            </button>
-          ))}
+          <button
+            onClick={() => applyTodayOnly(!todayOnly)}
+            className={`px-3 py-1 rounded-full text-xs font-semibold transition-all border flex items-center gap-1.5 ${
+              todayOnly
+                ? 'bg-primary text-primary-foreground border-primary shadow-sm'
+                : 'bg-muted/30 text-muted-foreground border-border/50 hover:border-primary/40 hover:text-foreground'
+            }`}
+          >
+            <Clock className="h-3.5 w-3.5" />
+            Added Today
+          </button>
         </div>
 
         <div className="h-4 w-px bg-border/50 shrink-0 hidden sm:block" />
