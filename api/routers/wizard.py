@@ -3,6 +3,9 @@ import logging
 import asyncio
 import yaml
 import shutil
+import base64
+import re
+import fitz  # pymupdf
 import anthropic
 from anthropic import AsyncAnthropic
 from fastapi import APIRouter, HTTPException, UploadFile, File
@@ -49,11 +52,46 @@ def _load_cv_analysis_prompt() -> str:
 
 def _extract_json(text: str) -> str:
     """Extract JSON block from text using regex, same as scorer.py."""
-    import re
     match = re.search(r"\{.*\}", text, re.DOTALL)
     if match:
         return match.group(0)
     return text.strip()
+
+def _is_extraction_poor(text: str) -> bool:
+    """
+    Heuristic to detect if text extraction is poor (scanned PDF or garbled symbols).
+    - Text length < 200
+    - Non-alphanumeric ratio > 30% (indicative of garbled symbols in designed PDFs)
+    """
+    if not text or len(text.strip()) < 200:
+        return True
+    
+    # Count alphanumeric characters and spaces
+    alnum_chars = sum(1 for c in text if c.isalnum() or c.isspace())
+    total_chars = len(text)
+    
+    if total_chars == 0:
+        return True
+        
+    alnum_ratio = alnum_chars / total_chars
+    # If less than 70% is alphanumeric or space, it's likely garbled symbols
+    return alnum_ratio < 0.7
+
+def _render_pdf_to_images(file_bytes: bytes, dpi: int = 300, max_pages: int = 10) -> list[bytes]:
+    """Convert PDF pages to PNG images for Claude Vision."""
+    doc = fitz.open(stream=file_bytes, filetype="pdf")
+    images = []
+    
+    # 300 DPI: scale factor = 300/72 ≈ 4.17
+    mat = fitz.Matrix(dpi / 72, dpi / 72)
+    
+    for page_num in range(min(len(doc), max_pages)):
+        page = doc[page_num]
+        pix = page.get_pixmap(matrix=mat)
+        images.append(pix.tobytes("png"))
+        
+    doc.close()
+    return images
 
 
 @router.post("/wizard/analyze-cv", response_model=CVAnalysisResponse)
@@ -78,28 +116,55 @@ async def analyze_cv(file: UploadFile = File(...)):
         logger.error(f"Error checking file size: {e}")
         raise HTTPException(status_code=500, detail=f"Error processing file: {e}")
 
+    # 2. Extract text using PyMuPDF (fitz)
     text = ""
     page_count = 0
-    import pdfplumber
+    file_bytes = await file.read()
+    
     try:
-        with pdfplumber.open(file.file) as pdf:
-            page_count = len(pdf.pages)
-            for page in pdf.pages:
-                page_text = page.extract_text()
-                if page_text:
-                    text += page_text + "\n"
+        doc = fitz.open(stream=file_bytes, filetype="pdf")
+        page_count = len(doc)
+        for page in doc:
+            text += page.get_text() + "\n"
+        doc.close()
     except Exception as e:
-        logger.error(f"Error reading PDF: {e}")
+        logger.error(f"Error reading PDF with PyMuPDF: {e}")
         raise HTTPException(status_code=422, detail=f"Could not read PDF: {e}")
 
-    if len(text.strip()) < 50:
-        raise HTTPException(
-            status_code=422,
-            detail="The PDF seems to be empty or image-based. Please provide a text-based PDF."
-        )
+    # 3. Hybrid Detection: Decide between text mode and vision mode
+    extraction_method = "text"
+    user_content = []
+    
+    if _is_extraction_poor(text):
+        logger.info(f"Poor text extraction detected (length: {len(text)}). Falling back to Vision mode.")
+        extraction_method = "vision"
+        try:
+            images = _render_pdf_to_images(file_bytes, dpi=300)
+            for img_bytes in images:
+                b64_data = base64.b64encode(img_bytes).decode("utf-8")
+                user_content.append({
+                    "type": "image",
+                    "source": {
+                        "type": "base64",
+                        "media_type": "image/png",
+                        "data": b64_data,
+                    }
+                })
+            user_content.append({
+                "type": "text",
+                "text": "Analyze this CV. The pages are provided as images above. Extract all professional information visible across all pages."
+            })
+        except Exception as e:
+            logger.error(f"Error rendering PDF to images: {e}")
+            # If vision fallback fails, we try to proceed with whatever text we have if it's not totally empty
+            if len(text.strip()) < 50:
+                raise HTTPException(status_code=422, detail=f"Failed to read CV even with vision fallback: {e}")
+            extraction_method = "text"
+            user_content = [{"type": "text", "text": f"Analyze this CV text:\n\n{text}"}]
+    else:
+        user_content = [{"type": "text", "text": f"Here is the candidate's CV text:\n\n{text}"}]
 
     system_prompt = _load_cv_analysis_prompt()
-    user_message = f"Here is the candidate's CV text:\n\n{text}"
 
     async with AsyncAnthropic() as client:
         # We want up to 2 retries (3 total attempts) for API errors
@@ -111,7 +176,7 @@ async def analyze_cv(file: UploadFile = File(...)):
                     model="claude-sonnet-4-20250514",
                     max_tokens=4096,
                     system=system_prompt,
-                    messages=[{"role": "user", "content": user_message}],
+                    messages=[{"role": "user", "content": user_content}],
                     timeout=60.0,
                 )
 
@@ -120,7 +185,11 @@ async def analyze_cv(file: UploadFile = File(...)):
 
                 try:
                     data = json.loads(json_str)
-                    return CVAnalysisResponse(page_count=page_count, **data)
+                    return CVAnalysisResponse(
+                        page_count=page_count, 
+                        extraction_method=extraction_method,
+                        **data
+                    )
                 except (json.JSONDecodeError, Exception) as e:
                     # If this is the first attempt, try one JSON fix-up call
                     if attempt == 0:
@@ -131,7 +200,7 @@ async def analyze_cv(file: UploadFile = File(...)):
                             max_tokens=4096,
                             system=system_prompt,
                             messages=[
-                                {"role": "user", "content": user_message},
+                                {"role": "user", "content": user_content},
                                 {"role": "assistant", "content": raw_text},
                                 {"role": "user", "content": retry_message}
                             ],
@@ -140,7 +209,11 @@ async def analyze_cv(file: UploadFile = File(...)):
                         raw_text = fix_response.content[0].text
                         json_str = _extract_json(raw_text)
                         data = json.loads(json_str)
-                        return CVAnalysisResponse(page_count=page_count, **data)
+                        return CVAnalysisResponse(
+                            page_count=page_count, 
+                            extraction_method=extraction_method,
+                            **data
+                        )
                     else:
                         raise HTTPException(status_code=502, detail=f"LLM returned invalid JSON after fix-up: {e}")
 

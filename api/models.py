@@ -249,6 +249,7 @@ class CVAnalysisResponse(BaseModel):
     suggested_career_direction: str
     suggested_good_match_signals: list[str] = []
     suggested_lower_fit_signals: list[str] = []
+    extraction_method: Literal["text", "vision"] = "text"
 
 
 class ProfileGenerateRequest(BaseModel):
