@@ -8,13 +8,9 @@ import { api } from '@/lib/api/client'
 
 import { WizardData } from '../types'
 
-interface StepProps {
-  onNext: (data?: Partial<WizardData>) => void
-  onBack: (data?: Partial<WizardData>) => void
-  data: Partial<WizardData>
-}
+import { StepProps } from '../types'
 
-export function UploadCV({ onNext, onBack, data }: StepProps) {
+export function UploadCV({ onNext, onBack, onUpdate, data }: StepProps) {
   const [file, setFile] = useState<File | null>(null)
   const [error, setError] = useState<string | null>(data?.error || null)
   const [isDragging, setIsDragging] = useState(false)

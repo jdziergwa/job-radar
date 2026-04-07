@@ -63,12 +63,20 @@ export function QuickStartWizard({ onComplete }: QuickStartWizardProps) {
   // Save to localStorage on changes
   useEffect(() => {
     if (!isInitialized) return
+    
+    // Exclude non-serializable fields like Promises and Files
+    const { analysisPromise, ...serializableData } = wizardData
+    
     localStorage.setItem('job-radar-wizard-state', JSON.stringify({
       currentStep,
-      wizardData,
+      wizardData: serializableData,
       completedSteps
     }))
   }, [currentStep, wizardData, completedSteps, isInitialized])
+
+  const handleUpdate = useCallback((stepData: Partial<WizardData>) => {
+    setWizardData((prev) => ({ ...prev, ...stepData }))
+  }, [])
 
   const handleNext = useCallback(async (stepData?: Partial<WizardData>) => {
     // Handle manual path branch
@@ -122,6 +130,7 @@ export function QuickStartWizard({ onComplete }: QuickStartWizardProps) {
     const props = {
       onNext: handleNext,
       onBack: handleBack,
+      onUpdate: handleUpdate,
       data: wizardData
     }
 

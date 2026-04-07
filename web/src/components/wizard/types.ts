@@ -26,3 +26,10 @@ export interface WizardData {
   error?: string
   retry?: boolean
 }
+
+export interface StepProps {
+  onNext: (data?: Partial<WizardData>) => void
+  onBack: (data?: Partial<WizardData>) => void
+  onUpdate: (data: Partial<WizardData>) => void
+  data: Partial<WizardData>
+}

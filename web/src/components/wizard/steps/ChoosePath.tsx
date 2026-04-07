@@ -4,15 +4,9 @@ import { useState } from 'react'
 import { Sparkles, PenLine, CheckCircle2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-import { WizardData } from '../types'
+import { StepProps } from '../types'
 
-interface StepProps {
-  onNext: (data?: Partial<WizardData>) => void
-  onBack: () => void
-  data: Partial<WizardData>
-}
-
-export function ChoosePath({ onNext, onBack, data }: StepProps) {
+export function ChoosePath({ onNext, onBack, onUpdate, data }: StepProps) {
   return (
     <div className="flex flex-col gap-6 py-2 animate-in fade-in slide-in-from-bottom-4 duration-500 w-full">
       <div className="text-center space-y-1 bg-background/50 py-4 -mt-4 border-b border-border/10 mb-2 w-full">

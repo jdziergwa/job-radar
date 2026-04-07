@@ -5,13 +5,7 @@ import { useEffect, useState, useRef } from 'react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 
-import { WizardData } from '../types'
-
-interface StepProps {
-  onNext: (data?: Partial<WizardData>) => void
-  onBack: (data?: Partial<WizardData>) => void
-  data: Partial<WizardData>
-}
+import { StepProps } from '../types'
 
 const MESSAGES = [
   { icon: Sparkles, text: "Reading your experience..." },
@@ -33,6 +27,19 @@ export function AIAnalysis({ onNext, onBack, data }: StepProps) {
   }, [])
 
   useEffect(() => {
+    // Refresh recovery logic
+    if (!data.analysisPromise) {
+      if (data.cvAnalysis) {
+        // We already have the analysis (maybe from a previous attempt or refresh just as it finished)
+        onNext()
+        return
+      } else {
+        // We lost the promise and have no analysis. Need to re-upload.
+        onBack({ error: "Your session was interrupted. Please upload your CV again." })
+        return
+      }
+    }
+
     if (data.analysisPromise && !processedRef.current) {
       processedRef.current = true
       data.analysisPromise.then((res: any) => {
@@ -48,7 +55,7 @@ export function AIAnalysis({ onNext, onBack, data }: StepProps) {
         setError("Connection error. Please check your network or try again.")
       })
     }
-  }, [data.analysisPromise, onNext])
+  }, [data.analysisPromise, data.cvAnalysis, onNext, onBack])
 
   if (error) {
     return (

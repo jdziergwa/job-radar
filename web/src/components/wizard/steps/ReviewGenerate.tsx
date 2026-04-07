@@ -31,15 +31,9 @@ import { api } from '@/lib/api/client'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 
-import { WizardData } from '../types'
+import { StepProps } from '../types'
 
-interface StepProps {
-  onNext: (data?: Partial<WizardData>) => void
-  onBack: () => void
-  data: Partial<WizardData>
-}
-
-export function ReviewGenerate({ onNext, onBack, data }: StepProps) {
+export function ReviewGenerate({ onNext, onBack, onUpdate, data }: StepProps) {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -168,7 +162,7 @@ export function ReviewGenerate({ onNext, onBack, data }: StepProps) {
           <Button onClick={generateProfile} variant="default" className="gap-2">
             <RefreshCw className="h-4 w-4" /> Try Again
           </Button>
-          <Button onClick={onBack} variant="outline">Back</Button>
+          <Button onClick={() => onBack()} variant="outline">Back</Button>
         </div>
       </div>
     )

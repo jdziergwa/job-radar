@@ -25,13 +25,8 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-import { WizardData } from '../types'
-
-interface StepProps {
-  onNext: (data?: Partial<WizardData>) => void
-  onBack: (data?: Partial<WizardData>) => void
-  data: Partial<WizardData>
-}
+import { useEffect } from 'react'
+import { StepProps } from '../types'
 
 const SENIORITY_LEVELS = ['Junior', 'Mid', 'Senior', 'Lead', 'Staff', 'Principal']
 const WORK_AUTH = ['EU citizen', 'US citizen', 'UK right to work', 'Need visa sponsorship', 'Other']
@@ -53,21 +48,36 @@ const TIMEZONE_PREFS = [
   { id: 'any', label: 'Any Timezone' }
 ]
 
-export function SearchLocation({ onNext, onBack, data }: StepProps) {
+export function SearchLocation({ onNext, onBack, onUpdate, data }: StepProps) {
   const analysis = data.cvAnalysis
   
-  const [targetRoles, setTargetRoles] = useState<string[]>(analysis?.suggested_target_roles || [])
+  const [targetRoles, setTargetRoles] = useState<string[]>(data.targetRoles || analysis?.suggested_target_roles || [])
   const [newRole, setNewRole] = useState('')
   const [seniority, setSeniority] = useState<string[]>(
-    analysis?.inferred_seniority ? [analysis.inferred_seniority.toLowerCase()] : ['senior']
+    data.seniority || (analysis?.inferred_seniority ? [analysis.inferred_seniority.toLowerCase()] : ['senior'])
   )
-  const [location, setLocation] = useState('')
-  const [workAuth, setWorkAuth] = useState<string>('')
-  const [remotePref, setRemotePref] = useState<string[]>(['remote'])
-  const [primaryRemotePref, setPrimaryRemotePref] = useState<string>('remote')
-  const [timezonePref, setTimezonePref] = useState<string>('local')
-  const [targetRegions, setTargetRegions] = useState<string[]>(['Europe'])
-  const [excludedRegions, setExcludedRegions] = useState<string[]>([])
+  const [location, setLocation] = useState(data.location || '')
+  const [workAuth, setWorkAuth] = useState<string>(data.workAuth || '')
+  const [remotePref, setRemotePref] = useState<string[]>(data.remotePref || ['remote'])
+  const [primaryRemotePref, setPrimaryRemotePref] = useState<string>(data.primaryRemotePref || 'remote')
+  const [timezonePref, setTimezonePref] = useState<string>(data.timezonePref || 'local')
+  const [targetRegions, setTargetRegions] = useState<string[]>(data.targetRegions || ['Europe'])
+  const [excludedRegions, setExcludedRegions] = useState<string[]>(data.excludedRegions || [])
+
+  // Auto-sync state back to wizardData for refresh resilience
+  useEffect(() => {
+    onUpdate({
+      targetRoles,
+      seniority,
+      location,
+      workAuth,
+      remotePref,
+      primaryRemotePref,
+      timezonePref,
+      targetRegions,
+      excludedRegions
+    })
+  }, [targetRoles, seniority, location, workAuth, remotePref, primaryRemotePref, timezonePref, targetRegions, excludedRegions, onUpdate])
 
   const handleAddRole = () => {
     const role = newRole.trim()

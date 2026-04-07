@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
@@ -26,20 +26,14 @@ import {
 import { cn } from '@/lib/utils'
 
 import { components } from '@/lib/api/types'
-import { WizardData } from '../types'
+import { StepProps } from '../types'
 
 type ExperienceEntry = components["schemas"]["ExperienceEntry"]
 type EducationEntry = components["schemas"]["EducationEntry"]
 type PortfolioEntry = components["schemas"]["PortfolioEntry"]
 type CVAnalysis = components["schemas"]["CVAnalysisResponse"]
 
-interface StepProps {
-  onNext: (data?: Partial<WizardData>) => void
-  onBack: (data?: Partial<WizardData>) => void
-  data: Partial<WizardData>
-}
-
-export function ReviewProfile({ onNext, onBack, data }: StepProps) {
+export function ReviewProfile({ onNext, onBack, onUpdate, data }: StepProps) {
   const [profile, setProfile] = useState<CVAnalysis>(data.cvAnalysis as CVAnalysis)
   const [newSkill, setNewSkill] = useState<{ [category: string]: string }>({})
   const [newCategoryName, setNewCategoryName] = useState('')
@@ -48,6 +42,11 @@ export function ReviewProfile({ onNext, onBack, data }: StepProps) {
   const [expandedExpIdx, setExpandedExpIdx] = useState<number[] | null>(null)
   const [editingEduIdx, setEditingEduIdx] = useState<number | null>(null)
   const [editingProjIdx, setEditingProjIdx] = useState<number | null>(null)
+
+  // Auto-sync local state back to wizardData
+  useEffect(() => {
+    onUpdate({ cvAnalysis: profile })
+  }, [profile, onUpdate])
 
   const handleRemoveSkill = (category: string, skillToRemove: string) => {
     setProfile(prev => ({

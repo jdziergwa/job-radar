@@ -4,13 +4,9 @@ import { Button } from '@/components/ui/button'
 import { CheckCircle2, Settings, ArrowRight, Sparkles } from 'lucide-react'
 import Link from 'next/link'
 
-interface StepProps {
-  onNext: (data?: any) => void
-  onBack: () => void
-  data: any
-}
+import { StepProps } from '../types'
 
-export function Done({ onNext, onBack, data }: StepProps) {
+export function Done({ onNext, onBack, onUpdate, data }: StepProps) {
   return (
     <div className="flex flex-col items-center gap-6 py-6 animate-in fade-in slide-in-from-bottom-8 duration-700 max-w-md mx-auto text-center">
       <div className="relative">

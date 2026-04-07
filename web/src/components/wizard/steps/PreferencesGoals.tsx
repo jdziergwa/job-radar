@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
@@ -19,13 +19,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-import { WizardData } from '../types'
-
-interface StepProps {
-  onNext: (data?: Partial<WizardData>) => void
-  onBack: () => void
-  data: Partial<WizardData>
-}
+import { StepProps } from '../types'
 
 const INDUSTRIES = [
   'Fintech', 'SaaS', 'E-commerce', 'Healthcare', 'Gaming', 
@@ -45,18 +39,43 @@ const DEAL_BREAKERS = [
   'Heavy on-call', 'Sales-heavy role'
 ]
 
-export function PreferencesGoals({ onNext, onBack, data }: StepProps) {
+export function PreferencesGoals({ onNext, onBack, onUpdate, data }: StepProps) {
   const analysis = data.cvAnalysis
   
-  const [careerDirection, setCareerDirection] = useState(analysis?.suggested_career_direction || '')
-  const [industries, setIndustries] = useState<string[]>([])
-  const [goodMatchSignals, setGoodMatchSignals] = useState<string[]>([])
-  const [dealBreakers, setDealBreakers] = useState<string[]>([])
-  const [additionalContext, setAdditionalContext] = useState('')
+  // Infer industries from experience if none selected
+  const initialIndustries = useMemo(() => {
+    if (data.industries && data.industries.length > 0) return data.industries
+    if (!analysis?.experience) return []
+    const inferred = analysis.experience
+      .map(exp => exp.industry)
+      .filter((ind): ind is string => !!ind)
+    return [...new Set(inferred)]
+  }, [data.industries, analysis?.experience])
+
+  const [careerDirection, setCareerDirection] = useState(data.careerDirection || analysis?.suggested_career_direction || '')
+  const [industries, setIndustries] = useState<string[]>(initialIndustries)
+  const [goodMatchSignals, setGoodMatchSignals] = useState<string[]>(
+    data.goodMatchSignals || analysis?.suggested_good_match_signals || []
+  )
+  const [dealBreakers, setDealBreakers] = useState<string[]>(
+    data.dealBreakers || analysis?.suggested_lower_fit_signals || []
+  )
+  const [additionalContext, setAdditionalContext] = useState(data.additionalContext || '')
   
   const [newIndustry, setNewIndustry] = useState('')
   const [newExcitement, setNewExcitement] = useState('')
   const [newDealBreaker, setNewDealBreaker] = useState('')
+
+  // Auto-sync state back to wizardData for refresh resilience
+  useEffect(() => {
+    onUpdate({
+      careerDirection,
+      industries,
+      goodMatchSignals,
+      dealBreakers,
+      additionalContext
+    })
+  }, [careerDirection, industries, goodMatchSignals, dealBreakers, additionalContext, onUpdate])
 
   const toggleItem = (item: string, list: string[], setter: (val: string[]) => void) => {
     if (list.includes(item)) {
