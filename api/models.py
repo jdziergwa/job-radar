@@ -187,3 +187,70 @@ class CompaniesResponse(BaseModel):
     lever: list[dict] = []
     ashby: list[dict] = []
     workable: list[dict] = []
+
+
+# Wizard Models
+
+class ExperienceEntry(BaseModel):
+    company: str
+    role: str
+    dates: str
+    industry: Optional[str] = None
+    highlights: list[str] = []
+
+
+class EducationEntry(BaseModel):
+    school: str
+    degree: str
+    start_year: Optional[str] = None
+    end_year: Optional[str] = None
+
+
+class PortfolioEntry(BaseModel):
+    name: str
+    url: str
+    technologies: list[str] = []
+    description: Optional[str] = None
+
+
+class CVAnalysisResponse(BaseModel):
+    page_count: int
+    current_role: str
+    experience_years: Optional[int] = None
+    experience_summary: str
+    experience: list[ExperienceEntry] = []
+    skills: dict[str, list[str]] = {}
+    education: list[EducationEntry] = []
+    portfolio: list[PortfolioEntry] = []
+    spoken_languages: list[str] = []
+    inferred_seniority: str
+    suggested_target_roles: list[str] = []
+    suggested_title_patterns: dict[str, list[str]] = {}
+    suggested_description_signals: list[str] = []
+    suggested_exclusions: list[str] = []
+    suggested_skill_gaps: list[str] = []
+    suggested_career_direction: str
+    suggested_good_match_signals: list[str] = []
+    suggested_lower_fit_signals: list[str] = []
+
+
+class ProfileGenerateRequest(BaseModel):
+    cv_analysis: CVAnalysisResponse
+    user_preferences: dict
+    profile_name: str = "default"
+
+
+class ProfileGenerateResponse(BaseModel):
+    profile_yaml: str
+    profile_doc: str
+
+
+class ProfileSaveRequest(BaseModel):
+    profile_name: str
+    profile_yaml: str
+    profile_doc: str
+
+
+class ProfileTemplateResponse(BaseModel):
+    profile_yaml: str
+    profile_doc: str

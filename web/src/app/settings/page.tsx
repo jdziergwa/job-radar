@@ -38,7 +38,7 @@ export default function SettingsPage() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [yamlError, setYamlError] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState('rules')
+  const [activeTab, setActiveTab] = useState('resume')
 
   const fetchProfileData = async () => {
     setLoading(true)
@@ -179,21 +179,21 @@ export default function SettingsPage() {
         </div>
       ) : (
         <div className="flex-1 flex flex-col gap-6">
-          <Tabs defaultValue="rules" className="w-full flex-1 flex flex-col" onValueChange={setActiveTab}>
+          <Tabs defaultValue="resume" className="w-full flex-1 flex flex-col" onValueChange={setActiveTab}>
             <TabsList className="bg-muted/30 p-1 border border-border/50 mb-6 h-12 self-start">
-              <TabsTrigger 
-                value="rules" 
-                className="px-5 data-[state=active]:bg-background/60 data-[state=active]:shadow-sm data-[state=active]:text-primary transition-all duration-300 gap-2"
-              >
-                <FileCode className="h-4 w-4" />
-                Matching Rules (YAML)
-              </TabsTrigger>
               <TabsTrigger 
                 value="resume" 
                 className="px-5 data-[state=active]:bg-background/60 data-[state=active]:shadow-sm data-[state=active]:text-primary transition-all duration-300 gap-2"
               >
                 <FileText className="h-4 w-4" />
                 Resume / CV (MD)
+              </TabsTrigger>
+              <TabsTrigger 
+                value="rules" 
+                className="px-5 data-[state=active]:bg-background/60 data-[state=active]:shadow-sm data-[state=active]:text-primary transition-all duration-300 gap-2"
+              >
+                <FileCode className="h-4 w-4" />
+                Matching Rules (YAML)
               </TabsTrigger>
               <TabsTrigger 
                 value="philosophy" 
@@ -204,6 +204,30 @@ export default function SettingsPage() {
               </TabsTrigger>
             </TabsList>
             
+            <TabsContent value="resume" className="flex-1 min-h-0 animate-in fade-in slide-in-from-top-2 duration-300 overflow-hidden flex flex-col">
+              <Card className="flex-1 border-border/50 bg-background/50 backdrop-blur-md overflow-hidden flex flex-col shadow-inner">
+                <CardHeader className="py-3 bg-muted/20 border-b border-border/30">
+                   <div className="flex justify-between items-center">
+                      <CardTitle className="text-xs font-mono uppercase text-muted-foreground/80">profile_doc.md</CardTitle>
+                      <Badge variant="outline" className="text-[10px] font-mono opacity-60">Text/Markdown</Badge>
+                   </div>
+                </CardHeader>
+                <CardContent className="p-0 flex-1 overflow-auto">
+                   <textarea
+                     className="w-full h-full min-h-[500px] p-6 bg-transparent resize-none font-mono text-sm leading-relaxed focus:outline-none scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent"
+                     value={docContent}
+                     onChange={(e) => setDocContent(e.target.value)}
+                     spellCheck={false}
+                     placeholder="Paste your resume or CV summary here for AI context injection..."
+                   />
+                </CardContent>
+              </Card>
+              <div className="mt-4 p-4 rounded-xl border border-primary/10 bg-primary/5 flex gap-3 text-xs text-muted-foreground">
+                 <AlertCircle className="h-4 w-4 text-primary shrink-0" />
+                 <p>This document is injected into the LLM prompt to measure the fit between your experience and the job description.</p>
+              </div>
+            </TabsContent>
+
             <TabsContent value="rules" className="flex-1 min-h-0 animate-in fade-in slide-in-from-top-2 duration-300 overflow-hidden flex flex-col">
               {yamlError && (
                 <div className="mb-4 bg-destructive/10 border border-destructive/20 p-4 rounded-xl flex gap-3 items-start animate-in zoom-in-95">
@@ -231,30 +255,6 @@ export default function SettingsPage() {
                    />
                 </CardContent>
               </Card>
-            </TabsContent>
-
-            <TabsContent value="resume" className="flex-1 min-h-0 animate-in fade-in slide-in-from-top-2 duration-300 overflow-hidden flex flex-col">
-              <Card className="flex-1 border-border/50 bg-background/50 backdrop-blur-md overflow-hidden flex flex-col shadow-inner">
-                <CardHeader className="py-3 bg-muted/20 border-b border-border/30">
-                   <div className="flex justify-between items-center">
-                      <CardTitle className="text-xs font-mono uppercase text-muted-foreground/80">profile_doc.md</CardTitle>
-                      <Badge variant="outline" className="text-[10px] font-mono opacity-60">Text/Markdown</Badge>
-                   </div>
-                </CardHeader>
-                <CardContent className="p-0 flex-1 overflow-auto">
-                   <textarea
-                     className="w-full h-full min-h-[500px] p-6 bg-transparent resize-none font-mono text-sm leading-relaxed focus:outline-none scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent"
-                     value={docContent}
-                     onChange={(e) => setDocContent(e.target.value)}
-                     spellCheck={false}
-                     placeholder="Paste your resume or CV summary here for AI context injection..."
-                   />
-                </CardContent>
-              </Card>
-              <div className="mt-4 p-4 rounded-xl border border-primary/10 bg-primary/5 flex gap-3 text-xs text-muted-foreground">
-                 <AlertCircle className="h-4 w-4 text-primary shrink-0" />
-                 <p>This document is injected into the LLM prompt to measure the fit between your experience and the job description.</p>
-              </div>
             </TabsContent>
 
             <TabsContent value="philosophy" className="flex-1 min-h-0 animate-in fade-in slide-in-from-top-2 duration-300 overflow-hidden flex flex-col">

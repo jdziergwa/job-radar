@@ -101,7 +101,7 @@ export function PipelineProgressDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-3xl border-border/50 bg-background/85 backdrop-blur-xl shadow-2xl overflow-hidden">
-        <DialogHeader className="pb-4 border-b border-border/50">
+        <DialogHeader className="pb-4 border-b border-border/50 relative">
           <div className="flex items-center gap-3">
              <div className="bg-primary/20 p-2 rounded-xl text-primary">
                 <Loader2 className={`h-5 w-5 ${status?.status === 'running' ? 'animate-spin' : ''}`} />
@@ -115,6 +115,15 @@ export function PipelineProgressDialog({
                 </DialogDescription>
              </div>
           </div>
+          {/* Mobile-friendly close button in the header */}
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => onOpenChange(false)}
+            className="absolute right-0 top-0 h-10 w-10 rounded-full sm:hidden hover:bg-muted/50"
+          >
+            <XCircle className="h-5 w-5 text-muted-foreground" />
+          </Button>
         </DialogHeader>
 
         <div className="py-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
