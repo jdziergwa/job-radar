@@ -73,3 +73,23 @@ def update_profile_doc(name: str, body: ProfileContent):
         raise HTTPException(status_code=404, detail=f"Profile '{name}' not found")
     path.write_text(body.content, encoding="utf-8")
     return {"ok": True}
+
+
+@router.get("/profile/{name}/scoring-philosophy", response_model=ProfileContent)
+def get_scoring_philosophy(name: str):
+    path = PROFILES_DIR / name / "scoring_philosophy.md"
+    if not path.exists():
+        raise HTTPException(status_code=404, detail=f"Scoring philosophy for profile '{name}' not found")
+    return ProfileContent(content=path.read_text(encoding="utf-8"))
+
+
+@router.put("/profile/{name}/scoring-philosophy")
+def update_scoring_philosophy(name: str, body: ProfileContent):
+    profile_path = PROFILES_DIR / name
+    if not profile_path.exists():
+        raise HTTPException(status_code=404, detail=f"Profile '{name}' not found")
+    if not body.content.strip():
+        raise HTTPException(status_code=422, detail="Scoring philosophy cannot be empty")
+    path = profile_path / "scoring_philosophy.md"
+    path.write_text(body.content, encoding="utf-8")
+    return {"ok": True}

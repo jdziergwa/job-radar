@@ -27,33 +27,39 @@ CALL_DELAY = 0.5  # seconds
 MAX_RETRIES = 3
 
 
-def load_scoring_prompt() -> str:
-    """Load the generic scoring instructions from docs/SCORING_PROMPT.md.
+# Resolve paths relative to this file, not cwd
+_SRC_DIR = Path(__file__).resolve().parent
+_PROJECT_ROOT = _SRC_DIR.parent
 
-    Extracts the system prompt text from the code block in the markdown.
+
+def load_prompt_structure() -> str:
+    """Load the fixed structural template from src/prompts/scoring_structure.md."""
+    path = _SRC_DIR / "prompts" / "scoring_structure.md"
+    if not path.exists():
+        logger.error("Structural prompt template not found at %s", path)
+        return "{scoring_philosophy}"  # Minimum viable fallback
+    return path.read_text(encoding="utf-8").strip()
+
+
+def load_scoring_philosophy(profile_dir: Path | None = None) -> str:
+    """Load the scoring philosophy section for the given profile.
+
+    Checks for:
+    1. Per-profile scoring_philosophy.md
+    2. profiles/example/scoring_philosophy.md (universal fallback)
     """
-    path = Path("docs/SCORING_PROMPT.md")
-    content = path.read_text(encoding="utf-8")
+    if profile_dir is not None:
+        philosophy_path = profile_dir / "scoring_philosophy.md"
+        if philosophy_path.exists():
+            return philosophy_path.read_text(encoding="utf-8").strip()
 
-    # Extract the system prompt from the first code block
-    # It's between the first ``` and the next ```
-    lines = content.split("\n")
-    in_block = False
-    prompt_lines: list[str] = []
-    block_count = 0
+    # Universal fallback: the example profile philosophy
+    fallback_path = _PROJECT_ROOT / "profiles" / "example" / "scoring_philosophy.md"
+    if fallback_path.exists():
+        return fallback_path.read_text(encoding="utf-8").strip()
 
-    for line in lines:
-        if line.strip().startswith("```") and not in_block:
-            block_count += 1
-            if block_count == 1:  # First code block = system prompt
-                in_block = True
-                continue
-        elif line.strip() == "```" and in_block:
-            break
-        elif in_block:
-            prompt_lines.append(line)
-
-    return "\n".join(prompt_lines).strip()
+    logger.warning("No scoring philosophy found in profile or example — using empty philosophy")
+    return ""
 
 
 def _build_system_prompt(scoring_instructions: str, profile_doc: str, profile_config: dict[str, Any] | None = None) -> list[dict[str, Any]]:
@@ -103,8 +109,8 @@ def _parse_numeric_score(val: Any) -> int:
         if isinstance(val, str):
             # Handle "90%", "85/100", etc.
             clean_val = "".join(c for c in val if c.isdigit() or c == ".")
-            return int(float(clean_val)) if clean_val else 0
-        return int(float(val))
+            return max(0, min(100, int(float(clean_val)))) if clean_val else 0
+        return max(0, min(100, int(float(val))))
     except (ValueError, TypeError):
         return 0
 
@@ -495,9 +501,10 @@ class ScorerProtocol(Protocol):
 class AnthropicScorer:
     """Default scorer using Claude Haiku with prompt caching."""
     
-    def __init__(self, model: str = "claude-haiku-4-5-20251001", max_desc_chars: int = 20000):
+    def __init__(self, model: str = "claude-haiku-4-5-20251001", max_desc_chars: int = 20000, profile_dir: Path | None = None):
         self.model = model
         self.max_desc_chars = max_desc_chars
+        self.profile_dir = profile_dir
         self._client = anthropic.Anthropic()
         self._system_prompt: list[dict] | None = None
         self._profile_doc: str | None = None
@@ -505,7 +512,9 @@ class AnthropicScorer:
     def _ensure_system_prompt(self, profile_doc: str) -> list[dict]:
         """Build and cache system prompt."""
         if self._system_prompt is None or self._profile_doc != profile_doc:
-            scoring_instructions = load_scoring_prompt()
+            philosophy = load_scoring_philosophy(self.profile_dir)
+            structure = load_prompt_structure()
+            scoring_instructions = structure.format(scoring_philosophy=philosophy)
             self._system_prompt = _build_system_prompt(scoring_instructions, profile_doc)
             self._profile_doc = profile_doc
         return self._system_prompt
@@ -524,6 +533,7 @@ async def score_jobs(
     profile_doc: str,
     scoring_config: dict[str, Any],
     store: Store,
+    profile_dir: Path | None = None,
     profile_config: dict[str, Any] | None = None,
     progress_callback: Optional[Callable[[int, int], None]] = None,
     concurrency: int = 25,
@@ -550,9 +560,11 @@ async def score_jobs(
     model = scoring_config.get("model", "claude-haiku-4-5-20251001")
     max_desc_chars = scoring_config.get("max_description_chars", 20000)
 
-    # Load scoring instructions
-    scoring_instructions = load_scoring_prompt()
-
+    # Load scoring philosophy and assemble template
+    philosophy = load_scoring_philosophy(profile_dir)
+    structure = load_prompt_structure()
+    scoring_instructions = structure.format(scoring_philosophy=philosophy)
+    
     # Build system prompt (cached across all calls)
     system_prompt = _build_system_prompt(scoring_instructions, profile_doc, profile_config)
 
@@ -627,4 +639,5 @@ def _error_scored_job(job: CandidateJob, reason: str) -> ScoredJob:
         first_seen_at=job.first_seen_at,
         fit_score=0,
         reasoning=reason,
+        apply_priority="skip",
     )

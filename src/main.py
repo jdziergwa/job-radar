@@ -491,6 +491,7 @@ async def run() -> None:
             profile_doc,
             scoring_config,
             store,
+            profile_dir=profile_dir,
             profile_config=config.get("keywords", {}),
             progress_callback=score_p_callback,
             concurrency=scoring_config.get("concurrency", 25),

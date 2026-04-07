@@ -302,6 +302,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/profile/{name}/scoring-philosophy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Scoring Philosophy */
+        get: operations["get_scoring_philosophy_api_profile__name__scoring_philosophy_get"];
+        /** Update Scoring Philosophy */
+        put: operations["update_scoring_philosophy_api_profile__name__scoring_philosophy_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/companies/{profile}": {
         parameters: {
             query?: never;
@@ -1275,6 +1293,72 @@ export interface operations {
         };
     };
     update_profile_doc_api_profile__name__doc_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProfileContent"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_scoring_philosophy_api_profile__name__scoring_philosophy_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProfileContent"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_scoring_philosophy_api_profile__name__scoring_philosophy_put: {
         parameters: {
             query?: never;
             header?: never;
