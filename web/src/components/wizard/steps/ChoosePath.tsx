@@ -4,10 +4,12 @@ import { useState } from 'react'
 import { Sparkles, PenLine, CheckCircle2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
+import { WizardData } from '../types'
+
 interface StepProps {
-  onNext: (data?: any) => void
+  onNext: (data?: Partial<WizardData>) => void
   onBack: () => void
-  data: any
+  data: Partial<WizardData>
 }
 
 export function ChoosePath({ onNext, onBack, data }: StepProps) {

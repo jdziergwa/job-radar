@@ -6,10 +6,12 @@ import { Upload, FileUp, X, AlertCircle, FileText, ChevronRight } from 'lucide-r
 import { cn } from '@/lib/utils'
 import { api } from '@/lib/api/client'
 
+import { WizardData } from '../types'
+
 interface StepProps {
-  onNext: (data?: any) => void
-  onBack: (data?: any) => void
-  data: any
+  onNext: (data?: Partial<WizardData>) => void
+  onBack: (data?: Partial<WizardData>) => void
+  data: Partial<WizardData>
 }
 
 export function UploadCV({ onNext, onBack, data }: StepProps) {
@@ -45,8 +47,8 @@ export function UploadCV({ onNext, onBack, data }: StepProps) {
     formData.append('file', file)
 
     // Trigger analysis and move to loading step
-    const analysisPromise = (api as any).POST('/api/wizard/analyze-cv', {
-      body: formData as any
+    const analysisPromise = api.POST('/api/wizard/analyze-cv', {
+      body: formData as any // openapi-fetch handled FormData via BodyInit
     })
 
     onNext({ analysisPromise, cvFile: { name: file.name, size: file.size } })

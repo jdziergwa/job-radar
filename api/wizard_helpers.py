@@ -21,7 +21,7 @@ REGION_MAPPING = {
     "LATAM": r"\b(latam|south america|mexico|brazil|argentina|chile|colombia)\b",
     "Asia": r"\b(asia|china|japan|korea|singapore|vietnam|thailand|indonesia)\b",
     "India": r"\b(india|bangalore|mumbai|delhi|hyderabad|pune)\b",
-    "Australia": r"\b(australia|new zealand|sidney|melbourne|brisbane)\b",
+    "Australia": r"\b(australia|new zealand|sydney|melbourne|brisbane)\b",
     "Nordics": r"\b(nordics|sweden|norway|denmark|finland|stockholm|oslo|helsinki|copenhagen)\b",
     "Benelux": r"\b(benelux|belgium|luxembourg|netherlands)\b",
 }
@@ -61,8 +61,8 @@ def _to_regex(region: str) -> str:
 def generate_profile_yaml(analysis: CVAnalysisResponse, preferences: Dict[str, Any]) -> str:
     """Build profile.yaml content from CV analysis + user preferences."""
     
-    target_regions = preferences.get("target_regions", [])
-    excluded_regions = preferences.get("excluded_regions", [])
+    target_regions = preferences.get("targetRegions", [])
+    excluded_regions = preferences.get("excludedRegions", [])
     
     location_patterns = [_to_regex(r) for r in target_regions]
     location_exclusions = [_to_regex(r) for r in excluded_regions]
@@ -112,7 +112,7 @@ def generate_profile_doc(analysis: CVAnalysisResponse, preferences: Dict[str, An
     sections.append("# Candidate Profile")
     
     # ## Role Target
-    target_roles = " / ".join(preferences.get("target_roles", []))
+    target_roles = " / ".join(preferences.get("targetRoles", []))
     role_target_lines = [f"## Role Target", target_roles]
     if analysis.suggested_target_roles:
         suggested = " / ".join(analysis.suggested_target_roles)
@@ -144,7 +144,7 @@ def generate_profile_doc(analysis: CVAnalysisResponse, preferences: Dict[str, An
     
     # ## What Makes a Good Match (Score Higher)
     good_match_lines = ["## What Makes a Good Match (Score Higher)"]
-    signals = preferences.get("good_match_signals", []) + analysis.suggested_good_match_signals
+    signals = preferences.get("goodMatchSignals", []) + analysis.suggested_good_match_signals
     
     # Inferred defaults based on preferences
     remote_pref = preferences.get("remotePref", [])
@@ -189,7 +189,7 @@ def generate_profile_doc(analysis: CVAnalysisResponse, preferences: Dict[str, An
     
     # ## What Lowers Fit (Score Lower)
     lower_fit_lines = ["## What Lowers Fit (Score Lower)"]
-    deal_breakers = preferences.get("deal_breakers", []) + analysis.suggested_lower_fit_signals
+    deal_breakers = preferences.get("dealBreakers", []) + analysis.suggested_lower_fit_signals
     
     # Standard entries based on seniority
     seniority_val = preferences.get("seniority", getattr(analysis, "inferred_seniority", ""))
@@ -260,18 +260,19 @@ def generate_profile_doc(analysis: CVAnalysisResponse, preferences: Dict[str, An
     sections.append("\n".join(loc_lines))
     
     # ## Career Direction
-    career_dir = preferences.get("career_direction") or analysis.suggested_career_direction
+    career_dir = preferences.get("careerDirection") or analysis.suggested_career_direction
     sections.append(f"## Career Direction\n{career_dir}")
     
     # ## Portfolio
-    portfolio_lines = ["## Portfolio"]
-    for p in analysis.portfolio:
-        portfolio_lines.append(f"- **{p.name}** ({p.url})")
-        if p.technologies:
-            tech_tags = ", ".join(p.technologies)
-            portfolio_lines.append(f"  - {tech_tags}")
-        if p.description:
-            portfolio_lines.append(f"  - {p.description}")
-    sections.append("\n".join(portfolio_lines))
+    if analysis.portfolio:
+        portfolio_lines = ["## Portfolio"]
+        for p in analysis.portfolio:
+            portfolio_lines.append(f"- **{p.name}** ({p.url})")
+            if p.technologies:
+                tech_tags = ", ".join(p.technologies)
+                portfolio_lines.append(f"  - {tech_tags}")
+            if p.description:
+                portfolio_lines.append(f"  - {p.description}")
+        sections.append("\n".join(portfolio_lines))
     
     return "\n\n".join(sections)

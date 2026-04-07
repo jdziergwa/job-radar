@@ -13,6 +13,7 @@ import { Done } from './steps/Done'
 import { Radar } from 'lucide-react'
 import { api } from '@/lib/api/client'
 import { toast } from 'sonner'
+import { WizardData } from './types'
 
 const STEPS = [
   "Get Started",
@@ -31,7 +32,7 @@ interface QuickStartWizardProps {
 
 export function QuickStartWizard({ onComplete }: QuickStartWizardProps) {
   const [currentStep, setCurrentStep] = useState(0)
-  const [wizardData, setWizardData] = useState<any>({})
+  const [wizardData, setWizardData] = useState<Partial<WizardData>>({})
   const [completedSteps, setCompletedSteps] = useState<number[]>([])
   const [isInitialized, setIsInitialized] = useState(false)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
@@ -69,10 +70,10 @@ export function QuickStartWizard({ onComplete }: QuickStartWizardProps) {
     }))
   }, [currentStep, wizardData, completedSteps, isInitialized])
 
-  const handleNext = useCallback(async (stepData?: any) => {
+  const handleNext = useCallback(async (stepData?: Partial<WizardData>) => {
     // Handle manual path branch
     if (stepData?.path === 'manual') {
-      setWizardData((prev: any) => ({ ...prev, path: 'manual' }))
+      setWizardData((prev) => ({ ...prev, path: 'manual' }))
       // Reset completed steps to only include the first step
       setCompletedSteps([0])
       setCurrentStep(6) // Review & Generate step
@@ -87,7 +88,7 @@ export function QuickStartWizard({ onComplete }: QuickStartWizardProps) {
 
     // Clear manual path if we're moving from step 0 to step 1 (AI path)
     if (currentStep === 0 && !stepData?.path) {
-      setWizardData((prev: any) => {
+      setWizardData((prev) => {
         const { path, ...rest } = prev
         return rest
       })
@@ -104,9 +105,9 @@ export function QuickStartWizard({ onComplete }: QuickStartWizardProps) {
     }
   }, [currentStep, onComplete, wizardData])
 
-  const handleBack = useCallback((backData?: any) => {
+  const handleBack = useCallback((backData?: Partial<WizardData>) => {
     if (backData) {
-      setWizardData((prev: any) => ({ ...prev, ...backData }))
+      setWizardData((prev) => ({ ...prev, ...backData }))
     }
     if (currentStep > 0) {
       if (wizardData?.path === 'manual' && currentStep === 6) {

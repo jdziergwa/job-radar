@@ -25,50 +25,22 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-interface CVExperience {
-  company: string
-  role: string
-  dates: string
-  industry?: string
-  highlights?: string[]
-}
+import { components } from '@/lib/api/types'
+import { WizardData } from '../types'
 
-interface CVSkills {
-  [category: string]: string[]
-}
-
-interface CVEducation {
-  school: string
-  degree: string
-  dates: string
-}
-
-interface CVPortfolio {
-  name: string
-  url: string
-  tech?: string[]
-  description?: string
-}
-
-interface CVAnalysis {
-  current_role: string
-  experience_years: number | null
-  experience: CVExperience[]
-  skills: CVSkills
-  education: CVEducation[]
-  portfolio: CVPortfolio[]
-}
+type ExperienceEntry = components["schemas"]["ExperienceEntry"]
+type EducationEntry = components["schemas"]["EducationEntry"]
+type PortfolioEntry = components["schemas"]["PortfolioEntry"]
+type CVAnalysis = components["schemas"]["CVAnalysisResponse"]
 
 interface StepProps {
-  onNext: (data?: any) => void
-  onBack: () => void
-  data: {
-    cvAnalysis: CVAnalysis
-  }
+  onNext: (data?: Partial<WizardData>) => void
+  onBack: (data?: Partial<WizardData>) => void
+  data: Partial<WizardData>
 }
 
 export function ReviewProfile({ onNext, onBack, data }: StepProps) {
-  const [profile, setProfile] = useState<CVAnalysis>(data.cvAnalysis)
+  const [profile, setProfile] = useState<CVAnalysis>(data.cvAnalysis as CVAnalysis)
   const [newSkill, setNewSkill] = useState<{ [category: string]: string }>({})
   const [newCategoryName, setNewCategoryName] = useState('')
   const [showAddCategory, setShowAddCategory] = useState(false)
@@ -132,7 +104,7 @@ export function ReviewProfile({ onNext, onBack, data }: StepProps) {
   }
 
   const handleAddExperience = () => {
-    const newExp: CVExperience = {
+    const newExp: ExperienceEntry = {
       company: 'New Company',
       role: 'New Role',
       dates: '2024 — Present',
@@ -156,10 +128,11 @@ export function ReviewProfile({ onNext, onBack, data }: StepProps) {
   }
 
   const handleAddEducation = () => {
-    const newEdu: CVEducation = {
+    const newEdu: EducationEntry = {
       school: 'New University',
       degree: 'Degree Name',
-      dates: '2020 — 2024'
+      start_year: '2020',
+      end_year: '2024'
     }
     setProfile(prev => ({
       ...prev,
@@ -177,11 +150,11 @@ export function ReviewProfile({ onNext, onBack, data }: StepProps) {
   }
 
   const handleAddPortfolio = () => {
-    const newProj: CVPortfolio = {
+    const newProj: PortfolioEntry = {
       name: 'New Project',
       url: 'https://github.com/yourname/project',
       description: 'Brief description of your project and impact.',
-      tech: []
+      technologies: []
     }
     setProfile(prev => ({
       ...prev,
@@ -507,13 +480,23 @@ export function ReviewProfile({ onNext, onBack, data }: StepProps) {
                         className="h-8 text-sm bg-background"
                       />
                        <Input 
-                        value={edu.dates} 
+                        value={edu.start_year || ''} 
                         onChange={(e) => {
                           const newEdu = [...profile.education]
-                          newEdu[idx].dates = e.target.value
+                          newEdu[idx].start_year = e.target.value
                           setProfile({ ...profile, education: newEdu })
                         }}
-                        placeholder="Dates"
+                        placeholder="Start Year"
+                        className="h-8 text-sm bg-background"
+                      />
+                       <Input 
+                        value={edu.end_year || ''} 
+                        onChange={(e) => {
+                          const newEdu = [...profile.education]
+                          newEdu[idx].end_year = e.target.value
+                          setProfile({ ...profile, education: newEdu })
+                        }}
+                        placeholder="End Year (or Present)"
                         className="h-8 text-sm bg-background"
                       />
                        <div className="flex justify-end gap-2">
@@ -526,7 +509,7 @@ export function ReviewProfile({ onNext, onBack, data }: StepProps) {
                       <div>
                         <div className="font-bold">{edu.school}</div>
                         <div className="text-sm opacity-80">{edu.degree}</div>
-                        <div className="text-xs text-muted-foreground">{edu.dates}</div>
+                        <div className="text-xs text-muted-foreground">{edu.start_year && edu.end_year ? `${edu.start_year} — ${edu.end_year}` : (edu.start_year || edu.end_year || '')}</div>
                       </div>
                       <div className="flex opacity-0 group-hover:opacity-100 transition-opacity gap-1">
                         <Button variant="ghost" size="icon" onClick={() => setEditingEduIdx(idx)} className="size-7 hover:bg-primary/10 hover:text-primary"><Edit2 className="size-3.5"/></Button>
@@ -627,9 +610,9 @@ export function ReviewProfile({ onNext, onBack, data }: StepProps) {
                         </div>
                         <p className="text-xs text-muted-foreground leading-relaxed line-clamp-3">{project.description}</p>
                       </div>
-                      {project.tech && project.tech.length > 0 && (
+                      {project.technologies && project.technologies.length > 0 && (
                         <div className="flex flex-wrap gap-1 mt-3">
-                          {project.tech.map(t => (
+                          {project.technologies.map(t => (
                             <Badge key={t} variant="ghost" className="text-[9px] h-4 px-1.5 bg-background/50">
                               {t}
                             </Badge>

@@ -191,6 +191,23 @@ class CompaniesResponse(BaseModel):
 
 # Wizard Models
 
+class UserPreferences(BaseModel):
+    targetRoles: list[str] = []
+    seniority: list[str] = []
+    location: str
+    workAuth: str
+    remotePref: list[str] = []
+    primaryRemotePref: Optional[str] = None
+    timezonePref: Optional[str] = None
+    targetRegions: list[str] = []
+    excludedRegions: list[str] = []
+    industries: list[str] = []
+    careerDirection: str
+    goodMatchSignals: list[str] = []
+    dealBreakers: list[str] = []
+    additionalContext: Optional[str] = None
+
+
 class ExperienceEntry(BaseModel):
     company: str
     role: str
@@ -236,7 +253,7 @@ class CVAnalysisResponse(BaseModel):
 
 class ProfileGenerateRequest(BaseModel):
     cv_analysis: CVAnalysisResponse
-    user_preferences: dict
+    user_preferences: UserPreferences
     profile_name: str = "default"
 
 

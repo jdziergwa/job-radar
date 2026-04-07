@@ -5,10 +5,12 @@ import { useEffect, useState, useRef } from 'react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 
+import { WizardData } from '../types'
+
 interface StepProps {
-  onNext: (data?: any) => void
-  onBack: (data?: any) => void
-  data: any
+  onNext: (data?: Partial<WizardData>) => void
+  onBack: (data?: Partial<WizardData>) => void
+  data: Partial<WizardData>
 }
 
 const MESSAGES = [
@@ -39,7 +41,7 @@ export function AIAnalysis({ onNext, onBack, data }: StepProps) {
           onNext({ cvAnalysis: res.data })
         } else {
           // Error case: extract error message
-          const errorMsg = res.error?.detail || "CV Analysis failed. This can happen with very complex PDFs or temporary AI outages."
+          const errorMsg = (res.error as any)?.detail || "CV Analysis failed. This can happen with very complex PDFs or temporary AI outages."
           setError(errorMsg)
         }
       }).catch((err: any) => {

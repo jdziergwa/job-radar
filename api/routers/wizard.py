@@ -64,6 +64,20 @@ async def analyze_cv(file: UploadFile = File(...)):
     if not file.filename.lower().endswith(".pdf"):
         raise HTTPException(status_code=422, detail="Only PDF files are supported")
 
+    # 1. Server-side file size limit (10MB)
+    try:
+        chunk = await file.read(10_000_001)
+        if len(chunk) > 10_000_000:
+            raise HTTPException(
+                status_code=422, 
+                detail="File too large. Maximum size is 10MB."
+            )
+        await file.seek(0)
+    except Exception as e:
+        if isinstance(e, HTTPException): raise e
+        logger.error(f"Error checking file size: {e}")
+        raise HTTPException(status_code=500, detail=f"Error processing file: {e}")
+
     text = ""
     page_count = 0
     import pdfplumber
@@ -88,15 +102,17 @@ async def analyze_cv(file: UploadFile = File(...)):
     user_message = f"Here is the candidate's CV text:\n\n{text}"
 
     async with AsyncAnthropic() as client:
-        # Max 2 retries on API error, as requested
+        # We want up to 2 retries (3 total attempts) for API errors
+        # JSON fix-up is handled separately and only on the first attempt
         max_retries = 2
-        for attempt in range(1, max_retries + 2):
+        for attempt in range(max_retries + 1):
             try:
                 response = await client.messages.create(
                     model="claude-sonnet-4-20250514",
                     max_tokens=4096,
                     system=system_prompt,
                     messages=[{"role": "user", "content": user_message}],
+                    timeout=60.0,
                 )
 
                 raw_text = response.content[0].text
@@ -104,15 +120,13 @@ async def analyze_cv(file: UploadFile = File(...)):
 
                 try:
                     data = json.loads(json_str)
-                    # Validate against model
-                    analysis = CVAnalysisResponse(page_count=page_count, **data)
-                    return analysis
+                    return CVAnalysisResponse(page_count=page_count, **data)
                 except (json.JSONDecodeError, Exception) as e:
-                    logger.warning(f"JSON parse/validation error (attempt {attempt}): {e}")
-                    if attempt == 1:
-                        # Retry once with fix-up message
+                    # If this is the first attempt, try one JSON fix-up call
+                    if attempt == 0:
+                        logger.warning(f"Initial JSON parse error: {e}. Attempting fix-up...")
                         retry_message = f"Your previous response was not valid JSON or didn't match the schema. Error: {e}. Please fix the JSON and return the full object again."
-                        response = await client.messages.create(
+                        fix_response = await client.messages.create(
                             model="claude-sonnet-4-20250514",
                             max_tokens=4096,
                             system=system_prompt,
@@ -121,27 +135,29 @@ async def analyze_cv(file: UploadFile = File(...)):
                                 {"role": "assistant", "content": raw_text},
                                 {"role": "user", "content": retry_message}
                             ],
+                            timeout=60.0,
                         )
-                        raw_text = response.content[0].text
+                        raw_text = fix_response.content[0].text
                         json_str = _extract_json(raw_text)
                         data = json.loads(json_str)
                         return CVAnalysisResponse(page_count=page_count, **data)
                     else:
-                        raise HTTPException(status_code=502, detail=f"LLM returned invalid JSON: {e}")
+                        raise HTTPException(status_code=502, detail=f"LLM returned invalid JSON after fix-up: {e}")
 
             except anthropic.RateLimitError:
-                if attempt <= max_retries:
-                    wait = 2 ** attempt
+                if attempt < max_retries:
+                    wait = 2 ** (attempt + 1)
                     logger.warning(f"Rate limited, waiting {wait}s...")
                     await asyncio.sleep(wait)
                     continue
                 raise HTTPException(status_code=502, detail="Anthropic Rate Limit exceeded")
             except anthropic.APIError as e:
-                if attempt <= max_retries:
-                    await asyncio.sleep(2 ** attempt)
+                if attempt < max_retries:
+                    await asyncio.sleep(2 ** (attempt + 1))
                     continue
                 raise HTTPException(status_code=502, detail=f"Anthropic API Error: {e}")
             except Exception as e:
+                if isinstance(e, HTTPException): raise e
                 logger.error(f"Unexpected error in CV analysis: {e}")
                 raise HTTPException(status_code=500, detail=f"Internal Server Error: {e}")
 
@@ -156,8 +172,9 @@ async def generate_profile(req: ProfileGenerateRequest):
     Build profile.yaml and profile_doc.md from structured data and user preferences.
     """
     try:
-        profile_yaml = generate_profile_yaml(req.cv_analysis, req.user_preferences)
-        profile_doc = generate_profile_doc(req.cv_analysis, req.user_preferences)
+        preferences_dict = req.user_preferences.model_dump()
+        profile_yaml = generate_profile_yaml(req.cv_analysis, preferences_dict)
+        profile_doc = generate_profile_doc(req.cv_analysis, preferences_dict)
 
         return ProfileGenerateResponse(
             profile_yaml=profile_yaml,

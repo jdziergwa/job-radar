@@ -31,10 +31,12 @@ import { api } from '@/lib/api/client'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 
+import { WizardData } from '../types'
+
 interface StepProps {
-  onNext: (data?: any) => void
+  onNext: (data?: Partial<WizardData>) => void
   onBack: () => void
-  data: any
+  data: Partial<WizardData>
 }
 
 export function ReviewGenerate({ onNext, onBack, data }: StepProps) {
@@ -50,12 +52,13 @@ export function ReviewGenerate({ onNext, onBack, data }: StepProps) {
     setError(null)
     try {
       if (data?.path === 'manual') {
-        const response = await (api as any).GET('/api/wizard/template')
-        if (response.error) {
-          throw new Error(response.error.detail || 'Failed to fetch template')
+        const response = await api.GET('/api/wizard/template')
+        if ((response as any).error) {
+          const detail = (response.error as any)?.detail || 'Failed to fetch template'
+          throw new Error(typeof detail === 'string' ? detail : 'Failed to fetch template')
         }
-        setYamlContent(response.data.profile_yaml)
-        setMdContent(response.data.profile_doc)
+        setYamlContent((response as any).data?.profile_yaml || '')
+        setMdContent((response as any).data?.profile_doc || '')
         return
       }
 
@@ -76,16 +79,17 @@ export function ReviewGenerate({ onNext, onBack, data }: StepProps) {
         additionalContext: data.additionalContext || ''
       }
 
-      const response = await (api as any).POST('/api/wizard/generate-profile', {
+      const response = await api.POST('/api/wizard/generate-profile', {
         body: {
-          cv_analysis: data.cvAnalysis,
-          user_preferences,
+          cv_analysis: data.cvAnalysis as any,
+          user_preferences: user_preferences as any,
           profile_name: 'default'
         }
       })
 
       if (response.error) {
-        throw new Error(response.error.detail || 'Failed to generate profile')
+        const detail = (response.error as any)?.detail || 'Failed to generate profile'
+        throw new Error(typeof detail === 'string' ? detail : 'Failed to generate profile')
       }
 
       setYamlContent(response.data.profile_yaml)
@@ -105,7 +109,7 @@ export function ReviewGenerate({ onNext, onBack, data }: StepProps) {
   const handleSave = async () => {
     setSaving(true)
     try {
-      const response = await (api as any).POST('/api/wizard/save-profile', {
+      const response = await api.POST('/api/wizard/save-profile', {
         body: {
           profile_name: 'default',
           profile_yaml: yamlContent,
@@ -114,7 +118,8 @@ export function ReviewGenerate({ onNext, onBack, data }: StepProps) {
       })
 
       if (response.error) {
-        throw new Error(response.error.detail || 'Failed to save profile')
+        const detail = (response.error as any)?.detail || 'Failed to save profile'
+        throw new Error(typeof detail === 'string' ? detail : 'Failed to save profile')
       }
 
       toast.success('Profile saved successfully!')
@@ -137,12 +142,12 @@ export function ReviewGenerate({ onNext, onBack, data }: StepProps) {
         </div>
         <div className="space-y-1 bg-background/50 py-4 -mt-6 border-b border-border/10 w-full">
             <h2 className="text-2xl font-bold tracking-tight">
-              {data?.path === 'manual' ? 'Loading Template' : 'AI Analysis'}
+              {data?.path === 'manual' ? 'Loading Template' : 'Generating Profile'}
             </h2>
             <p className="text-muted-foreground text-xs leading-relaxed px-4 max-w-xs mx-auto">
               {data?.path === 'manual' 
                 ? 'Preparing your manual setup environment...' 
-                : 'Our models are extracting patterns from your CV. This usually takes 15-30 seconds.'}
+                : 'Building your custom job matching rules and profile document.'}
             </p>
         </div>
       </div>

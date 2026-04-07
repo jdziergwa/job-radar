@@ -19,10 +19,12 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
+import { WizardData } from '../types'
+
 interface StepProps {
-  onNext: (data?: any) => void
+  onNext: (data?: Partial<WizardData>) => void
   onBack: () => void
-  data: any
+  data: Partial<WizardData>
 }
 
 const INDUSTRIES = [
@@ -44,9 +46,9 @@ const DEAL_BREAKERS = [
 ]
 
 export function PreferencesGoals({ onNext, onBack, data }: StepProps) {
-  const analysis = data.cvAnalysis || {}
+  const analysis = data.cvAnalysis
   
-  const [careerDirection, setCareerDirection] = useState(analysis.suggested_career_direction || '')
+  const [careerDirection, setCareerDirection] = useState(analysis?.suggested_career_direction || '')
   const [industries, setIndustries] = useState<string[]>([])
   const [goodMatchSignals, setGoodMatchSignals] = useState<string[]>([])
   const [dealBreakers, setDealBreakers] = useState<string[]>([])

@@ -64,6 +64,46 @@ export interface paths {
         patch: operations["update_status_api_jobs__job_id__status_patch"];
         trace?: never;
     };
+    "/api/jobs/{job_id}/rescore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Rescore Job
+         * @description Trigger AI rescoring for a specific job.
+         */
+        post: operations["rescore_job_api_jobs__job_id__rescore_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/jobs/rescore/all": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Rescore All Jobs
+         * @description Trigger AI rescoring for all previously scored jobs.
+         */
+        post: operations["rescore_all_jobs_api_jobs_rescore_all_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/stats": {
         parameters: {
             query?: never;
@@ -104,32 +144,85 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/stats/market": {
+    "/api/stats/dismissed": {
         parameters: {
-            query?: {
-                profile?: string;
-                days?: number;
-            };
+            query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** Get Market Intelligence */
+        /**
+         * Get Dismissal Stats
+         * @description Get breakdown of dismissal reasons.
+         */
+        get: operations["get_dismissal_stats_api_stats_dismissed_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/stats/market": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Market Intelligence
+         * @description Get structured market intelligence data for charts.
+         */
         get: operations["get_market_intelligence_api_stats_market_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/stats/insights": {
         parameters: {
-            query?: {
-                profile?: string;
-                days?: number;
-                force?: boolean;
-            };
+            query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** Get Insights */
+        /**
+         * Get Insights
+         * @description Get LLM-generated market intelligence narrative report (cached 1h).
+         */
         get: operations["get_insights_api_stats_insights_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/pipeline/providers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Providers
+         * @description Return all registered job providers for display in the UI.
+         */
+        get: operations["list_providers_api_pipeline_providers_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/pipeline/run": {
         parameters: {
@@ -192,15 +285,18 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/pipeline/providers": {
+    "/api/pipeline/active": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** List Providers */
-        get: operations["list_providers_api_pipeline_providers_get"];
+        /**
+         * Get Active Pipeline
+         * @description Check if a pipeline is currently running for a profile.
+         */
+        get: operations["get_active_pipeline_api_pipeline_active_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -216,7 +312,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get Aggregator Status */
+        /**
+         * Get Aggregator Status
+         * @description Check if the local database is up to date with the remote aggregator.
+         */
         get: operations["get_aggregator_status_api_pipeline_aggregator_status_get"];
         put?: never;
         post?: never;
@@ -226,7 +325,67 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/pipeline/active": {
+    "/api/wizard/analyze-cv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Analyze Cv
+         * @description Extract text from PDF and return a structured CV analysis using Claude.
+         */
+        post: operations["analyze_cv_api_wizard_analyze_cv_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/wizard/generate-profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Generate Profile
+         * @description Build profile.yaml and profile_doc.md from structured data and user preferences.
+         */
+        post: operations["generate_profile_api_wizard_generate_profile_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/wizard/save-profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Save Profile
+         * @description Write profile files to disk and ensure dependencies like scoring_philosophy.md exist.
+         */
+        post: operations["save_profile_api_wizard_save_profile_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/wizard/template": {
         parameters: {
             query?: never;
             header?: never;
@@ -234,12 +393,32 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get Active Pipeline
-         * @description Check if a pipeline is currently running for a profile.
+         * Get Template
+         * @description Return the contents of the example profile template files.
          */
-        get: operations["get_active_pipeline_api_pipeline_active_get"];
+        get: operations["get_template_api_wizard_template_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/profile/{name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Profile
+         * @description Create a new profile by copying the example template.
+         */
+        post: operations["create_profile_api_profile__name__post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -376,6 +555,90 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** Body_analyze_cv_api_wizard_analyze_cv_post */
+        Body_analyze_cv_api_wizard_analyze_cv_post: {
+            /** File */
+            file: string;
+        };
+        /** CVAnalysisResponse */
+        CVAnalysisResponse: {
+            /** Page Count */
+            page_count: number;
+            /** Current Role */
+            current_role: string;
+            /** Experience Years */
+            experience_years?: number | null;
+            /** Experience Summary */
+            experience_summary: string;
+            /**
+             * Experience
+             * @default []
+             */
+            experience: components["schemas"]["ExperienceEntry"][];
+            /**
+             * Skills
+             * @default {}
+             */
+            skills: {
+                [key: string]: string[];
+            };
+            /**
+             * Education
+             * @default []
+             */
+            education: components["schemas"]["EducationEntry"][];
+            /**
+             * Portfolio
+             * @default []
+             */
+            portfolio: components["schemas"]["PortfolioEntry"][];
+            /**
+             * Spoken Languages
+             * @default []
+             */
+            spoken_languages: string[];
+            /** Inferred Seniority */
+            inferred_seniority: string;
+            /**
+             * Suggested Target Roles
+             * @default []
+             */
+            suggested_target_roles: string[];
+            /**
+             * Suggested Title Patterns
+             * @default {}
+             */
+            suggested_title_patterns: {
+                [key: string]: string[];
+            };
+            /**
+             * Suggested Description Signals
+             * @default []
+             */
+            suggested_description_signals: string[];
+            /**
+             * Suggested Exclusions
+             * @default []
+             */
+            suggested_exclusions: string[];
+            /**
+             * Suggested Skill Gaps
+             * @default []
+             */
+            suggested_skill_gaps: string[];
+            /** Suggested Career Direction */
+            suggested_career_direction: string;
+            /**
+             * Suggested Good Match Signals
+             * @default []
+             */
+            suggested_good_match_signals: string[];
+            /**
+             * Suggested Lower Fit Signals
+             * @default []
+             */
+            suggested_lower_fit_signals: string[];
+        };
         /** CompaniesResponse */
         CompaniesResponse: {
             /**
@@ -430,6 +693,13 @@ export interface components {
             /** Last Seen */
             last_seen?: string | null;
         };
+        /** CountryStat */
+        CountryStat: {
+            /** Country */
+            country: string;
+            /** Count */
+            count: number;
+        };
         /** DailyCount */
         DailyCount: {
             /** Date */
@@ -439,10 +709,61 @@ export interface components {
             /** Scored */
             scored: number;
         };
+        /** DismissalStats */
+        DismissalStats: {
+            /**
+             * Reasons
+             * @default {}
+             */
+            reasons: {
+                [key: string]: number;
+            };
+            /**
+             * Total
+             * @default 0
+             */
+            total: number;
+        };
+        /** EducationEntry */
+        EducationEntry: {
+            /** School */
+            school: string;
+            /** Degree */
+            degree: string;
+            /** Start Year */
+            start_year?: string | null;
+            /** End Year */
+            end_year?: string | null;
+        };
+        /** ExperienceEntry */
+        ExperienceEntry: {
+            /** Company */
+            company: string;
+            /** Role */
+            role: string;
+            /** Dates */
+            dates: string;
+            /** Industry */
+            industry?: string | null;
+            /**
+             * Highlights
+             * @default []
+             */
+            highlights: string[];
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
+        };
+        /** InsightsResponse */
+        InsightsResponse: {
+            /** Report */
+            report: string;
+            /** Generated At */
+            generated_at: string;
+            /** Cached */
+            cached: boolean;
         };
         /** JobDetailResponse */
         JobDetailResponse: {
@@ -490,6 +811,11 @@ export interface components {
             salary_max?: number | null;
             /** Salary Currency */
             salary_currency?: string | null;
+            /**
+             * Is Sparse
+             * @default false
+             */
+            is_sparse: boolean;
             /** Description */
             description?: string | null;
         };
@@ -540,6 +866,10 @@ export interface components {
              * @default new
              */
             status: string;
+            /** Dismissal Reason */
+            dismissal_reason?: string | null;
+            /** Match Tier */
+            match_tier?: string | null;
             /** Salary */
             salary?: string | null;
             /** Salary Min */
@@ -548,17 +878,46 @@ export interface components {
             salary_max?: number | null;
             /** Salary Currency */
             salary_currency?: string | null;
+            /**
+             * Is Sparse
+             * @default false
+             */
+            is_sparse: boolean;
         };
-        /** ProviderInfo */
-        ProviderInfo: {
-            /** Name */
-            name: string;
-            /** Display Name */
-            display_name: string;
-            /** Description */
-            description: string;
-            /** Shows Aggregator Badge */
-            shows_aggregator_badge: boolean;
+        /** MarketIntelligenceResponse */
+        MarketIntelligenceResponse: {
+            /**
+             * Skip Reason Distribution
+             * @default []
+             */
+            skip_reason_distribution: components["schemas"]["SkipReasonStat"][];
+            /**
+             * Country Distribution
+             * @default []
+             */
+            country_distribution: components["schemas"]["CountryStat"][];
+            /**
+             * Missing Skills
+             * @default []
+             */
+            missing_skills: components["schemas"]["SkillCount"][];
+            /**
+             * Total Scored
+             * @default 0
+             */
+            total_scored: number;
+            /**
+             * Apply Priority Counts
+             * @default {}
+             */
+            apply_priority_counts: {
+                [key: string]: number;
+            };
+            /**
+             * Salary Distribution
+             * @default []
+             */
+            salary_distribution: components["schemas"]["SalaryStat"][];
         };
         /** PipelineRunRequest */
         PipelineRunRequest: {
@@ -569,7 +928,10 @@ export interface components {
             profile: string;
             /**
              * Sources
-             * @default ["aggregator", "local"]
+             * @default [
+             *       "aggregator",
+             *       "local"
+             *     ]
              */
             sources: string[];
             /**
@@ -600,17 +962,91 @@ export interface components {
              * @default
              */
             step_name: string;
+            /** Detail */
+            detail?: string | null;
+            /** Duration */
+            duration?: number | null;
             /** Stats */
             stats?: {
                 [key: string]: unknown;
             } | null;
+            /**
+             * Skipped Steps
+             * @default []
+             */
+            skipped_steps: number[];
             /** Error */
             error?: string | null;
+        };
+        /** PortfolioEntry */
+        PortfolioEntry: {
+            /** Name */
+            name: string;
+            /** Url */
+            url: string;
+            /**
+             * Technologies
+             * @default []
+             */
+            technologies: string[];
+            /** Description */
+            description?: string | null;
         };
         /** ProfileContent */
         ProfileContent: {
             /** Content */
             content: string;
+        };
+        /** ProfileGenerateRequest */
+        ProfileGenerateRequest: {
+            cv_analysis: components["schemas"]["CVAnalysisResponse"];
+            user_preferences: components["schemas"]["UserPreferences"];
+            /**
+             * Profile Name
+             * @default default
+             */
+            profile_name: string;
+        };
+        /** ProfileGenerateResponse */
+        ProfileGenerateResponse: {
+            /** Profile Yaml */
+            profile_yaml: string;
+            /** Profile Doc */
+            profile_doc: string;
+        };
+        /** ProfileSaveRequest */
+        ProfileSaveRequest: {
+            /** Profile Name */
+            profile_name: string;
+            /** Profile Yaml */
+            profile_yaml: string;
+            /** Profile Doc */
+            profile_doc: string;
+        };
+        /** ProfileTemplateResponse */
+        ProfileTemplateResponse: {
+            /** Profile Yaml */
+            profile_yaml: string;
+            /** Profile Doc */
+            profile_doc: string;
+        };
+        /** ProviderInfo */
+        ProviderInfo: {
+            /** Name */
+            name: string;
+            /** Display Name */
+            display_name: string;
+            /** Description */
+            description: string;
+            /** Shows Aggregator Badge */
+            shows_aggregator_badge: boolean;
+        };
+        /** SalaryStat */
+        SalaryStat: {
+            /** Range */
+            range: string;
+            /** Count */
+            count: number;
         };
         /** ScoreBreakdown */
         ScoreBreakdown: {
@@ -670,10 +1106,10 @@ export interface components {
             /** Count */
             count: number;
         };
-        /** SalaryStat */
-        SalaryStat: {
-            /** Range */
-            range: string;
+        /** SkipReasonStat */
+        SkipReasonStat: {
+            /** Reason */
+            reason: string;
             /** Count */
             count: number;
         };
@@ -690,6 +1126,11 @@ export interface components {
              */
             new_today: number;
             /**
+             * Total New Today
+             * @default 0
+             */
+            total_new_today: number;
+            /**
              * New This Week
              * @default 0
              */
@@ -699,6 +1140,11 @@ export interface components {
              * @default 0
              */
             scored: number;
+            /**
+             * Pending
+             * @default 0
+             */
+            pending: number;
             /**
              * Applied
              * @default 0
@@ -762,6 +1208,61 @@ export interface components {
                 [key: string]: unknown;
             }[];
         };
+        /** UserPreferences */
+        UserPreferences: {
+            /**
+             * Targetroles
+             * @default []
+             */
+            targetRoles: string[];
+            /**
+             * Seniority
+             * @default []
+             */
+            seniority: string[];
+            /** Location */
+            location: string;
+            /** Workauth */
+            workAuth: string;
+            /**
+             * Remotepref
+             * @default []
+             */
+            remotePref: string[];
+            /** Primaryremotepref */
+            primaryRemotePref?: string | null;
+            /** Timezonepref */
+            timezonePref?: string | null;
+            /**
+             * Targetregions
+             * @default []
+             */
+            targetRegions: string[];
+            /**
+             * Excludedregions
+             * @default []
+             */
+            excludedRegions: string[];
+            /**
+             * Industries
+             * @default []
+             */
+            industries: string[];
+            /** Careerdirection */
+            careerDirection: string;
+            /**
+             * Goodmatchsignals
+             * @default []
+             */
+            goodMatchSignals: string[];
+            /**
+             * Dealbreakers
+             * @default []
+             */
+            dealBreakers: string[];
+            /** Additionalcontext */
+            additionalContext?: string | null;
+        };
         /** ValidationError */
         ValidationError: {
             /** Location */
@@ -799,6 +1300,8 @@ export interface operations {
                 page?: number;
                 per_page?: number;
                 days?: number | null;
+                is_sparse?: boolean | null;
+                today_only?: boolean | null;
             };
             header?: never;
             path?: never;
@@ -896,6 +1399,70 @@ export interface operations {
             };
         };
     };
+    rescore_job_api_jobs__job_id__rescore_post: {
+        parameters: {
+            query?: {
+                profile?: string;
+            };
+            header?: never;
+            path: {
+                job_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    rescore_all_jobs_api_jobs_rescore_all_post: {
+        parameters: {
+            query?: {
+                profile?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_stats_api_stats_get: {
         parameters: {
             query?: {
@@ -959,6 +1526,37 @@ export interface operations {
             };
         };
     };
+    get_dismissal_stats_api_stats_dismissed_get: {
+        parameters: {
+            query?: {
+                profile?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DismissalStats"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_market_intelligence_api_stats_market_get: {
         parameters: {
             query?: {
@@ -969,11 +1567,24 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
-                    "application/json": MarketIntelligenceResponse;
+                    "application/json": components["schemas"]["MarketIntelligenceResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -989,11 +1600,44 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
-                    "application/json": InsightsResponse;
+                    "application/json": components["schemas"]["InsightsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_providers_api_pipeline_providers_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProviderInfo"][];
                 };
             };
         };
@@ -1093,9 +1737,11 @@ export interface operations {
             };
         };
     };
-    list_providers_api_pipeline_providers_get: {
+    get_active_pipeline_api_pipeline_active_get: {
         parameters: {
-            query?: never;
+            query?: {
+                profile?: string;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -1108,7 +1754,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ProviderInfo"][];
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -1144,13 +1799,132 @@ export interface operations {
             };
         };
     };
-    get_active_pipeline_api_pipeline_active_get: {
+    analyze_cv_api_wizard_analyze_cv_post: {
         parameters: {
-            query?: {
-                profile?: string;
-            };
+            query?: never;
             header?: never;
             path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_analyze_cv_api_wizard_analyze_cv_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CVAnalysisResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    generate_profile_api_wizard_generate_profile_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProfileGenerateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProfileGenerateResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    save_profile_api_wizard_save_profile_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProfileSaveRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_template_api_wizard_template_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProfileTemplateResponse"];
+                };
+            };
+        };
+    };
+    create_profile_api_profile__name__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                name: string;
+            };
             cookie?: never;
         };
         requestBody?: never;
@@ -1512,41 +2286,4 @@ export interface operations {
             };
         };
     };
-}
-
-// --- Market Intelligence ---
-
-export type SkillCount = {
-  skill: string
-  count: number
-}
-
-export type SkipReasonStat = {
-  reason: string
-  count: number
-}
-
-export type CountryStat = {
-  country: string
-  count: number
-}
-
-export type SalaryStat = {
-  range: string
-  count: number
-}
-
-export type MarketIntelligenceResponse = {
-  skip_reason_distribution: SkipReasonStat[]
-  country_distribution: CountryStat[]
-  missing_skills: SkillCount[]
-  salary_distribution: SalaryStat[]
-  total_scored: number
-  apply_priority_counts: Record<string, number>
-}
-
-export type InsightsResponse = {
-  report: string
-  generated_at: string
-  cached: boolean
 }

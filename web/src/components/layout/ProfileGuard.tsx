@@ -10,9 +10,6 @@ type Step = 'checking' | 'setup' | 'saving' | 'done' | 'ready'
 
 export function ProfileGuard({ children }: { children: React.ReactNode }) {
   const [step, setStep] = useState<Step>('checking')
-  const [docContent, setDocContent] = useState('')
-  const [error, setError] = useState<string | null>(null)
-
   useEffect(() => {
     async function checkProfile() {
       try {
@@ -26,33 +23,6 @@ export function ProfileGuard({ children }: { children: React.ReactNode }) {
     }
     checkProfile()
   }, [])
-
-  const handleCreate = async () => {
-    setError(null)
-    setStep('saving')
-    try {
-      // Create profile directory from example template
-      const createRes = await fetch('/api/profile/default', { method: 'POST' })
-      if (!createRes.ok && createRes.status !== 409) {
-        throw new Error('Failed to create profile')
-      }
-
-      // Write the CV if the user provided one
-      if (docContent.trim()) {
-        const docRes = await api.PUT('/api/profile/{name}/doc', {
-          params: { path: { name: 'default' } },
-          body: { content: docContent },
-        })
-        if (docRes.error) throw new Error('Failed to save resume')
-      }
-
-      setStep('done')
-      setTimeout(() => setStep('ready'), 1200)
-    } catch (err: any) {
-      setError(err.message || 'Something went wrong')
-      setStep('setup')
-    }
-  }
 
   if (step === 'checking') {
     return (

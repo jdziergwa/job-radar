@@ -25,10 +25,12 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
+import { WizardData } from '../types'
+
 interface StepProps {
-  onNext: (data?: any) => void
-  onBack: () => void
-  data: any
+  onNext: (data?: Partial<WizardData>) => void
+  onBack: (data?: Partial<WizardData>) => void
+  data: Partial<WizardData>
 }
 
 const SENIORITY_LEVELS = ['Junior', 'Mid', 'Senior', 'Lead', 'Staff', 'Principal']
@@ -52,12 +54,12 @@ const TIMEZONE_PREFS = [
 ]
 
 export function SearchLocation({ onNext, onBack, data }: StepProps) {
-  const analysis = data.cvAnalysis || {}
+  const analysis = data.cvAnalysis
   
-  const [targetRoles, setTargetRoles] = useState<string[]>(analysis.suggested_target_roles || [])
+  const [targetRoles, setTargetRoles] = useState<string[]>(analysis?.suggested_target_roles || [])
   const [newRole, setNewRole] = useState('')
   const [seniority, setSeniority] = useState<string[]>(
-    analysis.inferred_seniority ? [analysis.inferred_seniority.toLowerCase()] : ['senior']
+    analysis?.inferred_seniority ? [analysis.inferred_seniority.toLowerCase()] : ['senior']
   )
   const [location, setLocation] = useState('')
   const [workAuth, setWorkAuth] = useState<string>('')

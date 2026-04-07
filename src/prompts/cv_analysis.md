@@ -65,6 +65,3 @@ The extracted data will be used to generate a `profile_doc.md` (a candidate narr
 Ensure your `suggested_*` fields are optimized for these formats:
 - `suggested_title_patterns` and `suggested_description_signals` MUST be valid Python regex strings.
 - `suggested_skill_gaps` should be honest — things commonly required for the target roles but not evidenced in the CV.
-
-### Candidate CV Text:
-{cv_text}
