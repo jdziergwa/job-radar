@@ -11,6 +11,8 @@ def _minimal_analysis():
         suggested_description_signals=[],
         skills={},
         suggested_exclusions=[],
+        suggested_target_roles=[],
+        suggested_good_match_signals=[],
     )
 
 
@@ -111,3 +113,68 @@ def test_generate_profile_yaml_normalizes_legacy_remote_pref_labels():
     patterns = config["keywords"]["location_patterns"]
 
     assert r"\bhybrid\b" in patterns
+
+
+def test_generate_profile_yaml_derives_literal_signals_from_roles_and_match_chips():
+    analysis = SimpleNamespace(
+        suggested_title_patterns={"high_confidence": [], "broad": []},
+        suggested_description_signals=[r"\b(playwright|cypress)\b"],
+        skills={
+            "Testing": ["Playwright", "GitHub Actions", "Appium", "REST API"],
+        },
+        suggested_exclusions=[],
+        suggested_target_roles=[],
+        suggested_good_match_signals=["Developer Productivity", "Test Platform"],
+    )
+
+    config = yaml.safe_load(generate_profile_yaml(
+        analysis,
+        {
+            "targetRegions": ["Europe"],
+            "excludedRegions": [],
+            "enableStandardExclusions": False,
+            "targetRoles": ["QA Automation Engineer", "Test Platform Engineer"],
+            "goodMatchSignals": [],
+            "careerDirection": "",
+            "remotePref": ["remote"],
+        },
+    ))
+
+    patterns = config["keywords"]["description_signals"]["patterns"]
+
+    assert r"\b(playwright|cypress)\b" in patterns
+    assert r"\btest\s+platform\b" in patterns
+    assert r"\bdeveloper\s+productivity\b" in patterns
+
+
+def test_generate_profile_yaml_derives_literal_signals_from_career_direction():
+    analysis = SimpleNamespace(
+        suggested_title_patterns={"high_confidence": [], "broad": []},
+        suggested_description_signals=[r"\b(python|go)\b"],
+        skills={
+            "Platform": ["Kafka", "GitHub Actions", "Docker"],
+        },
+        suggested_exclusions=[],
+        suggested_target_roles=[],
+        suggested_good_match_signals=["Distributed Systems", "Developer Tooling"],
+    )
+
+    config = yaml.safe_load(generate_profile_yaml(
+        analysis,
+        {
+            "targetRegions": ["Europe"],
+            "excludedRegions": [],
+            "enableStandardExclusions": False,
+            "targetRoles": ["Senior Platform Engineer"],
+            "goodMatchSignals": ["Internal Tooling"],
+            "careerDirection": "Platform engineering. Developer tooling.",
+            "remotePref": ["remote"],
+        },
+    ))
+
+    patterns = config["keywords"]["description_signals"]["patterns"]
+
+    assert r"\bdeveloper\s+tooling\b" in patterns
+    assert r"\binternal\s+tooling\b" in patterns
+    assert r"\bdistributed\s+systems\b" in patterns
+    assert r"\bplatform\s+engineering\b" in patterns

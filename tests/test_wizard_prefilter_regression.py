@@ -31,6 +31,8 @@ def _analysis_for_prefilter():
         ],
         skills={},
         suggested_exclusions=[],
+        suggested_target_roles=[],
+        suggested_good_match_signals=[],
     )
 
 
@@ -42,6 +44,45 @@ def _generated_keywords():
             "excludedRegions": [],
             "enableStandardExclusions": True,
             "targetRoles": [],
+            "remotePref": ["remote"],
+        },
+    ))
+    return config["keywords"]
+
+
+def _analysis_for_sparse_testing_signals():
+    return SimpleNamespace(
+        suggested_title_patterns={
+            "high_confidence": [
+                r"\btest\s+automation\s+engineer\b",
+            ],
+            "broad": [
+                r"\bautomation\s+engineer\b",
+                r"\btest\s+engineer\b",
+            ],
+        },
+        suggested_description_signals=[
+            r"\b(playwright|selenium)\b",
+        ],
+        skills={
+            "Testing": ["GitHub Actions", "Appium"],
+        },
+        suggested_exclusions=[],
+        suggested_target_roles=[],
+        suggested_good_match_signals=["Test Platform", "Developer Productivity"],
+    )
+
+
+def _generated_keywords_for_sparse_testing_signals():
+    config = yaml.safe_load(generate_profile_yaml(
+        _analysis_for_sparse_testing_signals(),
+        {
+            "targetRegions": ["Europe"],
+            "excludedRegions": [],
+            "enableStandardExclusions": True,
+            "targetRoles": ["QA Automation Engineer", "Test Platform Engineer"],
+            "goodMatchSignals": [],
+            "careerDirection": "",
             "remotePref": ["remote"],
         },
     ))
@@ -71,6 +112,13 @@ def _job(
 
 def _prefilter_result(*jobs: CandidateJob):
     keywords = _generated_keywords()
+    survivors, rejected = prefilter(list(jobs), keywords)
+    survivor_ids = {job.db_id for job in survivors}
+    rejected_by_id = {job.db_id: reason for job, reason in rejected}
+    return survivor_ids, rejected_by_id
+
+
+def _prefilter_result_with_keywords(keywords, *jobs: CandidateJob):
     survivors, rejected = prefilter(list(jobs), keywords)
     survivor_ids = {job.db_id for job in survivors}
     rejected_by_id = {job.db_id: reason for job, reason in rejected}
@@ -109,6 +157,21 @@ def test_prefilter_generated_config_rejects_ambiguous_automation_without_testing
 
     assert survivors == set()
     assert rejected[3].startswith("Insufficient Signals")
+
+
+def test_prefilter_generated_config_accepts_broad_roles_via_literal_derived_description_signals():
+    keywords = _generated_keywords_for_sparse_testing_signals()
+    automation_testing = _job(
+        "Automation Engineer",
+        "Berlin, Germany",
+        "Own the test platform, mobile release pipeline, and regression testing for customer journeys.",
+        5,
+    )
+
+    survivors, rejected = _prefilter_result_with_keywords(keywords, automation_testing)
+
+    assert survivors == {5}
+    assert rejected == {}
 
 
 def test_prefilter_generated_config_rejects_excluded_regions_even_with_testing_signals():

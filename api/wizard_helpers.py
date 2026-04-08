@@ -203,6 +203,17 @@ _SENIORITY_PREFIXES = {
     "lead", "staff", "principal", "head",
 }
 
+_GENERIC_ROLE_SUFFIXES = {
+    "engineer", "developer", "manager", "architect", "specialist",
+    "analyst", "consultant", "designer", "researcher", "scientist",
+    "tester", "lead", "head",
+}
+
+_GENERIC_SIGNAL_TERMS = {
+    "role", "roles", "team", "teams", "product", "products", "system",
+    "systems", "work", "working", "delivery", "strategy", "operations",
+}
+
 
 def _role_to_regex(role: str) -> str:
     """Convert a role string into a literal word-boundary regex."""
@@ -269,10 +280,79 @@ _GENERIC_SKILL_TERMS = {
     "architecture", "design", "analysis", "communication",
 }
 
-def _merge_description_signals(llm_signals: list[str], skills: dict[str, list[str]]) -> list[str]:
-    """Merge LLM signals with patterns auto-generated from skill names."""
+
+def _phrase_to_regex(phrase: str) -> str:
+    parts = [re.escape(part) for part in phrase.lower().split()]
+    escaped = r"\s+".join(parts)
+    return rf"\b{escaped}\b"
+
+
+def _extract_role_focus_phrase(role: str) -> str:
+    """Extract a role focus phrase that is useful in job descriptions."""
+    clean = re.sub(r"\s*\([^)]*\)", "", role or "").strip()
+    if not clean:
+        return ""
+
+    tokens = clean.split()
+    while tokens and tokens[0].lower() in _SENIORITY_PREFIXES:
+        tokens = tokens[1:]
+    while tokens and tokens[-1].lower() in _GENERIC_ROLE_SUFFIXES:
+        tokens = tokens[:-1]
+
+    if len(tokens) < 2:
+        return ""
+
+    return " ".join(tokens)
+
+
+def _derive_literal_description_signals(
+    target_roles: list[str],
+    good_match_signals: list[str],
+    career_direction: str,
+) -> list[str]:
+    """Derive exact phrase signals from role focus phrases and chip-like signals."""
+    phrases: list[str] = []
+    seen: set[str] = set()
+
+    def add_phrase(value: str) -> None:
+        clean = " ".join((value or "").strip().split())
+        if not clean:
+            return
+        tokens = [token for token in re.split(r"[\s/,&-]+", clean.lower()) if token]
+        if len(tokens) < 2 or len(tokens) > 4:
+            return
+        if all(token in _GENERIC_SIGNAL_TERMS for token in tokens):
+            return
+        key = clean.casefold()
+        if key not in seen:
+            phrases.append(clean)
+            seen.add(key)
+
+    for role in target_roles:
+        add_phrase(_extract_role_focus_phrase(role))
+
+    for signal in good_match_signals:
+        add_phrase(signal)
+
+    if career_direction:
+        for chunk in re.split(r"[.;:\n]+", career_direction):
+            add_phrase(chunk)
+
+    return [_phrase_to_regex(phrase) for phrase in phrases]
+
+
+def _merge_description_signals(
+    llm_signals: list[str],
+    skills: dict[str, list[str]],
+    derived_signals: list[str] | None = None,
+) -> list[str]:
+    """Merge LLM, derived, and exact-skill description signals."""
     signals = list(llm_signals)
     existing_lower = {s.lower() for s in signals}
+    for pattern in derived_signals or []:
+        if pattern.lower() not in existing_lower:
+            signals.append(pattern)
+            existing_lower.add(pattern.lower())
     for category, skill_list in skills.items():
         for skill in skill_list:
             # Skip generic terms and very short names
@@ -292,11 +372,19 @@ def generate_profile_yaml(analysis: CVAnalysisResponse, preferences: Dict[str, A
     """Build search_config.yaml content from CV analysis + user preferences."""
     
     target_roles = _ensure_list(preferences.get("targetRoles", []))
+    target_roles += _ensure_list(getattr(analysis, "suggested_target_roles", []))
     target_regions = preferences.get("targetRegions", [])
     excluded_regions = preferences.get("excludedRegions", [])
     enable_standard_exclusions = preferences.get("enableStandardExclusions", True)
     remote_pref = [_normalize_work_setup(v) for v in _ensure_list(preferences.get("remotePref", []))]
+    good_match_signals = _ensure_list(preferences.get("goodMatchSignals", []))
+    good_match_signals += _ensure_list(getattr(analysis, "suggested_good_match_signals", []))
     derived_high_conf, derived_broad = _derive_role_patterns(target_roles)
+    derived_description_signals = _derive_literal_description_signals(
+        target_roles,
+        good_match_signals,
+        preferences.get("careerDirection", ""),
+    )
     
     location_patterns = _expand_region_patterns(target_regions)
     location_exclusions = _expand_region_patterns(excluded_regions)
@@ -327,7 +415,8 @@ def generate_profile_yaml(analysis: CVAnalysisResponse, preferences: Dict[str, A
                 "min_matches": 1,
                 "patterns": _merge_description_signals(
                     analysis.suggested_description_signals,
-                    analysis.skills
+                    analysis.skills,
+                    derived_description_signals,
                 ),
             },
             "exclusions": analysis.suggested_exclusions,
