@@ -308,11 +308,11 @@ async def run() -> None:
             first_seen_at=job.first_seen_at
         )]
         raw_jobs = candidates_raw # For stats
-        new_jobs = []
+        new_jobs_count = 0
         companies_scanned = "single-job"
     elif args.rescore:
         raw_jobs = []
-        new_jobs = []
+        new_jobs_count = 0
         companies_scanned = "rescore-all"
         
     if skip_collection:
@@ -355,7 +355,10 @@ async def run() -> None:
                 store.set_metadata("aggregator_version", provider.last_updated)
             
             logger.info("Source '%s': %d jobs fetched", provider.name, len(provider_jobs))
-            raw_jobs.extend(provider_jobs)
+            if raw_jobs:
+                raw_jobs.extend(provider_jobs)
+            else:
+                raw_jobs = provider_jobs
 
         # Soft pre-filter (Title/Loc) to avoid bloating DB
         if args.json_progress:
@@ -372,10 +375,20 @@ async def run() -> None:
         all_to_save = survivors + [j for j, _ in rejected]
         if args.json_progress:
             emit_progress(2, "Deduplicating", f"Saving {len(all_to_save)} jobs...", duration=timer.get_stage_duration())
-        new_jobs = store.upsert_jobs(all_to_save)
+        new_jobs_count = store.upsert_jobs(
+            all_to_save,
+            progress_callback=(
+                lambda phase, current, total: emit_progress(
+                    2,
+                    "Deduplicating",
+                    f"{phase} ({current}/{total})",
+                    duration=timer.get_stage_duration(),
+                )
+            ) if args.json_progress else None,
+        )
         if args.json_progress:
-            emit_progress(2, "Deduplicating", f"{len(new_jobs)} new jobs identified", duration=timer.get_stage_duration())
-        logger.info("Found %d new jobs (from %d raw)", len(new_jobs), len(raw_jobs))
+            emit_progress(2, "Deduplicating", f"{new_jobs_count} new jobs identified", duration=timer.get_stage_duration())
+        logger.info("Found %d new jobs (from %d raw)", new_jobs_count, len(raw_jobs))
 
         companies_scanned = ", ".join(args.source)
         timer.reset_stage()
@@ -453,7 +466,7 @@ async def run() -> None:
     scan_stats = {
         "sources": companies_scanned,
         "total_market_jobs": len(raw_jobs),
-        "new_jobs": len(new_jobs),
+        "new_jobs": new_jobs_count,
         "candidates": len(candidates),
         "total_duration": format_duration(timer.get_total_duration()),
     }

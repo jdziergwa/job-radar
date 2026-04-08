@@ -47,6 +47,8 @@ docker compose up --build
 
 On Windows, Docker Desktop is the recommended path. The compose setup enables polling-based file watching for both Next.js and FastAPI so hot reload is more reliable on bind mounts, especially when the repo lives outside WSL.
 
+When running via Docker Compose, the API stores SQLite databases in a Docker named volume mounted at `/app/data` instead of the host `./data` directory. This keeps the code bind-mounted for hot reload, but avoids the severe SQLite write slowdown that can happen on macOS bind mounts. As a result, deleting `data/*.db` on the host does not reset the Docker-backed database; use `make clean-db` or `make clean-db-volume` instead.
+
 ### 1. Prerequisites
 
 -   **Python 3.11+**
@@ -138,14 +140,15 @@ graph TD
 | `make build` | Build the frontend for production. |
 | `make types` | Regenerate TypeScript types from the API spec. |
 | `make clean-web`| Remove the frontend node_modules and .next cache. |
-| `make clean-db`| Wipe all local databases (Danger: irreversible). |
+| `make clean-db`| Wipe local databases and, if Docker is running, remove `/app/data/*.db` inside the API container. |
+| `make clean-db-volume`| Remove the Docker named volume used for API SQLite databases. |
 
 ---
 
 ## 🔒 Security & Privacy
 
 - **Never commit `.env`** — it contains your `ANTHROPIC_API_KEY`. The `.gitignore` already excludes it, but double-check before pushing. If you accidentally expose a key, revoke it immediately at [console.anthropic.com](https://console.anthropic.com).
-- **All data stays local** — job listings, scores, and your `profile_doc.md` are stored only on your machine in `data/{profile}.db`. Nothing is sent to third parties except job descriptions forwarded to the Claude API for scoring.
+- **All data stays local** — job listings, scores, and your `profile_doc.md` are stored only on your machine. Native runs use `data/{profile}.db`; Docker Compose runs keep SQLite databases in the Docker API volume mounted at `/app/data`. Nothing is sent to third parties except job descriptions forwarded to the Claude API for scoring.
 - **Your profile is not tracked** — `profiles/` is gitignored except for the `example/` template. Your CV (`profile_doc.md`) and company list stay private.
 
 ## 🙌 Acknowledgments

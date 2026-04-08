@@ -13,11 +13,13 @@ import sqlite3
 import threading
 from contextlib import contextmanager
 from datetime import datetime, timedelta
-from typing import Generator
+from typing import Callable, Generator
 
 from src.models import CandidateJob, RawJob, ScoredJob
 
 logger = logging.getLogger(__name__)
+UpsertProgressCallback = Callable[[str, int, int], None]
+UPSERT_WRITE_CHUNK_SIZE = 5000
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS jobs (
@@ -164,129 +166,92 @@ class Store:
 
     # ── Upsert ──────────────────────────────────────────────────────
 
-    def upsert_jobs(self, jobs: list[RawJob]) -> list[RawJob]:
-        """Insert new jobs, skip duplicates. Returns only newly inserted jobs."""
+    @staticmethod
+    def _job_insert_row(job: RawJob, now: str) -> tuple:
+        company_metadata = Store._serialize_metadata(job.company_metadata) if job.company_metadata else None
+        location_metadata = Store._serialize_metadata(job.location_metadata) if job.location_metadata else None
+        return (
+            job.ats_platform,
+            job.company_slug,
+            job.job_id,
+            job.company_name,
+            company_metadata,
+            job.title,
+            job.location,
+            location_metadata,
+            job.url,
+            job.description,
+            job.posted_at,
+            now,
+            now,
+            job.status,
+            job.dismissal_reason,
+            job.match_tier,
+            job.salary,
+            job.salary_min,
+            job.salary_max,
+            job.salary_currency,
+        )
+
+    def upsert_jobs(
+        self,
+        jobs: list[RawJob],
+        progress_callback: UpsertProgressCallback | None = None,
+    ) -> int:
+        """Insert jobs, ignore duplicates, and return the count of newly inserted rows."""
         if not jobs:
-            return []
+            return 0
             
         now = datetime.utcnow().isoformat()
-        
-        # We need to find which jobs are actually "new"
-        # For small sets (<1000) we can just use the try/except loop, 
-        # but for large sets we should batch.
-        
+
         with self._connect() as conn:
-            # 1. Update last_seen_at for all in batch
-            update_data = [
-                (now, j.ats_platform, j.company_slug, j.job_id)
-                for j in jobs
+            db_has_rows = conn.execute("SELECT 1 FROM jobs LIMIT 1").fetchone() is not None
+            new_jobs_count = 0
+            to_backfill_descriptions = [
+                (job.description, job.ats_platform, job.company_slug, job.job_id)
+                for job in jobs
+                if job.description and len(job.description) > 50
             ]
-            conn.executemany(
-                "UPDATE jobs SET last_seen_at = ? WHERE ats_platform = ? AND company_slug = ? AND job_id = ?",
-                update_data
-            )
-            
-            # 2. Insert new jobs (using INSERT OR IGNORE for speed)
-            insert_data = [
-                (
-                    j.ats_platform, j.company_slug, j.job_id,
-                    j.company_name, self._serialize_metadata(j.company_metadata),
-                    j.title, j.location, self._serialize_metadata(j.location_metadata),
-                    j.url, j.description, j.posted_at, now, now
-                )
-                for j in jobs
-            ]
-            
-            # SQLite doesn't directly return which rows were inserted in a batch,
-            # so we'll check counts or just revert to the old logic if we MUST know exactly which are new.
-            # However, for the pipeline, we often need to know the 'new' ones to report them.
-            
-            # Alternative: Insert to a temp table and find delta, or just do the loop but more efficiently.
-            # Let's keep the loop for now but use a single transaction (which _connect already does).
-            # The REAL bottleneck in the original code was likely if _connect was called inside the loop.
-            # It wasn't, but let's make it even faster by pre-checking existing IDs.
-            
-            keys = [(j.ats_platform, j.company_slug, j.job_id) for j in jobs]
-            # Chunk keys to avoid SQLite parameter limit (999)
-            existing_keys = set()
-            for i in range(0, len(keys), 300):
-                chunk = keys[i:i+300]
-                placeholders = ",".join(["(?,?,?)"] * len(chunk))
-                flat_params = [p for k in chunk for p in k]
-                rows = conn.execute(
-                    f"SELECT ats_platform, company_slug, job_id FROM jobs WHERE (ats_platform, company_slug, job_id) IN ({placeholders})",
-                    flat_params
-                ).fetchall()
-                for r in rows:
-                    existing_keys.add((r[0], r[1], r[2]))
 
-            new_jobs = []
-            to_insert = []
-            to_backfill_descriptions = []
-            to_backfill_location_metadata = []
-            to_backfill_company_metadata = []
-            
-            for j in jobs:
-                key = (j.ats_platform, j.company_slug, j.job_id)
-                if key not in existing_keys:
-                    new_jobs.append(j)
-                    to_insert.append((
-                        j.ats_platform, j.company_slug, j.job_id,
-                        j.company_name, self._serialize_metadata(j.company_metadata),
-                        j.title, j.location, self._serialize_metadata(j.location_metadata),
-                        j.url, j.description, j.posted_at, now, now,
-                        j.status, j.dismissal_reason, j.match_tier,
-                        j.salary, j.salary_min, j.salary_max, j.salary_currency
-                    ))
-                else:
-                    if j.description and len(j.description) > 50:
-                        to_backfill_descriptions.append((
-                            j.description,
-                            j.ats_platform,
-                            j.company_slug,
-                            j.job_id,
-                        ))
-                    if j.location_metadata:
-                        to_backfill_location_metadata.append((
-                            self._serialize_metadata(j.location_metadata),
-                            j.ats_platform,
-                            j.company_slug,
-                            j.job_id,
-                        ))
-                    if j.company_metadata:
-                        to_backfill_company_metadata.append((
-                            self._serialize_metadata(j.company_metadata),
-                            j.ats_platform,
-                            j.company_slug,
-                            j.job_id,
-                        ))
-            
-            if to_insert:
-                conn.executemany(
-                    "INSERT INTO jobs (ats_platform, company_slug, job_id, company_name, company_metadata, title, location, location_metadata, url, description, posted_at, first_seen_at, last_seen_at, status, dismissal_reason, match_tier, salary, salary_min, salary_max, salary_currency) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                    to_insert
-                )
-            
-            if to_backfill_descriptions:
-                conn.executemany(
-                    "UPDATE jobs SET description = ? WHERE ats_platform = ? AND company_slug = ? AND job_id = ? AND (description IS NULL OR length(description) < 50)",
-                    to_backfill_descriptions,
-                )
+            if db_has_rows:
+                total_jobs = len(jobs)
+                for start in range(0, total_jobs, UPSERT_WRITE_CHUNK_SIZE):
+                    batch = jobs[start:start + UPSERT_WRITE_CHUNK_SIZE]
+                    conn.executemany(
+                        "UPDATE jobs SET last_seen_at = ? WHERE ats_platform = ? AND company_slug = ? AND job_id = ?",
+                        [
+                            (now, job.ats_platform, job.company_slug, job.job_id)
+                            for job in batch
+                        ],
+                    )
+                    if progress_callback:
+                        progress_callback("Refreshing existing jobs", min(start + len(batch), total_jobs), total_jobs)
 
-            if to_backfill_location_metadata:
+            total_jobs = len(jobs)
+            for start in range(0, total_jobs, UPSERT_WRITE_CHUNK_SIZE):
+                batch = jobs[start:start + UPSERT_WRITE_CHUNK_SIZE]
+                before_changes = conn.total_changes
                 conn.executemany(
-                    "UPDATE jobs SET location_metadata = ? WHERE ats_platform = ? AND company_slug = ? AND job_id = ? AND (location_metadata IS NULL OR location_metadata = '' OR location_metadata = '{}')",
-                    to_backfill_location_metadata,
+                    "INSERT OR IGNORE INTO jobs (ats_platform, company_slug, job_id, company_name, company_metadata, title, location, location_metadata, url, description, posted_at, first_seen_at, last_seen_at, status, dismissal_reason, match_tier, salary, salary_min, salary_max, salary_currency) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    [self._job_insert_row(job, now) for job in batch],
                 )
+                new_jobs_count += conn.total_changes - before_changes
+                if progress_callback:
+                    progress_callback("Inserting new jobs", min(start + len(batch), total_jobs), total_jobs)
 
-            if to_backfill_company_metadata:
-                conn.executemany(
-                    "UPDATE jobs SET company_metadata = ? WHERE ats_platform = ? AND company_slug = ? AND job_id = ? AND (company_metadata IS NULL OR company_metadata = '' OR company_metadata = '{}')",
-                    to_backfill_company_metadata,
-                )
+            if db_has_rows and to_backfill_descriptions:
+                total_backfills = len(to_backfill_descriptions)
+                for start in range(0, total_backfills, UPSERT_WRITE_CHUNK_SIZE):
+                    batch = to_backfill_descriptions[start:start + UPSERT_WRITE_CHUNK_SIZE]
+                    conn.executemany(
+                        "UPDATE jobs SET description = ? WHERE ats_platform = ? AND company_slug = ? AND job_id = ? AND (description IS NULL OR length(description) < 50)",
+                        batch,
+                    )
+                    if progress_callback:
+                        progress_callback("Backfilling descriptions", min(start + len(batch), total_backfills), total_backfills)
 
-        logger.info("Upserted %d jobs, %d new", len(jobs), len(new_jobs))
-        return new_jobs
+        logger.info("Upserted %d jobs, %d new", len(jobs), new_jobs_count)
+        return new_jobs_count
 
     # ── Scoring ─────────────────────────────────────────────────────
 

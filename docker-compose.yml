@@ -27,6 +27,7 @@ services:
       - "8000:8000"
     volumes:
       - .:/app
+      - api_data:/app/data
 
   web:
     build:
@@ -48,5 +49,6 @@ services:
     working_dir: /app/web
 
 volumes:
+  api_data:
   web_node_modules:
   web_next_cache:

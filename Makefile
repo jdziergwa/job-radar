@@ -1,4 +1,8 @@
-.PHONY: install dev types build start lint clean-db clean-web
+.PHONY: install dev types build start lint clean-db clean-db-volume clean-web
+
+COMPOSE ?= docker compose
+PROJECT_NAME ?= $(notdir $(CURDIR))
+API_DB_VOLUME ?= $(PROJECT_NAME)_api_data
 
 install:
 	python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
@@ -24,7 +28,22 @@ lint:
 	cd web && npm run lint && npx tsc --noEmit
 
 clean-db:
-	rm -rf data/*.db
+	rm -f data/*.db
+	@if [ -n "$$($(COMPOSE) ps -q api 2>/dev/null)" ]; then \
+		echo "Removing Docker API database files from /app/data"; \
+		$(COMPOSE) exec -T api sh -lc 'rm -f /app/data/*.db'; \
+	elif docker volume inspect $(API_DB_VOLUME) >/dev/null 2>&1; then \
+		echo "Docker DB volume '$(API_DB_VOLUME)' exists but the API container is not running."; \
+		echo "Use 'make clean-db-volume' to remove the stopped Docker volume too."; \
+	fi
+
+clean-db-volume:
+	@if [ -n "$$($(COMPOSE) ps -q api 2>/dev/null)" ]; then \
+		echo "Stopping compose services before removing Docker DB volume"; \
+		$(COMPOSE) down; \
+	fi
+	@docker volume rm -f $(API_DB_VOLUME) >/dev/null 2>&1 || true
+	@echo "Removed Docker DB volume: $(API_DB_VOLUME)"
 
 clean-web:
 	rm -rf web/.next web/node_modules web/out

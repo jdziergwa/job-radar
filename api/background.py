@@ -22,9 +22,17 @@ _runs: dict[str, RunState] = {}
 _active: dict[str, str] = {}  # profile -> run_id
 _processes: dict[str, asyncio.subprocess.Process] = {}  # run_id -> proc
 _cancelled: set[str] = set()  # track runs that were explicitly cancelled
+_recent_output: dict[str, list[str]] = {}  # run_id -> last non-JSON output lines
 
 # Auto-expire timeout
 RUN_TIMEOUT = 300  # seconds
+
+
+def _build_process_error_detail(returncode: int, recent_output: list[str]) -> str:
+    detail = f"Pipeline exited with code {returncode}"
+    if recent_output:
+        detail = f"{detail}\n\nLast output:\n" + "\n".join(recent_output[-8:])
+    return detail
 
 
 async def launch_pipeline(
@@ -53,6 +61,7 @@ async def launch_pipeline(
         "is_rescore": rescore_all or job_id is not None,
     }
     _active[profile] = run_id
+    _recent_output[run_id] = []
 
     args = [sys.executable, "-m", "src.main", "--profile", profile, "--json-progress"]
     
@@ -108,11 +117,10 @@ async def _monitor(run_id: str, profile: str, proc: asyncio.subprocess.Process):
             except json.JSONDecodeError:
                 pass
 
-            # Fallback: detect steps from log lines (only if not using structured progress)
-            # Actually, structured progress 'continue's above, so this only runs for non-JSON lines.
-            # But the steps here are hardcoded to standard pipeline indices.
-            # Let's disable these fallbacks entirely as src/main now uses --json-progress reliably.
-            pass
+            recent = _recent_output.setdefault(run_id, [])
+            recent.append(line)
+            if len(recent) > 20:
+                del recent[:-20]
 
         await proc.wait()
 
@@ -129,15 +137,17 @@ async def _monitor(run_id: str, profile: str, proc: asyncio.subprocess.Process):
             if not _runs[run_id]["stats"]:
                 _runs[run_id]["stats"] = {"new_jobs": 0, "candidates": 0, "scored": 0}
         else:
+            recent_output = _recent_output.get(run_id, [])
             _runs[run_id].update(
                 status="error",
-                error=f"Pipeline exited with code {proc.returncode}",
+                error=_build_process_error_detail(proc.returncode, recent_output),
             )
     except Exception as e:
         _runs[run_id].update(status="error", error=str(e))
     finally:
         _active.pop(profile, None)
         _processes.pop(run_id, None)
+        _recent_output.pop(run_id, None)
 
 
 def get_status(run_id: str) -> RunState | None:

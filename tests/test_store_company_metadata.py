@@ -10,7 +10,7 @@ def test_store_persists_company_metadata_on_raw_jobs():
         db_path = Path(tmpdir) / "jobs.db"
         store = Store(str(db_path))
 
-        inserted = store.upsert_jobs([
+        inserted_count = store.upsert_jobs([
             RawJob(
                 ats_platform="ashby",
                 company_slug="linear",
@@ -29,7 +29,7 @@ def test_store_persists_company_metadata_on_raw_jobs():
             )
         ])
 
-        assert len(inserted) == 1
+        assert inserted_count == 1
 
         candidates = store.get_unscored()
 
