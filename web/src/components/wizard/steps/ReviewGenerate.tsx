@@ -155,25 +155,47 @@ export function ReviewGenerate({ onNext, onBack, onUpdate, data }: StepProps) {
   }
 
   if (loading) {
+    const headline = data?.path === 'manual' ? 'Loading Template' : 'Generating Profile'
+    const statusText = data?.path === 'manual'
+      ? 'Preparing your manual setup workspace.'
+      : refineStatus === 'refining'
+        ? 'Polishing your profile with AI. This usually takes a moment.'
+        : 'Building your first draft from the wizard inputs and CV analysis.'
+
     return (
-      <div className="flex flex-col items-center justify-center py-24 gap-6 animate-in fade-in duration-700">
-        <div className="relative">
-          <div className="absolute inset-0 bg-primary/20 blur-2xl rounded-full animate-pulse px-8 py-8" />
-          <div className="relative bg-background/50 border border-primary/20 p-6 rounded-3xl shadow-2xl">
-            <BrainCircuit className="h-12 w-12 text-primary animate-[spin_3s_linear_infinite]" />
+      <div className="min-h-[420px] flex items-center justify-center animate-in fade-in duration-700">
+        <div className="w-full max-w-xl rounded-[2rem] border border-primary/15 bg-background/40 backdrop-blur-xl shadow-[0_24px_80px_rgba(0,0,0,0.24)] px-8 py-12">
+          <div className="flex flex-col items-center text-center gap-6">
+            <div className="inline-flex items-center rounded-full border border-primary/20 bg-primary/8 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.22em] text-primary/85">
+              {data?.path === 'manual' ? 'Preparing Template' : 'Generating Preview'}
+            </div>
+
+            <div className="relative">
+              <div className="absolute inset-0 rounded-[1.75rem] bg-primary/18 blur-2xl animate-pulse" />
+              <div className="relative flex h-24 w-24 items-center justify-center rounded-[1.75rem] border border-primary/20 bg-background/75 shadow-2xl">
+                <BrainCircuit className="h-11 w-11 text-primary animate-[spin_3s_linear_infinite]" />
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <h2 className="text-3xl font-bold tracking-tight text-foreground">
+                {headline}
+              </h2>
+              <p className="text-sm leading-relaxed text-muted-foreground max-w-md mx-auto">
+                {statusText}
+              </p>
+            </div>
+
+            <div className="w-full max-w-sm space-y-3">
+              <div className="h-2 rounded-full bg-muted/40 overflow-hidden">
+                <div className="h-full w-1/2 rounded-full bg-primary animate-[pulse_1.8s_ease-in-out_infinite]" />
+              </div>
+              <div className="flex items-center justify-center gap-2 text-[11px] uppercase tracking-[0.18em] text-muted-foreground/70">
+                <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+                <span>AI profile drafting in progress</span>
+              </div>
+            </div>
           </div>
-        </div>
-        <div className="space-y-1 bg-background/50 py-4 -mt-6 border-b border-border/10 w-full">
-            <h2 className="text-2xl font-bold tracking-tight">
-              {data?.path === 'manual' ? 'Loading Template' : 'Generating Profile'}
-            </h2>
-            <p className="text-muted-foreground text-xs leading-relaxed px-4 max-w-xs mx-auto">
-              {data?.path === 'manual' 
-                ? 'Preparing your manual setup environment...' 
-                : refineStatus === 'refining'
-                  ? 'Polishing your profile with AI...'
-                  : 'Generating your job matching profile...'}
-            </p>
         </div>
       </div>
     )
