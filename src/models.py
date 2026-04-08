@@ -19,6 +19,7 @@ class RawJob:
     description: str        # Full job description (plain text, HTML stripped)
     posted_at: str | None   # ISO date if available
     fetched_at: str         # ISO timestamp of fetch
+    location_metadata: dict[str, object] = field(default_factory=dict)
     status: str = "new"     # "new" | "dismissed"
     dismissal_reason: str | None = None
     match_tier: str | None = None
@@ -43,6 +44,7 @@ class CandidateJob:
     description: str
     posted_at: str | None
     first_seen_at: str
+    location_metadata: dict[str, object] = field(default_factory=dict)
     match_tier: str | None = None
     salary: str | None = None
     salary_min: int | None = None
@@ -65,6 +67,7 @@ class ScoredJob:
     description: str
     posted_at: str | None
     first_seen_at: str
+    location_metadata: dict[str, object] = field(default_factory=dict)
     match_tier: str | None = None
     salary: str | None = None
     salary_min: int | None = None

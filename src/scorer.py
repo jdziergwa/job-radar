@@ -101,6 +101,18 @@ def _build_system_prompt(scoring_instructions: str, profile_doc: str, profile_co
     }]
 
 
+def _format_location_context(location_metadata: dict[str, object]) -> str:
+    if not location_metadata:
+        return ""
+
+    import yaml
+
+    formatted = yaml.dump(location_metadata, sort_keys=False, default_flow_style=False).strip()
+    if not formatted:
+        return ""
+    return f"\nLocation Context:\n{formatted}\n"
+
+
 def _build_user_message(job: CandidateJob, max_desc_chars: int = 20000) -> str:
     """Build the user message containing the job posting."""
     from src.providers.utils import strip_html
@@ -119,6 +131,8 @@ URL: {job.url}
 Description:
 {description}
 </job>
+
+{_format_location_context(job.location_metadata)}
 
 Score this job's fit for the candidate."""
 
@@ -302,7 +316,8 @@ URL: {job.url}
 
 Description:
 {description}
-</job>""")
+</job>
+{_format_location_context(job.location_metadata)}""")
     return "\n\n".join(parts) + "\n\nScore each job's fit for the candidate. Treat each job in complete isolation — do NOT reference other jobs in the batch within any job's reasoning."
 
 
@@ -373,6 +388,7 @@ async def score_job(
                 job_id=job.job_id,
                 title=job.title,
                 location=job.location,
+                location_metadata=job.location_metadata,
                 url=job.url,
                 description=job.description,
                 posted_at=job.posted_at,
@@ -471,6 +487,7 @@ async def score_batch(
                         job_id=job.job_id,
                         title=job.title,
                         location=job.location,
+                        location_metadata=job.location_metadata,
                         url=job.url,
                         description=job.description,
                         posted_at=job.posted_at,
@@ -662,6 +679,7 @@ def _error_scored_job(job: CandidateJob, reason: str) -> ScoredJob:
         job_id=job.job_id,
         title=job.title,
         location=job.location,
+        location_metadata=job.location_metadata,
         url=job.url,
         description=job.description,
         posted_at=job.posted_at,

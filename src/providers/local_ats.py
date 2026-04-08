@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import re
 from datetime import datetime, timezone
 from typing import Any, Optional, Callable, TYPE_CHECKING
 
@@ -28,6 +29,112 @@ REQUEST_TIMEOUT = 10  # seconds
 
 # SSL context using certifi for macOS compatibility
 _ssl_ctx = ssl.create_default_context(cafile=certifi.where())
+
+
+_ASHBY_TEXT_KEYS = ("name", "label", "text", "value", "title")
+
+
+def _dedupe_text(values: list[str]) -> list[str]:
+    seen: set[str] = set()
+    result: list[str] = []
+    for value in values:
+        text = " ".join(str(value).split()).strip()
+        if not text:
+            continue
+        lowered = text.lower()
+        if lowered in seen:
+            continue
+        seen.add(lowered)
+        result.append(text)
+    return result
+
+
+def _extract_ashby_text_values(value: Any) -> list[str]:
+    if isinstance(value, str):
+        return [value]
+    if isinstance(value, list):
+        values: list[str] = []
+        for item in value:
+            values.extend(_extract_ashby_text_values(item))
+        return values
+    if isinstance(value, dict):
+        values: list[str] = []
+        for key in _ASHBY_TEXT_KEYS:
+            text = value.get(key)
+            if isinstance(text, str):
+                values.append(text)
+        return values
+    return []
+
+
+def _extract_ashby_description(item: dict[str, Any]) -> str:
+    for key in (
+        "descriptionHtml",
+        "descriptionPlain",
+        "jobDescriptionHtml",
+        "jobDescriptionPlain",
+        "description",
+    ):
+        value = item.get(key)
+        if isinstance(value, str) and value.strip():
+            return value
+    return ""
+
+
+def _derive_geographic_signals(location_texts: list[str], description: str) -> list[str]:
+    combined = " ".join(location_texts + ([description] if description else []))
+    lowered = combined.lower()
+    signals: list[str] = []
+
+    def add(signal: str) -> None:
+        if signal not in signals:
+            signals.append(signal)
+
+    if "remote" in lowered:
+        add("Remote role")
+    if re.search(r"\b(worldwide|global|anywhere)\b", lowered):
+        add("Explicitly global or worldwide remote")
+    if re.search(r"\b(us|u\.s\.|usa|united states)\b(?:[-\s]+only|\s+only|\s+based|\s+residents?)", lowered):
+        add("Restricted to United States")
+    if re.search(r"\bnorth america\b(?:[-\s]+only|\s+only)?", lowered):
+        add("Restricted to North America")
+    if re.search(r"\b(europe|eu)\b(?:[-\s]+only|\s+only)?", lowered):
+        add("Restricted to Europe")
+    if re.search(r"\bemea\b(?:[-\s]+only|\s+only)?", lowered):
+        add("Restricted to EMEA")
+    if re.search(r"\b(?:timezone|time zone|hours?\s+overlap|overlap\s+hours?|utc|gmt|cet|cest|eet|eest|est|edt|cst|cdt|mst|mdt|pst|pdt|eastern time|central time|mountain time|pacific time)\b", lowered):
+        add("Timezone overlap requirement mentioned")
+
+    return signals
+
+
+def _build_ashby_location_metadata(item: dict[str, Any], location: str, description: str) -> dict[str, object]:
+    fragments = _dedupe_text(
+        [location]
+        + _extract_ashby_text_values(item.get("secondaryLocations"))
+        + _extract_ashby_text_values(item.get("locationRestrictions"))
+        + _extract_ashby_text_values(item.get("remoteLocation"))
+        + _extract_ashby_text_values(item.get("remoteLocations"))
+    )
+
+    metadata: dict[str, object] = {"raw_location": location}
+
+    workplace_type = item.get("workplaceType")
+    if isinstance(workplace_type, str) and workplace_type.strip():
+        metadata["workplace_type"] = workplace_type.strip()
+
+    employment_type = item.get("employmentType")
+    if isinstance(employment_type, str) and employment_type.strip():
+        metadata["employment_type"] = employment_type.strip()
+
+    if fragments:
+        metadata["location_fragments"] = fragments
+
+    derived_signals = _derive_geographic_signals(fragments, description)
+    if derived_signals:
+        metadata["derived_geographic_signals"] = derived_signals
+
+    return metadata
 
 
 
@@ -183,6 +290,8 @@ async def fetch_ashby(
         location = item.get("location", "") or ""
         if isinstance(location, dict):
             location = location.get("name", "")
+        description = _extract_ashby_description(item)
+        location_metadata = _build_ashby_location_metadata(item, location, description)
 
         jobs.append(RawJob(
             ats_platform="ashby",
@@ -192,9 +301,10 @@ async def fetch_ashby(
             title=item.get("title", ""),
             location=location,
             url=f"https://jobs.ashbyhq.com/{slug}/{item.get('id', '')}",
-            description="",  # Would need a second request per job — skip for now
+            description=description,
             posted_at=item.get("publishedDate"),
             fetched_at=now,
+            location_metadata=location_metadata,
         ))
 
     logger.debug("Ashby %s: %d jobs", slug, len(jobs))
