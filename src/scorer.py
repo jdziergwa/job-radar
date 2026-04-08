@@ -70,7 +70,7 @@ def _build_system_prompt(scoring_instructions: str, profile_doc: str, profile_co
     preferences_block = ""
     if profile_config:
         formatted_config = yaml.dump(profile_config, sort_keys=False, default_flow_style=False)
-        preferences_block = f"\n\nCANDIDATE PREFERENCES (from profile.yaml):\n\n{formatted_config}"
+        preferences_block = f"\n\nCANDIDATE PREFERENCES (from search_config.yaml):\n\n{formatted_config}"
 
     return [{
         "type": "text",
@@ -544,9 +544,9 @@ async def score_jobs(
     Args:
         candidates: Jobs to score.
         profile_doc: The profile_doc.md content.
-        scoring_config: The 'scoring' section from profile.yaml.
+        scoring_config: The 'scoring' section from search_config.yaml.
         store: Store instance to persist scores immediately.
-        profile_config: The 'keywords' or full config from profile.yaml for prompt context.
+        profile_config: The 'keywords' or full config from search_config.yaml for prompt context.
         progress_callback: Optional callback receiving (current, total) counts.
         concurrency: Max number of simultaneous API calls.
         batch_size: Number of jobs to score in a single API call.

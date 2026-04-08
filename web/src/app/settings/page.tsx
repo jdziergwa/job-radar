@@ -241,7 +241,7 @@ export default function SettingsPage() {
               <Card className="flex-1 border-border/50 bg-background/50 backdrop-blur-md overflow-hidden flex flex-col shadow-inner">
                 <CardHeader className="py-3 bg-muted/20 border-b border-border/30">
                    <div className="flex justify-between items-center">
-                      <CardTitle className="text-xs font-mono uppercase text-muted-foreground/80">profile.yaml</CardTitle>
+                      <CardTitle className="text-xs font-mono uppercase text-muted-foreground/80">search_config.yaml</CardTitle>
                       <Badge variant="outline" className="text-[10px] font-mono opacity-60">Read/Write</Badge>
                    </div>
                 </CardHeader>

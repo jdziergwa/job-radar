@@ -294,7 +294,7 @@ export function ReviewGenerate({ onNext, onBack, onUpdate, data }: StepProps) {
           <TabsContent value="rules" className="mt-0 animate-in fade-in slide-in-from-right-4 duration-300">
             <Card className="border-border/50 bg-background/40 backdrop-blur-md overflow-hidden shadow-sm rounded-3xl">
               <CardHeader className="py-2.5 px-4 bg-muted/20 border-b border-border/20 flex flex-row items-center justify-between">
-                <CardTitle className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/70">profile.yaml</CardTitle>
+                <CardTitle className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/70">search_config.yaml</CardTitle>
                 <div className="flex gap-2">
                    <Badge variant="outline" className={cn(
                      "h-5 text-[9px] font-mono border-emerald-500/30 text-emerald-500/80 bg-emerald-500/5 px-2",

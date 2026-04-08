@@ -107,7 +107,7 @@ def _merge_description_signals(llm_signals: list[str], skills: dict[str, list[st
     return signals[:15]  # Cap at 15 to avoid over-filtering
 
 def generate_profile_yaml(analysis: CVAnalysisResponse, preferences: Dict[str, Any]) -> str:
-    """Build profile.yaml content from CV analysis + user preferences."""
+    """Build search_config.yaml content from CV analysis + user preferences."""
     
     target_regions = preferences.get("targetRegions", [])
     excluded_regions = preferences.get("excludedRegions", [])
@@ -165,7 +165,7 @@ def generate_profile_yaml(analysis: CVAnalysisResponse, preferences: Dict[str, A
     }
     
     # Use yaml.dump with sort_keys=False to preserve order and default_flow_style=False for readability
-    yaml_header = "# Generated profile.yaml\n"
+    yaml_header = "# Generated search_config.yaml\n"
     return yaml_header + yaml.dump(config, sort_keys=False, default_flow_style=False)
 
 def generate_profile_doc(analysis: CVAnalysisResponse, preferences: Dict[str, Any]) -> str:

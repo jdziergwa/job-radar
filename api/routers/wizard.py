@@ -252,7 +252,7 @@ from api.wizard_helpers import generate_profile_yaml, generate_profile_doc
 @router.post("/wizard/generate-profile", response_model=ProfileGenerateResponse)
 async def generate_profile(req: ProfileGenerateRequest):
     """
-    Build profile.yaml and profile_doc.md from structured data and user preferences.
+    Build search_config.yaml and profile_doc.md from structured data and user preferences.
     """
     try:
         preferences_dict = req.user_preferences.model_dump()
@@ -290,7 +290,7 @@ async def refine_profile(req: ProfileRefineRequest):
 ## Draft profile_doc.md
 {req.draft_doc}
 
-## Draft profile.yaml
+## Draft search_config.yaml
 ```yaml
 {req.draft_yaml}
 ```
@@ -348,7 +348,7 @@ async def save_profile(req: ProfileSaveRequest):
     try:
         yaml.safe_load(req.profile_yaml)
     except yaml.YAMLError as e:
-        raise HTTPException(status_code=422, detail=f"Invalid profile.yaml: {e}")
+        raise HTTPException(status_code=422, detail=f"Invalid search_config.yaml: {e}")
 
     profile_dir = PROFILES_DIR / req.profile_name
     example_dir = PROFILES_DIR / "example"
@@ -369,7 +369,7 @@ async def save_profile(req: ProfileSaveRequest):
                     shutil.copy2(source_path, target_path)
 
     # 4. Overwrite generated files
-    (profile_dir / "profile.yaml").write_text(req.profile_yaml, encoding="utf-8")
+    (profile_dir / "search_config.yaml").write_text(req.profile_yaml, encoding="utf-8")
     (profile_dir / "profile_doc.md").write_text(req.profile_doc, encoding="utf-8")
 
     return {"ok": True, "name": req.profile_name}
@@ -384,7 +384,7 @@ async def get_template():
     if not example_dir.exists():
         raise HTTPException(status_code=500, detail="Example profile template not found")
 
-    profile_yaml_path = example_dir / "profile.yaml"
+    profile_yaml_path = example_dir / "search_config.yaml"
     profile_doc_path = example_dir / "profile_doc.md"
 
     if not profile_yaml_path.exists() or not profile_doc_path.exists():

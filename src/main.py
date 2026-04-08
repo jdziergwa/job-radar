@@ -48,8 +48,8 @@ def setup_logging(verbose: bool = False) -> None:
 
 
 def load_config(profile_dir: Path) -> dict[str, Any]:
-    """Load profile.yaml from the profile directory."""
-    config_path = profile_dir / "profile.yaml"
+    """Load search_config.yaml from the profile directory."""
+    config_path = profile_dir / "search_config.yaml"
     if not config_path.exists():
         logger.error("Profile config not found: %s", config_path)
         sys.exit(1)

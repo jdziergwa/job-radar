@@ -137,7 +137,7 @@ Return a single valid JSON object with the following structure:
     seniority and goals.
 
 ### Context: Downstream Usage
-The extracted data will be used to generate a `profile_doc.md` and `profile.yaml`. 
+The extracted data will be used to generate a `profile_doc.md` and `search_config.yaml`. 
 
 - **STYLE GUIDELINE: TECHNICAL OBJECTIVITY**: 
     - Write as a senior peer summarizing a colleague's profile for a hiring team. 

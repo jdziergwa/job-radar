@@ -356,9 +356,30 @@ export interface paths {
         put?: never;
         /**
          * Generate Profile
-         * @description Build profile.yaml and profile_doc.md from structured data and user preferences.
+         * @description Build search_config.yaml and profile_doc.md from structured data and user preferences.
          */
         post: operations["generate_profile_api_wizard_generate_profile_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/wizard/refine-profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Refine Profile
+         * @description Refine template-generated profile files using LLM second pass.
+         *     Falls back to original drafts on any failure.
+         */
+        post: operations["refine_profile_api_wizard_refine_profile_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -626,8 +647,18 @@ export interface components {
              * @default []
              */
             suggested_skill_gaps: string[];
-            /** Suggested Career Direction */
+            /**
+             * Suggested Career Direction
+             * @default
+             */
             suggested_career_direction: string;
+            /**
+             * Suggested Narratives
+             * @default {}
+             */
+            suggested_narratives: {
+                [key: string]: string;
+            };
             /**
              * Suggested Good Match Signals
              * @default []
@@ -1020,6 +1051,27 @@ export interface components {
             /** Profile Doc */
             profile_doc: string;
         };
+        /** ProfileRefineRequest */
+        ProfileRefineRequest: {
+            cv_analysis: components["schemas"]["CVAnalysisResponse"];
+            user_preferences: components["schemas"]["UserPreferences"];
+            /** Draft Doc */
+            draft_doc: string;
+            /** Draft Yaml */
+            draft_yaml: string;
+        };
+        /** ProfileRefineResponse */
+        ProfileRefineResponse: {
+            /** Profile Doc */
+            profile_doc: string;
+            /** Profile Yaml */
+            profile_yaml: string;
+            /**
+             * Changes Made
+             * @default []
+             */
+            changes_made: string[];
+        };
         /** ProfileSaveRequest */
         ProfileSaveRequest: {
             /** Profile Name */
@@ -1258,9 +1310,9 @@ export interface components {
             careerDirection: string;
             /**
              * Careergoal
-             * @default specialise
+             * @default stay
              */
-            careerGoal: ("specialise" | "pivot" | "step_up" | "broaden") | null;
+            careerGoal: ("stay" | "pivot" | "step_up" | "broaden") | null;
             /**
              * Goodmatchsignals
              * @default []
@@ -1868,6 +1920,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProfileGenerateResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    refine_profile_api_wizard_refine_profile_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProfileRefineRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProfileRefineResponse"];
                 };
             };
             /** @description Validation Error */

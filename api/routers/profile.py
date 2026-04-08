@@ -36,7 +36,7 @@ def list_profiles():
 
 @router.get("/profile/{name}/yaml", response_model=ProfileContent)
 def get_profile_yaml(name: str):
-    path = PROFILES_DIR / name / "profile.yaml"
+    path = PROFILES_DIR / name / "search_config.yaml"
     if not path.exists():
         raise HTTPException(status_code=404, detail=f"Profile '{name}' not found")
     return ProfileContent(content=path.read_text(encoding="utf-8"))
@@ -50,7 +50,7 @@ def update_profile_yaml(name: str, body: ProfileContent):
     except yaml.YAMLError as e:
         raise HTTPException(status_code=422, detail=f"Invalid YAML: {e}")
     
-    path = PROFILES_DIR / name / "profile.yaml"
+    path = PROFILES_DIR / name / "search_config.yaml"
     if not path.parent.exists():
         raise HTTPException(status_code=404, detail=f"Profile '{name}' not found")
     
