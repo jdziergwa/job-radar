@@ -80,6 +80,7 @@ class ScoredJob:
     apply_priority: str = "skip"                # high | medium | low | skip
     skip_reason: str = "none"               # location_onsite | location_timezone | tech_gap | seniority_mismatch | growth_mismatch | none
     missing_skills: list[str] = field(default_factory=list)
+    normalization_audit: dict[str, object] = field(default_factory=dict)
     scored_at: str | None = None
     is_sparse: bool = False
 

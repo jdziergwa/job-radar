@@ -12,8 +12,6 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-import httpx
-
 from src.models import ScoredJob
 
 logger = logging.getLogger(__name__)
@@ -45,6 +43,30 @@ def _score_emoji(score: int) -> str:
     return "🔴"
 
 
+def _format_normalization_audit(audit: dict[str, object] | None) -> str:
+    """Format a concise normalization audit summary for user-facing output."""
+    if not audit:
+        return ""
+
+    raw_fit = audit.get("raw_fit_score")
+    weighted_fit = audit.get("weighted_fit_score")
+    normalized_fit = audit.get("normalized_fit_score")
+    raw_priority = audit.get("raw_apply_priority")
+    normalized_priority = audit.get("normalized_apply_priority")
+    raw_skip = audit.get("raw_skip_reason")
+    normalized_skip = audit.get("normalized_skip_reason")
+
+    parts = []
+    if raw_fit != normalized_fit:
+        parts.append(f"fit {raw_fit} -> {normalized_fit} (weighted {weighted_fit})")
+    if raw_priority != normalized_priority:
+        parts.append(f"priority {raw_priority} -> {normalized_priority}")
+    if raw_skip != normalized_skip:
+        parts.append(f"skip {raw_skip} -> {normalized_skip}")
+
+    return "; ".join(parts)
+
+
 # ── Terminal Output ─────────────────────────────────────────────────
 
 
@@ -69,6 +91,9 @@ def print_results(jobs: list[ScoredJob], title: str = "Job Radar") -> None:
             if len(job.reasoning) > 120:
                 reason += "..."
             print(f"        {reason}")
+        audit_note = _format_normalization_audit(job.normalization_audit)
+        if audit_note:
+            print(f"        {DIM}Normalization audit: {audit_note}{RESET}")
         print(f"        {DIM}{job.url}{RESET}")
         if job.red_flags:
             print(f"        {YELLOW}⚠ {', '.join(job.red_flags)}{RESET}")
@@ -167,6 +192,9 @@ def write_report(
                     lines.append(f"- **{dim_label}:** {score}%")
             if job.reasoning:
                 lines.append(f"- **Assessment:** {job.reasoning}")
+            audit_note = _format_normalization_audit(job.normalization_audit)
+            if audit_note:
+                lines.append(f"- **Normalization audit:** {audit_note}")
             if job.key_matches:
                 lines.append(f"- **Key matches:** {', '.join(job.key_matches)}")
             if job.red_flags:
@@ -188,6 +216,8 @@ async def send_telegram(
     top_n: int = 5,
 ) -> None:
     """Send top matches to Telegram. Silently skips if not configured."""
+    import httpx
+
     bot_token = os.environ.get("TELEGRAM_BOT_TOKEN")
     chat_id = os.environ.get("TELEGRAM_CHAT_ID")
 

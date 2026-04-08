@@ -234,6 +234,7 @@ class Store:
         apply_priority: str = "skip",
         skip_reason: str = "none",
         missing_skills: list[str] | None = None,
+        normalization_audit: dict[str, object] | None = None,
         salary: str | None = None,
         salary_min: int | None = None,
         salary_max: int | None = None,
@@ -250,6 +251,7 @@ class Store:
             "apply_priority": apply_priority,
             "skip_reason": skip_reason or "none",
             "missing_skills": missing_skills or [],
+            "normalization_audit": normalization_audit or {},
         })
 
         with self._connect() as conn:
@@ -837,6 +839,7 @@ class Store:
         apply_priority = "skip"
         skip_reason = "none"
         missing_skills: list[str] = []
+        normalization_audit: dict[str, object] = {}
         is_sparse = bool(row["is_sparse"]) if "is_sparse" in row.keys() else False
 
         if breakdown_raw:
@@ -848,6 +851,9 @@ class Store:
                 apply_priority = data.get("apply_priority", "skip")
                 skip_reason = data.get("skip_reason", "none")
                 missing_skills = data.get("missing_skills", [])
+                raw_audit = data.get("normalization_audit", {})
+                if isinstance(raw_audit, dict):
+                    normalization_audit = raw_audit
             except json.JSONDecodeError:
                 pass
 
@@ -875,6 +881,7 @@ class Store:
             apply_priority=apply_priority,
             skip_reason=skip_reason,
             missing_skills=missing_skills,
+            normalization_audit=normalization_audit,
             scored_at=row["scored_at"],
             status=row["status"] or "new",
             is_sparse=is_sparse,

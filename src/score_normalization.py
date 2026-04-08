@@ -60,6 +60,47 @@ def normalize_skip_reason(skip_reason: str, apply_priority: str, remote_location
     return normalized
 
 
+def build_normalization_audit(raw: ScoredJob, normalized: ScoredJob) -> dict[str, object]:
+    """Build a structured audit payload when normalized values differ from raw output."""
+    weighted_fit = compute_weighted_fit_score(raw.breakdown)
+    changed_fields: list[str] = []
+    reason_codes: list[str] = []
+
+    if raw.fit_score != normalized.fit_score:
+        changed_fields.append("fit_score")
+        if normalized.fit_score == weighted_fit and raw.fit_score <= 0 and weighted_fit > 0:
+            reason_codes.append("missing_raw_fit_backfilled")
+        elif normalized.fit_score < raw.fit_score:
+            reason_codes.append("weighted_fit_cap")
+
+    if normalized.breakdown.get("remote_location_fit", 0) < 30 and normalized.fit_score < min(weighted_fit, _clamp_score(raw.fit_score)):
+        if "remote_hard_stop" not in reason_codes:
+            reason_codes.append("remote_hard_stop")
+
+    if raw.apply_priority != normalized.apply_priority:
+        changed_fields.append("apply_priority")
+        reason_codes.append("priority_rederived")
+
+    if raw.skip_reason != normalized.skip_reason:
+        changed_fields.append("skip_reason")
+        reason_codes.append("skip_reason_normalized")
+
+    if not changed_fields:
+        return {}
+
+    return {
+        "raw_fit_score": _clamp_score(raw.fit_score),
+        "weighted_fit_score": weighted_fit,
+        "normalized_fit_score": normalized.fit_score,
+        "raw_apply_priority": raw.apply_priority,
+        "normalized_apply_priority": normalized.apply_priority,
+        "raw_skip_reason": raw.skip_reason,
+        "normalized_skip_reason": normalized.skip_reason,
+        "changed_fields": changed_fields,
+        "reason_codes": reason_codes,
+    }
+
+
 def normalize_scored_job(result: ScoredJob) -> ScoredJob:
     """Normalize a scored job so persisted score fields cannot contradict each other."""
     breakdown = {key: _clamp_score(val) for key, val in result.breakdown.items()}
@@ -82,11 +123,15 @@ def normalize_scored_job(result: ScoredJob) -> ScoredJob:
         normalized_priority,
         remote_location_fit,
     )
-
-    return replace(
+    normalized = replace(
         result,
         fit_score=normalized_fit,
         breakdown=breakdown,
         apply_priority=normalized_priority,
         skip_reason=normalized_skip_reason,
+    )
+
+    return replace(
+        normalized,
+        normalization_audit=build_normalization_audit(result, normalized),
     )

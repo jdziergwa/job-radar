@@ -30,24 +30,22 @@ MAX_RETRIES = 3
 
 def _log_normalization(raw: ScoredJob, normalized: ScoredJob) -> None:
     """Log score normalization adjustments when persisted values differ from raw LLM output."""
-    if (
-        raw.fit_score == normalized.fit_score
-        and raw.apply_priority == normalized.apply_priority
-        and raw.skip_reason == normalized.skip_reason
-    ):
+    audit = normalized.normalization_audit or {}
+    if not audit:
         return
 
     logger.info(
-        "Normalized score for %s @ %s: raw_fit=%d weighted=%d normalized_fit=%d raw_priority=%s normalized_priority=%s raw_skip=%s normalized_skip=%s",
+        "Normalized score for %s @ %s: raw_fit=%d weighted=%d normalized_fit=%d raw_priority=%s normalized_priority=%s raw_skip=%s normalized_skip=%s reasons=%s",
         raw.title,
         raw.company_name,
-        raw.fit_score,
-        compute_weighted_fit_score(raw.breakdown),
-        normalized.fit_score,
-        raw.apply_priority,
-        normalized.apply_priority,
-        raw.skip_reason,
-        normalized.skip_reason,
+        audit.get("raw_fit_score", raw.fit_score),
+        audit.get("weighted_fit_score", compute_weighted_fit_score(raw.breakdown)),
+        audit.get("normalized_fit_score", normalized.fit_score),
+        audit.get("raw_apply_priority", raw.apply_priority),
+        audit.get("normalized_apply_priority", normalized.apply_priority),
+        audit.get("raw_skip_reason", raw.skip_reason),
+        audit.get("normalized_skip_reason", normalized.skip_reason),
+        ",".join(str(code) for code in audit.get("reason_codes", [])) or "none",
     )
 
 
@@ -627,6 +625,7 @@ async def score_jobs(
                     apply_priority=result.apply_priority,
                     skip_reason=result.skip_reason,
                     missing_skills=result.missing_skills,
+                    normalization_audit=result.normalization_audit,
                     salary=result.salary,
                     salary_min=result.salary_min,
                     salary_max=result.salary_max,
