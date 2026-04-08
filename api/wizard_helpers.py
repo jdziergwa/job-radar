@@ -88,6 +88,14 @@ def _get_label(id_val: str) -> str:
     if not id_val: return ""
     return ID_TO_LABEL.get(id_val.lower(), id_val.replace("_", " ").capitalize())
 
+def _ensure_list(value: Any) -> list[str]:
+    """Normalize a string-or-list field into a list of strings."""
+    if not value:
+        return []
+    if isinstance(value, str):
+        return [value]
+    return [str(v) for v in value if v]
+
 def _normalize_region_name(region: str) -> str:
     """Normalize UI labels and aliases to canonical region keys."""
     clean = " ".join((region or "").strip().split())
@@ -131,6 +139,16 @@ def _expand_region_patterns(regions: list[str]) -> list[str]:
         add_pattern(_to_regex(normalized))
 
     return patterns
+
+def _format_work_setup_option(setup: str, city: str, timezone_pref: str) -> str:
+    """Format a work setup option into explicit, readable profile text."""
+    label = _get_label(setup)
+    if setup == "remote":
+        tz_label = _get_label(timezone_pref)
+        return f"{label} ({tz_label})" if timezone_pref and timezone_pref != "any" and tz_label else label
+    if setup in {"hybrid", "onsite"} and city and city != "Location":
+        return f"{label} from {city}"
+    return label
 
 def _merge_title_patterns(llm_patterns: list[str], target_roles: list[str]) -> list[str]:
     """Merge LLM-suggested title patterns with patterns derived from target roles."""
@@ -294,18 +312,16 @@ def generate_profile_doc(analysis: CVAnalysisResponse, preferences: Dict[str, An
             seen_signals.add(s.lower())
     
     # Inferred defaults based on preferences
-    remote_pref = preferences.get("remotePref", [])
-    if isinstance(remote_pref, str): remote_pref = [remote_pref]
+    remote_pref = _ensure_list(preferences.get("remotePref", []))
     
     primary_pref = preferences.get("primaryRemotePref", "")
     timezone_pref = preferences.get("timezonePref", "")
+    city = preferences.get("location", "").split(",")[0].strip() or "Location"
 
     if "remote" in remote_pref:
-        tz_label = f" in {ID_TO_LABEL.get(timezone_pref, timezone_pref)}" if timezone_pref else ""
-        signals.append(f"Fully remote roles{tz_label} (preferred setup)")
+        signals.append(f"{_format_work_setup_option('remote', city, timezone_pref)} roles (preferred setup)")
     if "hybrid" in remote_pref:
-        city = preferences.get("location", "").split(",")[0].strip() or "local"
-        signals.append(f"Hybrid roles from {city}")
+        signals.append(f"{_format_work_setup_option('hybrid', city, timezone_pref)} roles")
     
     seniority_val = preferences.get("seniority", getattr(analysis, "inferred_seniority", None))
     if isinstance(seniority_val, list):
@@ -372,8 +388,7 @@ def generate_profile_doc(analysis: CVAnalysisResponse, preferences: Dict[str, An
     if any(s in ["senior", "lead", "staff", "principal"] for s in seniority_list):
         lower_fit_lines.append("- Junior or entry-level positions")
     
-    remote_pref = preferences.get("remotePref", [])
-    if isinstance(remote_pref, str): remote_pref = [remote_pref]
+    remote_pref = _ensure_list(preferences.get("remotePref", []))
 
     if "remote" in remote_pref:
         lower_fit_lines.append("- On-site only positions")
@@ -391,40 +406,32 @@ def generate_profile_doc(analysis: CVAnalysisResponse, preferences: Dict[str, An
     location = preferences.get('location', 'Unknown')
     work_auth = _get_label(preferences.get('workAuth', ''))
     
-    remote_pref = preferences.get("remotePref", [])
-    if isinstance(remote_pref, str): remote_pref = [remote_pref]
-    primary_pref = preferences.get("primaryRemotePref", "")
+    remote_pref = _ensure_list(preferences.get("remotePref", []))
+    primary_pref = preferences.get("primaryRemotePref", "") or (remote_pref[0] if remote_pref else "")
     timezone_pref = preferences.get("timezonePref", "")
 
     city = location.split(",")[0].strip() or "Location"
-    
-    # Build beautiful natural language setup string
-    setup_parts = []
-    if primary_pref:
-        setup_parts.append(f"Prefer {_get_label(primary_pref)}")
-        if primary_pref == 'remote' and timezone_pref:
-            setup_parts[-1] += f" ({_get_label(timezone_pref)})"
-    
-    other_setups = [s for s in remote_pref if s != primary_pref]
-    if other_setups:
-        pretty_others = []
-        for s in other_setups:
-            if s == 'remote': pretty_others.append("Fully Remote")
-            else: pretty_others.append(f"{_get_label(s)} from {city}")
-        setup_parts.append(f"but also open to {', '.join(pretty_others)}")
 
-    setup_str = " ".join(setup_parts)
-    
+    preferred_setup = _format_work_setup_option(primary_pref, city, timezone_pref) if primary_pref else ""
+    acceptable_setups = [
+        _format_work_setup_option(setup, city, timezone_pref)
+        for setup in remote_pref
+        if setup != primary_pref
+    ]
+
     loc_lines.append(f"- Based in: {location}")
     loc_lines.append(f"- Work authorization: {work_auth}")
-    loc_lines.append(f"- Work setup: {setup_str}")
+    if preferred_setup:
+        loc_lines.append(f"- Preferred work setup: {preferred_setup}")
+    if acceptable_setups:
+        loc_lines.append(f"- Also acceptable: {', '.join(acceptable_setups)}")
     
     target_regions = ", ".join(preferences.get("targetRegions", []))
     loc_lines.append(f"- Acceptable regions: {target_regions}")
     
     excluded = ", ".join(preferences.get("excludedRegions", []))
     if excluded:
-        loc_lines.append(f"- Not acceptable: {excluded}")
+        loc_lines.append(f"- Excluded regions: {excluded}")
     
     # Add setup negatives
     remote_pref_set = set(remote_pref)
@@ -432,7 +439,7 @@ def generate_profile_doc(analysis: CVAnalysisResponse, preferences: Dict[str, An
         loc_lines.append("- Not acceptable: On-site only positions")
     if timezone_pref and timezone_pref != "any":
         tz_label = _get_label(timezone_pref)
-        loc_lines.append(f"- Timezone requirement: {tz_label}")
+        loc_lines.append(f"- Timezone preference: {tz_label}")
         
     sections.append("\n".join(loc_lines))
     
