@@ -150,16 +150,65 @@ def _format_work_setup_option(setup: str, city: str, timezone_pref: str) -> str:
         return f"{label} from {city}"
     return label
 
-def _merge_title_patterns(llm_patterns: list[str], target_roles: list[str]) -> list[str]:
-    """Merge LLM-suggested title patterns with patterns derived from target roles."""
+_SENIORITY_PREFIXES = {
+    "junior", "jr", "jr.", "mid", "middle", "senior", "sr", "sr.",
+    "lead", "staff", "principal", "head",
+}
+
+
+def _role_to_regex(role: str) -> str:
+    """Convert a role string into a literal word-boundary regex."""
+    parts = [re.escape(p) for p in role.lower().split()]
+    escaped = r"\s+".join(parts)
+    return rf"\b{escaped}\b"
+
+
+def _derive_role_patterns(target_roles: list[str]) -> tuple[list[str], list[str]]:
+    """Derive exact and broader regex patterns from selected target roles."""
+    high_confidence: list[str] = []
+    broad: list[str] = []
+    high_seen: set[str] = set()
+    broad_seen: set[str] = set()
+
+    def add_high(pattern: str) -> None:
+        if pattern and pattern.lower() not in high_seen:
+            high_confidence.append(pattern)
+            high_seen.add(pattern.lower())
+
+    def add_broad(pattern: str) -> None:
+        if pattern and pattern.lower() not in broad_seen and pattern.lower() not in high_seen:
+            broad.append(pattern)
+            broad_seen.add(pattern.lower())
+
+    for raw_role in target_roles:
+        role = " ".join((raw_role or "").strip().split())
+        if not role:
+            continue
+
+        add_high(_role_to_regex(role))
+
+        no_parens = re.sub(r"\s*\([^)]*\)", "", role).strip()
+        if no_parens and no_parens != role:
+            add_broad(_role_to_regex(no_parens))
+
+        tokens = no_parens.split() if no_parens else role.split()
+        while tokens and tokens[0].lower() in _SENIORITY_PREFIXES:
+            tokens = tokens[1:]
+        if len(tokens) >= 2:
+            add_broad(_role_to_regex(" ".join(tokens)))
+
+        acronym_matches = re.findall(r"\(([A-Za-z0-9][A-Za-z0-9\-/+]{1,9})\)", role)
+        for acronym in acronym_matches:
+            add_broad(_role_to_regex(acronym))
+
+    return high_confidence, broad
+
+
+def _merge_title_patterns(llm_patterns: list[str], derived_patterns: list[str]) -> list[str]:
+    """Merge pattern lists while preserving order and deduplicating case-insensitively."""
     patterns = list(llm_patterns)
     existing_lower = {p.lower() for p in patterns}
-    for role in target_roles:
-        # Create a word-boundary regex from the role name
-        # e.g. "Data Scientist" -> r"\bdata\s+scientist\b"
-        parts = [re.escape(p) for p in role.lower().split()]
-        escaped = r"\s+".join(parts)
-        pattern = rf"\b{escaped}\b"
+    for pattern in derived_patterns:
         if pattern.lower() not in existing_lower:
             patterns.append(pattern)
             existing_lower.add(pattern.lower())
@@ -194,9 +243,11 @@ def _merge_description_signals(llm_signals: list[str], skills: dict[str, list[st
 def generate_profile_yaml(analysis: CVAnalysisResponse, preferences: Dict[str, Any]) -> str:
     """Build search_config.yaml content from CV analysis + user preferences."""
     
+    target_roles = _ensure_list(preferences.get("targetRoles", []))
     target_regions = preferences.get("targetRegions", [])
     excluded_regions = preferences.get("excludedRegions", [])
     enable_standard_exclusions = preferences.get("enableStandardExclusions", True)
+    derived_high_conf, derived_broad = _derive_role_patterns(target_roles)
     
     location_patterns = _expand_region_patterns(target_regions)
     location_exclusions = _expand_region_patterns(excluded_regions)
@@ -216,9 +267,12 @@ def generate_profile_yaml(analysis: CVAnalysisResponse, preferences: Dict[str, A
             "title_patterns": {
                 "high_confidence": _merge_title_patterns(
                     analysis.suggested_title_patterns.get("high_confidence", []),
-                    preferences.get("targetRoles", [])
+                    derived_high_conf,
                 ),
-                "broad": analysis.suggested_title_patterns.get("broad", []),
+                "broad": _merge_title_patterns(
+                    analysis.suggested_title_patterns.get("broad", []),
+                    derived_broad,
+                ),
             },
             "description_signals": {
                 "min_matches": 1,

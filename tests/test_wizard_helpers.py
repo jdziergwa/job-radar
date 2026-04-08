@@ -71,3 +71,26 @@ def test_generate_profile_yaml_escapes_freeform_region_regex():
     patterns = config["keywords"]["location_patterns"]
 
     assert patterns == [r"\bc\+\+\s+/\s+ml\s+platform\b"]
+
+
+def test_generate_profile_yaml_derives_broad_role_patterns_from_target_roles():
+    config = yaml.safe_load(generate_profile_yaml(
+        _minimal_analysis(),
+        {
+            "targetRegions": ["Europe"],
+            "excludedRegions": [],
+            "enableStandardExclusions": False,
+            "targetRoles": ["Senior Backend Engineer", "Staff Machine Learning Engineer (MLE)"],
+            "remotePref": ["remote"],
+        },
+    ))
+
+    high_conf = config["keywords"]["title_patterns"]["high_confidence"]
+    broad = config["keywords"]["title_patterns"]["broad"]
+
+    assert r"\bsenior\s+backend\s+engineer\b" in high_conf
+    assert r"\bstaff\s+machine\s+learning\s+engineer\s+\(mle\)\b" in high_conf
+
+    assert r"\bbackend\s+engineer\b" in broad
+    assert r"\bstaff\s+machine\s+learning\s+engineer\b" in broad or r"\bmachine\s+learning\s+engineer\b" in broad
+    assert r"\bmle\b" in broad
