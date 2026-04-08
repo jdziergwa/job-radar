@@ -24,7 +24,8 @@ import {
   Check,
   AlertCircle,
   BrainCircuit,
-  Info
+  Info,
+  Sparkles
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { api } from '@/lib/api/client'
@@ -33,6 +34,19 @@ import { cn } from '@/lib/utils'
 import { getCompanyQualitySignalLabel } from '@/lib/company-quality'
 
 import { DEFAULT_TIMEZONE_PREF, StepProps, normalizeTimezonePref } from '../types'
+
+const PROFILE_GENERATION_MESSAGES = [
+  { icon: BrainCircuit, text: 'Building your first draft...' },
+  { icon: FileText, text: 'Turning your inputs into profile guidance...' },
+  { icon: FileCode, text: 'Preparing matching rules and constraints...' },
+  { icon: Sparkles, text: 'Polishing the generated profile...' },
+]
+
+const TEMPLATE_LOADING_MESSAGES = [
+  { icon: FileText, text: 'Loading the starter profile...' },
+  { icon: FileCode, text: 'Preparing editable matching rules...' },
+  { icon: Sparkles, text: 'Getting your manual setup workspace ready...' },
+]
 
 export function ReviewGenerate({ onNext, onBack, onUpdate, data }: StepProps) {
   const [loading, setLoading] = useState(true)
@@ -43,6 +57,9 @@ export function ReviewGenerate({ onNext, onBack, onUpdate, data }: StepProps) {
   const [activeTab, setActiveTab] = useState('doc')
   const [refineStatus, setRefineStatus] = useState<'idle' | 'refining' | 'done'>('idle')
   const [changesMade, setChangesMade] = useState<string[]>([])
+  const [msgIndex, setMsgIndex] = useState(0)
+
+  const loadingMessages = data?.path === 'manual' ? TEMPLATE_LOADING_MESSAGES : PROFILE_GENERATION_MESSAGES
 
   const generateProfile = useCallback(async () => {
     setLoading(true)
@@ -129,6 +146,16 @@ export function ReviewGenerate({ onNext, onBack, onUpdate, data }: StepProps) {
     generateProfile()
   }, [generateProfile])
 
+  useEffect(() => {
+    if (!loading) return
+
+    const interval = setInterval(() => {
+      setMsgIndex((prev) => (prev + 1) % loadingMessages.length)
+    }, 2800)
+
+    return () => clearInterval(interval)
+  }, [loading, loadingMessages.length])
+
   const handleSave = async () => {
     setSaving(true)
     try {
@@ -161,41 +188,46 @@ export function ReviewGenerate({ onNext, onBack, onUpdate, data }: StepProps) {
       : refineStatus === 'refining'
         ? 'Polishing your profile with AI. This usually takes a moment.'
         : 'Building your first draft from the wizard inputs and CV analysis.'
+    const StepIcon = loadingMessages[msgIndex].icon
 
     return (
-      <div className="min-h-[420px] flex items-center justify-center animate-in fade-in duration-700">
-        <div className="w-full max-w-xl rounded-[2rem] border border-primary/15 bg-background/40 backdrop-blur-xl shadow-[0_24px_80px_rgba(0,0,0,0.24)] px-8 py-12">
-          <div className="flex flex-col items-center text-center gap-6">
-            <div className="inline-flex items-center rounded-full border border-primary/20 bg-primary/8 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.22em] text-primary/85">
-              {data?.path === 'manual' ? 'Preparing Template' : 'Generating Preview'}
-            </div>
+      <div className="flex flex-col items-center justify-center min-h-[400px] gap-10 py-12 animate-in fade-in duration-700">
+        <div className="relative">
+          <div className="absolute inset-0 bg-primary/20 blur-[100px] rounded-full scale-150 animate-pulse" />
 
-            <div className="relative">
-              <div className="absolute inset-0 rounded-[1.75rem] bg-primary/18 blur-2xl animate-pulse" />
-              <div className="relative flex h-24 w-24 items-center justify-center rounded-[1.75rem] border border-primary/20 bg-background/75 shadow-2xl">
-                <BrainCircuit className="h-11 w-11 text-primary animate-[spin_3s_linear_infinite]" />
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <h2 className="text-3xl font-bold tracking-tight text-foreground">
-                {headline}
-              </h2>
-              <p className="text-sm leading-relaxed text-muted-foreground max-w-md mx-auto">
-                {statusText}
-              </p>
-            </div>
-
-            <div className="w-full max-w-sm space-y-3">
-              <div className="h-2 rounded-full bg-muted/40 overflow-hidden">
-                <div className="h-full w-1/2 rounded-full bg-primary animate-[pulse_1.8s_ease-in-out_infinite]" />
-              </div>
-              <div className="flex items-center justify-center gap-2 text-[11px] uppercase tracking-[0.18em] text-muted-foreground/70">
-                <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
-                <span>AI profile drafting in progress</span>
-              </div>
-            </div>
+          <div className="relative bg-background/40 backdrop-blur-xl border border-primary/20 rounded-[2.5rem] p-12 shadow-2xl flex items-center justify-center overflow-hidden group">
+            <div className="absolute inset-0 bg-gradient-to-tr from-primary/10 via-transparent to-primary/5 opacity-50" />
+            <Loader2 className="h-16 w-16 animate-spin text-primary relative z-10" />
+            <div className="absolute inset-0 border-2 border-primary/10 rounded-[2.5rem] animate-[spin_10s_linear_infinite]" />
           </div>
+        </div>
+
+        <div className="text-center space-y-6 max-w-sm relative z-10">
+          <div className="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary font-bold uppercase tracking-widest text-[10px] shadow-sm">
+            <StepIcon className="h-3.5 w-3.5 animate-bounce" />
+            <span className="animate-in slide-in-from-bottom-2 duration-500 min-w-[220px]" key={`${data?.path ?? 'guided'}-${msgIndex}`}>
+              {loadingMessages[msgIndex].text}
+            </span>
+          </div>
+
+          <div className="space-y-1">
+            <h2 className="text-2xl font-bold tracking-tight">{headline}</h2>
+            <p className="text-muted-foreground text-xs leading-relaxed px-4 max-w-xs mx-auto">
+              {statusText}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex gap-3">
+          {loadingMessages.map((_, i) => (
+            <div
+              key={i}
+              className={cn(
+                'h-1.5 rounded-full transition-all duration-1000',
+                i === msgIndex ? 'bg-primary w-8' : 'bg-primary/20 w-1.5'
+              )}
+            />
+          ))}
         </div>
       </div>
     )
