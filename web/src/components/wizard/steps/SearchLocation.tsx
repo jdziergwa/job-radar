@@ -29,16 +29,32 @@ import { useEffect } from 'react'
 import { DEFAULT_TIMEZONE_PREF, StepProps, normalizeTimezonePref } from '../types'
 
 const SENIORITY_LEVELS = ['Junior', 'Mid', 'Senior', 'Lead', 'Staff', 'Principal']
-const WORK_AUTH = ['EU citizen', 'US citizen', 'UK right to work', 'Need visa sponsorship', 'Other']
+const WORK_AUTH_OPTIONS = [
+  { id: 'eu_citizen', label: 'EU citizen' },
+  { id: 'us_citizen', label: 'US citizen' },
+  { id: 'uk_right_to_work', label: 'UK right to work' },
+  { id: 'need_visa_sponsorship', label: 'Need visa sponsorship' },
+  { id: 'other', label: 'Other' },
+]
 const REMOTE_PREF = [
   { id: 'remote', label: 'Fully Remote', icon: Wifi },
   { id: 'hybrid', label: 'Hybrid OK', icon: Building2 },
   { id: 'onsite', label: 'On-site OK', icon: Home },
 ]
-const REGIONS = [
-  'Europe', 'UK', 'US/North America', 'Global/Worldwide', 
-  'Germany', 'Netherlands', 'Switzerland', 'Spain', 
-  'Portugal', 'France', 'Nordics', 'Middle East', 'Asia-Pacific'
+const REGION_OPTIONS = [
+  { id: 'Europe', label: 'Europe' },
+  { id: 'UK', label: 'UK' },
+  { id: 'North America', label: 'US/North America' },
+  { id: 'Global', label: 'Global/Worldwide' },
+  { id: 'Germany', label: 'Germany' },
+  { id: 'Netherlands', label: 'Netherlands' },
+  { id: 'Switzerland', label: 'Switzerland' },
+  { id: 'Spain', label: 'Spain' },
+  { id: 'Portugal', label: 'Portugal' },
+  { id: 'France', label: 'France' },
+  { id: 'Nordics', label: 'Nordics' },
+  { id: 'Middle East', label: 'Middle East' },
+  { id: 'APAC', label: 'Asia-Pacific' },
 ]
 const TIMEZONE_PREFS = [
   { id: 'overlap_strict', label: 'Same/Overlap (±2h)' },
@@ -47,6 +63,46 @@ const TIMEZONE_PREFS = [
   { id: 'apac', label: 'APAC (UTC+7 to UTC+12)' },
   { id: 'any', label: 'Any Timezone' }
 ]
+
+const WORK_AUTH_ALIASES: Record<string, string> = {
+  'eu citizen': 'eu_citizen',
+  'us citizen': 'us_citizen',
+  'uk right to work': 'uk_right_to_work',
+  'need visa sponsorship': 'need_visa_sponsorship',
+  other: 'other',
+}
+
+const REGION_ALIASES: Record<string, string> = {
+  'us/north america': 'North America',
+  'north america': 'North America',
+  americas: 'North America',
+  'global/worldwide': 'Global',
+  worldwide: 'Global',
+  'asia-pacific': 'APAC',
+  'asia pacific': 'APAC',
+}
+
+function normalizeWorkAuth(value?: string): string {
+  if (!value) return ''
+  return WORK_AUTH_ALIASES[value.trim().toLowerCase()] || value
+}
+
+function normalizeRegion(value: string): string {
+  return REGION_ALIASES[value.trim().toLowerCase()] || value
+}
+
+function normalizeRegions(values?: string[]): string[] {
+  if (!values) return []
+  const seen = new Set<string>()
+  const normalized: string[] = []
+  for (const value of values) {
+    const next = normalizeRegion(value)
+    if (!next || seen.has(next)) continue
+    seen.add(next)
+    normalized.push(next)
+  }
+  return normalized
+}
 
 export function SearchLocation({ onNext, onBack, onUpdate, data }: StepProps) {
   const analysis = data.cvAnalysis
@@ -57,12 +113,12 @@ export function SearchLocation({ onNext, onBack, onUpdate, data }: StepProps) {
     data.seniority || (analysis?.inferred_seniority ? [analysis.inferred_seniority.toLowerCase()] : ['senior'])
   )
   const [location, setLocation] = useState(data.location || '')
-  const [workAuth, setWorkAuth] = useState<string>(data.workAuth || '')
+  const [workAuth, setWorkAuth] = useState<string>(normalizeWorkAuth(data.workAuth))
   const [remotePref, setRemotePref] = useState<string[]>(data.remotePref || ['remote'])
   const [primaryRemotePref, setPrimaryRemotePref] = useState<string>(data.primaryRemotePref || 'remote')
   const [timezonePref, setTimezonePref] = useState<string>(normalizeTimezonePref(data.timezonePref) || DEFAULT_TIMEZONE_PREF)
-  const [targetRegions, setTargetRegions] = useState<string[]>(data.targetRegions || ['Europe'])
-  const [excludedRegions, setExcludedRegions] = useState<string[]>(data.excludedRegions || [])
+  const [targetRegions, setTargetRegions] = useState<string[]>(normalizeRegions(data.targetRegions || ['Europe']))
+  const [excludedRegions, setExcludedRegions] = useState<string[]>(normalizeRegions(data.excludedRegions || []))
   const [enableStandardExclusions, setEnableStandardExclusions] = useState<boolean>(
     data.enableStandardExclusions !== undefined ? data.enableStandardExclusions : true
   )
@@ -244,12 +300,12 @@ export function SearchLocation({ onNext, onBack, onUpdate, data }: StepProps) {
                 <Select value={workAuth} onValueChange={(val) => val && setWorkAuth(val)}>
                   <SelectTrigger className="w-full !h-12 pl-12 bg-background/50 border-border/50 text-sm !rounded-2xl">
                     <SelectValue placeholder="Select status">
-                      {workAuth ? (WORK_AUTH.find(a => a.toLowerCase().replace(/ /g, '_') === workAuth) || workAuth) : null}
+                      {workAuth ? (WORK_AUTH_OPTIONS.find(a => a.id === workAuth)?.label || workAuth) : null}
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
-                    {WORK_AUTH.map(auth => (
-                      <SelectItem key={auth} value={auth.toLowerCase().replace(/ /g, '_')}>{auth}</SelectItem>
+                    {WORK_AUTH_OPTIONS.map(auth => (
+                      <SelectItem key={auth.id} value={auth.id}>{auth.label}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -369,19 +425,19 @@ export function SearchLocation({ onNext, onBack, onUpdate, data }: StepProps) {
             <div className="flex flex-col gap-3">
               <label className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground/70 ml-2 block">I want to work in...</label>
               <div className="flex flex-wrap gap-2">
-                {REGIONS.map(region => {
-                  const isSelected = targetRegions.includes(region)
+                {REGION_OPTIONS.map(region => {
+                  const isSelected = targetRegions.includes(region.id)
                   return (
                     <Badge
-                      key={region}
+                      key={region.id}
                       variant={isSelected ? "default" : "outline"}
                       className={cn(
                         "cursor-pointer px-4 py-2 text-sm rounded-xl transition-all h-auto",
                         isSelected ? "bg-primary border-primary shadow-lg scale-105" : "bg-background/30 border-border/50 hover:bg-muted/50"
                       )}
-                      onClick={() => toggleRegion(region)}
+                      onClick={() => toggleRegion(region.id)}
                     >
-                      {region}
+                      {region.label}
                     </Badge>
                   )
                 })}
@@ -391,11 +447,11 @@ export function SearchLocation({ onNext, onBack, onUpdate, data }: StepProps) {
             <div className="flex flex-col gap-3">
               <label className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground/70 ml-2 block text-destructive/80">Exclude these regions</label>
               <div className="flex flex-wrap gap-2">
-                {REGIONS.map(region => {
-                  const isExcluded = excludedRegions.includes(region)
+                {REGION_OPTIONS.map(region => {
+                  const isExcluded = excludedRegions.includes(region.id)
                   return (
                     <Badge
-                      key={region}
+                      key={region.id}
                       variant="outline"
                       className={cn(
                         "cursor-pointer px-4 py-2 text-sm rounded-xl transition-all h-auto",
@@ -403,9 +459,9 @@ export function SearchLocation({ onNext, onBack, onUpdate, data }: StepProps) {
                           ? "bg-destructive/10 text-destructive border-destructive/50 shadow-sm scale-105" 
                           : "bg-background/20 border-border/30 text-muted-foreground/60 hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30"
                       )}
-                      onClick={() => toggleRegion(region, true)}
+                      onClick={() => toggleRegion(region.id, true)}
                     >
-                      {region}
+                      {region.label}
                     </Badge>
                   )
                 })}
