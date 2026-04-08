@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import type { components } from '@/lib/api/types'
 import { ScoreRing } from '@/components/score/ScoreRing'
 import { PriorityBadge } from '@/components/score/PriorityBadge'
 import { FitCategoryBadge } from '@/components/score/FitCategoryBadge'
@@ -7,6 +8,8 @@ import { Badge } from '@/components/ui/badge'
 import { MapPin, Building2, ChevronRight, Banknote, HelpCircle } from 'lucide-react'
 import { getCompanyQualitySignalLabel } from '@/lib/company-quality'
 
+type JobResponse = components["schemas"]["JobResponse"]
+
 const PRIORITY_BORDER: Record<string, string> = {
   high:   'border-l-green-500/70',
   medium: 'border-l-amber-500/60',
@@ -14,7 +17,7 @@ const PRIORITY_BORDER: Record<string, string> = {
   skip:   'border-l-red-500/40',
 }
 
-export function JobListItem({ job }: { job: any }) {
+export function JobListItem({ job }: { job: JobResponse }) {
   const priority = job.score_breakdown?.apply_priority as string | undefined
   const fitCategory = job.score_breakdown?.fit_category as string | undefined
   const leftBorder = PRIORITY_BORDER[priority ?? ''] ?? 'border-l-border/30'

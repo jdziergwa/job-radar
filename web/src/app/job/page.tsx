@@ -3,6 +3,7 @@
 import React, { useEffect, useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { api } from '@/lib/api/client'
+import type { components } from '@/lib/api/types'
 import { getMatchQualityLabel } from '@/lib/utils/score'
 import { ScoreRing } from '@/components/score/ScoreRing'
 import { ScoreBar } from '@/components/score/ScoreBar'
@@ -34,12 +35,15 @@ import {
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
+type JobDetailResponse = components["schemas"]["JobDetailResponse"]
+type JobStatus = components["schemas"]["StatusUpdate"]["status"]
+
 function JobDetailContent() {
   const searchParams = useSearchParams()
   const jobId = searchParams.get('id')
   const router = useRouter()
   
-  const [job, setJob] = useState<any>(null)
+  const [job, setJob] = useState<JobDetailResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [updating, setUpdating] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -58,10 +62,8 @@ function JobDetailContent() {
         }
       })
       if (apiError) {
-        console.error("API Error in Detail View:", apiError)
         throw new Error('Failed to load job details')
       }
-      console.log("DEBUG: Job Data in Detail View:", data)
       setJob(data)
     } catch (err: any) {
       setError(err.message)
@@ -70,7 +72,7 @@ function JobDetailContent() {
     }
   }
 
-  const updateStatus = async (newStatus: string) => {
+  const updateStatus = async (newStatus: JobStatus) => {
     if (!jobId) return
     setUpdating(true)
     try {
@@ -78,12 +80,12 @@ function JobDetailContent() {
         params: {
           path: { job_id: parseInt(jobId) }
         },
-        body: { status: newStatus as any }
+        body: { status: newStatus }
       })
       if (patchError) throw new Error('Failed to update status')
       
       // Optimistic update
-      setJob((prev: any) => ({ ...prev, status: newStatus }))
+      setJob((prev) => prev ? { ...prev, status: newStatus } : prev)
       router.refresh()
     } catch (err: any) {
       alert(err.message)

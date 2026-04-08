@@ -548,11 +548,12 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
+        /** Update Company */
+        patch: operations["update_company_api_companies__profile___platform___slug__patch"];
         /** Remove Company */
         delete: operations["remove_company_api_companies__profile___platform___slug__delete"];
         options?: never;
         head?: never;
-        patch?: never;
         trace?: never;
     };
     "/api/health": {
@@ -682,30 +683,22 @@ export interface components {
              * Greenhouse
              * @default []
              */
-            greenhouse: {
-                [key: string]: unknown;
-            }[];
+            greenhouse: components["schemas"]["TrackedCompanyEntry"][];
             /**
              * Lever
              * @default []
              */
-            lever: {
-                [key: string]: unknown;
-            }[];
+            lever: components["schemas"]["TrackedCompanyEntry"][];
             /**
              * Ashby
              * @default []
              */
-            ashby: {
-                [key: string]: unknown;
-            }[];
+            ashby: components["schemas"]["TrackedCompanyEntry"][];
             /**
              * Workable
              * @default []
              */
-            workable: {
-                [key: string]: unknown;
-            }[];
+            workable: components["schemas"]["TrackedCompanyEntry"][];
         };
         /** CompanyEntry */
         CompanyEntry: {
@@ -718,6 +711,21 @@ export interface components {
             slug: string;
             /** Name */
             name: string;
+            /**
+             * Company Quality Signals
+             * @default []
+             */
+            company_quality_signals: string[];
+        };
+        /** CompanyUpdateRequest */
+        CompanyUpdateRequest: {
+            /** Name */
+            name?: string | null;
+            /**
+             * Company Quality Signals
+             * @default []
+             */
+            company_quality_signals: string[];
         };
         /** CompanyStat */
         CompanyStat: {
@@ -853,6 +861,11 @@ export interface components {
              * @default false
              */
             is_sparse: boolean;
+            /**
+             * Company Quality Signals
+             * @default []
+             */
+            company_quality_signals: string[];
             /** Description */
             description?: string | null;
         };
@@ -920,6 +933,11 @@ export interface components {
              * @default false
              */
             is_sparse: boolean;
+            /**
+             * Company Quality Signals
+             * @default []
+             */
+            company_quality_signals: string[];
         };
         /** MarketIntelligenceResponse */
         MarketIntelligenceResponse: {
@@ -1127,6 +1145,8 @@ export interface components {
              * @default []
              */
             red_flags: string[];
+            /** Fit Category */
+            fit_category?: string | null;
             /**
              * Apply Priority
              * @default skip
@@ -1266,6 +1286,18 @@ export interface components {
                 [key: string]: unknown;
             }[];
         };
+        /** TrackedCompanyEntry */
+        TrackedCompanyEntry: {
+            /** Slug */
+            slug: string;
+            /** Name */
+            name: string;
+            /**
+             * Company Quality Signals
+             * @default []
+             */
+            company_quality_signals: string[];
+        };
         /** UserPreferences */
         UserPreferences: {
             /**
@@ -1318,6 +1350,16 @@ export interface components {
              * @default []
              */
             goodMatchSignals: string[];
+            /**
+             * Companyqualitysignals
+             * @default []
+             */
+            companyQualitySignals: string[];
+            /**
+             * Allowlowerseniorityatstrategiccompanies
+             * @default false
+             */
+            allowLowerSeniorityAtStrategicCompanies: boolean;
             /**
              * Dealbreakers
              * @default []
@@ -1486,7 +1528,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["PipelineRunResponse"];
                 };
             };
             /** @description Validation Error */
@@ -1517,7 +1559,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["PipelineRunResponse"];
                 };
             };
             /** @description Validation Error */
@@ -2311,6 +2353,43 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["CompanyEntry"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_company_api_companies__profile___platform___slug__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                profile: string;
+                platform: string;
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CompanyUpdateRequest"];
             };
         };
         responses: {

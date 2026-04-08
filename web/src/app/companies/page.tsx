@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react'
 import { api } from '@/lib/api/client'
+import type { components } from '@/lib/api/types'
 import { toast } from 'sonner'
 import {
   Tabs,
@@ -49,14 +50,10 @@ const PLATFORMS = [
 ] as const
 
 type PlatformId = typeof PLATFORMS[number]['id']
-
-interface TrackedCompany {
-  name: string
-  slug: string
-  company_quality_signals?: string[]
-}
-
-type CompaniesByPlatform = Record<PlatformId, TrackedCompany[]>
+type TrackedCompany = components["schemas"]["TrackedCompanyEntry"]
+type CompaniesByPlatform = components["schemas"]["CompaniesResponse"]
+type CompanyEntry = components["schemas"]["CompanyEntry"]
+type CompanyUpdateRequest = components["schemas"]["CompanyUpdateRequest"]
 
 interface CompanyFormState {
   name: string
@@ -92,7 +89,7 @@ export default function CompaniesPage() {
         }
       })
       if (apiError) throw new Error('Failed to fetch companies')
-      setCompanies((data || null) as CompaniesByPlatform | null)
+      setCompanies(data || null)
     } catch (err: any) {
       setError(err.message || 'An unexpected error occurred')
     } finally {
@@ -124,16 +121,17 @@ export default function CompaniesPage() {
     e.preventDefault()
     setIsAdding(true)
     try {
-      const { error: apiError } = await (api as any).POST('/api/companies/{profile}', {
+      const body: CompanyEntry = {
+        platform: newCompany.platform,
+        slug: newCompany.slug,
+        name: newCompany.name,
+        company_quality_signals: dedupeCompanyQualitySignals(newCompany.companyQualitySignals),
+      }
+      const { error: apiError } = await api.POST('/api/companies/{profile}', {
         params: {
           path: { profile: 'default' }
         },
-        body: {
-          platform: newCompany.platform as any,
-          slug: newCompany.slug,
-          name: newCompany.name,
-          company_quality_signals: dedupeCompanyQualitySignals(newCompany.companyQualitySignals),
-        }
+        body,
       })
       if (apiError) throw new Error(typeof apiError === 'string' ? apiError : 'Failed to add company')
 
@@ -154,7 +152,11 @@ export default function CompaniesPage() {
 
     setIsUpdating(true)
     try {
-      const { error: apiError } = await (api as any).PATCH('/api/companies/{profile}/{platform}/{slug}', {
+      const body: CompanyUpdateRequest = {
+        name: editingCompany.name,
+        company_quality_signals: dedupeCompanyQualitySignals(editingCompany.companyQualitySignals),
+      }
+      const { error: apiError } = await api.PATCH('/api/companies/{profile}/{platform}/{slug}', {
         params: {
           path: {
             profile: 'default',
@@ -162,10 +164,7 @@ export default function CompaniesPage() {
             slug: editingCompany.slug,
           }
         },
-        body: {
-          name: editingCompany.name,
-          company_quality_signals: dedupeCompanyQualitySignals(editingCompany.companyQualitySignals),
-        }
+        body,
       })
 
       if (apiError) throw new Error(typeof apiError === 'string' ? apiError : 'Failed to update company')
@@ -200,7 +199,7 @@ export default function CompaniesPage() {
 
   const filteredCompanies = (platform: PlatformId) => {
     if (!companies || !companies[platform]) return []
-    return companies[platform].filter((c: any) =>
+    return companies[platform].filter((c) =>
       c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       c.slug.toLowerCase().includes(searchQuery.toLowerCase())
     )
@@ -519,7 +518,7 @@ export default function CompaniesPage() {
                   </div>
                 ) : (
                   <div className="space-y-2 max-w-7xl mx-auto">
-                    {filteredCompanies(p.id).map((c: any) => (
+                    {filteredCompanies(p.id).map((c) => (
                       <div
                         key={c.slug}
                         className="group relative flex items-center gap-4 px-4 py-3 rounded-xl border border-border/40 bg-card/30 hover:bg-card/60 hover:border-primary/30 transition-all duration-300 shadow-sm backdrop-blur-sm"
