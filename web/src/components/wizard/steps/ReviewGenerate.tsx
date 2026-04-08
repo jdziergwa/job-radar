@@ -31,7 +31,7 @@ import { api } from '@/lib/api/client'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 
-import { StepProps } from '../types'
+import { DEFAULT_TIMEZONE_PREF, StepProps, normalizeTimezonePref } from '../types'
 
 export function ReviewGenerate({ onNext, onBack, onUpdate, data }: StepProps) {
   const [loading, setLoading] = useState(true)
@@ -60,18 +60,20 @@ export function ReviewGenerate({ onNext, onBack, onUpdate, data }: StepProps) {
 
       const user_preferences = {
         targetRoles: data.targetRoles || [],
-        seniority: data.seniority || 'senior',
+        seniority: data.seniority || [],
         location: data.location || '',
         workAuth: data.workAuth || '',
         remotePref: data.remotePref || ['remote'],
         primaryRemotePref: data.primaryRemotePref || 'remote',
-        timezonePref: data.timezonePref || 'local',
+        timezonePref: normalizeTimezonePref(data.timezonePref) || DEFAULT_TIMEZONE_PREF,
         targetRegions: data.targetRegions || ['Europe'],
         excludedRegions: data.excludedRegions || [],
         industries: data.industries || [],
         careerDirection: data.careerDirection || '',
+        careerGoal: data.careerGoal || 'stay',
         goodMatchSignals: data.goodMatchSignals || [],
         dealBreakers: data.dealBreakers || [],
+        enableStandardExclusions: data.enableStandardExclusions ?? true,
         additionalContext: data.additionalContext || ''
       }
 
@@ -97,24 +99,7 @@ export function ReviewGenerate({ onNext, onBack, onUpdate, data }: StepProps) {
         const refineRes = await (api as any).POST('/api/wizard/refine-profile', {
           body: {
             cv_analysis: data.cvAnalysis,
-            user_preferences: {
-              targetRoles: data.targetRoles || [],
-              seniority: data.seniority || [],
-              location: data.location || '',
-              workAuth: data.workAuth || '',
-              remotePref: data.remotePref || [],
-              primaryRemotePref: data.primaryRemotePref || '',
-              timezonePref: data.timezonePref || '',
-              targetRegions: data.targetRegions || [],
-              excludedRegions: data.excludedRegions || [],
-              industries: data.industries || [],
-              careerDirection: data.careerDirection || '',
-              careerGoal: data.careerGoal || 'stay',
-              goodMatchSignals: data.goodMatchSignals || [],
-              dealBreakers: data.dealBreakers || [],
-              enableStandardExclusions: data.enableStandardExclusions ?? true,
-              additionalContext: data.additionalContext || '',
-            },
+            user_preferences: user_preferences as any,
             draft_doc: response.data.profile_doc,
             draft_yaml: response.data.profile_yaml,
           }

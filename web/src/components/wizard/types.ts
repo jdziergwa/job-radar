@@ -3,6 +3,13 @@ import { components } from "@/lib/api/types"
 export type CVAnalysis = components["schemas"]["CVAnalysisResponse"]
 export type UserPreferences = components["schemas"]["UserPreferences"]
 
+export const DEFAULT_TIMEZONE_PREF = 'overlap_strict'
+
+export function normalizeTimezonePref(value?: string): string {
+  if (!value || value === 'local') return DEFAULT_TIMEZONE_PREF
+  return value
+}
+
 export interface WizardData {
   path?: 'manual' | 'ai'
   cvFile?: { name: string, size: number }

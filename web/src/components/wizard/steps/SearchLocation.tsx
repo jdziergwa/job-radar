@@ -26,7 +26,7 @@ import {
 import { cn } from '@/lib/utils'
 
 import { useEffect } from 'react'
-import { StepProps } from '../types'
+import { DEFAULT_TIMEZONE_PREF, StepProps, normalizeTimezonePref } from '../types'
 
 const SENIORITY_LEVELS = ['Junior', 'Mid', 'Senior', 'Lead', 'Staff', 'Principal']
 const WORK_AUTH = ['EU citizen', 'US citizen', 'UK right to work', 'Need visa sponsorship', 'Other']
@@ -60,7 +60,7 @@ export function SearchLocation({ onNext, onBack, onUpdate, data }: StepProps) {
   const [workAuth, setWorkAuth] = useState<string>(data.workAuth || '')
   const [remotePref, setRemotePref] = useState<string[]>(data.remotePref || ['remote'])
   const [primaryRemotePref, setPrimaryRemotePref] = useState<string>(data.primaryRemotePref || 'remote')
-  const [timezonePref, setTimezonePref] = useState<string>(data.timezonePref || 'local')
+  const [timezonePref, setTimezonePref] = useState<string>(normalizeTimezonePref(data.timezonePref) || DEFAULT_TIMEZONE_PREF)
   const [targetRegions, setTargetRegions] = useState<string[]>(data.targetRegions || ['Europe'])
   const [excludedRegions, setExcludedRegions] = useState<string[]>(data.excludedRegions || [])
   const [enableStandardExclusions, setEnableStandardExclusions] = useState<boolean>(
