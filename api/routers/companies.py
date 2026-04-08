@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 import yaml
 from api.deps import PROFILES_DIR
-from api.models import CompanyEntry, CompaniesResponse
+from api.models import CompanyEntry, CompaniesResponse, CompanyUpdateRequest
 
 router = APIRouter()
 
@@ -23,6 +23,21 @@ def _save_companies(profile: str, data: dict):
     path = PROFILES_DIR / profile / "companies.yaml"
     with open(path, "w", encoding="utf-8") as f:
         yaml.dump(data, f, default_flow_style=False, allow_unicode=True, sort_keys=False)
+
+
+def _clean_company_quality_signals(values: list[str]) -> list[str]:
+    cleaned: list[str] = []
+    seen: set[str] = set()
+    for value in values:
+        signal = " ".join(str(value).strip().split())
+        if not signal:
+            continue
+        normalized = signal.lower()
+        if normalized in seen:
+            continue
+        cleaned.append(signal)
+        seen.add(normalized)
+    return cleaned
 
 
 @router.get("/companies/{profile}", response_model=CompaniesResponse)
@@ -49,12 +64,40 @@ def add_company(profile: str, body: CompanyEntry):
         )
     
     entry = {"slug": body.slug, "name": body.name}
-    if body.company_quality_signals:
-        entry["company_quality_signals"] = body.company_quality_signals
+    signals = _clean_company_quality_signals(body.company_quality_signals)
+    if signals:
+        entry["company_quality_signals"] = signals
     platform_list.append(entry)
     data[body.platform] = platform_list
     _save_companies(profile, data)
     return {"ok": True}
+
+
+@router.patch("/companies/{profile}/{platform}/{slug}")
+def update_company(profile: str, platform: str, slug: str, body: CompanyUpdateRequest):
+    if platform not in PLATFORMS:
+        raise HTTPException(status_code=400, detail=f"Invalid platform '{platform}'")
+
+    data = _load_companies(profile)
+    platform_list = data.get(platform, [])
+
+    for entry in platform_list:
+        if entry.get("slug") != slug:
+            continue
+
+        if body.name is not None:
+            entry["name"] = body.name
+
+        signals = _clean_company_quality_signals(body.company_quality_signals)
+        if signals:
+            entry["company_quality_signals"] = signals
+        else:
+            entry.pop("company_quality_signals", None)
+
+        _save_companies(profile, data)
+        return {"ok": True}
+
+    raise HTTPException(status_code=404, detail=f"Company '{slug}' not found in {platform}")
 
 
 @router.delete("/companies/{profile}/{platform}/{slug}")

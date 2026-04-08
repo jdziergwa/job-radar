@@ -184,11 +184,22 @@ class CompanyEntry(BaseModel):
     company_quality_signals: list[str] = []
 
 
+class TrackedCompanyEntry(BaseModel):
+    slug: str
+    name: str
+    company_quality_signals: list[str] = []
+
+
+class CompanyUpdateRequest(BaseModel):
+    name: Optional[str] = None
+    company_quality_signals: list[str] = []
+
+
 class CompaniesResponse(BaseModel):
-    greenhouse: list[dict] = []
-    lever: list[dict] = []
-    ashby: list[dict] = []
-    workable: list[dict] = []
+    greenhouse: list[TrackedCompanyEntry] = []
+    lever: list[TrackedCompanyEntry] = []
+    ashby: list[TrackedCompanyEntry] = []
+    workable: list[TrackedCompanyEntry] = []
 
 
 # Wizard Models

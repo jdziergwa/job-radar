@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
+import { Switch } from '@/components/ui/switch'
 import { 
   Plus,
   X,
@@ -18,6 +19,12 @@ import {
   Briefcase
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import {
+  COMPANY_QUALITY_SIGNAL_OPTIONS,
+  dedupeCompanyQualitySignals,
+  getCompanyQualitySignalLabel,
+  normalizeCompanyQualitySignal,
+} from '@/lib/company-quality'
 
 import { StepProps } from '../types'
 
@@ -71,6 +78,12 @@ export function PreferencesGoals({ onNext, onBack, onUpdate, data }: StepProps) 
   const [goodMatchSignals, setGoodMatchSignals] = useState<string[]>(
     data.goodMatchSignals || analysis?.suggested_good_match_signals || []
   )
+  const [companyQualitySignals, setCompanyQualitySignals] = useState<string[]>(
+    dedupeCompanyQualitySignals(data.companyQualitySignals || [])
+  )
+  const [allowLowerSeniorityAtStrategicCompanies, setAllowLowerSeniorityAtStrategicCompanies] = useState(
+    Boolean(data.allowLowerSeniorityAtStrategicCompanies && (data.companyQualitySignals || []).length > 0)
+  )
   const [dealBreakers, setDealBreakers] = useState<string[]>(
     data.dealBreakers || analysis?.suggested_lower_fit_signals || []
   )
@@ -78,6 +91,7 @@ export function PreferencesGoals({ onNext, onBack, onUpdate, data }: StepProps) 
   
   const [newIndustry, setNewIndustry] = useState('')
   const [newExcitement, setNewExcitement] = useState('')
+  const [newCompanySignal, setNewCompanySignal] = useState('')
   const [newDealBreaker, setNewDealBreaker] = useState('')
 
   // Handle goal change with auto-drafting from LLM-generated narratives
@@ -96,10 +110,28 @@ export function PreferencesGoals({ onNext, onBack, onUpdate, data }: StepProps) 
       careerDirection,
       industries,
       goodMatchSignals,
+      companyQualitySignals,
+      allowLowerSeniorityAtStrategicCompanies,
       dealBreakers,
       additionalContext
     })
-  }, [careerGoal, careerDirection, industries, goodMatchSignals, dealBreakers, additionalContext, onUpdate])
+  }, [
+    careerGoal,
+    careerDirection,
+    industries,
+    goodMatchSignals,
+    companyQualitySignals,
+    allowLowerSeniorityAtStrategicCompanies,
+    dealBreakers,
+    additionalContext,
+    onUpdate,
+  ])
+
+  useEffect(() => {
+    if (companyQualitySignals.length === 0 && allowLowerSeniorityAtStrategicCompanies) {
+      setAllowLowerSeniorityAtStrategicCompanies(false)
+    }
+  }, [companyQualitySignals, allowLowerSeniorityAtStrategicCompanies])
 
   const toggleItem = (item: string, list: string[], setter: (val: string[]) => void) => {
     if (list.includes(item)) {
@@ -120,6 +152,30 @@ export function PreferencesGoals({ onNext, onBack, onUpdate, data }: StepProps) 
       setter([...list, trimmed])
       resetter('')
     }
+  }
+
+  const toggleCompanySignal = (signal: string) => {
+    const normalized = normalizeCompanyQualitySignal(signal)
+    if (!normalized) return
+
+    if (companyQualitySignals.includes(normalized)) {
+      setCompanyQualitySignals(companyQualitySignals.filter((item) => item !== normalized))
+      return
+    }
+
+    setCompanyQualitySignals(dedupeCompanyQualitySignals([...companyQualitySignals, normalized]))
+  }
+
+  const handleAddCompanySignal = () => {
+    const normalized = normalizeCompanyQualitySignal(newCompanySignal)
+    if (!normalized) return
+    if (companyQualitySignals.includes(normalized)) {
+      setNewCompanySignal('')
+      return
+    }
+
+    setCompanyQualitySignals(dedupeCompanyQualitySignals([...companyQualitySignals, normalized]))
+    setNewCompanySignal('')
   }
 
   // Dynamic option merges: Combine hardcoded defaults with unique AI suggestions
@@ -144,6 +200,8 @@ export function PreferencesGoals({ onNext, onBack, onUpdate, data }: StepProps) 
       careerDirection,
       industries,
       goodMatchSignals,
+      companyQualitySignals,
+      allowLowerSeniorityAtStrategicCompanies,
       dealBreakers,
       additionalContext
     })
@@ -338,6 +396,92 @@ export function PreferencesGoals({ onNext, onBack, onUpdate, data }: StepProps) 
                   className="bg-transparent border-none outline-none text-xs w-full py-1 placeholder:text-muted-foreground/40"
                 />
               </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="bg-background/40 backdrop-blur-sm border border-border/50 rounded-3xl p-6 flex flex-col gap-6 shadow-sm">
+          <div className="flex items-center gap-3 border-b border-border/20 pb-3">
+            <div className="p-2 bg-primary/10 rounded-xl text-primary">
+              <Building className="h-5 w-5" />
+            </div>
+            <h3 className="font-bold text-lg text-foreground">Strategic Company Exceptions</h3>
+          </div>
+
+          <div className="flex flex-col gap-3 pt-2">
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Keep this blank unless certain company qualities justify a strategic exception. This stays explicit and generic: the scorer only uses signals you choose here and only when companies are tagged with matching signals.
+            </p>
+
+            <div className="flex flex-wrap gap-2">
+              {COMPANY_QUALITY_SIGNAL_OPTIONS.map((signal) => {
+                const isActive = companyQualitySignals.includes(signal.value)
+                return (
+                  <Badge
+                    key={signal.value}
+                    variant={isActive ? "default" : "outline"}
+                    className={cn(
+                      "cursor-pointer px-4 py-2 text-sm rounded-xl transition-all h-auto",
+                      isActive ? "bg-primary border-primary shadow-lg scale-105" : "bg-background/30 border-border/50 hover:bg-muted/50"
+                    )}
+                    onClick={() => toggleCompanySignal(signal.value)}
+                  >
+                    {signal.label}
+                  </Badge>
+                )
+              })}
+
+              <div className="flex items-center gap-2 px-3 py-1 bg-muted/20 border border-dashed border-border/50 rounded-xl min-w-[180px] focus-within:border-primary/50 transition-colors">
+                <Plus className="h-3.5 w-3.5 text-muted-foreground" />
+                <input
+                  value={newCompanySignal}
+                  onChange={(e) => setNewCompanySignal(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleAddCompanySignal()}
+                  placeholder="Add custom signal..."
+                  className="bg-transparent border-none outline-none text-xs w-full py-1 placeholder:text-muted-foreground/40"
+                />
+              </div>
+            </div>
+
+            {companyQualitySignals.length > 0 && (
+              <div className="flex flex-wrap gap-2 pt-1">
+                {companyQualitySignals.map((signal) => (
+                  <Badge
+                    key={signal}
+                    variant="outline"
+                    className="rounded-xl bg-primary/5 border-primary/20 text-primary gap-1.5 px-3 py-1.5"
+                  >
+                    {getCompanyQualitySignalLabel(signal)}
+                    <button
+                      type="button"
+                      onClick={() => toggleCompanySignal(signal)}
+                      className="rounded-full hover:bg-primary/10"
+                      aria-label={`Remove ${signal}`}
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </Badge>
+                ))}
+              </div>
+            )}
+
+            <div className={cn(
+              "flex items-start justify-between gap-4 rounded-2xl border p-4 transition-colors",
+              companyQualitySignals.length > 0 ? "border-primary/20 bg-primary/5" : "border-border/40 bg-muted/10"
+            )}>
+              <div className="space-y-1">
+                <p className="text-sm font-semibold text-foreground">
+                  Allow lower-seniority roles only when those signals match
+                </p>
+                <p className="text-xs text-muted-foreground leading-relaxed max-w-xl">
+                  Use this for explicit stretch exceptions, not as a default downgrade of your seniority preferences.
+                </p>
+              </div>
+              <Switch
+                checked={allowLowerSeniorityAtStrategicCompanies}
+                disabled={companyQualitySignals.length === 0}
+                onCheckedChange={(checked) => setAllowLowerSeniorityAtStrategicCompanies(Boolean(checked))}
+              />
             </div>
           </div>
         </section>

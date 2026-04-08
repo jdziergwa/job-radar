@@ -30,6 +30,7 @@ import { Badge } from '@/components/ui/badge'
 import { api } from '@/lib/api/client'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
+import { getCompanyQualitySignalLabel } from '@/lib/company-quality'
 
 import { DEFAULT_TIMEZONE_PREF, StepProps, normalizeTimezonePref } from '../types'
 
@@ -72,6 +73,8 @@ export function ReviewGenerate({ onNext, onBack, onUpdate, data }: StepProps) {
         careerDirection: data.careerDirection || '',
         careerGoal: data.careerGoal || 'stay',
         goodMatchSignals: data.goodMatchSignals || [],
+        companyQualitySignals: data.companyQualitySignals || [],
+        allowLowerSeniorityAtStrategicCompanies: data.allowLowerSeniorityAtStrategicCompanies ?? false,
         dealBreakers: data.dealBreakers || [],
         enableStandardExclusions: data.enableStandardExclusions ?? true,
         additionalContext: data.additionalContext || ''
@@ -210,6 +213,29 @@ export function ReviewGenerate({ onNext, onBack, onUpdate, data }: StepProps) {
       </div>
 
       <div className="flex flex-col gap-4">
+        {(data.companyQualitySignals?.length || data.allowLowerSeniorityAtStrategicCompanies) ? (
+          <div className="p-4 bg-primary/5 border border-primary/10 rounded-2xl flex flex-col gap-3 text-xs text-muted-foreground/80 leading-relaxed shadow-sm">
+            <div className="flex items-center gap-2 text-foreground">
+              <Info className="h-4 w-4 text-primary shrink-0" />
+              <p className="font-semibold">Strategic company preferences</p>
+            </div>
+            {data.companyQualitySignals?.length ? (
+              <div className="flex flex-wrap gap-2">
+                {data.companyQualitySignals.map((signal) => (
+                  <Badge key={signal} variant="outline" className="bg-background/60 border-primary/20 text-primary">
+                    {getCompanyQualitySignalLabel(signal)}
+                  </Badge>
+                ))}
+              </div>
+            ) : null}
+            <p>
+              {data.allowLowerSeniorityAtStrategicCompanies
+                ? 'Lower-seniority roles can be considered only when a tracked company carries a matching explicit signal.'
+                : 'No lower-seniority strategic exception is enabled.'}
+            </p>
+          </div>
+        ) : null}
+
         {changesMade.length > 0 && (
           <details className="p-3 bg-emerald-500/5 border border-emerald-500/20 rounded-2xl text-xs">
             <summary className="font-bold text-emerald-600 cursor-pointer">

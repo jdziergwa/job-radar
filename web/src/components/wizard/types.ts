@@ -1,7 +1,10 @@
 import { components } from "@/lib/api/types"
 
 export type CVAnalysis = components["schemas"]["CVAnalysisResponse"]
-export type UserPreferences = components["schemas"]["UserPreferences"]
+export type UserPreferences = components["schemas"]["UserPreferences"] & {
+  companyQualitySignals?: string[]
+  allowLowerSeniorityAtStrategicCompanies?: boolean
+}
 
 export const DEFAULT_TIMEZONE_PREF = 'overlap_strict'
 
@@ -29,6 +32,8 @@ export interface WizardData {
   enableStandardExclusions?: boolean
   industries?: string[]
   goodMatchSignals?: string[]
+  companyQualitySignals?: string[]
+  allowLowerSeniorityAtStrategicCompanies?: boolean
   dealBreakers?: string[]
   additionalContext?: string
   completed?: boolean
