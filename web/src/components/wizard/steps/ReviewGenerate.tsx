@@ -40,6 +40,8 @@ export function ReviewGenerate({ onNext, onBack, onUpdate, data }: StepProps) {
   const [yamlContent, setYamlContent] = useState('')
   const [mdContent, setMdContent] = useState('')
   const [activeTab, setActiveTab] = useState('doc')
+  const [refineStatus, setRefineStatus] = useState<'idle' | 'refining' | 'done'>('idle')
+  const [changesMade, setChangesMade] = useState<string[]>([])
 
   const generateProfile = useCallback(async () => {
     setLoading(true)
@@ -88,6 +90,45 @@ export function ReviewGenerate({ onNext, onBack, onUpdate, data }: StepProps) {
 
       setYamlContent(response.data.profile_yaml)
       setMdContent(response.data.profile_doc)
+
+      // Second pass: refine with LLM (non-blocking — if it fails, we keep template output)
+      try {
+        setRefineStatus('refining')
+        const refineRes = await (api as any).POST('/api/wizard/refine-profile', {
+          body: {
+            cv_analysis: data.cvAnalysis,
+            user_preferences: {
+              targetRoles: data.targetRoles || [],
+              seniority: data.seniority || [],
+              location: data.location || '',
+              workAuth: data.workAuth || '',
+              remotePref: data.remotePref || [],
+              primaryRemotePref: data.primaryRemotePref || '',
+              timezonePref: data.timezonePref || '',
+              targetRegions: data.targetRegions || [],
+              excludedRegions: data.excludedRegions || [],
+              industries: data.industries || [],
+              careerDirection: data.careerDirection || '',
+              careerGoal: data.careerGoal || 'stay',
+              goodMatchSignals: data.goodMatchSignals || [],
+              dealBreakers: data.dealBreakers || [],
+              enableStandardExclusions: data.enableStandardExclusions ?? true,
+              additionalContext: data.additionalContext || '',
+            },
+            draft_doc: response.data.profile_doc,
+            draft_yaml: response.data.profile_yaml,
+          }
+        })
+        if (refineRes.data) {
+          setYamlContent(refineRes.data.profile_yaml)
+          setMdContent(refineRes.data.profile_doc)
+          setChangesMade(refineRes.data.changes_made || [])
+        }
+      } catch (refineErr) {
+        console.warn('Refinement failed, using template output:', refineErr)
+      } finally {
+        setRefineStatus('done')
+      }
     } catch (err: any) {
       console.error(err)
       setError(err.message || 'An unexpected error occurred during generation')
@@ -141,7 +182,9 @@ export function ReviewGenerate({ onNext, onBack, onUpdate, data }: StepProps) {
             <p className="text-muted-foreground text-xs leading-relaxed px-4 max-w-xs mx-auto">
               {data?.path === 'manual' 
                 ? 'Preparing your manual setup environment...' 
-                : 'Building your custom job matching rules and profile document.'}
+                : refineStatus === 'refining'
+                  ? 'Polishing your profile with AI...'
+                  : 'Generating your job matching profile...'}
             </p>
         </div>
       </div>
@@ -182,6 +225,21 @@ export function ReviewGenerate({ onNext, onBack, onUpdate, data }: StepProps) {
       </div>
 
       <div className="flex flex-col gap-4">
+        {changesMade.length > 0 && (
+          <details className="p-3 bg-emerald-500/5 border border-emerald-500/20 rounded-2xl text-xs">
+            <summary className="font-bold text-emerald-600 cursor-pointer">
+              AI Refinement: {changesMade.length} improvements applied
+            </summary>
+            <ul className="mt-2 space-y-1 text-muted-foreground">
+              {changesMade.map((change, i) => (
+                <li key={i} className="flex gap-2">
+                  <span className="text-emerald-500 shrink-0">-</span>
+                  {change}
+                </li>
+              ))}
+            </ul>
+          </details>
+        )}
         <Tabs defaultValue="doc" className="w-full" onValueChange={setActiveTab}>
           <div className="flex items-center justify-between mb-4">
             <TabsList className="bg-muted/30 p-1 border border-border/50 h-10">

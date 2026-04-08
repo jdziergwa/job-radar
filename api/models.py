@@ -275,3 +275,16 @@ class ProfileSaveRequest(BaseModel):
 class ProfileTemplateResponse(BaseModel):
     profile_yaml: str
     profile_doc: str
+
+
+class ProfileRefineRequest(BaseModel):
+    cv_analysis: CVAnalysisResponse
+    user_preferences: UserPreferences
+    draft_doc: str
+    draft_yaml: str
+
+
+class ProfileRefineResponse(BaseModel):
+    profile_doc: str
+    profile_yaml: str
+    changes_made: list[str] = []

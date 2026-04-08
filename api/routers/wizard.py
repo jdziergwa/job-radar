@@ -14,6 +14,8 @@ from api.models import (
     CVAnalysisResponse,
     ProfileGenerateRequest,
     ProfileGenerateResponse,
+    ProfileRefineRequest,
+    ProfileRefineResponse,
     ProfileSaveRequest,
     ProfileTemplateResponse
 )
@@ -49,6 +51,14 @@ def _load_cv_analysis_prompt() -> str:
             content = content[:-3]
 
     return content.strip()
+
+
+def _load_refinement_prompt() -> str:
+    """Load the refinement system prompt."""
+    path = _SRC_DIR / "prompts" / "profile_refinement.md"
+    if not path.exists():
+        raise HTTPException(status_code=500, detail="Refinement prompt not found")
+    return path.read_text(encoding="utf-8").strip()
 
 def _extract_json(text: str) -> str:
     """Extract JSON block from text using regex, same as scorer.py."""
@@ -256,6 +266,77 @@ async def generate_profile(req: ProfileGenerateRequest):
     except Exception as e:
         logger.error(f"Error generating profile: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to generate profile: {e}")
+
+
+@router.post("/wizard/refine-profile", response_model=ProfileRefineResponse)
+async def refine_profile(req: ProfileRefineRequest):
+    """
+    Refine template-generated profile files using LLM second pass.
+    Falls back to original drafts on any failure.
+    """
+    system_prompt = _load_refinement_prompt()
+
+    # Build user message with all context
+    user_message = f"""## CV Analysis (source of truth)
+```json
+{req.cv_analysis.model_dump_json(indent=2)}
+```
+
+## User Preferences
+```json
+{req.user_preferences.model_dump_json(indent=2)}
+```
+
+## Draft profile_doc.md
+{req.draft_doc}
+
+## Draft profile.yaml
+```yaml
+{req.draft_yaml}
+```
+
+Refine both files following the instructions. Stay grounded in the CV analysis."""
+
+    try:
+        async with AsyncAnthropic() as client:
+            response = await client.messages.create(
+                model="claude-sonnet-4-20250514",
+                max_tokens=8192,
+                system=system_prompt,
+                messages=[{"role": "user", "content": user_message}],
+                timeout=120.0,
+            )
+
+            raw_text = response.content[0].text
+            json_str = _extract_json(raw_text)
+            data = json.loads(json_str)
+
+            refined_doc = data.get("profile_doc", req.draft_doc)
+            refined_yaml = data.get("profile_yaml", req.draft_yaml)
+            changes = data.get("changes_made", [])
+
+            # Validate YAML before returning
+            try:
+                yaml.safe_load(refined_yaml)
+            except yaml.YAMLError:
+                logger.warning("Refined YAML is invalid, falling back to draft")
+                refined_yaml = req.draft_yaml
+                changes.append("Warning: YAML refinement produced invalid syntax, kept original")
+
+            return ProfileRefineResponse(
+                profile_doc=refined_doc,
+                profile_yaml=refined_yaml,
+                changes_made=changes,
+            )
+
+    except Exception as e:
+        logger.error(f"Refinement failed: {e}")
+        # Graceful fallback — return originals unchanged
+        return ProfileRefineResponse(
+            profile_doc=req.draft_doc,
+            profile_yaml=req.draft_yaml,
+            changes_made=[f"Refinement skipped: {str(e)[:100]}"],
+        )
 
 
 @router.post("/wizard/save-profile")
