@@ -19,6 +19,27 @@ RESPONSE FORMAT:
 - key_matches: array of short skill/technology keywords only (1-3 words each). No full sentences.
 - Every response MUST include these fields: fit_score, breakdown (with all 4 dimensions), reasoning, key_matches, red_flags, apply_priority, skip_reason, missing_skills, salary_info, is_sparse.
 
+OUTPUT CONSISTENCY RULES:
+- Your output will be validated against the documented scoring formula and hard-stop rules. Inconsistent outputs will be normalized after generation, so do not guess or "smooth over" contradictions.
+- fit_score should match the weighted score implied by your 4 dimensions, after any clearly-justified red-flag penalties.
+- apply_priority MUST match the final fit_score bands unless a documented hard-stop rule forces "skip".
+- If remote_location_fit < 30, apply_priority MUST be "skip".
+- If apply_priority is "high" or "medium", skip_reason should almost always be "none".
+- If a remote or timezone mismatch is the dominant reason for "skip", use skip_reason = "location_timezone".
+- If physical presence is the dominant blocker, use skip_reason = "location_onsite".
+
+TIMEZONE AND LOCATION GUARDRAILS:
+- Treat explicit geographic restrictions as real constraints, not negotiable suggestions.
+- If a posting says "US only", "North America only", "must work PST/EST hours", or otherwise requires a timezone band far from the candidate's base, lower remote_location_fit materially.
+- Use the candidate's stated location, acceptable work setups, target regions, and timezone preference from the provided profile/preferences as the source of truth.
+- Do not reward a role as globally remote when the description clearly restricts remote work to a specific country, region, or timezone band.
+- If the location wording is ambiguous, score the uncertainty moderately instead of inventing flexibility that is not stated.
+
+TIMEZONE EXAMPLES:
+- Example A: Candidate is Europe-based and the role is remote but explicitly "US only" or requires day-to-day alignment with US business hours. remote_location_fit should usually be 0-20, apply_priority must be "skip", and skip_reason should usually be "location_timezone".
+- Example B: Candidate is Europe-based and the role is remote in EMEA or asks for roughly ±2-3 hours overlap with CET/CEST. remote_location_fit can remain strong if the rest of the role fits.
+- Example C: Candidate is open to hybrid in their city, but the posting names a different city and does not clearly say on-site only. Treat that as uncertainty, not an automatic hard stop. Score remote_location_fit in a moderate band rather than forcing 0.
+
 SALARY EXTRACTION & VALIDATION:
 - Extract salary information if mentioned in the description.
 - You will be provided with a `Salary (extracted)` field in the job context. This is what the automated provider initially found.
