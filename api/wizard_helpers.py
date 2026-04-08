@@ -198,6 +198,66 @@ def _format_work_setup_option(setup: str, city: str, timezone_pref: str) -> str:
         return f"{label} from {city}"
     return label
 
+
+def _format_seniority_preferences(value: Any) -> str:
+    """Format one or more seniority preferences for profile text."""
+    seniority = [str(v).strip().capitalize() for v in _ensure_list(value) if str(v).strip()]
+    if not seniority:
+        return ""
+    if len(seniority) == 1:
+        return seniority[0]
+    if len(seniority) == 2:
+        return f"{seniority[0]} and {seniority[1]}"
+    return ", ".join(seniority[:-1]) + f", and {seniority[-1]}"
+
+
+def _timezone_constraint_lines(timezone_pref: str) -> list[str]:
+    """Translate timezone preferences into operational scoring guidance."""
+    normalized = _normalize_timezone_pref(timezone_pref)
+    label = _get_label(normalized)
+    if not normalized or normalized == "any":
+        return []
+    if normalized == "overlap_strict":
+        return [
+            f"- Preferred timezone overlap: {label}",
+            "- Meaningful penalty: >3h timezone mismatch",
+            "- Reject/skip threshold: >5h timezone mismatch unless the role is explicitly global",
+        ]
+    return [
+        f"- Preferred timezone band: {label}",
+        "- Meaningful penalty: roles that explicitly require daily alignment outside this band",
+    ]
+
+
+def _conditional_preference_lines(
+    career_goal: str,
+    seniority_preferences: list[str],
+    has_portfolio: bool,
+) -> list[str]:
+    """Generate generic conditional preference guidance for scoring."""
+    lines: list[str] = []
+    goal = (career_goal or "stay").strip().lower()
+
+    if goal == "pivot":
+        lines.append("- Adjacent or transition roles are acceptable when transferable strengths are clear and there is concrete bridge evidence.")
+        lines.append("- Gaps without any supporting evidence should remain meaningful penalties even when the role is strategically interesting.")
+    elif goal == "broaden":
+        lines.append("- Adjacent roles are acceptable when they build on the current foundation and expand scope in a credible direction.")
+        lines.append("- Stretch opportunities should score better when the role preserves core strengths while adding new domain exposure.")
+    elif goal == "step_up":
+        lines.append("- Roles with higher scope are acceptable even when the title differs, if the responsibilities clearly imply greater ownership or leadership.")
+    else:
+        lines.append("- Core-specialization roles should outrank adjacent roles when both are otherwise viable.")
+
+    seniority_set = {s.lower() for s in seniority_preferences}
+    if seniority_set & {"senior", "lead", "staff", "principal"}:
+        lines.append("- Lower-seniority roles should generally rank lower unless the scope and long-term growth case are unusually strong.")
+
+    if has_portfolio and goal in {"pivot", "broaden"}:
+        lines.append("- Portfolio or side-project evidence can offset some adjacent-skill gaps, but it should not be treated as equal to years of production experience.")
+
+    return lines
+
 _SENIORITY_PREFIXES = {
     "junior", "jr", "jr.", "mid", "middle", "senior", "sr", "sr.",
     "lead", "staff", "principal", "head",
@@ -491,8 +551,8 @@ def generate_profile_doc(analysis: CVAnalysisResponse, preferences: Dict[str, An
             tech_stack_lines.append(f"- {skill}")
     sections.append("\n".join(tech_stack_lines))
     
-    # ## What Makes a Good Match (Score Higher)
-    good_match_lines = ["## What Makes a Good Match (Score Higher)"]
+    # ## Soft Preferences (Score Higher)
+    good_match_lines = ["## Soft Preferences (Score Higher)"]
     
     # Deduplicate signals using a set while maintaining order
     raw_signals = preferences.get("goodMatchSignals", []) + analysis.suggested_good_match_signals
@@ -509,22 +569,37 @@ def generate_profile_doc(analysis: CVAnalysisResponse, preferences: Dict[str, An
     primary_pref = _normalize_work_setup(preferences.get("primaryRemotePref", ""))
     timezone_pref = _normalize_timezone_pref(preferences.get("timezonePref", ""))
     city = preferences.get("location", "").split(",")[0].strip() or "Location"
+    seniority_pref_text = _format_seniority_preferences(preferences.get("seniority", getattr(analysis, "inferred_seniority", None)))
+    target_regions = ", ".join(preferences.get("targetRegions", []))
+    preferred_setup = _format_work_setup_option(primary_pref, city, timezone_pref) if primary_pref else ""
+    acceptable_setups = [
+        _format_work_setup_option(setup, city, timezone_pref)
+        for setup in remote_pref
+        if setup != primary_pref
+    ]
+
+    if target_roles:
+        good_match_lines.append(f"- Core target roles: {target_roles}")
+    if analysis.suggested_target_roles:
+        suggested_roles = [role for role in analysis.suggested_target_roles if role not in preferences.get("targetRoles", [])]
+        if suggested_roles:
+            good_match_lines.append(f"- Adjacent/open-to roles: {', '.join(suggested_roles)}")
+    if seniority_pref_text:
+        good_match_lines.append(f"- Preferred seniority: {seniority_pref_text}")
+    if preferred_setup:
+        good_match_lines.append(f"- Preferred work setup: {preferred_setup}")
+    if acceptable_setups:
+        good_match_lines.append(f"- Also acceptable: {', '.join(acceptable_setups)}")
+    if target_regions:
+        good_match_lines.append(f"- Target regions: {target_regions}")
 
     if "remote" in remote_pref:
-        signals.append(f"{_format_work_setup_option('remote', city, timezone_pref)} roles (preferred setup)")
+        signals.append(f"{_format_work_setup_option('remote', city, timezone_pref)} roles")
     if "hybrid" in remote_pref:
         signals.append(f"{_format_work_setup_option('hybrid', city, timezone_pref)} roles")
     
-    seniority_val = preferences.get("seniority", getattr(analysis, "inferred_seniority", None))
-    if isinstance(seniority_val, list):
-        seniority_str = " and ".join([s.capitalize() for s in seniority_val])
-    elif seniority_val:
-        seniority_str = seniority_val.capitalize()
-    else:
-        seniority_str = None
-
-    if seniority_str:
-        signals.append(f"{seniority_str}-level roles (seniority match)")
+    if seniority_pref_text:
+        signals.append(f"{seniority_pref_text}-level roles")
         
     for signal in signals:
         good_match_lines.append(f"- {signal}")
@@ -556,8 +631,8 @@ def generate_profile_doc(analysis: CVAnalysisResponse, preferences: Dict[str, An
             gap_lines.append(f"- {gap}")
     sections.append("\n".join(gap_lines))
     
-    # ## What Lowers Fit (Score Lower)
-    lower_fit_lines = ["## What Lowers Fit (Score Lower)"]
+    # ## Hard Constraints And Low-Fit Signals
+    lower_fit_lines = ["## Hard Constraints And Low-Fit Signals"]
     
     # Deduplicate deal breakers
     raw_db = preferences.get("dealBreakers", []) + analysis.suggested_lower_fit_signals
@@ -577,40 +652,32 @@ def generate_profile_doc(analysis: CVAnalysisResponse, preferences: Dict[str, An
     else:
         seniority_list = []
 
+    work_auth = _get_label(_normalize_work_auth(preferences.get('workAuth', '')))
+    location = preferences.get('location', 'Unknown')
+    excluded = ", ".join(preferences.get("excludedRegions", []))
+    remote_pref_set = set(remote_pref)
+
+    lower_fit_lines.append(f"- Work authorization context: {work_auth or 'Unspecified'}")
+    lower_fit_lines.append(f"- Base location: {location}")
+    if excluded:
+        lower_fit_lines.append(f"- Excluded regions: {excluded}")
+
     if any(s in ["senior", "lead", "staff", "principal"] for s in seniority_list):
         lower_fit_lines.append("- Junior or entry-level positions")
     
-    remote_pref = [_normalize_work_setup(v) for v in _ensure_list(preferences.get("remotePref", []))]
-
     if "remote" in remote_pref:
         lower_fit_lines.append("- On-site only positions")
-    if "hybrid" in remote_pref or "onsite" in remote_pref:
-        # If they are open to hybrid/onsite, they probably shouldn't penalize them globally 
-        # unless it's a relocation mismatch, which scoring_philosophy handled via remote_location_fit
-        pass
+    if "hybrid" not in remote_pref_set and "onsite" not in remote_pref_set and "remote" in remote_pref_set:
+        lower_fit_lines.append("- Roles that require routine in-office presence")
+
+    lower_fit_lines.extend(_timezone_constraint_lines(timezone_pref))
         
     for db in deal_breakers:
         lower_fit_lines.append(f"- {db}")
     sections.append("\n".join(lower_fit_lines))
     
-    # ## Location & Work Setup
-    loc_lines = ["## Location & Work Setup"]
-    location = preferences.get('location', 'Unknown')
-    work_auth = _get_label(_normalize_work_auth(preferences.get('workAuth', '')))
-    
-    remote_pref = [_normalize_work_setup(v) for v in _ensure_list(preferences.get("remotePref", []))]
-    primary_pref = _normalize_work_setup(preferences.get("primaryRemotePref", "")) or (remote_pref[0] if remote_pref else "")
-    timezone_pref = _normalize_timezone_pref(preferences.get("timezonePref", ""))
-
-    city = location.split(",")[0].strip() or "Location"
-
-    preferred_setup = _format_work_setup_option(primary_pref, city, timezone_pref) if primary_pref else ""
-    acceptable_setups = [
-        _format_work_setup_option(setup, city, timezone_pref)
-        for setup in remote_pref
-        if setup != primary_pref
-    ]
-
+    # ## Location, Timezone, And Work Setup Constraints
+    loc_lines = ["## Location, Timezone, And Work Setup Constraints"]
     loc_lines.append(f"- Based in: {location}")
     loc_lines.append(f"- Work authorization: {work_auth}")
     if preferred_setup:
@@ -618,22 +685,27 @@ def generate_profile_doc(analysis: CVAnalysisResponse, preferences: Dict[str, An
     if acceptable_setups:
         loc_lines.append(f"- Also acceptable: {', '.join(acceptable_setups)}")
     
-    target_regions = ", ".join(preferences.get("targetRegions", []))
-    loc_lines.append(f"- Acceptable regions: {target_regions}")
-    
-    excluded = ", ".join(preferences.get("excludedRegions", []))
+    if target_regions:
+        loc_lines.append(f"- Acceptable regions: {target_regions}")
     if excluded:
         loc_lines.append(f"- Excluded regions: {excluded}")
     
     # Add setup negatives
-    remote_pref_set = set(remote_pref)
     if "onsite" not in remote_pref_set:
         loc_lines.append("- Not acceptable: On-site only positions")
     if timezone_pref and timezone_pref != "any":
-        tz_label = _get_label(timezone_pref)
-        loc_lines.append(f"- Timezone preference: {tz_label}")
+        loc_lines.append(f"- Timezone preference: {_get_label(timezone_pref)}")
         
     sections.append("\n".join(loc_lines))
+
+    # ## Conditional Preferences
+    conditional_lines = ["## Conditional Preferences"]
+    conditional_lines.extend(_conditional_preference_lines(
+        preferences.get("careerGoal", "stay"),
+        seniority_list,
+        bool(analysis.portfolio),
+    ))
+    sections.append("\n".join(conditional_lines))
     
     # ## Career Direction
     career_dir = preferences.get("careerDirection") or analysis.suggested_career_direction

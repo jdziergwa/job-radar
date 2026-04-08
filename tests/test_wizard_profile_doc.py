@@ -37,9 +37,14 @@ def test_generate_profile_doc_formats_preferred_and_acceptable_work_setup():
         },
     )
 
+    assert "## Soft Preferences (Score Higher)" in doc
+    assert "## Hard Constraints And Low-Fit Signals" in doc
+    assert "## Conditional Preferences" in doc
     assert "- Preferred work setup: Fully Remote (Same/Overlap (±2h))" in doc
     assert "- Also acceptable: Hybrid from Wroclaw" in doc
-    assert "- Timezone preference: Same/Overlap (±2h)" in doc
+    assert "- Preferred timezone overlap: Same/Overlap (±2h)" in doc
+    assert "- Meaningful penalty: >3h timezone mismatch" in doc
+    assert "- Reject/skip threshold: >5h timezone mismatch unless the role is explicitly global" in doc
     assert "- Not acceptable: On-site only positions" in doc
 
 
@@ -63,6 +68,7 @@ def test_generate_profile_doc_does_not_assume_remote_first():
     assert "- Preferred work setup: On-site from Berlin" in doc
     assert "- Also acceptable: Hybrid from Berlin" in doc
     assert "- Not acceptable: On-site only positions" not in doc
+    assert "- Preferred timezone overlap:" not in doc
     assert "- Excluded regions: US/North America" in doc
 
 
@@ -86,4 +92,31 @@ def test_generate_profile_doc_normalizes_legacy_preference_labels():
     assert "- Work authorization: EU citizen" in doc
     assert "- Preferred work setup: Fully Remote (Same/Overlap (±2h))" in doc
     assert "- Also acceptable: Hybrid from Paris" in doc
-    assert "- Timezone preference: Same/Overlap (±2h)" in doc
+    assert "- Preferred timezone overlap: Same/Overlap (±2h)" in doc
+
+
+def test_generate_profile_doc_adds_generic_conditional_preferences_for_broaden_goal():
+    analysis = _analysis_for_profile_doc()
+    analysis.portfolio = [SimpleNamespace(name="Project", url="https://example.com", technologies=[], description=None)]
+
+    doc = generate_profile_doc(
+        analysis,
+        {
+            "targetRoles": ["Platform Engineer"],
+            "seniority": ["senior"],
+            "remotePref": ["remote"],
+            "primaryRemotePref": "remote",
+            "timezonePref": "overlap_strict",
+            "location": "Warsaw, Poland",
+            "workAuth": "eu_citizen",
+            "targetRegions": ["Europe"],
+            "excludedRegions": [],
+            "careerDirection": "Broaden toward platform and developer tooling work.",
+            "careerGoal": "broaden",
+        },
+    )
+
+    assert "## Conditional Preferences" in doc
+    assert "- Adjacent roles are acceptable when they build on the current foundation and expand scope in a credible direction." in doc
+    assert "- Lower-seniority roles should generally rank lower unless the scope and long-term growth case are unusually strong." in doc
+    assert "- Portfolio or side-project evidence can offset some adjacent-skill gaps, but it should not be treated as equal to years of production experience." in doc
