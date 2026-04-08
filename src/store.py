@@ -570,7 +570,7 @@ class Store:
         """
         columns = (
             "id, ats_platform, company_slug, company_name, job_id, title, "
-            "location, url, posted_at, first_seen_at, last_seen_at, "
+            "location, company_metadata, url, posted_at, first_seen_at, last_seen_at, "
             "fit_score, score_reasoning, score_breakdown, scored_at, status, dismissal_reason, match_tier, "
             "salary, salary_min, salary_max, salary_currency, is_sparse"
         )

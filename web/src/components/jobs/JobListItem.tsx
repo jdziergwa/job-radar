@@ -1,9 +1,11 @@
 import Link from 'next/link'
 import { ScoreRing } from '@/components/score/ScoreRing'
 import { PriorityBadge } from '@/components/score/PriorityBadge'
+import { FitCategoryBadge } from '@/components/score/FitCategoryBadge'
 import { timeAgo, getPlatformName } from '@/lib/utils/format'
 import { Badge } from '@/components/ui/badge'
 import { MapPin, Building2, ChevronRight, Banknote, HelpCircle } from 'lucide-react'
+import { getCompanyQualitySignalLabel } from '@/lib/company-quality'
 
 const PRIORITY_BORDER: Record<string, string> = {
   high:   'border-l-green-500/70',
@@ -14,7 +16,10 @@ const PRIORITY_BORDER: Record<string, string> = {
 
 export function JobListItem({ job }: { job: any }) {
   const priority = job.score_breakdown?.apply_priority as string | undefined
+  const fitCategory = job.score_breakdown?.fit_category as string | undefined
   const leftBorder = PRIORITY_BORDER[priority ?? ''] ?? 'border-l-border/30'
+  const companySignals = Array.isArray(job.company_quality_signals) ? job.company_quality_signals.slice(0, 2) : []
+  const isStrategicException = fitCategory === 'strategic_exception'
 
   return (
     <Link href={`/jobs/detail?id=${job.id}`}>
@@ -72,6 +77,7 @@ export function JobListItem({ job }: { job: any }) {
                   ⚠️ Sparse Posting
                 </Badge>
               )}
+              {job.status !== 'dismissed' && <FitCategoryBadge fitCategory={fitCategory} />}
             </div>
             <h3 className="font-bold truncate text-lg group-hover:text-primary transition-colors leading-tight">
               {job.title}
@@ -92,6 +98,19 @@ export function JobListItem({ job }: { job: any }) {
                 </div>
               )}
             </div>
+            {isStrategicException && companySignals.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mt-3">
+                {companySignals.map((signal: string) => (
+                  <Badge
+                    key={signal}
+                    variant="outline"
+                    className="text-[10px] font-medium px-2 py-0.5 h-auto bg-fuchsia-500/5 text-fuchsia-600 dark:text-fuchsia-400 border-fuchsia-500/20"
+                  >
+                    {getCompanyQualitySignalLabel(signal)}
+                  </Badge>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Key Matches & Snippet */}

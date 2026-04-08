@@ -7,7 +7,10 @@ import { getMatchQualityLabel } from '@/lib/utils/score'
 import { ScoreRing } from '@/components/score/ScoreRing'
 import { ScoreBar } from '@/components/score/ScoreBar'
 import { PriorityBadge } from '@/components/score/PriorityBadge'
+import { FitCategoryBadge } from '@/components/score/FitCategoryBadge'
 import { timeAgo, formatDate, getPlatformName } from '@/lib/utils/format'
+import { getCompanyQualitySignalLabel } from '@/lib/company-quality'
+import { getFitCategoryExplanation, getFitCategoryLabel } from '@/lib/fit-category'
 import { Badge } from '@/components/ui/badge'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -26,7 +29,9 @@ import {
   AlertTriangle,
   Loader2,
   Banknote,
-  HelpCircle
+  HelpCircle,
+  Sparkles,
+  Target
 } from 'lucide-react'
 import Link from 'next/link'
 import { 
@@ -167,6 +172,10 @@ function JobDetailContent() {
   }
 
   const dimensions = job.score_breakdown?.dimensions || {}
+  const fitCategory = job.score_breakdown?.fit_category as string | undefined
+  const fitCategoryLabel = getFitCategoryLabel(fitCategory)
+  const fitCategoryExplanation = getFitCategoryExplanation(fitCategory)
+  const companySignals = Array.isArray(job.company_quality_signals) ? job.company_quality_signals : []
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-10 space-y-10 animate-in fade-in duration-700">
@@ -196,6 +205,7 @@ function JobDetailContent() {
                   {getPlatformName(job.ats_platform)}
                 </Badge>
                 {!job.is_sparse && <PriorityBadge priority={job.score_breakdown?.apply_priority} />}
+                {job.status !== 'dismissed' && <FitCategoryBadge fitCategory={fitCategory} />}
                 <Badge variant="outline" className="capitalize px-3 border-border/50 bg-muted/20">
                   Status: {job.status}
                 </Badge>
@@ -277,6 +287,20 @@ function JobDetailContent() {
               <p className="text-muted-foreground leading-relaxed max-w-xl italic border-l-2 border-primary/30 pl-4">
                 {job.score_reasoning || "No detailed reasoning provided."}
               </p>
+              {fitCategoryLabel && (
+                <div className="rounded-2xl border border-border/40 bg-background/40 px-4 py-3 max-w-2xl">
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <Target className="h-4 w-4 text-primary" />
+                    <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                      Fit Classification
+                    </p>
+                  </div>
+                  <p className="text-sm font-semibold text-foreground">{fitCategoryLabel}</p>
+                  <p className="text-sm text-muted-foreground leading-relaxed mt-1">
+                    {fitCategoryExplanation}
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -383,6 +407,31 @@ function JobDetailContent() {
         </div>
 
         <div className="space-y-8">
+          {companySignals.length > 0 && (
+            <div className="space-y-4">
+              <h3 className="text-sm font-bold uppercase tracking-widest flex items-center gap-2 text-fuchsia-500">
+                <Sparkles className="h-4 w-4" />
+                Explicit Company Signals
+              </h3>
+              <div className="flex flex-wrap gap-2">
+                {companySignals.map((signal: string) => (
+                  <Badge
+                    key={signal}
+                    variant="outline"
+                    className="bg-fuchsia-500/5 text-fuchsia-600 dark:text-fuchsia-400 border border-fuchsia-500/20 px-3 py-1 font-medium"
+                  >
+                    {getCompanyQualitySignalLabel(signal)}
+                  </Badge>
+                ))}
+              </div>
+              {fitCategory === 'strategic_exception' && (
+                <div className="rounded-2xl border border-fuchsia-500/20 bg-fuchsia-500/5 p-4 text-sm text-muted-foreground leading-relaxed">
+                  This role is being kept in play as a strategic exception. It is below your default seniority target, but the matched company-quality signals justify a bounded exception.
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Key Matches */}
           <div className="space-y-4">
             <h3 className="text-sm font-bold uppercase tracking-widest flex items-center gap-2 text-green-500">

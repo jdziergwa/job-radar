@@ -41,18 +41,32 @@ class JobResponse(BaseModel):
     salary_max: Optional[int] = None
     salary_currency: Optional[str] = None
     is_sparse: bool = False
+    company_quality_signals: list[str] = []
 
     @classmethod
     def from_row(cls, row: dict) -> "JobResponse":
         """Parse a SQLite row dict into a JobResponse."""
         breakdown = None
+        company_quality_signals: list[str] = []
         if row.get("score_breakdown"):
             try:
                 raw = json.loads(row["score_breakdown"])
                 breakdown = ScoreBreakdown(**raw)
             except (json.JSONDecodeError, Exception):
                 pass
-        return cls(**{**row, "score_breakdown": breakdown})
+        if row.get("company_metadata"):
+            try:
+                company_metadata = json.loads(row["company_metadata"])
+                raw_signals = company_metadata.get("quality_signals", []) if isinstance(company_metadata, dict) else []
+                if isinstance(raw_signals, list):
+                    company_quality_signals = [
+                        str(signal).strip()
+                        for signal in raw_signals
+                        if str(signal).strip()
+                    ]
+            except (json.JSONDecodeError, Exception):
+                pass
+        return cls(**{**row, "score_breakdown": breakdown, "company_quality_signals": company_quality_signals})
 
 
 class JobDetailResponse(JobResponse):
