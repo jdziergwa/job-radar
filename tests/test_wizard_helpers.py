@@ -94,3 +94,20 @@ def test_generate_profile_yaml_derives_broad_role_patterns_from_target_roles():
     assert r"\bbackend\s+engineer\b" in broad
     assert r"\bstaff\s+machine\s+learning\s+engineer\b" in broad or r"\bmachine\s+learning\s+engineer\b" in broad
     assert r"\bmle\b" in broad
+
+
+def test_generate_profile_yaml_normalizes_legacy_remote_pref_labels():
+    config = yaml.safe_load(generate_profile_yaml(
+        _minimal_analysis(),
+        {
+            "targetRegions": ["Europe"],
+            "excludedRegions": [],
+            "enableStandardExclusions": False,
+            "targetRoles": [],
+            "remotePref": ["Hybrid OK"],
+        },
+    ))
+
+    patterns = config["keywords"]["location_patterns"]
+
+    assert r"\bhybrid\b" in patterns

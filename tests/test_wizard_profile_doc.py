@@ -64,3 +64,26 @@ def test_generate_profile_doc_does_not_assume_remote_first():
     assert "- Also acceptable: Hybrid from Berlin" in doc
     assert "- Not acceptable: On-site only positions" not in doc
     assert "- Excluded regions: US/North America" in doc
+
+
+def test_generate_profile_doc_normalizes_legacy_preference_labels():
+    doc = generate_profile_doc(
+        _analysis_for_profile_doc(),
+        {
+            "targetRoles": ["Data Scientist"],
+            "remotePref": ["Fully Remote", "Hybrid OK"],
+            "primaryRemotePref": "Fully Remote",
+            "timezonePref": "Same/Overlap (±2h)",
+            "location": "Paris, France",
+            "workAuth": "EU citizen",
+            "targetRegions": ["Europe"],
+            "excludedRegions": [],
+            "careerDirection": "Grow as a data scientist.",
+            "careerGoal": "stay",
+        },
+    )
+
+    assert "- Work authorization: EU citizen" in doc
+    assert "- Preferred work setup: Fully Remote (Same/Overlap (±2h))" in doc
+    assert "- Also acceptable: Hybrid from Paris" in doc
+    assert "- Timezone preference: Same/Overlap (±2h)" in doc

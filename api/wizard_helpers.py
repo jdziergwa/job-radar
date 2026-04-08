@@ -83,6 +83,34 @@ ID_TO_LABEL = {
     'any': 'Any Timezone',
 }
 
+WORK_AUTH_ALIASES = {
+    "eu citizen": "eu_citizen",
+    "us citizen": "us_citizen",
+    "uk right to work": "uk_right_to_work",
+    "need visa sponsorship": "need_visa_sponsorship",
+    "other": "other",
+}
+
+WORK_SETUP_ALIASES = {
+    "fully remote": "remote",
+    "remote": "remote",
+    "hybrid": "hybrid",
+    "hybrid ok": "hybrid",
+    "on-site": "onsite",
+    "on-site ok": "onsite",
+    "onsite": "onsite",
+}
+
+TIMEZONE_ALIASES = {
+    "same/overlap (±2h)": "overlap_strict",
+    "same/overlap (+/-2h)": "overlap_strict",
+    "americas (utc-3 to utc-8)": "americas",
+    "emea (utc-1 to utc+4)": "emea",
+    "apac (utc+7 to utc+12)": "apac",
+    "any timezone": "any",
+    "local": "overlap_strict",
+}
+
 def _get_label(id_val: str) -> str:
     """Map internal ID to pretty label, or return capitalized ID."""
     if not id_val: return ""
@@ -96,12 +124,32 @@ def _ensure_list(value: Any) -> list[str]:
         return [value]
     return [str(v) for v in value if v]
 
+
+def _normalize_alias(value: str | None, aliases: dict[str, str]) -> str:
+    """Normalize a friendly label or legacy value to a canonical id."""
+    clean = " ".join((value or "").strip().split())
+    if not clean:
+        return ""
+    return aliases.get(clean.casefold(), clean)
+
 def _normalize_region_name(region: str) -> str:
     """Normalize UI labels and aliases to canonical region keys."""
     clean = " ".join((region or "").strip().split())
     if not clean:
         return ""
     return REGION_ALIASES.get(clean.casefold(), clean)
+
+
+def _normalize_work_auth(value: str | None) -> str:
+    return _normalize_alias(value, WORK_AUTH_ALIASES)
+
+
+def _normalize_work_setup(value: str | None) -> str:
+    return _normalize_alias(value, WORK_SETUP_ALIASES)
+
+
+def _normalize_timezone_pref(value: str | None) -> str:
+    return _normalize_alias(value, TIMEZONE_ALIASES)
 
 def _build_literal_region_regex(region: str) -> str:
     """Build a safe literal regex for freeform region inputs."""
@@ -247,6 +295,7 @@ def generate_profile_yaml(analysis: CVAnalysisResponse, preferences: Dict[str, A
     target_regions = preferences.get("targetRegions", [])
     excluded_regions = preferences.get("excludedRegions", [])
     enable_standard_exclusions = preferences.get("enableStandardExclusions", True)
+    remote_pref = [_normalize_work_setup(v) for v in _ensure_list(preferences.get("remotePref", []))]
     derived_high_conf, derived_broad = _derive_role_patterns(target_roles)
     
     location_patterns = _expand_region_patterns(target_regions)
@@ -284,7 +333,7 @@ def generate_profile_yaml(analysis: CVAnalysisResponse, preferences: Dict[str, A
             "exclusions": analysis.suggested_exclusions,
             "location_exclusions": location_exclusions,
             "location_patterns": location_patterns + (
-                [r"\bhybrid\b"] if "hybrid" in preferences.get("remotePref", []) else []
+                [r"\bhybrid\b"] if "hybrid" in remote_pref else []
             ),
             "remote_patterns": remote_patterns,
             "fallback_tier": "signal_match",
@@ -366,10 +415,10 @@ def generate_profile_doc(analysis: CVAnalysisResponse, preferences: Dict[str, An
             seen_signals.add(s.lower())
     
     # Inferred defaults based on preferences
-    remote_pref = _ensure_list(preferences.get("remotePref", []))
+    remote_pref = [_normalize_work_setup(v) for v in _ensure_list(preferences.get("remotePref", []))]
     
-    primary_pref = preferences.get("primaryRemotePref", "")
-    timezone_pref = preferences.get("timezonePref", "")
+    primary_pref = _normalize_work_setup(preferences.get("primaryRemotePref", ""))
+    timezone_pref = _normalize_timezone_pref(preferences.get("timezonePref", ""))
     city = preferences.get("location", "").split(",")[0].strip() or "Location"
 
     if "remote" in remote_pref:
@@ -442,7 +491,7 @@ def generate_profile_doc(analysis: CVAnalysisResponse, preferences: Dict[str, An
     if any(s in ["senior", "lead", "staff", "principal"] for s in seniority_list):
         lower_fit_lines.append("- Junior or entry-level positions")
     
-    remote_pref = _ensure_list(preferences.get("remotePref", []))
+    remote_pref = [_normalize_work_setup(v) for v in _ensure_list(preferences.get("remotePref", []))]
 
     if "remote" in remote_pref:
         lower_fit_lines.append("- On-site only positions")
@@ -458,11 +507,11 @@ def generate_profile_doc(analysis: CVAnalysisResponse, preferences: Dict[str, An
     # ## Location & Work Setup
     loc_lines = ["## Location & Work Setup"]
     location = preferences.get('location', 'Unknown')
-    work_auth = _get_label(preferences.get('workAuth', ''))
+    work_auth = _get_label(_normalize_work_auth(preferences.get('workAuth', '')))
     
-    remote_pref = _ensure_list(preferences.get("remotePref", []))
-    primary_pref = preferences.get("primaryRemotePref", "") or (remote_pref[0] if remote_pref else "")
-    timezone_pref = preferences.get("timezonePref", "")
+    remote_pref = [_normalize_work_setup(v) for v in _ensure_list(preferences.get("remotePref", []))]
+    primary_pref = _normalize_work_setup(preferences.get("primaryRemotePref", "")) or (remote_pref[0] if remote_pref else "")
+    timezone_pref = _normalize_timezone_pref(preferences.get("timezonePref", ""))
 
     city = location.split(",")[0].strip() or "Location"
 
