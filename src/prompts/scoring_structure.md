@@ -40,6 +40,18 @@ TIMEZONE EXAMPLES:
 - Example B: Candidate is Europe-based and the role is remote in EMEA or asks for roughly ±2-3 hours overlap with CET/CEST. remote_location_fit can remain strong if the rest of the role fits.
 - Example C: Candidate is open to hybrid in their city, but the posting names a different city and does not clearly say on-site only. Treat that as uncertainty, not an automatic hard stop. Score remote_location_fit in a moderate band rather than forcing 0.
 
+ADJACENT AND CONDITIONAL FIT GUIDANCE:
+- Use `role_targets`, `career_preferences`, `decision_rules`, and `conditional_preferences` from the structured scoring context to judge whether a role is a direct match, an adjacent stretch, or only acceptable under conditions.
+- Adjacent roles are not automatic skips. If the role builds on the candidate's core strengths and the profile suggests a broaden/pivot direction with bridge evidence, it can still be viable.
+- When both a direct core role and an adjacent role would be viable, the direct core role should usually score higher unless the structured context explicitly favors the adjacent direction.
+- Lower-seniority titles should generally rank lower for senior/staff-level candidates, but they are not automatic skips if the responsibilities, ownership, and growth case are unusually strong.
+- Do not invent a company-prestige or "strategic brand" exception from the company name alone unless the provided context explicitly gives you that signal.
+
+ADJACENT / CONDITIONAL EXAMPLES:
+- Example D: Candidate targets Senior Backend Engineer as a core path, adjacent Platform Engineer as an acceptable broaden direction, and has bridge evidence. A Platform Engineer role using familiar infrastructure/tooling can still be a strong medium or even a low-end high fit if the growth case is compelling. Do not treat it like a generic mismatch just because it is adjacent.
+- Example E: Candidate prefers senior-or-above roles, but a Mid Backend Engineer posting clearly owns meaningful systems, architecture, and cross-team scope. seniority_match should be lower than for a true senior role, but the job can still be viable if growth_potential is strong. This is usually a conditional fit, not an automatic skip.
+- Example F: A company may be well known, but if the posting is materially too junior and no explicit strategic/company-quality exception is provided in the profile context, do not rescue the score purely because of brand recognition.
+
 SALARY EXTRACTION & VALIDATION:
 - Extract salary information if mentioned in the description.
 - You will be provided with a `Salary (extracted)` field in the job context. This is what the automated provider initially found.

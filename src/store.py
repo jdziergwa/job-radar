@@ -272,6 +272,7 @@ class Store:
         breakdown: dict[str, int],
         key_matches: list[str] | None = None,
         red_flags: list[str] | None = None,
+        fit_category: str = "",
         apply_priority: str = "skip",
         skip_reason: str = "none",
         missing_skills: list[str] | None = None,
@@ -289,6 +290,7 @@ class Store:
             "dimensions": breakdown,
             "key_matches": key_matches or [],
             "red_flags": red_flags or [],
+            "fit_category": fit_category or "",
             "apply_priority": apply_priority,
             "skip_reason": skip_reason or "none",
             "missing_skills": missing_skills or [],
@@ -892,6 +894,7 @@ class Store:
         breakdown: dict[str, int] = {}
         key_matches: list[str] = []
         red_flags: list[str] = []
+        fit_category = ""
         apply_priority = "skip"
         skip_reason = "none"
         missing_skills: list[str] = []
@@ -904,6 +907,7 @@ class Store:
                 breakdown = data.get("dimensions", {})
                 key_matches = data.get("key_matches", [])
                 red_flags = data.get("red_flags", [])
+                fit_category = data.get("fit_category", "")
                 apply_priority = data.get("apply_priority", "skip")
                 skip_reason = data.get("skip_reason", "none")
                 missing_skills = data.get("missing_skills", [])
@@ -935,6 +939,7 @@ class Store:
             breakdown=breakdown,
             key_matches=key_matches,
             red_flags=red_flags,
+            fit_category=fit_category,
             apply_priority=apply_priority,
             skip_reason=skip_reason,
             missing_skills=missing_skills,

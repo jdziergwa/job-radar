@@ -227,4 +227,14 @@ def test_generate_profile_yaml_includes_structured_scoring_context():
     assert context["career_preferences"]["goal"] == "broaden"
     assert context["career_preferences"]["score_higher_signals"] == ["Product Companies", "Developer Tooling"]
     assert context["career_preferences"]["score_lower_signals"] == ["On-call Heavy", "Agency Work"]
+    assert context["decision_rules"]["adjacent_roles"] == {
+        "enabled": True,
+        "requires_bridge_evidence": True,
+        "prefer_core_when_equally_viable": False,
+        "portfolio_counts_as_bridge_evidence": True,
+    }
+    assert context["decision_rules"]["lower_seniority_roles"] == {
+        "enabled": True,
+        "require_unusually_strong_scope": True,
+    }
     assert any("Adjacent roles are acceptable" in line for line in context["conditional_preferences"])

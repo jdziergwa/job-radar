@@ -259,6 +259,30 @@ def _conditional_preference_lines(
     return lines
 
 
+def _build_decision_rules(
+    career_goal: str,
+    seniority_preferences: list[str],
+    has_portfolio: bool,
+) -> dict[str, Any]:
+    """Build machine-readable scoring guidance from generic user intent."""
+    goal = (career_goal or "stay").strip().lower()
+    seniority_set = {s.lower() for s in seniority_preferences}
+    prefers_senior_plus = bool(seniority_set & {"senior", "lead", "staff", "principal"})
+
+    return {
+        "adjacent_roles": {
+            "enabled": goal in {"broaden", "pivot"},
+            "requires_bridge_evidence": goal in {"broaden", "pivot"},
+            "prefer_core_when_equally_viable": goal == "stay",
+            "portfolio_counts_as_bridge_evidence": has_portfolio and goal in {"broaden", "pivot"},
+        },
+        "lower_seniority_roles": {
+            "enabled": prefers_senior_plus,
+            "require_unusually_strong_scope": prefers_senior_plus,
+        },
+    }
+
+
 def _build_scoring_context(analysis: CVAnalysisResponse, preferences: Dict[str, Any]) -> dict[str, Any]:
     """Build a compact structured intent payload for scoring."""
     target_roles = _ensure_list(preferences.get("targetRoles", []))
@@ -297,6 +321,11 @@ def _build_scoring_context(analysis: CVAnalysisResponse, preferences: Dict[str, 
             "score_higher_signals": good_match_signals,
             "score_lower_signals": lower_fit_signals,
         },
+        "decision_rules": _build_decision_rules(
+            preferences.get("careerGoal", "stay"),
+            seniority_preferences,
+            bool(getattr(analysis, "portfolio", [])),
+        ),
         "conditional_preferences": _conditional_preference_lines(
             preferences.get("careerGoal", "stay"),
             seniority_preferences,

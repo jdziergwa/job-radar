@@ -50,6 +50,7 @@ def test_store_persists_normalization_audit_in_score_breakdown():
                 "remote_location_fit": 20,
                 "growth_potential": 90,
             },
+            fit_category="conditional_fit",
             apply_priority="skip",
             skip_reason="location_timezone",
             normalization_audit=audit,
@@ -58,4 +59,5 @@ def test_store_persists_normalization_audit_in_score_breakdown():
         stored = store.get_job_by_id(db_id)
 
         assert stored is not None
+        assert stored.fit_category == "conditional_fit"
         assert stored.normalization_audit == audit

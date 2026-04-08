@@ -67,6 +67,15 @@ def _format_normalization_audit(audit: dict[str, object] | None) -> str:
     return "; ".join(parts)
 
 
+def _format_fit_category(fit_category: str) -> str:
+    labels = {
+        "core_fit": "Core fit",
+        "adjacent_stretch": "Adjacent stretch",
+        "conditional_fit": "Conditional fit",
+    }
+    return labels.get(fit_category or "", "")
+
+
 # ── Terminal Output ─────────────────────────────────────────────────
 
 
@@ -91,6 +100,9 @@ def print_results(jobs: list[ScoredJob], title: str = "Job Radar") -> None:
             if len(job.reasoning) > 120:
                 reason += "..."
             print(f"        {reason}")
+        fit_category = _format_fit_category(job.fit_category)
+        if fit_category:
+            print(f"        {DIM}Fit category: {fit_category}{RESET}")
         audit_note = _format_normalization_audit(job.normalization_audit)
         if audit_note:
             print(f"        {DIM}Normalization audit: {audit_note}{RESET}")
@@ -192,6 +204,9 @@ def write_report(
                     lines.append(f"- **{dim_label}:** {score}%")
             if job.reasoning:
                 lines.append(f"- **Assessment:** {job.reasoning}")
+            fit_category = _format_fit_category(job.fit_category)
+            if fit_category:
+                lines.append(f"- **Fit category:** {fit_category}")
             audit_note = _format_normalization_audit(job.normalization_audit)
             if audit_note:
                 lines.append(f"- **Normalization audit:** {audit_note}")

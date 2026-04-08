@@ -1,4 +1,4 @@
-from src.reporter import _format_normalization_audit
+from src.reporter import _format_fit_category, _format_normalization_audit
 
 
 def test_format_normalization_audit_formats_changed_fields():
@@ -31,3 +31,10 @@ def test_format_normalization_audit_returns_empty_string_without_changes():
     })
 
     assert note == ""
+
+
+def test_format_fit_category_maps_user_facing_labels():
+    assert _format_fit_category("core_fit") == "Core fit"
+    assert _format_fit_category("adjacent_stretch") == "Adjacent stretch"
+    assert _format_fit_category("conditional_fit") == "Conditional fit"
+    assert _format_fit_category("") == ""

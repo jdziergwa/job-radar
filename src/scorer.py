@@ -11,6 +11,7 @@ import json
 import logging
 import time
 import re
+from dataclasses import replace
 from pathlib import Path
 from typing import Any, Protocol, runtime_checkable, Optional, Callable
 
@@ -111,6 +112,115 @@ def _format_location_context(location_metadata: dict[str, object]) -> str:
     if not formatted:
         return ""
     return f"\nLocation Context:\n{formatted}\n"
+
+
+_SENIORITY_PREFIXES = {
+    "junior", "jr", "jr.", "mid", "middle", "senior", "sr", "sr.",
+    "lead", "staff", "principal", "head",
+}
+_LOWER_SENIORITY_MARKERS = {"junior", "jr", "jr.", "mid", "middle", "associate"}
+
+
+def _normalize_phrase(text: str) -> str:
+    cleaned = re.sub(r"[^a-z0-9]+", " ", (text or "").lower())
+    return " ".join(cleaned.split())
+
+
+def _role_match_phrases(role: str) -> list[str]:
+    normalized = _normalize_phrase(role)
+    if not normalized:
+        return []
+
+    phrases = [normalized]
+    without_parens = _normalize_phrase(re.sub(r"\([^)]*\)", "", role or ""))
+    if without_parens:
+        phrases.append(without_parens)
+
+    tokens = normalized.split()
+    while tokens and tokens[0] in _SENIORITY_PREFIXES:
+        tokens = tokens[1:]
+    if tokens:
+        phrases.append(" ".join(tokens))
+
+    return list(dict.fromkeys(phrase for phrase in phrases if phrase))
+
+
+def _title_matches_role_target(title: str, role: str) -> bool:
+    normalized_title = _normalize_phrase(title)
+    return any(phrase in normalized_title for phrase in _role_match_phrases(role))
+
+
+def _title_looks_lower_seniority(title: str) -> bool:
+    tokens = set(_normalize_phrase(title).split())
+    return bool(tokens & _LOWER_SENIORITY_MARKERS)
+
+
+def _ensure_string_list(value: Any) -> list[str]:
+    if isinstance(value, list):
+        return [str(item).strip() for item in value if str(item).strip()]
+    if value is None:
+        return []
+    text = str(value).strip()
+    return [text] if text else []
+
+
+def _derive_fit_category(
+    job: CandidateJob,
+    result: ScoredJob,
+    profile_config: dict[str, Any] | None,
+) -> str:
+    """Classify the scored result using structured wizard intent."""
+    if result.apply_priority == "skip":
+        return ""
+
+    scoring_context = (profile_config or {}).get("scoring_context", {})
+    if not isinstance(scoring_context, dict):
+        return ""
+
+    role_targets = scoring_context.get("role_targets", {}) if isinstance(scoring_context.get("role_targets", {}), dict) else {}
+    decision_rules = scoring_context.get("decision_rules", {}) if isinstance(scoring_context.get("decision_rules", {}), dict) else {}
+
+    core_roles = _ensure_string_list(role_targets.get("core"))
+    adjacent_roles = _ensure_string_list(role_targets.get("adjacent"))
+    seniority_preferences = {value.lower() for value in _ensure_string_list(role_targets.get("seniority_preferences"))}
+    breakdown = result.breakdown or {}
+
+    title = job.title or result.title
+    growth = int(breakdown.get("growth_potential", 0) or 0)
+    tech = int(breakdown.get("tech_stack_match", 0) or 0)
+    seniority = int(breakdown.get("seniority_match", 0) or 0)
+
+    lower_seniority_rules = decision_rules.get("lower_seniority_roles", {})
+    if (
+        isinstance(lower_seniority_rules, dict)
+        and lower_seniority_rules.get("enabled")
+        and lower_seniority_rules.get("require_unusually_strong_scope")
+        and seniority_preferences & {"senior", "lead", "staff", "principal"}
+        and _title_looks_lower_seniority(title)
+        and seniority < 70
+        and growth >= 75
+        and result.apply_priority in {"low", "medium"}
+    ):
+        return "conditional_fit"
+
+    adjacent_rules = decision_rules.get("adjacent_roles", {})
+    if (
+        isinstance(adjacent_rules, dict)
+        and adjacent_rules.get("enabled")
+        and any(_title_matches_role_target(title, role) for role in adjacent_roles)
+        and growth >= 65
+        and tech >= 45
+        and result.apply_priority in {"low", "medium", "high"}
+    ):
+        return "adjacent_stretch"
+
+    if (
+        any(_title_matches_role_target(title, role) for role in core_roles)
+        and result.apply_priority in {"medium", "high"}
+    ):
+        return "core_fit"
+
+    return ""
 
 
 def _build_user_message(job: CandidateJob, max_desc_chars: int = 20000) -> str:
@@ -358,6 +468,7 @@ async def score_job(
     client: AsyncAnthropic,
     job: CandidateJob,
     system_prompt: list[dict[str, Any]],
+    profile_config: dict[str, Any] | None = None,
     model: str = "claude-haiku-4-5-20251001",
     max_desc_chars: int = 20000,
 ) -> ScoredJob:
@@ -408,6 +519,10 @@ async def score_job(
                 is_sparse=metadata["is_sparse"],
             )
             normalized_result = normalize_scored_job(raw_result)
+            normalized_result = replace(
+                normalized_result,
+                fit_category=_derive_fit_category(job, normalized_result, profile_config),
+            )
             _log_normalization(raw_result, normalized_result)
             return normalized_result
 
@@ -449,6 +564,7 @@ async def score_batch(
     client: AsyncAnthropic,
     jobs: list[CandidateJob],
     system_prompt: list[dict[str, Any]],
+    profile_config: dict[str, Any] | None = None,
     model: str = "claude-haiku-4-5-20251001",
     max_desc_chars: int = 20000,
 ) -> list[ScoredJob]:
@@ -458,7 +574,7 @@ async def score_batch(
     """
     if len(jobs) == 1:
         # Optimization: delegate to score_job for single-item batches
-        return [await score_job(client, jobs[0], system_prompt, model, max_desc_chars)]
+        return [await score_job(client, jobs[0], system_prompt, profile_config, model, max_desc_chars)]
 
     user_message = _build_batch_user_message(jobs, max_desc_chars)
     max_tokens = min(800 * len(jobs), 4096)
@@ -507,6 +623,10 @@ async def score_batch(
                         is_sparse=metadata["is_sparse"],
                     )
                     normalized_result = normalize_scored_job(raw_result)
+                    normalized_result = replace(
+                        normalized_result,
+                        fit_category=_derive_fit_category(job, normalized_result, profile_config),
+                    )
                     _log_normalization(raw_result, normalized_result)
                     results.append(normalized_result)
                 return results
@@ -534,7 +654,7 @@ async def score_batch(
 
     # Final fallback for any terminal failure: score each individually
     logger.info("Falling back to individual scoring for %d jobs...", len(jobs))
-    tasks = [score_job(client, job, system_prompt, model, max_desc_chars) for job in jobs]
+    tasks = [score_job(client, job, system_prompt, profile_config, model, max_desc_chars) for job in jobs]
     return await asyncio.gather(*tasks)
 
 
@@ -570,7 +690,7 @@ class AnthropicScorer:
         # Note: This would need an Async client in the class as well if used,
         # but the main pipeline uses score_jobs below.
         async with AsyncAnthropic() as client:
-            return await score_job(client, job, system_prompt, self.model, self.max_desc_chars)
+            return await score_job(client, job, system_prompt, None, self.model, self.max_desc_chars)
 
 
 async def score_jobs(
@@ -628,7 +748,7 @@ async def score_jobs(
     async def worker(batch: list[CandidateJob], client: AsyncAnthropic) -> list[ScoredJob]:
         nonlocal completed_count
         async with semaphore:
-            results = await score_batch(client, batch, system_prompt, model, max_desc_chars)
+            results = await score_batch(client, batch, system_prompt, profile_config, model, max_desc_chars)
             
             for result in results:
                 # Persist score immediately
@@ -639,6 +759,7 @@ async def score_jobs(
                     breakdown=result.breakdown,
                     key_matches=result.key_matches,
                     red_flags=result.red_flags,
+                    fit_category=result.fit_category,
                     apply_priority=result.apply_priority,
                     skip_reason=result.skip_reason,
                     missing_skills=result.missing_skills,
@@ -686,5 +807,6 @@ def _error_scored_job(job: CandidateJob, reason: str) -> ScoredJob:
         first_seen_at=job.first_seen_at,
         fit_score=0,
         reasoning=reason,
+        fit_category="",
         apply_priority="skip",
     )
