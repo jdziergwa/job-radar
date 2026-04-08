@@ -1,0 +1,52 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    command: uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload
+    user: "${HOST_UID:-0}:${HOST_GID:-0}"
+    environment:
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:-}
+      PROFILES_DIR: /app/profiles
+      DATA_DIR: /app/data
+      PYTHONUNBUFFERED: "1"
+      WATCHFILES_FORCE_POLLING: "true"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - from urllib.request import urlopen; urlopen('http://127.0.0.1:8000/api/health').read()
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    command: npm run dev -- --hostname 0.0.0.0 --port 3000
+    depends_on:
+      api:
+        condition: service_healthy
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+      WATCHPACK_POLLING: "true"
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+      - web_node_modules:/app/web/node_modules
+      - web_next_cache:/app/web/.next
+    working_dir: /app/web
+
+volumes:
+  web_node_modules:
+  web_next_cache:

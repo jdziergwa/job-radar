@@ -18,6 +18,35 @@ Job Radar is a tool for monitoring your job search across public ATS boards (Gre
 
 ## 🚀 Quick Start
 
+### Docker First
+
+If you just want to try the app, you do not need a local Python or Node install:
+
+```bash
+docker compose up --build
+```
+
+-   **Backend**: [http://localhost:8000](http://localhost:8000)
+-   **Frontend**: [http://localhost:3000](http://localhost:3000)
+
+If you want AI scoring, create a `.env` file first so the API can see your Anthropic key:
+
+```bash
+cp .env.example .env
+# Edit .env and set ANTHROPIC_API_KEY=sk-ant-...
+docker compose up --build
+```
+
+On Linux, if you want files in `data/` and `reports/` to stay owned by your host user instead of `root`, also add your UID/GID to `.env`:
+
+```bash
+echo "HOST_UID=$(id -u)" >> .env
+echo "HOST_GID=$(id -g)" >> .env
+docker compose up --build
+```
+
+On Windows, Docker Desktop is the recommended path. The compose setup enables polling-based file watching for both Next.js and FastAPI so hot reload is more reliable on bind mounts, especially when the repo lives outside WSL.
+
 ### 1. Prerequisites
 
 -   **Python 3.11+**
