@@ -239,8 +239,11 @@ export function ReviewGenerate({ onNext, onBack, onUpdate, data }: StepProps) {
           <div className="p-4 bg-primary/5 border border-primary/10 rounded-2xl flex flex-col gap-3 text-xs text-muted-foreground/80 leading-relaxed shadow-sm">
             <div className="flex items-center gap-2 text-foreground">
               <Info className="h-4 w-4 text-primary shrink-0" />
-              <p className="font-semibold">Strategic company preferences</p>
+              <p className="font-semibold">Special-case company signals</p>
             </div>
+            <p>
+              These company tags can be used as an explicit exception rule when a role is otherwise below your normal seniority target.
+            </p>
             {data.companyQualitySignals?.length ? (
               <div className="flex flex-wrap gap-2">
                 {data.companyQualitySignals.map((signal) => (
@@ -252,8 +255,8 @@ export function ReviewGenerate({ onNext, onBack, onUpdate, data }: StepProps) {
             ) : null}
             <p>
               {data.allowLowerSeniorityAtStrategicCompanies
-                ? 'Lower-seniority roles can be considered only when a tracked company carries a matching explicit signal.'
-                : 'No lower-seniority strategic exception is enabled.'}
+                ? 'Lower-seniority roles can be considered only when a tracked company carries one of these matching explicit signals.'
+                : 'No company-based lower-seniority exception is enabled.'}
             </p>
           </div>
         ) : null}

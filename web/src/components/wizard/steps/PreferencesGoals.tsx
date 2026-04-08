@@ -4,7 +4,6 @@ import { useState, useEffect, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
-import { Switch } from '@/components/ui/switch'
 import { 
   Plus,
   X,
@@ -82,7 +81,9 @@ export function PreferencesGoals({ onNext, onBack, onUpdate, data }: StepProps) 
     dedupeCompanyQualitySignals(data.companyQualitySignals || [])
   )
   const [allowLowerSeniorityAtStrategicCompanies, setAllowLowerSeniorityAtStrategicCompanies] = useState(
-    Boolean(data.allowLowerSeniorityAtStrategicCompanies && (data.companyQualitySignals || []).length > 0)
+    dedupeCompanyQualitySignals(data.companyQualitySignals || []).length > 0
+      ? true
+      : Boolean(data.allowLowerSeniorityAtStrategicCompanies)
   )
   const [dealBreakers, setDealBreakers] = useState<string[]>(
     data.dealBreakers || analysis?.suggested_lower_fit_signals || []
@@ -128,10 +129,8 @@ export function PreferencesGoals({ onNext, onBack, onUpdate, data }: StepProps) 
   ])
 
   useEffect(() => {
-    if (companyQualitySignals.length === 0 && allowLowerSeniorityAtStrategicCompanies) {
-      setAllowLowerSeniorityAtStrategicCompanies(false)
-    }
-  }, [companyQualitySignals, allowLowerSeniorityAtStrategicCompanies])
+    setAllowLowerSeniorityAtStrategicCompanies(companyQualitySignals.length > 0)
+  }, [companyQualitySignals])
 
   const toggleItem = (item: string, list: string[], setter: (val: string[]) => void) => {
     if (list.includes(item)) {
@@ -466,22 +465,17 @@ export function PreferencesGoals({ onNext, onBack, onUpdate, data }: StepProps) 
             )}
 
             <div className={cn(
-              "flex items-start justify-between gap-4 rounded-2xl border p-4 transition-colors",
+              "rounded-2xl border p-4 transition-colors",
               companyQualitySignals.length > 0 ? "border-primary/20 bg-primary/5" : "border-border/40 bg-muted/10"
             )}>
-              <div className="space-y-1">
-                <p className="text-sm font-semibold text-foreground">
-                  Allow lower-seniority roles only when those signals match
-                </p>
-                <p className="text-xs text-muted-foreground leading-relaxed max-w-xl">
-                  Use this for explicit stretch exceptions, not as a default downgrade of your seniority preferences.
-                </p>
-              </div>
-              <Switch
-                checked={allowLowerSeniorityAtStrategicCompanies}
-                disabled={companyQualitySignals.length === 0}
-                onCheckedChange={(checked) => setAllowLowerSeniorityAtStrategicCompanies(Boolean(checked))}
-              />
+              <p className="text-sm font-semibold text-foreground">
+                {companyQualitySignals.length > 0
+                  ? 'These signals will automatically enable a lower-seniority exception when a tracked company matches them.'
+                  : 'Select one or more company signals to enable a lower-seniority exception for specially chosen companies.'}
+              </p>
+              <p className="text-xs text-muted-foreground leading-relaxed max-w-xl mt-1">
+                This stays narrow: the exception only applies when a company carries one of the same explicit signals.
+              </p>
             </div>
           </div>
         </section>
