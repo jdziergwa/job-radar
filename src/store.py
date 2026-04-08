@@ -10,6 +10,7 @@ import json
 import logging
 import os
 import sqlite3
+import threading
 from contextlib import contextmanager
 from datetime import datetime, timedelta
 from typing import Generator
@@ -68,15 +69,31 @@ CREATE TABLE IF NOT EXISTS metadata (
 class Store:
     """SQLite-backed job storage with context-managed connections."""
 
+    _initialized_paths: set[str] = set()
+    _init_lock = threading.Lock()
+    _busy_timeout_ms = 30_000
+
     def __init__(self, db_path: str) -> None:
-        self.db_path = db_path
+        self.db_path = os.path.abspath(db_path)
         # Ensure the parent directory exists
-        os.makedirs(os.path.dirname(db_path) or ".", exist_ok=True)
-        self._init_db()
+        os.makedirs(os.path.dirname(self.db_path) or ".", exist_ok=True)
+        self._ensure_initialized()
+
+    def _ensure_initialized(self) -> None:
+        """Initialize schema and WAL mode once per database path in this process."""
+        if self.db_path in self._initialized_paths and os.path.exists(self.db_path):
+            return
+
+        with self._init_lock:
+            if self.db_path in self._initialized_paths and os.path.exists(self.db_path):
+                return
+            self._init_db()
+            self._initialized_paths.add(self.db_path)
 
     def _init_db(self) -> None:
         """Create tables and indexes if they don't exist."""
         with self._connect() as conn:
+            conn.execute("PRAGMA journal_mode=WAL")
             conn.executescript(SCHEMA)
             
             # Migration: Add dismissal_reason if missing
@@ -133,9 +150,9 @@ class Store:
     @contextmanager
     def _connect(self) -> Generator[sqlite3.Connection, None, None]:
         """Context-managed database connection."""
-        conn = sqlite3.connect(self.db_path)
+        conn = sqlite3.connect(self.db_path, timeout=self._busy_timeout_ms / 1000)
         conn.row_factory = sqlite3.Row
-        conn.execute("PRAGMA journal_mode=WAL")
+        conn.execute(f"PRAGMA busy_timeout={self._busy_timeout_ms}")
         try:
             yield conn
             conn.commit()
