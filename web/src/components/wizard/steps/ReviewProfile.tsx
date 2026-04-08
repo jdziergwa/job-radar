@@ -639,7 +639,11 @@ export function ReviewProfile({ onNext, onBack, onUpdate, data }: StepProps) {
           Looks good, continue
         </Button>
         <Button 
-          onClick={() => onBack()} 
+          onClick={() => onBack({ 
+            cvFile: undefined, 
+            cvAnalysis: undefined, 
+            analysisPromise: undefined 
+          })} 
           variant="outline" 
           className="w-full sm:flex-1 h-14 text-base rounded-2xl border-border/50 hover:bg-muted/30 gap-2"
         >

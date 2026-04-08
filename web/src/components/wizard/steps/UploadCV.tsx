@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Upload, FileUp, X, AlertCircle, FileText, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -15,6 +15,13 @@ export function UploadCV({ onNext, onBack, onUpdate, data }: StepProps) {
   const [error, setError] = useState<string | null>(data?.error || null)
   const [isDragging, setIsDragging] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Clear the error from global state on mount so it doesn't persist forever
+  useEffect(() => {
+    if (data.error) {
+      onUpdate({ error: undefined })
+    }
+  }, [data.error, onUpdate])
 
   const handleFileSelect = (selectedFile: File) => {
     setError(null)
@@ -115,11 +122,19 @@ export function UploadCV({ onNext, onBack, onUpdate, data }: StepProps) {
         </div>
 
         {error && (
-          <div className="flex items-center gap-4 p-4 rounded-2xl bg-destructive/10 border border-destructive/20 text-destructive text-sm animate-in zoom-in-95 duration-300">
-            <div className="bg-destructive/20 p-2 rounded-lg">
-                <AlertCircle className="h-4 w-4" />
+          <div className="flex items-center justify-between gap-4 p-4 rounded-2xl bg-destructive/10 border border-destructive/20 text-destructive text-sm animate-in zoom-in-95 duration-300 relative group/err">
+            <div className="flex items-center gap-3">
+              <div className="bg-destructive/20 p-2 rounded-lg">
+                  <AlertCircle className="h-4 w-4" />
+              </div>
+              <p className="font-medium text-left">{error}</p>
             </div>
-            <p className="font-medium text-left">{error}</p>
+            <button 
+              onClick={(e) => { e.stopPropagation(); setError(null); }}
+              className="p-1.5 hover:bg-destructive/20 rounded-lg transition-colors text-destructive/50 hover:text-destructive"
+            >
+              <X className="h-4 w-4" />
+            </button>
           </div>
         )}
       </div>

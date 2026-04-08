@@ -114,14 +114,23 @@ export function QuickStartWizard({ onComplete }: QuickStartWizardProps) {
   }, [currentStep, onComplete, wizardData])
 
   const handleBack = useCallback((backData?: Partial<WizardData>) => {
+    let nextStep = currentStep > 0 ? currentStep - 1 : 0
+    
     if (backData) {
       setWizardData((prev) => ({ ...prev, ...backData }))
+      
+      // If we're resetting CV data, jump back to Step 1 (Upload CV)
+      if (backData.cvFile === undefined && backData.cvAnalysis === undefined) {
+        nextStep = 1
+        setCompletedSteps([0]) // Reset progress to just the choice step
+      }
     }
+    
     if (currentStep > 0) {
       if (wizardData?.path === 'manual' && currentStep === 6) {
         setCurrentStep(0)
       } else {
-        setCurrentStep((prev) => prev - 1)
+        setCurrentStep(nextStep)
       }
     }
   }, [currentStep, wizardData?.path])

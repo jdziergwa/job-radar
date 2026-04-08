@@ -18,6 +18,8 @@ export interface WizardData {
   targetRegions?: string[]
   excludedRegions?: string[]
   careerDirection?: string
+  careerGoal?: 'stay' | 'pivot' | 'step_up' | 'broaden'
+  enableStandardExclusions?: boolean
   industries?: string[]
   goodMatchSignals?: string[]
   dealBreakers?: string[]

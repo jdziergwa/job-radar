@@ -1,4 +1,5 @@
 import yaml
+import re
 from typing import Dict, List, Any
 from api.models import CVAnalysisResponse
 
@@ -25,6 +26,12 @@ REGION_MAPPING = {
     "Nordics": r"\b(nordics|sweden|norway|denmark|finland|stockholm|oslo|helsinki|copenhagen)\b",
     "Benelux": r"\b(benelux|belgium|luxembourg|netherlands)\b",
 }
+
+# Standard exclusions to filter out high-volume noise from far-off regions
+# This provides the "balanced scoring" by keeping the feed focused.
+STANDARD_GLOBAL_EXCLUSIONS = [
+    r"\b(us|usa|united states|north america|can|canada|india|latam|south america|australia|asia|philippines|manila|bangalore|san\s+francis|boston|\bma\b|california|\bca\b|texas|\btx\b|florida|\bfl\b)\b"
+]
 
 ID_TO_LABEL = {
     # Work Auth
@@ -58,14 +65,63 @@ def _to_regex(region: str) -> str:
     clean = region.lower().strip()
     return rf"\b{clean}\b"
 
+def _merge_title_patterns(llm_patterns: list[str], target_roles: list[str]) -> list[str]:
+    """Merge LLM-suggested title patterns with patterns derived from target roles."""
+    patterns = list(llm_patterns)
+    existing_lower = {p.lower() for p in patterns}
+    for role in target_roles:
+        # Create a word-boundary regex from the role name
+        # e.g. "Data Scientist" -> r"\bdata\s+scientist\b"
+        parts = [re.escape(p) for p in role.lower().split()]
+        escaped = r"\s+".join(parts)
+        pattern = rf"\b{escaped}\b"
+        if pattern.lower() not in existing_lower:
+            patterns.append(pattern)
+            existing_lower.add(pattern.lower())
+    return patterns
+
+# Tool/framework names that are too generic to be useful as description signals
+_GENERIC_SKILL_TERMS = {
+    "testing", "automation", "development", "programming", "engineering",
+    "management", "leadership", "strategy", "practices", "tools",
+    "architecture", "design", "analysis", "communication",
+}
+
+def _merge_description_signals(llm_signals: list[str], skills: dict[str, list[str]]) -> list[str]:
+    """Merge LLM signals with patterns auto-generated from skill names."""
+    signals = list(llm_signals)
+    existing_lower = {s.lower() for s in signals}
+    for category, skill_list in skills.items():
+        for skill in skill_list:
+            # Skip generic terms and very short names
+            clean = skill.strip().lower()
+            if clean in _GENERIC_SKILL_TERMS or len(clean) < 3:
+                continue
+            # Check if already covered by an existing pattern
+            if any(clean in existing.lower() for existing in signals):
+                continue
+            pattern = rf"\b{re.escape(clean)}\b"
+            if pattern.lower() not in existing_lower:
+                signals.append(pattern)
+                existing_lower.add(pattern.lower())
+    return signals[:15]  # Cap at 15 to avoid over-filtering
+
 def generate_profile_yaml(analysis: CVAnalysisResponse, preferences: Dict[str, Any]) -> str:
     """Build profile.yaml content from CV analysis + user preferences."""
     
     target_regions = preferences.get("targetRegions", [])
     excluded_regions = preferences.get("excludedRegions", [])
+    enable_standard_exclusions = preferences.get("enableStandardExclusions", True)
     
     location_patterns = [_to_regex(r) for r in target_regions]
     location_exclusions = [_to_regex(r) for r in excluded_regions]
+    
+    # Add standard global exclusions for "Noise Reduction" if enabled
+    # Only adds it if user hasn't explicitly targeted those regions
+    if enable_standard_exclusions:
+        for ex in STANDARD_GLOBAL_EXCLUSIONS:
+            if ex not in location_exclusions:
+                location_exclusions.append(ex)
     
     # Sensible defaults for remote patterns
     remote_patterns = [r"\b(remote|worldwide|global|distributed|anywhere|flexible)\b"]
@@ -73,16 +129,24 @@ def generate_profile_yaml(analysis: CVAnalysisResponse, preferences: Dict[str, A
     config = {
         "keywords": {
             "title_patterns": {
-                "high_confidence": analysis.suggested_title_patterns.get("high_confidence", []),
+                "high_confidence": _merge_title_patterns(
+                    analysis.suggested_title_patterns.get("high_confidence", []),
+                    preferences.get("targetRoles", [])
+                ),
                 "broad": analysis.suggested_title_patterns.get("broad", []),
             },
             "description_signals": {
                 "min_matches": 1,
-                "patterns": analysis.suggested_description_signals,
+                "patterns": _merge_description_signals(
+                    analysis.suggested_description_signals,
+                    analysis.skills
+                ),
             },
             "exclusions": analysis.suggested_exclusions,
             "location_exclusions": location_exclusions,
-            "location_patterns": location_patterns,
+            "location_patterns": location_patterns + (
+                [r"\bhybrid\b"] if "hybrid" in preferences.get("remotePref", []) else []
+            ),
             "remote_patterns": remote_patterns,
             "fallback_tier": "signal_match",
         },
@@ -126,11 +190,19 @@ def generate_profile_doc(analysis: CVAnalysisResponse, preferences: Dict[str, An
     
     for exp in analysis.experience:
         industry_str = f" ({exp.industry})" if exp.industry else ""
-        exp_summary_lines.append(f"- {exp.role} at {exp.company}{industry_str}, {exp.dates}")
+        base = f"- {exp.role} at {exp.company}{industry_str}, {exp.dates}"
+        # Append top 2 highlights if available
+        if exp.highlights:
+            top_highlights = exp.highlights[:2]
+            base += " — " + "; ".join(top_highlights)
+        exp_summary_lines.append(base)
     
     for edu in analysis.education:
         dates = f" ({edu.start_year} — {edu.end_year})" if edu.start_year and edu.end_year else ""
         exp_summary_lines.append(f"- {edu.degree} — {edu.school}{dates}")
+    
+    if analysis.spoken_languages:
+        exp_summary_lines.append(f"- Languages: {', '.join(analysis.spoken_languages)}")
     
     sections.append("\n".join(exp_summary_lines))
     
@@ -144,7 +216,15 @@ def generate_profile_doc(analysis: CVAnalysisResponse, preferences: Dict[str, An
     
     # ## What Makes a Good Match (Score Higher)
     good_match_lines = ["## What Makes a Good Match (Score Higher)"]
-    signals = preferences.get("goodMatchSignals", []) + analysis.suggested_good_match_signals
+    
+    # Deduplicate signals using a set while maintaining order
+    raw_signals = preferences.get("goodMatchSignals", []) + analysis.suggested_good_match_signals
+    seen_signals = set()
+    signals = []
+    for s in raw_signals:
+        if s and s.lower() not in seen_signals:
+            signals.append(s)
+            seen_signals.add(s.lower())
     
     # Inferred defaults based on preferences
     remote_pref = preferences.get("remotePref", [])
@@ -175,11 +255,25 @@ def generate_profile_doc(analysis: CVAnalysisResponse, preferences: Dict[str, An
         good_match_lines.append(f"- {signal}")
     sections.append("\n".join(good_match_lines))
     
-    # ## Critical Skill Gaps (Penalise Hard When Required)
-    gap_lines = ["## Critical Skill Gaps (Penalise Hard When Required)"]
-    gap_lines.append("These are confirmed gaps — not \"learning quickly\" adjacencies. When a job's primary focus depends on these, lower tech_stack_match significantly:")
+    # ## Critical Skill Gaps
+    gap_lines = ["## Critical Skill Gaps"]
+
+    # Career goal context — describes what kind of gaps matter for the scorer,
+    # without prescribing specific score numbers (those belong in scoring_philosophy.md)
+    goal = preferences.get("careerGoal", "stay")
+    if goal == "broaden":
+        context_text = "Career goal: expanding into adjacent domains. Gaps in new areas are expected — distinguish between gaps where the candidate shows bridge evidence (portfolio, secondary experience) vs gaps with zero evidence."
+    elif goal == "pivot":
+        context_text = "Career goal: pivoting to a new field. Transferable skills and bridge evidence (e.g., portfolio projects) partially offset gaps in the new domain. Gaps without any supporting evidence remain significant."
+    elif goal == "step_up":
+        context_text = "Career goal: stepping up to higher scope or leadership. Look for leadership signals in prior roles (led teams, defined strategy, mentored). Management-specific gaps are less critical if leadership evidence exists elsewhere."
+    else:  # stay
+        context_text = "Career goal: deepening current specialization. Gaps in core required skills for the target roles are significant and should not be downplayed."
+
+    gap_lines.append(f"**Career Context: {goal.replace('_', ' ').title()}**")
+    gap_lines.append(context_text)
+
     for gap in analysis.suggested_skill_gaps:
-        # Assuming suggested_skill_gaps are strings, we might want to bold if they look like "Skill: Explanation"
         if ":" in gap:
             skill, explanation = gap.split(":", 1)
             gap_lines.append(f"- **{skill.strip()}**: {explanation.strip()}")
@@ -189,7 +283,15 @@ def generate_profile_doc(analysis: CVAnalysisResponse, preferences: Dict[str, An
     
     # ## What Lowers Fit (Score Lower)
     lower_fit_lines = ["## What Lowers Fit (Score Lower)"]
-    deal_breakers = preferences.get("dealBreakers", []) + analysis.suggested_lower_fit_signals
+    
+    # Deduplicate deal breakers
+    raw_db = preferences.get("dealBreakers", []) + analysis.suggested_lower_fit_signals
+    seen_db = set()
+    deal_breakers = []
+    for db in raw_db:
+        if db and db.lower() not in seen_db:
+            deal_breakers.append(db)
+            seen_db.add(db.lower())
     
     # Standard entries based on seniority
     seniority_val = preferences.get("seniority", getattr(analysis, "inferred_seniority", ""))
@@ -256,6 +358,14 @@ def generate_profile_doc(analysis: CVAnalysisResponse, preferences: Dict[str, An
     excluded = ", ".join(preferences.get("excludedRegions", []))
     if excluded:
         loc_lines.append(f"- Not acceptable: {excluded}")
+    
+    # Add setup negatives
+    remote_pref_set = set(remote_pref)
+    if "onsite" not in remote_pref_set:
+        loc_lines.append("- Not acceptable: On-site only positions")
+    if timezone_pref and timezone_pref != "any":
+        tz_label = _get_label(timezone_pref)
+        loc_lines.append(f"- Timezone requirement: {tz_label}")
         
     sections.append("\n".join(loc_lines))
     
@@ -272,7 +382,7 @@ def generate_profile_doc(analysis: CVAnalysisResponse, preferences: Dict[str, An
                 tech_tags = ", ".join(p.technologies)
                 portfolio_lines.append(f"  - {tech_tags}")
             if p.description:
-                portfolio_lines.append(f"  - {p.description}")
+                portfolio_lines.append(f"  - Demonstrates: {p.description}")
         sections.append("\n".join(portfolio_lines))
     
     return "\n\n".join(sections)

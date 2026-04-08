@@ -203,8 +203,10 @@ class UserPreferences(BaseModel):
     excludedRegions: list[str] = []
     industries: list[str] = []
     careerDirection: str
+    careerGoal: Optional[Literal['stay', 'pivot', 'step_up', 'broaden']] = "stay"
     goodMatchSignals: list[str] = []
     dealBreakers: list[str] = []
+    enableStandardExclusions: bool = True
     additionalContext: Optional[str] = None
 
 
@@ -246,7 +248,8 @@ class CVAnalysisResponse(BaseModel):
     suggested_description_signals: list[str] = []
     suggested_exclusions: list[str] = []
     suggested_skill_gaps: list[str] = []
-    suggested_career_direction: str
+    suggested_career_direction: str = ""
+    suggested_narratives: dict[str, str] = {}  # Keys: stay, pivot, step_up, broaden
     suggested_good_match_signals: list[str] = []
     suggested_lower_fit_signals: list[str] = []
     extraction_method: Literal["text", "vision"] = "text"

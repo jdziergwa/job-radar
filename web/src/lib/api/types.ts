@@ -638,6 +638,12 @@ export interface components {
              * @default []
              */
             suggested_lower_fit_signals: string[];
+            /**
+             * Extraction Method
+             * @default text
+             * @enum {string}
+             */
+            extraction_method: "text" | "vision";
         };
         /** CompaniesResponse */
         CompaniesResponse: {
@@ -1251,6 +1257,11 @@ export interface components {
             /** Careerdirection */
             careerDirection: string;
             /**
+             * Careergoal
+             * @default specialise
+             */
+            careerGoal: ("specialise" | "pivot" | "step_up" | "broaden") | null;
+            /**
              * Goodmatchsignals
              * @default []
              */
@@ -1260,6 +1271,11 @@ export interface components {
              * @default []
              */
             dealBreakers: string[];
+            /**
+             * Enablestandardexclusions
+             * @default true
+             */
+            enableStandardExclusions: boolean;
             /** Additionalcontext */
             additionalContext?: string | null;
         };

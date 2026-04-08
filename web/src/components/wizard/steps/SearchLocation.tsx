@@ -63,6 +63,9 @@ export function SearchLocation({ onNext, onBack, onUpdate, data }: StepProps) {
   const [timezonePref, setTimezonePref] = useState<string>(data.timezonePref || 'local')
   const [targetRegions, setTargetRegions] = useState<string[]>(data.targetRegions || ['Europe'])
   const [excludedRegions, setExcludedRegions] = useState<string[]>(data.excludedRegions || [])
+  const [enableStandardExclusions, setEnableStandardExclusions] = useState<boolean>(
+    data.enableStandardExclusions !== undefined ? data.enableStandardExclusions : true
+  )
 
   // Auto-sync state back to wizardData for refresh resilience
   useEffect(() => {
@@ -75,9 +78,10 @@ export function SearchLocation({ onNext, onBack, onUpdate, data }: StepProps) {
       primaryRemotePref,
       timezonePref,
       targetRegions,
-      excludedRegions
+      excludedRegions,
+      enableStandardExclusions
     })
-  }, [targetRoles, seniority, location, workAuth, remotePref, primaryRemotePref, timezonePref, targetRegions, excludedRegions, onUpdate])
+  }, [targetRoles, seniority, location, workAuth, remotePref, primaryRemotePref, timezonePref, targetRegions, excludedRegions, enableStandardExclusions, onUpdate])
 
   const handleAddRole = () => {
     const role = newRole.trim()
@@ -116,7 +120,8 @@ export function SearchLocation({ onNext, onBack, onUpdate, data }: StepProps) {
       primaryRemotePref,
       timezonePref,
       targetRegions,
-      excludedRegions
+      excludedRegions,
+      enableStandardExclusions
     })
   }
 
@@ -405,6 +410,35 @@ export function SearchLocation({ onNext, onBack, onUpdate, data }: StepProps) {
                   )
                 })}
               </div>
+            </div>
+
+            <div className="pt-4 border-t border-border/10">
+              <button
+                type="button"
+                onClick={() => setEnableStandardExclusions(!enableStandardExclusions)}
+                className={cn(
+                  "flex items-center gap-4 p-4 rounded-2xl border transition-all text-left w-full sm:w-auto",
+                  enableStandardExclusions 
+                    ? "bg-primary/5 border-primary/20 text-primary" 
+                    : "bg-background/20 border-border/30 text-muted-foreground hover:bg-muted/10"
+                )}
+              >
+                <div className={cn(
+                  "w-10 h-6 rounded-full relative transition-colors",
+                  enableStandardExclusions ? "bg-primary" : "bg-muted"
+                )}>
+                  <div className={cn(
+                    "absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-all",
+                    enableStandardExclusions ? "translate-x-4" : "translate-x-0"
+                  )} />
+                </div>
+                <div className="flex flex-col">
+                  <span className="font-bold text-sm">Enable Standard Noise Filter</span>
+                  <p className="text-[10px] text-muted-foreground leading-tight">
+                    Automatically excludes high-volume regions (US/India/etc.) if not targeted.
+                  </p>
+                </div>
+              </button>
             </div>
           </div>
         </section>

@@ -177,7 +177,7 @@ async def analyze_cv(file: UploadFile = File(...)):
                     max_tokens=4096,
                     system=system_prompt,
                     messages=[{"role": "user", "content": user_content}],
-                    timeout=60.0,
+                    timeout=120.0,
                 )
 
                 raw_text = response.content[0].text
@@ -204,7 +204,7 @@ async def analyze_cv(file: UploadFile = File(...)):
                                 {"role": "assistant", "content": raw_text},
                                 {"role": "user", "content": retry_message}
                             ],
-                            timeout=60.0,
+                            timeout=120.0,
                         )
                         raw_text = fix_response.content[0].text
                         json_str = _extract_json(raw_text)
