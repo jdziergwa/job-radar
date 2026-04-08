@@ -25,7 +25,38 @@ REGION_MAPPING = {
     "Australia": r"\b(australia|new zealand|sydney|melbourne|brisbane)\b",
     "Nordics": r"\b(nordics|sweden|norway|denmark|finland|stockholm|oslo|helsinki|copenhagen)\b",
     "Benelux": r"\b(benelux|belgium|luxembourg|netherlands)\b",
+    "North America": r"\b(us|usa|united states|north america|americas|canada)\b",
+    "Global": r"\b(global|worldwide)\b",
+    "APAC": r"\b(apac|asia-pacific|asia pacific)\b",
+    "Middle East": r"\b(middle east|uae|united arab emirates|dubai|abu dhabi|saudi arabia|qatar|oman)\b",
 }
+
+REGION_ALIASES = {
+    "us/north america": "North America",
+    "north america": "North America",
+    "americas": "North America",
+    "global/worldwide": "Global",
+    "worldwide": "Global",
+    "asia-pacific": "APAC",
+    "asia pacific": "APAC",
+}
+
+EUROPE_REGION_EXPANSION = [
+    "Europe",
+    "EMEA",
+    "UK",
+    "Germany",
+    "Poland",
+    "Spain",
+    "Portugal",
+    "Netherlands",
+    "France",
+    "Switzerland",
+    "Ireland",
+    "Italy",
+    "Nordics",
+    "Benelux",
+]
 
 # Standard exclusions to filter out high-volume noise from far-off regions
 # This provides the "balanced scoring" by keeping the feed focused.
@@ -57,13 +88,49 @@ def _get_label(id_val: str) -> str:
     if not id_val: return ""
     return ID_TO_LABEL.get(id_val.lower(), id_val.replace("_", " ").capitalize())
 
+def _normalize_region_name(region: str) -> str:
+    """Normalize UI labels and aliases to canonical region keys."""
+    clean = " ".join((region or "").strip().split())
+    if not clean:
+        return ""
+    return REGION_ALIASES.get(clean.casefold(), clean)
+
+def _build_literal_region_regex(region: str) -> str:
+    """Build a safe literal regex for freeform region inputs."""
+    parts = [re.escape(part) for part in region.lower().split()]
+    if not parts:
+        return r"\b\B"
+    escaped = r"\s+".join(parts)
+    return rf"\b{escaped}\b"
+
 def _to_regex(region: str) -> str:
     """Map a region name to a regex pattern or convert to literal word-boundary regex."""
-    if region in REGION_MAPPING:
-        return REGION_MAPPING[region]
-    # Literal match with word boundaries for freeform entries
-    clean = region.lower().strip()
-    return rf"\b{clean}\b"
+    normalized = _normalize_region_name(region)
+    if normalized in REGION_MAPPING:
+        return REGION_MAPPING[normalized]
+    return _build_literal_region_regex(normalized)
+
+def _expand_region_patterns(regions: list[str]) -> list[str]:
+    """Expand high-level region choices into ATS-friendly pattern bundles."""
+    patterns: list[str] = []
+    seen: set[str] = set()
+
+    def add_pattern(pattern: str) -> None:
+        if pattern and pattern not in seen:
+            patterns.append(pattern)
+            seen.add(pattern)
+
+    for region in regions:
+        normalized = _normalize_region_name(region)
+        if not normalized:
+            continue
+        if normalized == "Europe":
+            for expanded in EUROPE_REGION_EXPANSION:
+                add_pattern(_to_regex(expanded))
+            continue
+        add_pattern(_to_regex(normalized))
+
+    return patterns
 
 def _merge_title_patterns(llm_patterns: list[str], target_roles: list[str]) -> list[str]:
     """Merge LLM-suggested title patterns with patterns derived from target roles."""
@@ -113,8 +180,8 @@ def generate_profile_yaml(analysis: CVAnalysisResponse, preferences: Dict[str, A
     excluded_regions = preferences.get("excludedRegions", [])
     enable_standard_exclusions = preferences.get("enableStandardExclusions", True)
     
-    location_patterns = [_to_regex(r) for r in target_regions]
-    location_exclusions = [_to_regex(r) for r in excluded_regions]
+    location_patterns = _expand_region_patterns(target_regions)
+    location_exclusions = _expand_region_patterns(excluded_regions)
     
     # Add standard global exclusions for "Noise Reduction" if enabled
     # Only adds it if user hasn't explicitly targeted those regions
