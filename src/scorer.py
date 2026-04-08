@@ -18,6 +18,7 @@ import anthropic
 from anthropic import AsyncAnthropic
 
 from src.models import CandidateJob, ScoredJob
+from src.score_normalization import compute_weighted_fit_score, normalize_scored_job
 from src.store import Store
 
 logger = logging.getLogger(__name__)
@@ -25,6 +26,29 @@ logger = logging.getLogger(__name__)
 # Delay between API calls to be respectful
 CALL_DELAY = 0.5  # seconds
 MAX_RETRIES = 3
+
+
+def _log_normalization(raw: ScoredJob, normalized: ScoredJob) -> None:
+    """Log score normalization adjustments when persisted values differ from raw LLM output."""
+    if (
+        raw.fit_score == normalized.fit_score
+        and raw.apply_priority == normalized.apply_priority
+        and raw.skip_reason == normalized.skip_reason
+    ):
+        return
+
+    logger.info(
+        "Normalized score for %s @ %s: raw_fit=%d weighted=%d normalized_fit=%d raw_priority=%s normalized_priority=%s raw_skip=%s normalized_skip=%s",
+        raw.title,
+        raw.company_name,
+        raw.fit_score,
+        compute_weighted_fit_score(raw.breakdown),
+        normalized.fit_score,
+        raw.apply_priority,
+        normalized.apply_priority,
+        raw.skip_reason,
+        normalized.skip_reason,
+    )
 
 
 # Resolve paths relative to this file, not cwd
@@ -343,7 +367,7 @@ async def score_job(
             data = _parse_score_response(raw_text)
 
             metadata = _extract_metadata(data)
-            return ScoredJob(
+            raw_result = ScoredJob(
                 db_id=job.db_id,
                 ats_platform=job.ats_platform,
                 company_slug=job.company_slug,
@@ -369,6 +393,9 @@ async def score_job(
                 salary_currency=metadata["salary_currency"],
                 is_sparse=metadata["is_sparse"],
             )
+            normalized_result = normalize_scored_job(raw_result)
+            _log_normalization(raw_result, normalized_result)
+            return normalized_result
 
         except json.JSONDecodeError:
             logger.warning(
@@ -438,7 +465,7 @@ async def score_batch(
                 results = []
                 for job, job_data in zip(jobs, data):
                     metadata = _extract_metadata(job_data)
-                    results.append(ScoredJob(
+                    raw_result = ScoredJob(
                         db_id=job.db_id,
                         ats_platform=job.ats_platform,
                         company_slug=job.company_slug,
@@ -463,7 +490,10 @@ async def score_batch(
                         salary_max=metadata["salary_max"],
                         salary_currency=metadata["salary_currency"],
                         is_sparse=metadata["is_sparse"],
-                    ))
+                    )
+                    normalized_result = normalize_scored_job(raw_result)
+                    _log_normalization(raw_result, normalized_result)
+                    results.append(normalized_result)
                 return results
 
             # Fallback if None returned from parser
