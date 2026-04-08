@@ -23,7 +23,7 @@ from src.providers.local_ats import LocalATSProvider
 @dataclass
 class ProviderContext:
     """Everything a provider may need. Use only what's relevant to your provider."""
-    companies: dict[str, list[dict[str, str]]]  # from companies.yaml
+    companies: dict[str, list[dict[str, Any]]]  # from companies.yaml
     profile_dir: Path                            # profiles/<name>/
     config: dict[str, Any]                       # from profile.yaml
 

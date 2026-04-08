@@ -72,6 +72,7 @@ def _format_fit_category(fit_category: str) -> str:
         "core_fit": "Core fit",
         "adjacent_stretch": "Adjacent stretch",
         "conditional_fit": "Conditional fit",
+        "strategic_exception": "Strategic exception",
     }
     return labels.get(fit_category or "", "")
 

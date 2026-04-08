@@ -233,6 +233,8 @@ def _conditional_preference_lines(
     career_goal: str,
     seniority_preferences: list[str],
     has_portfolio: bool,
+    company_quality_signals: list[str],
+    allow_lower_seniority_at_strategic_companies: bool,
 ) -> list[str]:
     """Generate generic conditional preference guidance for scoring."""
     lines: list[str] = []
@@ -252,6 +254,9 @@ def _conditional_preference_lines(
     seniority_set = {s.lower() for s in seniority_preferences}
     if seniority_set & {"senior", "lead", "staff", "principal"}:
         lines.append("- Lower-seniority roles should generally rank lower unless the scope and long-term growth case are unusually strong.")
+        if allow_lower_seniority_at_strategic_companies and company_quality_signals:
+            signal_text = ", ".join(company_quality_signals)
+            lines.append(f"- Lower-seniority roles are acceptable only when explicit company-quality signals match your strategic preferences: {signal_text}.")
 
     if has_portfolio and goal in {"pivot", "broaden"}:
         lines.append("- Portfolio or side-project evidence can offset some adjacent-skill gaps, but it should not be treated as equal to years of production experience.")
@@ -263,6 +268,8 @@ def _build_decision_rules(
     career_goal: str,
     seniority_preferences: list[str],
     has_portfolio: bool,
+    company_quality_signals: list[str],
+    allow_lower_seniority_at_strategic_companies: bool,
 ) -> dict[str, Any]:
     """Build machine-readable scoring guidance from generic user intent."""
     goal = (career_goal or "stay").strip().lower()
@@ -280,6 +287,13 @@ def _build_decision_rules(
             "enabled": prefers_senior_plus,
             "require_unusually_strong_scope": prefers_senior_plus,
         },
+        "company_quality": {
+            "enabled": bool(company_quality_signals),
+            "preferred_signals": company_quality_signals,
+            "allow_lower_seniority_exception": bool(
+                allow_lower_seniority_at_strategic_companies and company_quality_signals
+            ),
+        },
     }
 
 
@@ -295,6 +309,8 @@ def _build_scoring_context(analysis: CVAnalysisResponse, preferences: Dict[str, 
     primary_pref = _normalize_work_setup(preferences.get("primaryRemotePref", "")) or (remote_pref[0] if remote_pref else "")
     timezone_pref = _normalize_timezone_pref(preferences.get("timezonePref", ""))
     good_match_signals = _ensure_list(preferences.get("goodMatchSignals", [])) + _ensure_list(getattr(analysis, "suggested_good_match_signals", []))
+    company_quality_signals = _ensure_list(preferences.get("companyQualitySignals", []))
+    allow_lower_seniority_at_strategic_companies = bool(preferences.get("allowLowerSeniorityAtStrategicCompanies", False))
     lower_fit_signals = _ensure_list(preferences.get("dealBreakers", [])) + _ensure_list(getattr(analysis, "suggested_lower_fit_signals", []))
 
     return {
@@ -321,15 +337,23 @@ def _build_scoring_context(analysis: CVAnalysisResponse, preferences: Dict[str, 
             "score_higher_signals": good_match_signals,
             "score_lower_signals": lower_fit_signals,
         },
+        "company_preferences": {
+            "preferred_signals": company_quality_signals,
+            "allow_lower_seniority_if_company_matches": allow_lower_seniority_at_strategic_companies,
+        },
         "decision_rules": _build_decision_rules(
             preferences.get("careerGoal", "stay"),
             seniority_preferences,
             bool(getattr(analysis, "portfolio", [])),
+            company_quality_signals,
+            allow_lower_seniority_at_strategic_companies,
         ),
         "conditional_preferences": _conditional_preference_lines(
             preferences.get("careerGoal", "stay"),
             seniority_preferences,
             bool(getattr(analysis, "portfolio", [])),
+            company_quality_signals,
+            allow_lower_seniority_at_strategic_companies,
         ),
     }
 
@@ -647,6 +671,8 @@ def generate_profile_doc(analysis: CVAnalysisResponse, preferences: Dict[str, An
     city = preferences.get("location", "").split(",")[0].strip() or "Location"
     seniority_pref_text = _format_seniority_preferences(preferences.get("seniority", getattr(analysis, "inferred_seniority", None)))
     target_regions = ", ".join(preferences.get("targetRegions", []))
+    company_quality_signals = _ensure_list(preferences.get("companyQualitySignals", []))
+    allow_lower_seniority_at_strategic_companies = bool(preferences.get("allowLowerSeniorityAtStrategicCompanies", False))
     preferred_setup = _format_work_setup_option(primary_pref, city, timezone_pref) if primary_pref else ""
     acceptable_setups = [
         _format_work_setup_option(setup, city, timezone_pref)
@@ -668,6 +694,8 @@ def generate_profile_doc(analysis: CVAnalysisResponse, preferences: Dict[str, An
         good_match_lines.append(f"- Also acceptable: {', '.join(acceptable_setups)}")
     if target_regions:
         good_match_lines.append(f"- Target regions: {target_regions}")
+    if company_quality_signals:
+        good_match_lines.append(f"- Preferred company signals: {', '.join(company_quality_signals)}")
 
     if "remote" in remote_pref:
         signals.append(f"{_format_work_setup_option('remote', city, timezone_pref)} roles")
@@ -780,6 +808,8 @@ def generate_profile_doc(analysis: CVAnalysisResponse, preferences: Dict[str, An
         preferences.get("careerGoal", "stay"),
         seniority_list,
         bool(analysis.portfolio),
+        company_quality_signals,
+        allow_lower_seniority_at_strategic_companies,
     ))
     sections.append("\n".join(conditional_lines))
     

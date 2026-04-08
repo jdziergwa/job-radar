@@ -81,6 +81,19 @@ def _extract_ashby_description(item: dict[str, Any]) -> str:
     return ""
 
 
+def _build_company_metadata(company: dict[str, Any]) -> dict[str, object]:
+    signals = _dedupe_text(
+        list(company.get("company_quality_signals", []) or [])
+        + list(company.get("companyQualitySignals", []) or [])
+    )
+    if not signals:
+        return {}
+    return {
+        "quality_signals": signals,
+        "source": "companies_yaml",
+    }
+
+
 def _derive_geographic_signals(location_texts: list[str], description: str) -> list[str]:
     combined = " ".join(location_texts + ([description] if description else []))
     lowered = combined.lower()
@@ -172,6 +185,7 @@ async def fetch_greenhouse(
 
     now = datetime.now(timezone.utc).isoformat()
     jobs: list[RawJob] = []
+    company_metadata = _build_company_metadata(company)
 
     for item in data.get("jobs", []):
         location_obj = item.get("location") or {}
@@ -189,6 +203,7 @@ async def fetch_greenhouse(
             description=content, # Stop stripping HTML for Greenhouse — frontend handles it beautifully now
             posted_at=item.get("updated_at"),
             fetched_at=now,
+            company_metadata=company_metadata,
         ))
 
     logger.debug("Greenhouse %s: %d jobs", slug, len(jobs))
@@ -224,6 +239,7 @@ async def fetch_lever(
 
     now = datetime.now(timezone.utc).isoformat()
     jobs: list[RawJob] = []
+    company_metadata = _build_company_metadata(company)
 
     if not isinstance(data, list):
         logger.warning("Lever unexpected response format for %s", slug)
@@ -246,6 +262,7 @@ async def fetch_lever(
             description=description,
             posted_at=None,
             fetched_at=now,
+            company_metadata=company_metadata,
         ))
 
     logger.debug("Lever %s: %d jobs", slug, len(jobs))
@@ -285,6 +302,7 @@ async def fetch_ashby(
 
     now = datetime.now(timezone.utc).isoformat()
     jobs: list[RawJob] = []
+    company_metadata = _build_company_metadata(company)
 
     for item in data.get("jobs", []):
         location = item.get("location", "") or ""
@@ -304,6 +322,7 @@ async def fetch_ashby(
             description=description,
             posted_at=item.get("publishedDate"),
             fetched_at=now,
+            company_metadata=company_metadata,
             location_metadata=location_metadata,
         ))
 
@@ -344,6 +363,7 @@ async def fetch_workable(
 
     now = datetime.now(timezone.utc).isoformat()
     jobs: list[RawJob] = []
+    company_metadata = _build_company_metadata(company)
 
     for item in data.get("results", []):
         city = item.get("city", "") or ""
@@ -363,6 +383,7 @@ async def fetch_workable(
             description="",  # Workable list endpoint doesn't include descriptions
             posted_at=None,
             fetched_at=now,
+            company_metadata=company_metadata,
         ))
 
     logger.debug("Workable %s: %d jobs", slug, len(jobs))

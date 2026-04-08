@@ -48,7 +48,10 @@ def add_company(profile: str, body: CompanyEntry):
             detail=f"Company '{body.slug}' already exists in {body.platform}"
         )
     
-    platform_list.append({"slug": body.slug, "name": body.name})
+    entry = {"slug": body.slug, "name": body.name}
+    if body.company_quality_signals:
+        entry["company_quality_signals"] = body.company_quality_signals
+    platform_list.append(entry)
     data[body.platform] = platform_list
     _save_companies(profile, data)
     return {"ok": True}

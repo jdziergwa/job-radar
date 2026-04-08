@@ -18,7 +18,7 @@ from src.models import CandidateJob, ScoredJob
 from src.scorer import _derive_fit_category
 
 
-def _candidate(title: str) -> CandidateJob:
+def _candidate(title: str, company_metadata: dict | None = None) -> CandidateJob:
     return CandidateJob(
         db_id=1,
         ats_platform="test",
@@ -27,6 +27,7 @@ def _candidate(title: str) -> CandidateJob:
         job_id="1",
         title=title,
         location="Remote",
+        company_metadata=company_metadata or {},
         url="https://example.com/jobs/1",
         description="Example description",
         posted_at=None,
@@ -71,6 +72,10 @@ def _profile_config() -> dict:
                 "adjacent": ["Staff Platform Engineer"],
                 "seniority_preferences": ["senior", "staff"],
             },
+            "company_preferences": {
+                "preferred_signals": ["strong product company", "high engineering reputation"],
+                "allow_lower_seniority_if_company_matches": True,
+            },
             "decision_rules": {
                 "adjacent_roles": {
                     "enabled": True,
@@ -81,6 +86,11 @@ def _profile_config() -> dict:
                 "lower_seniority_roles": {
                     "enabled": True,
                     "require_unusually_strong_scope": True,
+                },
+                "company_quality": {
+                    "enabled": True,
+                    "preferred_signals": ["strong product company", "high engineering reputation"],
+                    "allow_lower_seniority_exception": True,
                 },
             },
         }
@@ -145,3 +155,29 @@ def test_derive_fit_category_marks_lower_seniority_role_as_conditional():
     )
 
     assert fit_category == "conditional_fit"
+
+
+def test_derive_fit_category_marks_strategic_exception_when_company_signal_matches():
+    fit_category = _derive_fit_category(
+        _candidate(
+            "Mid Backend Engineer",
+            company_metadata={
+                "quality_signals": ["strong product company"],
+                "source": "companies_yaml",
+            },
+        ),
+        _result(
+            title="Mid Backend Engineer",
+            fit_score=64,
+            apply_priority="medium",
+            breakdown={
+                "tech_stack_match": 71,
+                "seniority_match": 55,
+                "remote_location_fit": 82,
+                "growth_potential": 76,
+            },
+        ),
+        _profile_config(),
+    )
+
+    assert fit_category == "strategic_exception"

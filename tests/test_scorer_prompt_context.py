@@ -27,6 +27,10 @@ def test_build_system_prompt_includes_scoring_context_block():
             "scoring_context": {
                 "role_targets": {"core": ["Senior Backend Engineer"]},
                 "work_setup": {"preferred_setup": "remote"},
+                "company_preferences": {
+                    "preferred_signals": ["strong product company"],
+                    "allow_lower_seniority_if_company_matches": True,
+                },
             },
         },
     )
@@ -37,6 +41,8 @@ def test_build_system_prompt_includes_scoring_context_block():
     assert "scoring_context:" in text
     assert "role_targets:" in text
     assert "preferred_setup: remote" in text
+    assert "company_preferences:" in text
+    assert "strong product company" in text
 
 
 def test_build_user_message_includes_location_context_when_available():
@@ -48,6 +54,10 @@ def test_build_user_message_includes_location_context_when_available():
         job_id="role-1",
         title="Platform Engineer",
         location="Remote",
+        company_metadata={
+            "quality_signals": ["strong product company"],
+            "source": "companies_yaml",
+        },
         location_metadata={
             "raw_location": "Remote",
             "derived_geographic_signals": [
@@ -61,6 +71,8 @@ def test_build_user_message_includes_location_context_when_available():
         first_seen_at="2026-04-08T00:00:00",
     ))
 
+    assert "Company Context:" in message
+    assert "strong product company" in message
     assert "Location Context:" in message
     assert "raw_location: Remote" in message
     assert "Restricted to North America" in message

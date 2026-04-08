@@ -37,4 +37,5 @@ def test_format_fit_category_maps_user_facing_labels():
     assert _format_fit_category("core_fit") == "Core fit"
     assert _format_fit_category("adjacent_stretch") == "Adjacent stretch"
     assert _format_fit_category("conditional_fit") == "Conditional fit"
+    assert _format_fit_category("strategic_exception") == "Strategic exception"
     assert _format_fit_category("") == ""

@@ -208,6 +208,8 @@ def test_generate_profile_yaml_includes_structured_scoring_context():
             "primaryRemotePref": "remote",
             "timezonePref": "overlap_strict",
             "goodMatchSignals": ["Product Companies"],
+            "companyQualitySignals": ["strong product company", "high engineering reputation"],
+            "allowLowerSeniorityAtStrategicCompanies": True,
             "dealBreakers": ["On-call Heavy"],
             "careerDirection": "Broaden toward platform engineering.",
             "careerGoal": "broaden",
@@ -227,6 +229,10 @@ def test_generate_profile_yaml_includes_structured_scoring_context():
     assert context["career_preferences"]["goal"] == "broaden"
     assert context["career_preferences"]["score_higher_signals"] == ["Product Companies", "Developer Tooling"]
     assert context["career_preferences"]["score_lower_signals"] == ["On-call Heavy", "Agency Work"]
+    assert context["company_preferences"] == {
+        "preferred_signals": ["strong product company", "high engineering reputation"],
+        "allow_lower_seniority_if_company_matches": True,
+    }
     assert context["decision_rules"]["adjacent_roles"] == {
         "enabled": True,
         "requires_bridge_evidence": True,
@@ -236,5 +242,10 @@ def test_generate_profile_yaml_includes_structured_scoring_context():
     assert context["decision_rules"]["lower_seniority_roles"] == {
         "enabled": True,
         "require_unusually_strong_scope": True,
+    }
+    assert context["decision_rules"]["company_quality"] == {
+        "enabled": True,
+        "preferred_signals": ["strong product company", "high engineering reputation"],
+        "allow_lower_seniority_exception": True,
     }
     assert any("Adjacent roles are acceptable" in line for line in context["conditional_preferences"])

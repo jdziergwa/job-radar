@@ -114,6 +114,18 @@ def _format_location_context(location_metadata: dict[str, object]) -> str:
     return f"\nLocation Context:\n{formatted}\n"
 
 
+def _format_company_context(company_metadata: dict[str, object]) -> str:
+    if not company_metadata:
+        return ""
+
+    import yaml
+
+    formatted = yaml.dump(company_metadata, sort_keys=False, default_flow_style=False).strip()
+    if not formatted:
+        return ""
+    return f"\nCompany Context:\n{formatted}\n"
+
+
 _SENIORITY_PREFIXES = {
     "junior", "jr", "jr.", "mid", "middle", "senior", "sr", "sr.",
     "lead", "staff", "principal", "head",
@@ -164,6 +176,15 @@ def _ensure_string_list(value: Any) -> list[str]:
     return [text] if text else []
 
 
+def _company_has_preferred_quality_signal(
+    company_metadata: dict[str, object],
+    preferred_signals: list[str],
+) -> bool:
+    company_signals = {value.lower() for value in _ensure_string_list(company_metadata.get("quality_signals"))}
+    preferred = {value.lower() for value in preferred_signals}
+    return bool(company_signals & preferred)
+
+
 def _derive_fit_category(
     job: CandidateJob,
     result: ScoredJob,
@@ -179,16 +200,31 @@ def _derive_fit_category(
 
     role_targets = scoring_context.get("role_targets", {}) if isinstance(scoring_context.get("role_targets", {}), dict) else {}
     decision_rules = scoring_context.get("decision_rules", {}) if isinstance(scoring_context.get("decision_rules", {}), dict) else {}
+    company_preferences = scoring_context.get("company_preferences", {}) if isinstance(scoring_context.get("company_preferences", {}), dict) else {}
 
     core_roles = _ensure_string_list(role_targets.get("core"))
     adjacent_roles = _ensure_string_list(role_targets.get("adjacent"))
     seniority_preferences = {value.lower() for value in _ensure_string_list(role_targets.get("seniority_preferences"))}
     breakdown = result.breakdown or {}
+    preferred_company_signals = _ensure_string_list(company_preferences.get("preferred_signals"))
 
     title = job.title or result.title
     growth = int(breakdown.get("growth_potential", 0) or 0)
     tech = int(breakdown.get("tech_stack_match", 0) or 0)
     seniority = int(breakdown.get("seniority_match", 0) or 0)
+    company_quality_rules = decision_rules.get("company_quality", {})
+
+    if (
+        isinstance(company_quality_rules, dict)
+        and company_quality_rules.get("allow_lower_seniority_exception")
+        and _title_looks_lower_seniority(title)
+        and seniority < 70
+        and tech >= 55
+        and growth >= 65
+        and result.apply_priority in {"low", "medium"}
+        and _company_has_preferred_quality_signal(job.company_metadata, preferred_company_signals)
+    ):
+        return "strategic_exception"
 
     lower_seniority_rules = decision_rules.get("lower_seniority_roles", {})
     if (
@@ -242,6 +278,7 @@ Description:
 {description}
 </job>
 
+{_format_company_context(job.company_metadata)}
 {_format_location_context(job.location_metadata)}
 
 Score this job's fit for the candidate."""
@@ -427,6 +464,7 @@ URL: {job.url}
 Description:
 {description}
 </job>
+{_format_company_context(job.company_metadata)}
 {_format_location_context(job.location_metadata)}""")
     return "\n\n".join(parts) + "\n\nScore each job's fit for the candidate. Treat each job in complete isolation — do NOT reference other jobs in the batch within any job's reasoning."
 
@@ -499,6 +537,7 @@ async def score_job(
                 job_id=job.job_id,
                 title=job.title,
                 location=job.location,
+                company_metadata=job.company_metadata,
                 location_metadata=job.location_metadata,
                 url=job.url,
                 description=job.description,
@@ -603,6 +642,7 @@ async def score_batch(
                         job_id=job.job_id,
                         title=job.title,
                         location=job.location,
+                        company_metadata=job.company_metadata,
                         location_metadata=job.location_metadata,
                         url=job.url,
                         description=job.description,
@@ -800,6 +840,7 @@ def _error_scored_job(job: CandidateJob, reason: str) -> ScoredJob:
         job_id=job.job_id,
         title=job.title,
         location=job.location,
+        company_metadata=job.company_metadata,
         location_metadata=job.location_metadata,
         url=job.url,
         description=job.description,

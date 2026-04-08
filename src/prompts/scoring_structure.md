@@ -52,6 +52,16 @@ ADJACENT / CONDITIONAL EXAMPLES:
 - Example E: Candidate prefers senior-or-above roles, but a Mid Backend Engineer posting clearly owns meaningful systems, architecture, and cross-team scope. seniority_match should be lower than for a true senior role, but the job can still be viable if growth_potential is strong. This is usually a conditional fit, not an automatic skip.
 - Example F: A company may be well known, but if the posting is materially too junior and no explicit strategic/company-quality exception is provided in the profile context, do not rescue the score purely because of brand recognition.
 
+COMPANY QUALITY GUIDANCE:
+- Only use explicit company-quality signals when they are provided in structured candidate preferences or job/company context. Never infer them from fame or personal assumptions.
+- Company quality can be a bounded modifier, not a dominant driver. It can make a borderline lower-seniority role more acceptable, but it should not erase major seniority, tech, or location gaps.
+- If the candidate explicitly allows lower-seniority roles at companies with matching strategic signals, treat those roles as conditional rather than automatically low value.
+- If there is no explicit company-quality preference or no matching company-quality signal in the job context, score the role normally.
+
+COMPANY QUALITY EXAMPLES:
+- Example G: Candidate explicitly values `strong product company` and allows lower-seniority exceptions at companies with matching signals. A mid-level role at a company carrying that explicit signal can score somewhat better on growth_potential, but should still remain below a similarly strong senior core-fit role.
+- Example H: A company has a matching strategic signal, but the role also has major tech gaps or hard location mismatch. The company signal does not rescue the role.
+
 SALARY EXTRACTION & VALIDATION:
 - Extract salary information if mentioned in the description.
 - You will be provided with a `Salary (extracted)` field in the job context. This is what the automated provider initially found.

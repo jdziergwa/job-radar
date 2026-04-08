@@ -300,6 +300,7 @@ async def run() -> None:
             job_id=job.job_id,
             title=job.title,
             location=job.location,
+            company_metadata=job.company_metadata,
             location_metadata=job.location_metadata,
             url=job.url,
             description=job.description,

@@ -14,6 +14,7 @@ class ScoreBreakdown(BaseModel):
     dimensions: ScoreBreakdownDimensions = ScoreBreakdownDimensions()
     key_matches: list[str] = []
     red_flags: list[str] = []
+    fit_category: Optional[str] = None
     apply_priority: Literal["high", "medium", "low", "skip"] = "skip"
 
 
@@ -180,6 +181,7 @@ class CompanyEntry(BaseModel):
     platform: Literal["greenhouse", "lever", "ashby", "workable"]
     slug: str
     name: str
+    company_quality_signals: list[str] = []
 
 
 class CompaniesResponse(BaseModel):
@@ -205,6 +207,8 @@ class UserPreferences(BaseModel):
     careerDirection: str
     careerGoal: Optional[Literal['stay', 'pivot', 'step_up', 'broaden']] = "stay"
     goodMatchSignals: list[str] = []
+    companyQualitySignals: list[str] = []
+    allowLowerSeniorityAtStrategicCompanies: bool = False
     dealBreakers: list[str] = []
     enableStandardExclusions: bool = True
     additionalContext: Optional[str] = None

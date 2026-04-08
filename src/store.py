@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS jobs (
     company_slug TEXT NOT NULL,
     job_id TEXT NOT NULL,
     company_name TEXT,
+    company_metadata TEXT,
     title TEXT NOT NULL,
     location TEXT,
     location_metadata TEXT,
@@ -120,6 +121,13 @@ class Store:
             except sqlite3.OperationalError:
                 pass
 
+            # Migration: Add company_metadata if missing
+            try:
+                conn.execute("ALTER TABLE jobs ADD COLUMN company_metadata TEXT")
+                logger.debug("Migrated DB: Added 'company_metadata' column")
+            except sqlite3.OperationalError:
+                pass
+
             logger.debug("Database initialized at %s", self.db_path)
 
     @contextmanager
@@ -165,7 +173,8 @@ class Store:
             insert_data = [
                 (
                     j.ats_platform, j.company_slug, j.job_id,
-                    j.company_name, j.title, j.location, self._serialize_location_metadata(j.location_metadata),
+                    j.company_name, self._serialize_metadata(j.company_metadata),
+                    j.title, j.location, self._serialize_metadata(j.location_metadata),
                     j.url, j.description, j.posted_at, now, now
                 )
                 for j in jobs
@@ -196,7 +205,9 @@ class Store:
 
             new_jobs = []
             to_insert = []
-            to_backfill = []
+            to_backfill_descriptions = []
+            to_backfill_location_metadata = []
+            to_backfill_company_metadata = []
             
             for j in jobs:
                 key = (j.ats_platform, j.company_slug, j.job_id)
@@ -204,59 +215,57 @@ class Store:
                     new_jobs.append(j)
                     to_insert.append((
                         j.ats_platform, j.company_slug, j.job_id,
-                        j.company_name, j.title, j.location, self._serialize_location_metadata(j.location_metadata),
+                        j.company_name, self._serialize_metadata(j.company_metadata),
+                        j.title, j.location, self._serialize_metadata(j.location_metadata),
                         j.url, j.description, j.posted_at, now, now,
                         j.status, j.dismissal_reason, j.match_tier,
                         j.salary, j.salary_min, j.salary_max, j.salary_currency
                     ))
-                elif j.description and len(j.description) > 50:
-                    # Potential backfill for existing jobs with missing descriptions
-                    to_backfill.append((
-                        j.description,
-                        j.description,
-                        j.description,
-                        self._serialize_location_metadata(j.location_metadata),
-                        self._serialize_location_metadata(j.location_metadata),
-                        self._serialize_location_metadata(j.location_metadata),
-                        j.ats_platform,
-                        j.company_slug,
-                        j.job_id,
-                    ))
-                elif j.location_metadata:
-                    to_backfill.append((
-                        j.description,
-                        j.description,
-                        j.description,
-                        self._serialize_location_metadata(j.location_metadata),
-                        self._serialize_location_metadata(j.location_metadata),
-                        self._serialize_location_metadata(j.location_metadata),
-                        j.ats_platform,
-                        j.company_slug,
-                        j.job_id,
-                    ))
+                else:
+                    if j.description and len(j.description) > 50:
+                        to_backfill_descriptions.append((
+                            j.description,
+                            j.ats_platform,
+                            j.company_slug,
+                            j.job_id,
+                        ))
+                    if j.location_metadata:
+                        to_backfill_location_metadata.append((
+                            self._serialize_metadata(j.location_metadata),
+                            j.ats_platform,
+                            j.company_slug,
+                            j.job_id,
+                        ))
+                    if j.company_metadata:
+                        to_backfill_company_metadata.append((
+                            self._serialize_metadata(j.company_metadata),
+                            j.ats_platform,
+                            j.company_slug,
+                            j.job_id,
+                        ))
             
             if to_insert:
                 conn.executemany(
-                    "INSERT INTO jobs (ats_platform, company_slug, job_id, company_name, title, location, location_metadata, url, description, posted_at, first_seen_at, last_seen_at, status, dismissal_reason, match_tier, salary, salary_min, salary_max, salary_currency) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    "INSERT INTO jobs (ats_platform, company_slug, job_id, company_name, company_metadata, title, location, location_metadata, url, description, posted_at, first_seen_at, last_seen_at, status, dismissal_reason, match_tier, salary, salary_min, salary_max, salary_currency) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                     to_insert
                 )
             
-            if to_backfill:
-                # Only update if description/location metadata are currently missing or stubbed.
+            if to_backfill_descriptions:
                 conn.executemany(
-                    """UPDATE jobs
-                       SET description = CASE
-                             WHEN ? IS NOT NULL AND ? != '' AND (description IS NULL OR length(description) < 50)
-                             THEN ?
-                             ELSE description
-                           END,
-                           location_metadata = CASE
-                             WHEN ? IS NOT NULL AND ? != '' AND (location_metadata IS NULL OR location_metadata = '' OR location_metadata = '{}')
-                             THEN ?
-                             ELSE location_metadata
-                           END
-                       WHERE ats_platform = ? AND company_slug = ? AND job_id = ?""",
-                    to_backfill
+                    "UPDATE jobs SET description = ? WHERE ats_platform = ? AND company_slug = ? AND job_id = ? AND (description IS NULL OR length(description) < 50)",
+                    to_backfill_descriptions,
+                )
+
+            if to_backfill_location_metadata:
+                conn.executemany(
+                    "UPDATE jobs SET location_metadata = ? WHERE ats_platform = ? AND company_slug = ? AND job_id = ? AND (location_metadata IS NULL OR location_metadata = '' OR location_metadata = '{}')",
+                    to_backfill_location_metadata,
+                )
+
+            if to_backfill_company_metadata:
+                conn.executemany(
+                    "UPDATE jobs SET company_metadata = ? WHERE ats_platform = ? AND company_slug = ? AND job_id = ? AND (company_metadata IS NULL OR company_metadata = '' OR company_metadata = '{}')",
+                    to_backfill_company_metadata,
                 )
 
         logger.info("Upserted %d jobs, %d new", len(jobs), len(new_jobs))
@@ -825,11 +834,11 @@ class Store:
     # ── Row Converters ──────────────────────────────────────────────
 
     @staticmethod
-    def _serialize_location_metadata(metadata: dict[str, object] | None) -> str:
+    def _serialize_metadata(metadata: dict[str, object] | None) -> str:
         return json.dumps(metadata or {})
 
     @staticmethod
-    def _parse_location_metadata(raw: str | None) -> dict[str, object]:
+    def _parse_metadata(raw: str | None) -> dict[str, object]:
         if not raw:
             return {}
         try:
@@ -877,7 +886,8 @@ class Store:
             job_id=row["job_id"],
             title=row["title"],
             location=row["location"] or "",
-            location_metadata=Store._parse_location_metadata(row["location_metadata"]) if "location_metadata" in row.keys() else {},
+            company_metadata=Store._parse_metadata(row["company_metadata"]) if "company_metadata" in row.keys() else {},
+            location_metadata=Store._parse_metadata(row["location_metadata"]) if "location_metadata" in row.keys() else {},
             url=row["url"],
             description=row["description"] or "",
             posted_at=row["posted_at"],
@@ -925,7 +935,8 @@ class Store:
             job_id=row["job_id"],
             title=row["title"],
             location=row["location"] or "",
-            location_metadata=Store._parse_location_metadata(row["location_metadata"]) if "location_metadata" in row.keys() else {},
+            company_metadata=Store._parse_metadata(row["company_metadata"]) if "company_metadata" in row.keys() else {},
+            location_metadata=Store._parse_metadata(row["location_metadata"]) if "location_metadata" in row.keys() else {},
             url=row["url"],
             description=row["description"] or "",
             posted_at=row["posted_at"],

@@ -120,3 +120,29 @@ def test_generate_profile_doc_adds_generic_conditional_preferences_for_broaden_g
     assert "- Adjacent roles are acceptable when they build on the current foundation and expand scope in a credible direction." in doc
     assert "- Lower-seniority roles should generally rank lower unless the scope and long-term growth case are unusually strong." in doc
     assert "- Portfolio or side-project evidence can offset some adjacent-skill gaps, but it should not be treated as equal to years of production experience." in doc
+
+
+def test_generate_profile_doc_includes_strategic_company_exception_when_explicitly_enabled():
+    analysis = _analysis_for_profile_doc()
+
+    doc = generate_profile_doc(
+        analysis,
+        {
+            "targetRoles": ["Senior Backend Engineer"],
+            "seniority": ["senior"],
+            "remotePref": ["remote"],
+            "primaryRemotePref": "remote",
+            "timezonePref": "overlap_strict",
+            "location": "Warsaw, Poland",
+            "workAuth": "eu_citizen",
+            "targetRegions": ["Europe"],
+            "excludedRegions": [],
+            "careerDirection": "Stay close to backend/platform work.",
+            "careerGoal": "stay",
+            "companyQualitySignals": ["strong product company", "high engineering reputation"],
+            "allowLowerSeniorityAtStrategicCompanies": True,
+        },
+    )
+
+    assert "- Preferred company signals: strong product company, high engineering reputation" in doc
+    assert "- Lower-seniority roles are acceptable only when explicit company-quality signals match your strategic preferences: strong product company, high engineering reputation." in doc

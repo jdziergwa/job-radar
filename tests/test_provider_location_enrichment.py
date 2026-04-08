@@ -30,7 +30,7 @@ if "aiohttp" not in sys.modules:
     aiohttp.ClientTimeout = ClientTimeout
     sys.modules["aiohttp"] = aiohttp
 
-from src.providers.local_ats import _build_ashby_location_metadata, _extract_ashby_description
+from src.providers.local_ats import _build_ashby_location_metadata, _build_company_metadata, _extract_ashby_description
 
 
 def test_extract_ashby_description_prefers_inline_board_description():
@@ -78,3 +78,16 @@ def test_build_ashby_location_metadata_marks_global_remote_without_region_defaul
         "Remote role",
         "Explicitly global or worldwide remote",
     ]
+
+
+def test_build_company_metadata_preserves_explicit_quality_signals_only():
+    metadata = _build_company_metadata({
+        "slug": "linear",
+        "name": "Linear",
+        "company_quality_signals": ["strong product company", "high engineering reputation"],
+    })
+
+    assert metadata == {
+        "quality_signals": ["strong product company", "high engineering reputation"],
+        "source": "companies_yaml",
+    }

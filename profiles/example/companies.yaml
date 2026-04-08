@@ -2,6 +2,11 @@
 # Add entries under the ATS platform key (greenhouse, lever, ashby, workable).
 # The "slug" is the company's identifier in that ATS URL.
 # Find it by visiting jobs.lever.co/<slug> or boards.greenhouse.io/<slug> etc.
+# Optional: add `company_quality_signals` to an entry when you want explicit
+# strategic/company-quality context to flow into scoring, e.g.:
+# - slug: linear
+#   name: Linear
+#   company_quality_signals: [strong product company, high engineering reputation]
 #
 # Copy this file to profiles/default/companies.yaml and customise.
 
