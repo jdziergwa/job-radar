@@ -258,6 +258,52 @@ def _conditional_preference_lines(
 
     return lines
 
+
+def _build_scoring_context(analysis: CVAnalysisResponse, preferences: Dict[str, Any]) -> dict[str, Any]:
+    """Build a compact structured intent payload for scoring."""
+    target_roles = _ensure_list(preferences.get("targetRoles", []))
+    suggested_roles = [
+        role for role in _ensure_list(getattr(analysis, "suggested_target_roles", []))
+        if role not in target_roles
+    ]
+    seniority_preferences = [s.lower() for s in _ensure_list(preferences.get("seniority", getattr(analysis, "inferred_seniority", ""))) if s]
+    remote_pref = [_normalize_work_setup(v) for v in _ensure_list(preferences.get("remotePref", []))]
+    primary_pref = _normalize_work_setup(preferences.get("primaryRemotePref", "")) or (remote_pref[0] if remote_pref else "")
+    timezone_pref = _normalize_timezone_pref(preferences.get("timezonePref", ""))
+    good_match_signals = _ensure_list(preferences.get("goodMatchSignals", [])) + _ensure_list(getattr(analysis, "suggested_good_match_signals", []))
+    lower_fit_signals = _ensure_list(preferences.get("dealBreakers", [])) + _ensure_list(getattr(analysis, "suggested_lower_fit_signals", []))
+
+    return {
+        "role_targets": {
+            "core": target_roles,
+            "adjacent": suggested_roles,
+            "seniority_preferences": seniority_preferences,
+        },
+        "work_setup": {
+            "base_location": preferences.get("location", ""),
+            "work_authorization": _normalize_work_auth(preferences.get("workAuth", "")),
+            "preferred_setup": primary_pref,
+            "acceptable_setups": [setup for setup in remote_pref if setup != primary_pref],
+            "target_regions": _ensure_list(preferences.get("targetRegions", [])),
+            "excluded_regions": _ensure_list(preferences.get("excludedRegions", [])),
+            "timezone": {
+                "preference": timezone_pref,
+                "guidance": _timezone_constraint_lines(timezone_pref),
+            },
+        },
+        "career_preferences": {
+            "goal": preferences.get("careerGoal", "stay"),
+            "direction": preferences.get("careerDirection") or getattr(analysis, "suggested_career_direction", ""),
+            "score_higher_signals": good_match_signals,
+            "score_lower_signals": lower_fit_signals,
+        },
+        "conditional_preferences": _conditional_preference_lines(
+            preferences.get("careerGoal", "stay"),
+            seniority_preferences,
+            bool(getattr(analysis, "portfolio", [])),
+        ),
+    }
+
 _SENIORITY_PREFIXES = {
     "junior", "jr", "jr.", "mid", "middle", "senior", "sr", "sr.",
     "lead", "staff", "principal", "head",
@@ -487,6 +533,7 @@ def generate_profile_yaml(analysis: CVAnalysisResponse, preferences: Dict[str, A
             "remote_patterns": remote_patterns,
             "fallback_tier": "signal_match",
         },
+        "scoring_context": _build_scoring_context(analysis, preferences),
         "scoring": {
             "model": "claude-haiku-4-5-20251001",
             "max_description_chars": 20000,

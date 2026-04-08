@@ -178,3 +178,53 @@ def test_generate_profile_yaml_derives_literal_signals_from_career_direction():
     assert r"\binternal\s+tooling\b" in patterns
     assert r"\bdistributed\s+systems\b" in patterns
     assert r"\bplatform\s+engineering\b" in patterns
+
+
+def test_generate_profile_yaml_includes_structured_scoring_context():
+    analysis = SimpleNamespace(
+        suggested_title_patterns={"high_confidence": [], "broad": []},
+        suggested_description_signals=[],
+        skills={"Core": ["Python"]},
+        suggested_exclusions=[],
+        suggested_target_roles=["Staff Platform Engineer"],
+        suggested_good_match_signals=["Developer Tooling"],
+        suggested_lower_fit_signals=["Agency Work"],
+        suggested_career_direction="Broaden toward platform engineering.",
+        portfolio=[SimpleNamespace(name="Project")],
+        inferred_seniority="senior",
+    )
+
+    config = yaml.safe_load(generate_profile_yaml(
+        analysis,
+        {
+            "targetRegions": ["Europe"],
+            "excludedRegions": ["North America"],
+            "enableStandardExclusions": False,
+            "targetRoles": ["Senior Backend Engineer"],
+            "seniority": ["senior", "staff"],
+            "location": "Warsaw, Poland",
+            "workAuth": "eu_citizen",
+            "remotePref": ["remote", "hybrid"],
+            "primaryRemotePref": "remote",
+            "timezonePref": "overlap_strict",
+            "goodMatchSignals": ["Product Companies"],
+            "dealBreakers": ["On-call Heavy"],
+            "careerDirection": "Broaden toward platform engineering.",
+            "careerGoal": "broaden",
+        },
+    ))
+
+    context = config["scoring_context"]
+
+    assert context["role_targets"]["core"] == ["Senior Backend Engineer"]
+    assert context["role_targets"]["adjacent"] == ["Staff Platform Engineer"]
+    assert context["role_targets"]["seniority_preferences"] == ["senior", "staff"]
+    assert context["work_setup"]["preferred_setup"] == "remote"
+    assert context["work_setup"]["acceptable_setups"] == ["hybrid"]
+    assert context["work_setup"]["target_regions"] == ["Europe"]
+    assert context["work_setup"]["excluded_regions"] == ["North America"]
+    assert context["work_setup"]["timezone"]["preference"] == "overlap_strict"
+    assert context["career_preferences"]["goal"] == "broaden"
+    assert context["career_preferences"]["score_higher_signals"] == ["Product Companies", "Developer Tooling"]
+    assert context["career_preferences"]["score_lower_signals"] == ["On-call Heavy", "Agency Work"]
+    assert any("Adjacent roles are acceptable" in line for line in context["conditional_preferences"])
