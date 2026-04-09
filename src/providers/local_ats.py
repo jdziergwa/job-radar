@@ -411,17 +411,24 @@ FETCHERS = {
 }
 
 
-def _platform_concurrency(platform: str) -> int:
+def _platform_concurrency(platform: str, runtime_config: dict[str, object] | None = None) -> int:
+    if runtime_config and runtime_config.get("slow_mode"):
+        return 2
     return PLATFORM_CONCURRENCY.get(platform, 2)
 
 
-def _platform_delay(platform: str) -> float:
+def _platform_delay(platform: str, runtime_config: dict[str, object] | None = None) -> float:
+    if runtime_config and runtime_config.get("slow_mode"):
+        return 2.0
     return PLATFORM_REQUEST_DELAY.get(platform, 0.0)
 
 
-def _build_platform_semaphores(companies: dict[str, list[dict[str, str]]]) -> dict[str, asyncio.Semaphore]:
+def _build_platform_semaphores(
+    companies: dict[str, list[dict[str, str]]],
+    runtime_config: dict[str, object] | None = None,
+) -> dict[str, asyncio.Semaphore]:
     return {
-        platform: asyncio.Semaphore(_platform_concurrency(platform))
+        platform: asyncio.Semaphore(_platform_concurrency(platform, runtime_config))
         for platform in companies
         if platform in FETCHERS
     }
@@ -432,6 +439,7 @@ async def _fetch_company_jobs(
     platform: str,
     company: dict[str, str],
     semaphores: dict[str, asyncio.Semaphore],
+    runtime_config: dict[str, object] | None = None,
 ) -> list[RawJob]:
     fetcher = FETCHERS.get(platform)
     if fetcher is None:
@@ -446,7 +454,7 @@ async def _fetch_company_jobs(
         logger.warning("%s/%s fetch failed: %s", platform, company.get("slug", "?"), exc)
         return []
 
-    delay = _platform_delay(platform)
+    delay = _platform_delay(platform, runtime_config)
     if delay > 0:
         await asyncio.sleep(delay)
 
@@ -456,6 +464,7 @@ async def _fetch_company_jobs(
 async def collect_all(
     companies: dict[str, list[dict[str, str]]],
     progress_callback: Optional[Callable[[int, int], None]] = None,
+    runtime_config: dict[str, object] | None = None,
 ) -> list[RawJob]:
     """Fetch jobs from all configured ATS platforms and companies.
 
@@ -468,7 +477,7 @@ async def collect_all(
         Flat list of all fetched RawJob objects.
     """
     all_jobs: list[RawJob] = []
-    semaphores = _build_platform_semaphores(companies)
+    semaphores = _build_platform_semaphores(companies, runtime_config)
 
     connector = aiohttp.TCPConnector(ssl=_ssl_ctx)
     async with aiohttp.ClientSession(connector=connector) as session:
@@ -483,13 +492,13 @@ async def collect_all(
                 "ATS platform %s: %d companies (concurrency=%d, delay=%.1fs)",
                 platform,
                 len(company_list),
-                _platform_concurrency(platform),
-                _platform_delay(platform),
+                _platform_concurrency(platform, runtime_config),
+                _platform_delay(platform, runtime_config),
             )
 
             for company in company_list:
                 task = asyncio.create_task(
-                    _fetch_company_jobs(session, platform, company, semaphores),
+                    _fetch_company_jobs(session, platform, company, semaphores, runtime_config),
                     name=f"{platform}/{company.get('slug', '?')}",
                 )
                 tasks.append(task)
@@ -526,4 +535,9 @@ class LocalATSProvider:
         ctx: ProviderContext,
         progress_callback: ProgressCallback = None,
     ) -> list[RawJob]:
-        return await collect_all(ctx.companies, progress_callback=progress_callback)
+        runtime_config = ctx.config.get("runtime", {}) if isinstance(ctx.config, dict) else {}
+        return await collect_all(
+            ctx.companies,
+            progress_callback=progress_callback,
+            runtime_config=runtime_config if isinstance(runtime_config, dict) else {},
+        )

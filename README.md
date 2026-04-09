@@ -92,6 +92,8 @@ Job Radar is highly configurable to match your specific career goals.
 | `ANTHROPIC_API_KEY` | **Yes** | Used by Claude AI to score job descriptions. |
 | `TELEGRAM_BOT_TOKEN`| No | Token for Telegram notifications. |
 | `TELEGRAM_CHAT_ID` | No | Your numeric Telegram ID for notification delivery. |
+| `ADZUNA_APP_ID` | No | Required only if you enable the Adzuna provider. |
+| `ADZUNA_APP_KEY` | No | Required only if you enable the Adzuna provider. |
 
 ### 📂 Profile Configuration (`profiles/{name}/`)
 
@@ -159,6 +161,7 @@ Remote OK source data provided by [Remote OK](https://remoteok.com).
 Hacker News source data provided by [Hacker News](https://news.ycombinator.com) via [Algolia](https://hn.algolia.com).
 Arbeitnow source data provided by [Arbeitnow](https://www.arbeitnow.com).
 We Work Remotely source data provided by [We Work Remotely](https://weworkremotely.com).
+Adzuna source data provided by [Adzuna](https://www.adzuna.com).
 
 ---
 

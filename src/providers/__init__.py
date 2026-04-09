@@ -106,9 +106,11 @@ from src.providers.remoteok import RemoteOKProvider
 from src.providers.hackernews import HackerNewsProvider
 from src.providers.arbeitnow import ArbeitnowProvider
 from src.providers.weworkremotely import WeWorkRemotelyProvider
+from src.providers.adzuna import AdzunaProvider
 
 register(RemotiveProvider())
 register(RemoteOKProvider())
 register(HackerNewsProvider())
 register(ArbeitnowProvider())
 register(WeWorkRemotelyProvider())
+register(AdzunaProvider())

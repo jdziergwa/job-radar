@@ -126,6 +126,10 @@ Examples:
         help="Collect and filter only, skip LLM scoring",
     )
     parser.add_argument(
+        "--slow", action="store_true",
+        help="Run providers in a slower, more conservative mode for large scans",
+    )
+    parser.add_argument(
         "--rescore", action="store_true",
         help="Re-score previously scored jobs",
     )
@@ -284,6 +288,9 @@ async def run() -> None:
     # ── Full pipeline ───────────────────────────────────────────────
 
     config = load_config(profile_dir)
+    runtime_config = dict(config.get("runtime", {})) if isinstance(config.get("runtime", {}), dict) else {}
+    runtime_config["slow_mode"] = bool(args.slow or runtime_config.get("slow_mode"))
+    config = {**config, "runtime": runtime_config}
     profile_doc = load_profile_doc(profile_dir)
     keywords_config = config.get("keywords", {})
 
