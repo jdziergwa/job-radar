@@ -55,6 +55,10 @@ interface JobDetail extends Job {
   description: string | null    // Full job description text
 }
 
+// Note: apply_priority is normalized from persisted score data when API
+// responses are built, so clients see the current derived priority even if
+// older rows contain stale priority metadata.
+
 interface JobListResponse {
   jobs: Job[]
   total: number
@@ -327,6 +331,12 @@ On completion:
   "error": null
 }
 ```
+
+Terminal statuses currently include:
+- `done`
+- `error`
+- `cancelled`
+- `not_found`
 
 Returns `404` if `run_id` not found (expired or invalid).
 

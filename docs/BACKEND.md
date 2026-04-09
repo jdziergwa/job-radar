@@ -110,9 +110,11 @@ The API depends on these higher-level store methods:
 | `get_job_detail(db_id)` | `dict \| None` | One job row including description |
 | `get_stats()` | `dict` | Dashboard totals and distributions |
 | `get_trends(days=30)` | `dict` | Daily counts, skill frequency, company stats |
-| `get_jobs_for_rescore()` | `list[CandidateJob]` | Bulk rescore input, including previously scored and persisted `new` jobs |
+| `get_jobs_for_rescore()` | `list[CandidateJob]` | Bulk rescore input, including previously scored jobs plus persisted `new` jobs that were saved earlier but never scored |
 
 `get_jobs_filtered()` uses a sort-column allowlist to avoid SQL injection.
+
+Priority filtering and API serialization normalize persisted priority metadata on read. This keeps UI/API behavior consistent even when older `score_breakdown` rows contain stale `apply_priority` values.
 
 ---
 

@@ -223,14 +223,20 @@ Filter state is serialized to URL search params so filters are bookmarkable.
 
 ```
 State machine:
-  idle → running → done | error
+  idle → running → done | error | cancelled | not_found
 ```
 
 - **Idle**: "Fetch New Results" button in sidebar triggers dialog open
 - **Dialog contents**: Profile selector, Source strategy (Comprehensive Scan, Global Aggregator only, Targeted Boards only), Dry run toggle, Run button. Incorporates data freshness badging.
 - **Running**: Step indicators (dots), step name, elapsed time
 - **Done**: Stats summary (N new jobs, N scored), "View New Jobs" link
-- **Error**: Error message, "Retry" button
+- **Error / Cancelled**: Terminal feedback plus close action
+
+Current implementation details:
+- the same dialog component is reused for both pipeline runs and bulk rescoring
+- while a run is starting or actively running, the dialog is intentionally non-dismissible
+- terminal failures, cancellations, and missing-status responses surface toast notifications
+- users can cancel an active run directly from the dialog
 
 Step indicators:
 ```
