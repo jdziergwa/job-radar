@@ -282,7 +282,7 @@ Only one pipeline can run per profile at a time.
 ```json
 {
   "profile": "default",
-  "source": "local",
+  "sources": ["aggregator", "local"],
   "dry_run": false
 }
 ```
@@ -290,7 +290,7 @@ Only one pipeline can run per profile at a time.
 | Field | Type | Values | Default |
 |-------|------|--------|---------|
 | `profile` | string | any profile name | `"default"` |
-| `source` | string | `"local"`, `"aggregator"` | `"local"` |
+| `sources` | string[] | any registered provider names | `["aggregator", "local"]` |
 | `dry_run` | bool | — | `false` |
 
 **Response:** `PipelineRunResponse`
@@ -369,7 +369,7 @@ Create a new profile by copying the `example` template. Used by the first-run se
 ---
 
 #### `GET /api/profile/{name}/yaml`
-Read the raw `profile.yaml` content.
+Read the raw `search_config.yaml` content.
 
 **Response:** `ProfileYaml`
 ```json
@@ -379,7 +379,7 @@ Read the raw `profile.yaml` content.
 ---
 
 #### `PUT /api/profile/{name}/yaml`
-Write `profile.yaml`. Validates YAML before writing.
+Write `search_config.yaml`. Validates YAML before writing.
 
 **Body:** `ProfileYaml`
 ```json

@@ -1,17 +1,19 @@
 # 📡 Job Radar
 
-Job Radar is a tool for monitoring your job search across public ATS boards (Greenhouse, Lever, Ashby, Workable). It collects, filters, and scores job listings against your profile using Claude AI, then presents the results in a web dashboard.
+Job Radar monitors your job search across curated ATS boards, public remote-job APIs, hiring feeds, and an optional large remote-job aggregator. It collects, hydrates, filters, and scores job listings against your profile using Claude, then presents the results in a web dashboard.
 
 ---
 
 ## ⚡ Features
 
--   **📡 Monitoring**: Polls company ATS boards concurrently.
+-   **📡 Monitoring**: Scans curated ATS boards plus built-in providers like Remotive, Remote OK, Hacker News, Arbeitnow, We Work Remotely, Adzuna, and the aggregator.
 -   **🧹 Filters**: Regex pre-filtering eliminates ~90% of noise before any scoring.
+-   **📝 Hydration**: Fills in missing or sparse job descriptions before filtering and scoring.
 -   **🧠 AI Scoring**: Analysis of job descriptions for Match, Seniority, and Tech Stack fit.
 -   **🖥️ Dashboard**: Next.js interface to manage jobs and track trends.
--   **🛰️ Aggregator**: Access to 900,000+ jobs via a remote aggregator.
+-   **🛰️ Aggregator**: Optional broad remote-job scan alongside targeted direct sources.
 -   **🎭 Profiles**: Support for multiple career profiles with separate CVs and keywords.
+-   **🛠️ Import Tooling**: Generate mergeable `companies.yaml` fragments from external JSON datasets.
 -   **🔔 Notifications**: Optional Telegram alerts for top matches.
 
 ---
@@ -100,12 +102,44 @@ Job Radar is highly configurable to match your specific career goals.
 Each profile is a directory containing three core files:
 
 1.  **`profile_doc.md`**: Your CV and scoring guide for the LLM. The more specific the better — include not just your skills but explicit "Critical Skill Gaps" and "What Lowers Fit" sections to prevent score inflation on bad matches. See `profiles/example/profile_doc.md` for the full structure.
-2.  **`profile.yaml`**:
+2.  **`search_config.yaml`**:
     -   `keywords.title_patterns`: Split into `high_confidence` and `broad` tiers for precise filtering.
     -   `keywords.location_patterns` / `remote_patterns`: Primary location targets and a remote tier (governed by the `fallback_tier` field).
     -   `scoring`: Choose your model (e.g., `claude-haiku-4-5-20251001`) and set thresholds.
     -   `output`: Toggle reports and Telegram alerts.
 3.  **`companies.yaml`**: Specific companies to monitor directly via their ATS boards, grouped by platform.
+
+### 🔌 Providers
+
+Registered providers currently include:
+
+-   `aggregator`
+-   `local`
+-   `remotive`
+-   `remoteok`
+-   `hackernews`
+-   `arbeitnow`
+-   `weworkremotely`
+-   `adzuna`
+
+CLI examples:
+
+```bash
+# Default broad run
+.venv/bin/python -m src.main --source aggregator local
+
+# Direct ATS scan in conservative mode
+.venv/bin/python -m src.main --source local --slow --dry-run
+
+# Single-provider validation
+.venv/bin/python -m src.main --source arbeitnow --dry-run -v
+```
+
+To grow `companies.yaml` from an external JSON dataset:
+
+```bash
+.venv/bin/python scripts/import_companies.py --input companies.json
+```
 
 ---
 
@@ -124,11 +158,12 @@ graph TD
     style D fill:#f96,stroke:#333,stroke-width:2px
 ```
 
-1.  **Collect**: Fetches jobs from local ATS boards or the aggregator.
+1.  **Collect**: Fetches jobs from one or more providers such as `local`, `aggregator`, `remotive`, or `arbeitnow`.
 2.  **Deduplicate**: Skips jobs you've already seen.
-3.  **Pre-filter**: Matches against your `title_patterns` and `location_patterns`.
-4.  **Score**: Sends "survivors" to Claude to compute a fit score (0-100).
-5.  **Report**: Persists results and triggers notifications.
+3.  **Hydrate**: Fetches fuller descriptions for jobs with missing or sparse text.
+4.  **Pre-filter**: Matches against your `title_patterns` and `location_patterns`.
+5.  **Score**: Sends survivors to Claude to compute a fit score (0-100).
+6.  **Report**: Persists results and triggers notifications.
 
 ---
 
@@ -141,6 +176,7 @@ graph TD
 | `make start` | Start the production build of the application. |
 | `make build` | Build the frontend for production. |
 | `make types` | Regenerate TypeScript types from the API spec. |
+| `make test` | Run the Python test suite. |
 | `make clean-web`| Remove the frontend node_modules and .next cache. |
 | `make clean-db`| Wipe local databases and, if Docker is running, remove `/app/data/*.db` inside the API container. |
 | `make clean-db-volume`| Remove the Docker named volume used for API SQLite databases. |
@@ -167,7 +203,7 @@ Adzuna source data provided by [Adzuna](https://www.adzuna.com).
 
 ## ⚖️ Legal Notice
 
-Job Radar queries the public job board APIs provided by Greenhouse, Lever, Ashby, and Workable. These endpoints are publicly documented and intended for programmatic access. Use responsibly: don't hammer endpoints, respect rate limits, and review each platform's terms of service before use.
+Job Radar uses a mix of direct ATS APIs, public job feeds, and optional third-party datasets. Use providers responsibly: respect rate limits, avoid aggressive scraping, and review each source's terms before enabling it in your workflow. `--slow` is available for more conservative ATS runs, and some providers such as Adzuna require their own API credentials.
 
 ---
 

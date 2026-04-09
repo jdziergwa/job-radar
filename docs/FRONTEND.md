@@ -354,7 +354,7 @@ Two side-by-side sections:
 
 ```
 ┌──────────────────────────────┬──────────────────────────────────┐
-│  profile.yaml                │  profile_doc.md                  │
+│  search_config.yaml          │  profile_doc.md                  │
 │                              │  [Edit] [Preview]                │
 │  ┌────────────────────────┐  │                                  │
 │  │ keywords:              │  │  [Markdown preview or textarea]  │

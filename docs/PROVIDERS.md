@@ -1,43 +1,47 @@
 # Job Providers — Extension Guide
 
-Job Radar collects jobs through **providers** — pluggable modules that each implement a common interface. The pipeline orchestrator (`src/main.py`) knows nothing about specific sources; it asks the registry for the right provider and calls `fetch_jobs()`.
+Job Radar collects jobs through pluggable **providers**. The orchestrator in `src/main.py` stays source-agnostic: it loads one or more providers from `PROVIDER_REGISTRY`, calls `fetch_jobs()`, then runs the shared dedupe, hydration, pre-filter, scoring, and reporting stages.
 
-Adding a new data source (LinkedIn, Indeed, a custom internal board, etc.) requires:
-1. Implementing the `JobProvider` interface in a new class
-2. Calling `register()` at the bottom of `src/providers.py`
+To add a new source:
+1. Implement the `JobProvider` protocol in a new module under `src/providers/`.
+2. Register an instance in `src/providers/__init__.py`.
 
-That's it. The pipeline, pre-filter, scoring, web UI pipeline dialog, and the `/api/pipeline/providers` endpoint all pick up the new provider automatically.
+That is enough for the CLI, web UI, and `GET /api/pipeline/providers` to discover it.
 
 ---
 
-## Core Abstractions (`src/providers.py`)
+## Core Abstractions (`src/providers/__init__.py`)
 
 ### `ProviderContext`
 
-Passed to every `fetch_jobs()` call. Contains everything a provider might need — use only what's relevant.
+Passed to every `fetch_jobs()` call:
 
 ```python
 @dataclass
 class ProviderContext:
-    companies: dict[str, list[dict[str, str]]]  # from companies.yaml, keyed by platform
+    companies: dict[str, list[dict[str, Any]]]  # from companies.yaml
     profile_dir: Path                            # profiles/<name>/
-    config: dict[str, Any]                       # full profile.yaml dict
+    config: dict[str, Any]                       # search_config.yaml + runtime overrides
 ```
+
+Notes:
+- `config` comes from `search_config.yaml`.
+- The CLI injects runtime flags into `config["runtime"]`. Today that includes `slow_mode`, which providers such as `local` and `adzuna` use to reduce request rate.
 
 ### `ProviderInfo`
 
-UI metadata returned by `GET /api/pipeline/providers`. Drives the pipeline trigger dialog in the web UI.
+Metadata exposed through `GET /api/pipeline/providers`:
 
 ```python
 @dataclass
 class ProviderInfo:
-    name: str                    # machine name; used as --source value
-    display_name: str            # card title in the UI
-    description: str             # card subtitle in the UI
-    shows_aggregator_badge: bool # whether to show an aggregator freshness badge
+    name: str
+    display_name: str
+    description: str
+    shows_aggregator_badge: bool = False
 ```
 
-### `JobProvider` (Protocol)
+### `JobProvider`
 
 ```python
 @runtime_checkable
@@ -55,25 +59,31 @@ class JobProvider(Protocol):
         ...
 ```
 
-**Contract:**
-- Return a flat `list[RawJob]` — never raise, return `[]` on failure
-- Do not filter, score, or persist — only fetch
-- Call `progress_callback(current, total)` at meaningful intervals if provided
-- Description hydration is handled downstream by `src/fetcher.py`; return `description=""` if not available from your source
+Provider contract:
+- Return `list[RawJob]`.
+- Never raise for normal fetch failures; log and return `[]`.
+- Do not pre-filter, score, or persist.
+- Call `progress_callback(current, total)` when it provides meaningful UI progress.
+- Populate the best description you have, but do not own downstream hydration.
 
 ---
 
 ## Built-in Providers
 
-| Provider | `name` | Source |
-|----------|--------|--------|
-| `HybridProvider` | `hybrid` | Runs AggregatorProvider then LocalATSProvider |
-| `AggregatorProvider` | `aggregator` | Hosted static chunk download (~910k jobs) |
-| `LocalATSProvider` | `local` | Direct ATS APIs (Greenhouse, Lever, Ashby, Workable) |
+Current registry order:
 
-### Provider order in the registry
+| Provider | `name` | Source type |
+|----------|--------|-------------|
+| `AggregatorProvider` | `aggregator` | Hosted remote-job aggregator dataset |
+| `LocalATSProvider` | `local` | Direct ATS APIs for curated companies |
+| `RemotiveProvider` | `remotive` | Public Remotive API |
+| `RemoteOKProvider` | `remoteok` | Public Remote OK feed |
+| `HackerNewsProvider` | `hackernews` | HN "Who is hiring?" comments via Algolia |
+| `ArbeitnowProvider` | `arbeitnow` | Arbeitnow API |
+| `WeWorkRemotelyProvider` | `weworkremotely` | We Work Remotely feed |
+| `AdzunaProvider` | `adzuna` | Adzuna API (requires keys) |
 
-Providers appear in the web UI in registration order. The current order is: `hybrid → aggregator → local`, which puts the most useful option first.
+Providers appear in the web UI in this registration order.
 
 ---
 
@@ -82,107 +92,100 @@ Providers appear in the web UI in registration order. The current order is: `hyb
 ### Minimal example
 
 ```python
-# Can live in src/providers.py or a separate file (e.g. src/provider_linkedin.py)
+from __future__ import annotations
 
-class LinkedInProvider:
-    name = "linkedin"
-    display_name = "LinkedIn Jobs"
-    description = "Searches LinkedIn's public job listings by keyword and location."
+from datetime import datetime, timezone
+
+import httpx
+
+from src.models import RawJob
+from src.providers import ProviderContext, slugify
+
+
+class ExampleProvider:
+    name = "example"
+    display_name = "Example Jobs"
+    description = "Fetches jobs from Example's public API."
     shows_aggregator_badge = False
 
-    async def fetch_jobs(
-        self,
-        ctx: ProviderContext,
-        progress_callback=None,
-    ) -> list[RawJob]:
-        from datetime import datetime, timezone
-        import httpx
-
-        linkedin_cfg = ctx.config.get("linkedin", {})
-        search_terms = linkedin_cfg.get("search_terms", [])
-        location = linkedin_cfg.get("location", "")
-
-        if not search_terms:
-            return []
-
+    async def fetch_jobs(self, ctx: ProviderContext, progress_callback=None) -> list[RawJob]:
         jobs: list[RawJob] = []
         now = datetime.now(timezone.utc).isoformat()
+        config = ctx.config.get("example", {}) if isinstance(ctx.config, dict) else {}
+        query = config.get("query", "")
 
         async with httpx.AsyncClient() as client:
-            for i, term in enumerate(search_terms):
-                results = await self._search(client, term, location)
-                for r in results:
-                    jobs.append(RawJob(
-                        ats_platform="linkedin",
-                        company_slug=r["company_slug"],
-                        company_name=r["company_name"],
-                        job_id=str(r["id"]),
-                        title=r["title"],
-                        location=r["location"],
-                        url=r["url"],
-                        description="",       # fetcher.py hydrates lazily
-                        posted_at=r.get("posted_at"),
-                        fetched_at=now,
-                    ))
-                if progress_callback:
-                    progress_callback(i + 1, len(search_terms))
+            response = await client.get("https://api.example.com/jobs", params={"q": query})
+            response.raise_for_status()
+            payload = response.json()
+
+        for item in payload.get("results", []):
+            jobs.append(
+                RawJob(
+                    ats_platform="example",
+                    company_slug=slugify(item.get("company", "example")),
+                    company_name=item.get("company", "Example"),
+                    job_id=str(item["id"]),
+                    title=item.get("title", ""),
+                    location=item.get("location", ""),
+                    url=item.get("url", ""),
+                    description=item.get("description", ""),
+                    posted_at=item.get("posted_at"),
+                    fetched_at=now,
+                )
+            )
+
+        if progress_callback:
+            progress_callback(len(jobs), len(jobs))
 
         return jobs
-
-    async def _search(self, client, term, location) -> list[dict]:
-        # your actual API / scraper call here
-        ...
 ```
 
-Then register it at the bottom of `src/providers.py`:
+Register it in `src/providers/__init__.py`:
 
 ```python
-from src.provider_linkedin import LinkedInProvider
-register(LinkedInProvider())
+from src.providers.example import ExampleProvider
+
+register(ExampleProvider())
 ```
 
-The provider now appears in:
-- `python src/main.py --source linkedin`
-- `GET /api/pipeline/providers` response
-- The pipeline trigger dialog in the web UI
+The provider will then work in:
+- `python -m src.main --source example`
+- `GET /api/pipeline/providers`
+- the pipeline trigger dialog in the web UI
 
-### Adding provider-specific config
+### Provider-specific config
 
-Providers read their own config key from `ctx.config`. Document the expected keys in your provider's class docstring:
+Read provider config from `ctx.config`. Document the expected keys against `search_config.yaml`, for example:
 
-```python
-class LinkedInProvider:
-    """
-    Config (in profile.yaml):
-
-      linkedin:
-        search_terms: ["SDET", "QA Engineer", "Test Automation"]
-        location: "Germany"
-        limit: 50
-    """
+```yaml
+example:
+  query: "qa automation"
+  location: "Germany"
+  limit: 50
 ```
 
-### Returning metadata alongside jobs
+### Provider metadata
 
-If your provider fetches version/timestamp metadata alongside jobs (like `AggregatorProvider` does), store it as an instance attribute after `fetch_jobs()` returns and let the orchestrator read it:
+If your provider exposes upstream freshness or version metadata, store it on the provider instance after `fetch_jobs()`. The orchestrator will persist values such as `last_updated` when present.
 
-```python
-class MyProvider:
-    name = "my-source"
-    last_updated: str = "unknown"
+---
 
-    async def fetch_jobs(self, ctx, progress_callback=None):
-        jobs, version = await my_api.fetch(...)
-        self.last_updated = version
-        return jobs
-```
+## Description Hydration
 
-In `src/main.py` the orchestrator already handles this pattern:
+Providers are not responsible for full description hydration. Return the best description you have and let the shared hydration layer handle the rest.
 
-```python
-if hasattr(provider, "last_updated") and provider.last_updated != "unknown":
-    store.set_metadata(f"{provider.name}_version", provider.last_updated)
-```
+Important current behavior:
+- Jobs with missing descriptions are hydrated downstream.
+- Jobs with **sparse** descriptions are also hydrated downstream.
+- Short source text can be merged into the hydrated description instead of being discarded.
+
+This logic lives in `src/description_hydration.py` and is applied by the pipeline after collection.
+
+Practical guidance:
+- Always return the canonical posting URL in `url`.
+- Return `description=""` when the source truly has no usable text.
+- Do not try to reimplement HTML or JSON-LD fallback scraping in the provider itself.
 
 ---
 
@@ -191,27 +194,10 @@ if hasattr(provider, "last_updated") and provider.last_updated != "unknown":
 ```python
 from src.providers import PROVIDER_REGISTRY, get_all_info, register
 
-# Look up a provider by name
-provider = PROVIDER_REGISTRY["aggregator"]
-
-# List all providers (returns list[ProviderInfo])
+provider = PROVIDER_REGISTRY["local"]
 infos = get_all_info()
-
-# Register a new provider (call at module load time)
 register(MyProvider())
 ```
-
----
-
-## Description Hydration
-
-Providers are not responsible for fetching full job descriptions. Return `description=""` when the source doesn't include it (e.g. aggregator, Ashby, Workable). The pipeline's lazy hydration step (`src/fetcher.py`) will attempt to fetch descriptions later using:
-
-1. Platform-specific APIs (if `ats_platform` matches a known fetcher)
-2. JSON-LD structured data parsing (for standard career sites)
-3. HTML scraping fallback (for custom domains)
-
-Jobs that still lack a description after hydration are dismissed automatically, so ensure `url` points to the canonical job posting page.
 
 ---
 
@@ -222,38 +208,34 @@ Jobs that still lack a description after hydration are dismissed automatically, 
 ```json
 [
   {
-    "name": "hybrid",
-    "display_name": "Comprehensive Scan",
-    "description": "Global Aggregator + Targeted Boards: ...",
-    "shows_aggregator_badge": true
-  },
-  {
     "name": "aggregator",
     "display_name": "Global Aggregator",
-    "description": "Broad Market: Scans 910k+ jobs ...",
+    "description": "Broad market remote scan",
     "shows_aggregator_badge": true
   },
   {
     "name": "local",
-    "display_name": "Targeted Boards",
-    "description": "Direct Source: Scans your curated company list ...",
+    "display_name": "Tracked Companies",
+    "description": "Direct ATS fetch from companies.yaml",
     "shows_aggregator_badge": false
   }
 ]
 ```
 
-The web UI's pipeline trigger dialog (`web/src/components/pipeline/PipelineTrigger.tsx`) fetches this endpoint on open and renders a card for each provider dynamically. A static "Bulk Rescore Library" card is appended by the frontend since rescore calls a different API endpoint (`POST /api/jobs/rescore/all`).
-
 ---
 
-## Checklist for a New Provider
+## Implementation Checklist
 
-- [ ] Class has `name`, `display_name`, `description`, `shows_aggregator_badge` attributes
-- [ ] `fetch_jobs()` is `async` and returns `list[RawJob]`
-- [ ] Never raises — wraps failures in `try/except` and returns `[]` or a partial list
-- [ ] Calls `progress_callback(current, total)` periodically (enables web UI progress bar)
-- [ ] Sets `ats_platform` on each `RawJob` to a consistent string (used for deduplication)
-- [ ] Sets `job_id` to a stable, unique identifier within the platform
-- [ ] Sets `url` to the canonical job posting URL (needed for description hydration)
-- [ ] `register(MyProvider())` called at the bottom of `src/providers.py`
-- [ ] Provider-specific config documented in the class docstring
+- [ ] Create a provider module under `src/providers/`
+- [ ] Expose `name`, `display_name`, `description`, and `shows_aggregator_badge`
+- [ ] Implement `fetch_jobs()` as `async` and return `list[RawJob]`
+- [ ] Handle normal upstream failures without crashing the run; log and return `[]` or a partial list
+- [ ] Call `progress_callback(current, total)` when the source can report meaningful progress
+- [ ] Set `ats_platform` to a stable source identifier on every `RawJob`
+- [ ] Set `job_id` to a stable unique ID within that platform
+- [ ] Set `url` to the canonical posting URL so downstream hydration has a reliable target
+- [ ] Return the best available description text, or `""` if the source truly does not provide usable content
+- [ ] Register the provider in `src/providers/__init__.py`
+- [ ] Add parser or normalization tests with mocked payloads, not live network calls
+- [ ] Verify the provider works in `python -m src.main --source <name> --dry-run`
+- [ ] Document any required environment variables or config keys
