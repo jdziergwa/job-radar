@@ -134,7 +134,13 @@ restartPolicyType = "on_failure"
 
 ### First-run setup
 
-Since `profiles/` is gitignored, no profile exists on a fresh deploy. Open the app in a browser — the setup wizard will appear automatically. Paste your CV, click "Get Started", and the profile is created on the persistent volume. No SSH or file upload required.
+Since `profiles/` is gitignored, no profile exists on a fresh deploy. Open the app in a browser and the setup wizard will appear automatically. The guided flow uploads your CV, generates `profile_doc.md` and `search_config.yaml`, and saves the profile directly onto the persistent volume. No SSH or manual file upload is required.
+
+After onboarding, the same deployment also supports Settings-driven guided edit:
+- `Edit Saved Preferences` reuses persisted wizard state to regenerate the profile from saved structured inputs
+- `Start Fresh` uploads a new CV and rebuilds the profile from the beginning
+
+For those guided edit flows to work across deploys, keep the profile directory persistent because the app stores `cv_analysis.json` and `preferences.json` alongside the profile files.
 
 ### Cost
 Railway free tier: $5/month credit (enough for this app). Paid: ~$5-10/month for a small instance + persistent volume.

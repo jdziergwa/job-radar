@@ -240,6 +240,38 @@ Step indicators:
 ● ● ● ● ●   Done — 4 new matches
 ```
 
+### Guided Wizard
+
+The guided setup flow lives under `web/src/components/wizard/` and is reused in two places:
+- first-run onboarding
+- Settings-driven guided edit
+
+Main modes:
+- `onboarding`: full flow from CV upload to save
+- `edit_preferences`: reopen saved wizard state and start directly from location/preferences
+- `update_cv`: upload a new CV and rebuild from the beginning
+
+Primary component:
+- `QuickStartWizard.tsx` orchestrates steps, branching, and draft persistence
+
+Main step flow:
+- `ChoosePath`
+- `UploadCV`
+- `AIAnalysis`
+- `ReviewProfile`
+- `SearchLocation`
+- `PreferencesGoals`
+- `ReviewGenerate`
+- `Done`
+
+Key UX details:
+- onboarding drafts persist in localStorage so accidental refreshes do not wipe progress
+- Settings guided edits reopen from server-saved `cv_analysis.json` and `preferences.json`
+- the preview step keeps `AI Refined` as the editable primary version and `Starter Draft` as read-only reference
+- guided edit offers two entry points from Settings:
+  - `Edit Saved Preferences`
+  - `Start Fresh`
+
 ### StatsCard
 
 ```
@@ -271,6 +303,19 @@ Props:
 ```
 
 Data: `GET /api/stats` + `GET /api/stats/trends?days=7` + `GET /api/jobs?days=7&sort=score&per_page=5`
+
+### Settings (`/settings`)
+
+Settings exposes both raw file editing and guided profile regeneration.
+
+Raw editing tabs:
+- `profile_doc.md`
+- `search_config.yaml`
+- `scoring_philosophy.md`
+
+Guided actions:
+- `Guided Edit`: load saved wizard state and choose between preference-only regeneration and full CV refresh
+- raw editing remains available when you close the guided flow
 
 ### Job Board (`/jobs`)
 

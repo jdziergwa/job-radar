@@ -79,7 +79,13 @@ make dev
 -   **Backend**: [http://localhost:8000](http://localhost:8000) (FastAPI)
 -   **Frontend**: [http://localhost:3000](http://localhost:3000) (Next.js)
 
-On first launch the setup wizard will appear — paste your CV and click **Get Started**. Note that sensible defaults are provided for your profile configuration, and you can tune these later at any time in **Settings → Matching Rules**. Then click **Run Pipeline** to start your first scan!
+On first launch the setup wizard appears automatically. The guided flow uploads your CV, runs AI CV analysis, lets you review extracted facts, set location and preference constraints, and then generates both `profile_doc.md` and `search_config.yaml` before you save the profile and run your first scan.
+
+Later, you can reopen the same guided workflow from **Settings → Guided Edit** to either:
+- update saved preferences and regenerate the profile from structured state
+- upload a new CV and rebuild the profile from the beginning
+
+If you prefer direct editing, **Settings** still exposes the raw `profile_doc.md`, `search_config.yaml`, and `scoring_philosophy.md` files.
 
 ---
 
@@ -99,7 +105,7 @@ Job Radar is highly configurable to match your specific career goals.
 
 ### 📂 Profile Configuration (`profiles/{name}/`)
 
-Each profile is a directory containing three core files:
+Each profile is a directory containing four main editable files:
 
 1.  **`profile_doc.md`**: Your CV and scoring guide for the LLM. The more specific the better — include not just your skills but explicit "Critical Skill Gaps" and "What Lowers Fit" sections to prevent score inflation on bad matches. See `profiles/example/profile_doc.md` for the full structure.
 2.  **`search_config.yaml`**:
@@ -107,7 +113,12 @@ Each profile is a directory containing three core files:
     -   `keywords.location_patterns` / `remote_patterns`: Primary location targets and a remote tier (governed by the `fallback_tier` field).
     -   `scoring`: Choose your model (e.g., `claude-haiku-4-5-20251001`) and set thresholds.
     -   `output`: Toggle reports and Telegram alerts.
-3.  **`companies.yaml`**: Specific companies to monitor directly via their ATS boards, grouped by platform.
+3.  **`scoring_philosophy.md`**: The per-profile scoring rubric used by the LLM after pre-filtering. This is editable from **Settings**.
+4.  **`companies.yaml`**: Specific companies to monitor directly via their ATS boards, grouped by platform.
+
+The guided wizard also persists structured state alongside those files:
+- `cv_analysis.json`: normalized CV extraction and derived signals
+- `preferences.json`: saved wizard inputs used by guided edit and start-fresh flows
 
 ### 🔌 Providers
 

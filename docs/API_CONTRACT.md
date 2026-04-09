@@ -411,6 +411,159 @@ Write `profile_doc.md`.
 
 ---
 
+#### `GET /api/profile/{name}/scoring-philosophy`
+Read the raw `scoring_philosophy.md` content.
+
+**Response:** `ProfileDoc`
+
+---
+
+#### `PUT /api/profile/{name}/scoring-philosophy`
+Write `scoring_philosophy.md`.
+
+**Body:** `ProfileDoc`
+
+**Response:** `{ "ok": true }`
+
+**Response on invalid content:** `422 Unprocessable Entity`
+```json
+{ "detail": "Scoring philosophy cannot be empty" }
+```
+
+---
+
+### Wizard
+
+#### `POST /api/wizard/analyze-cv`
+Upload a PDF CV and return structured analysis for the guided wizard.
+
+**Content-Type:** `multipart/form-data`
+
+**Body fields:**
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `file` | file | PDF only, max 10MB |
+
+**Response:** `CVAnalysisResponse`
+
+Notes:
+- text extraction uses PyMuPDF first
+- poor extraction falls back to page-image vision analysis
+- the response includes structured experience, skills, education, portfolio, suggested signals, and suggested narratives
+
+---
+
+#### `POST /api/wizard/generate-profile`
+Generate first-draft `profile_doc.md` and `search_config.yaml` from structured CV analysis and wizard preferences.
+
+**Body:** `ProfileGenerateRequest`
+```json
+{
+  "cv_analysis": { "...": "CVAnalysisResponse" },
+  "user_preferences": { "...": "UserPreferences" },
+  "profile_name": "default"
+}
+```
+
+**Response:** `ProfileGenerateResponse`
+```json
+{
+  "profile_yaml": "keywords:\n  ...",
+  "profile_doc": "# Candidate Profile\n..."
+}
+```
+
+---
+
+#### `POST /api/wizard/refine-profile`
+Run a second-pass LLM refinement over only the editable parts of the generated profile artifacts.
+
+This endpoint does **not** ask the model to rewrite the full files. The API extracts editable `profile_doc.md` sections and editable `search_config.yaml` keyword blocks, sends only those to the model, and merges the result back into the original drafts.
+
+**Body:** `ProfileRefineRequest`
+```json
+{
+  "cv_analysis": { "...": "CVAnalysisResponse" },
+  "user_preferences": { "...": "UserPreferences" },
+  "draft_doc": "# Candidate Profile\n...",
+  "draft_yaml": "keywords:\n  ...",
+  "refinement_context": {
+    "mode": "fresh_start",
+    "changed_fields": [],
+    "change_summary": [],
+    "preserve_existing_shape": true
+  }
+}
+```
+
+**Response:** `ProfileRefineResponse`
+```json
+{
+  "profile_doc": "# Candidate Profile\n...",
+  "profile_yaml": "keywords:\n  ...",
+  "changes_made": [
+    "Expanded critical skill gaps with more specific scoring guidance"
+  ]
+}
+```
+
+On any refinement failure, the API returns the original drafts unchanged and reports the fallback in `changes_made`.
+
+---
+
+#### `POST /api/wizard/save-profile`
+Persist the generated profile files and wizard state.
+
+**Body:** `ProfileSaveRequest`
+
+Behavior:
+- validates `search_config.yaml`
+- creates the profile from `profiles/example` if needed
+- ensures `companies.yaml` and `scoring_philosophy.md` exist
+- writes `profile_doc.md` and `search_config.yaml`
+- optionally writes `cv_analysis.json` and `preferences.json`
+
+**Response:**
+```json
+{ "ok": true, "name": "default" }
+```
+
+---
+
+#### `GET /api/wizard/state`
+Return saved structured wizard state for a profile so the UI can reopen guided edit flows.
+
+**Query parameters:**
+
+| Param | Type | Default |
+|-------|------|---------|
+| `profile` | string | `"default"` |
+
+**Response:** `WizardStateResponse`
+```json
+{
+  "profile_name": "default",
+  "cv_analysis": { "...": "optional CVAnalysisResponse" },
+  "user_preferences": { "...": "optional UserPreferences" }
+}
+```
+
+---
+
+#### `GET /api/wizard/template`
+Return the example template files used by the manual wizard path.
+
+**Response:** `ProfileTemplateResponse`
+```json
+{
+  "profile_yaml": "keywords:\n  ...",
+  "profile_doc": "# Candidate Profile\n..."
+}
+```
+
+---
+
 ### Companies
 
 #### `GET /api/companies/{profile}`

@@ -10,12 +10,12 @@ Job Radar has two layers:
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
 │                         BROWSER (Next.js)                           │
-│   Dashboard │ Job Board │ Stats │ Companies │ Settings              │
+│   Dashboard │ Job Board │ Stats │ Companies │ Settings │ Wizard      │
 └──────────────────────────────┬──────────────────────────────────────┘
                                │  REST /api/*
 ┌──────────────────────────────▼──────────────────────────────────────┐
 │                         FastAPI (api/)                              │
-│   /api/jobs  /api/stats  /api/pipeline  /api/companies  /api/profile│
+│ /api/jobs /api/stats /api/pipeline /api/companies /api/profile /api/wizard │
 └────────┬─────────────────────┬──────────────────────────────────────┘
          │                     │
          ▼                     ▼
@@ -86,6 +86,7 @@ job-radar/
 │       ├── stats.py
 │       ├── pipeline.py
 │       ├── profile.py
+│       ├── wizard.py
 │       └── companies.py
 │
 ├── web/
@@ -130,6 +131,19 @@ User opens /jobs
   → React renders the current slice
 ```
 
+### Guided profile setup
+```
+User opens onboarding or Settings → Guided Edit
+  → Upload CV
+  → POST /api/wizard/analyze-cv
+  → Review extracted CV analysis + preferences
+  → POST /api/wizard/generate-profile
+  → POST /api/wizard/refine-profile
+  → UI shows AI Refined vs Starter Draft
+  → POST /api/wizard/save-profile
+  → Profile files + cv_analysis.json + preferences.json are persisted
+```
+
 ---
 
 ## Pipeline Components
@@ -171,7 +185,7 @@ Regex-based filtering trims the candidate set before LLM scoring. Matching rules
 Claude-based fit scoring runs only after pre-filtering. `--dry-run` skips this stage entirely.
 
 ### Store (`src/store.py`)
-SQLite is the system of record for fetched jobs, scoring output, and metadata such as aggregator versioning.
+SQLite is the system of record for fetched jobs, scoring output, and metadata such as aggregator versioning. Persisted score metadata is normalized on read so UI/API consumers stay consistent even when older rows contain stale priority fields.
 
 ### Company import tooling (`src/company_import.py` + `scripts/import_companies.py`)
 This tooling converts external JSON datasets into mergeable `companies.yaml` fragments so the curated direct ATS list can scale without hand-editing every entry.

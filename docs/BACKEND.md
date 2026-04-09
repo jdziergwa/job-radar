@@ -17,6 +17,7 @@ api/
     ├── stats.py      # GET /api/stats, GET /api/stats/trends
     ├── pipeline.py   # POST /api/pipeline/run, GET status/{id}, GET active, GET providers
     ├── profile.py    # GET/PUT /api/profile/{name}/yaml|doc, GET /api/profiles
+    ├── wizard.py     # Guided CV analysis + profile generation/refinement/save flow
     └── companies.py  # GET/POST/DELETE /api/companies/{profile}/{platform}/{slug}
 ```
 
@@ -47,6 +48,18 @@ Current API behavior:
 - the API exposes provider metadata dynamically from the registry
 - CLI-only flags such as `--slow` are not yet exposed through `POST /api/pipeline/run`
 
+### Guided wizard flow
+
+`api/routers/wizard.py` owns the profile-setup workflow used during onboarding and guided edit from Settings.
+
+Current behavior:
+- `POST /api/wizard/analyze-cv` extracts PDF text with PyMuPDF and falls back to image-based vision analysis when extraction quality is poor
+- `POST /api/wizard/generate-profile` builds first-draft `profile_doc.md` and `search_config.yaml` from structured CV analysis plus wizard preferences
+- `POST /api/wizard/refine-profile` sends only editable profile sections and editable keyword blocks to the LLM, then merges the response back into the original drafts
+- `POST /api/wizard/save-profile` persists generated files and stores `cv_analysis.json` plus `preferences.json` for future guided edits
+- `GET /api/wizard/state` reloads saved structured wizard state
+- `GET /api/wizard/template` returns the example template for the manual path
+
 ---
 
 ## Pydantic Models (`api/models.py`)
@@ -65,6 +78,12 @@ Current API behavior:
 | `PipelineRunResponse` | `run_id` wrapper |
 | `PipelineStatusResponse` | Polling response (`status`, `step`, `step_name`, `detail`, `duration`, `stats`, `error`) |
 | `ProfileContent` | Raw `search_config.yaml` or `profile_doc.md` content |
+| `CVAnalysisResponse` | Structured CV extraction used by the wizard |
+| `UserPreferences` | Structured guided-wizard preferences |
+| `ProfileGenerateRequest` | Wizard first-pass profile generation request |
+| `ProfileRefineRequest` | Wizard second-pass refinement request |
+| `ProfileRefinementContext` | Incremental-edit context for refinement |
+| `WizardStateResponse` | Saved wizard state for guided edit flows |
 | `CompanyEntry` | One tracked ATS company |
 
 `PipelineRunRequest.sources` accepts any registered provider name, for example:
@@ -91,6 +110,7 @@ The API depends on these higher-level store methods:
 | `get_job_detail(db_id)` | `dict \| None` | One job row including description |
 | `get_stats()` | `dict` | Dashboard totals and distributions |
 | `get_trends(days=30)` | `dict` | Daily counts, skill frequency, company stats |
+| `get_jobs_for_rescore()` | `list[CandidateJob]` | Bulk rescore input, including previously scored and persisted `new` jobs |
 
 `get_jobs_filtered()` uses a sort-column allowlist to avoid SQL injection.
 
