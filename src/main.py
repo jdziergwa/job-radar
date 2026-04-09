@@ -18,6 +18,12 @@ from typing import Any
 import yaml
 from dotenv import load_dotenv
 
+from src.description_hydration import (
+    SPARSE_DESCRIPTION_THRESHOLD,
+    description_text_length,
+    merge_hydrated_description,
+    should_hydrate_description,
+)
 from src.models import CandidateJob
 from src.providers import PROVIDER_REGISTRY, ProviderContext
 from src.prefilter import prefilter
@@ -412,10 +418,16 @@ async def run() -> None:
         logger.info("Found %d unscored jobs for filtering", len(candidates_raw))
         
     if not args.rescore:
-        # Providers like aggregator/remotive/remoteok may have missing descriptions
+        # Providers like aggregator/remotive/remoteok/hackernews may need description hydration
         if candidates_raw:
-            # Only fetch for those missing a description (primarily aggregator jobs)
-            to_fetch = [j for j in candidates_raw if not j.description]
+            original_descriptions = {
+                j.db_id: j.description
+                for j in candidates_raw
+                if j.db_id is not None
+            }
+
+            # Hydrate missing and sparse descriptions so short HN comments can be enriched.
+            to_fetch = [j for j in candidates_raw if should_hydrate_description(j)]
             if to_fetch:
                 from src.fetcher import populate_descriptions
                 
@@ -429,11 +441,20 @@ async def run() -> None:
                 # Persist successfully fetched descriptions to DB for future UI/detail views
                 for j in to_fetch:
                     if j.description:
-                        store.update_job_description(j.db_id, j.description)
+                        merged_description = merge_hydrated_description(
+                            original_descriptions.get(j.db_id, ""),
+                            j.description,
+                        )
+                        j.description = merged_description
+                        store.update_job_description(j.db_id, merged_description)
 
             # Filter out jobs that still have no description (fetch failed)
             # We skip these as the LLM fits will be poor without content.
-            to_dismiss_no_desc = [j.db_id for j in candidates_raw if not j.description]
+            to_dismiss_no_desc = [
+                j.db_id
+                for j in candidates_raw
+                if description_text_length(j.description) == 0
+            ]
             if to_dismiss_no_desc:
                 logger.info("Dismissing %d jobs due to missing descriptions", len(to_dismiss_no_desc))
                 store.bulk_update_status(to_dismiss_no_desc, "dismissed", reason="Missing Description")

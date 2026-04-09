@@ -1,4 +1,4 @@
-.PHONY: install dev types build start lint clean-db clean-db-volume clean-web
+.PHONY: install dev types build start lint test clean-db clean-db-volume clean-web
 
 COMPOSE ?= docker compose
 PROJECT_NAME ?= $(notdir $(CURDIR))
@@ -26,6 +26,9 @@ start: build
 
 lint:
 	cd web && npm run lint && npx tsc --noEmit
+
+test:
+	.venv/bin/python -m pytest
 
 clean-db:
 	rm -f data/*.db

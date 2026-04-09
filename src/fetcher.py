@@ -246,13 +246,7 @@ async def populate_descriptions(
     total = len(jobs)
     
     async with httpx.AsyncClient(verify=ssl_context) as client:
-        tasks = [fetch_description(client, sem, job) for job in jobs]
-        
-        # We need to map results back to jobs, but as_completed doesn't preserve order.
-        # However, fetch_description modifies the job object in place if we wanted, 
-        # but here it returns the description string.
-        
-        # To maintain mapping and support progress, we can wrap the task
+        # Maintain job-to-result mapping by wrapping the fetch call per job.
         async def fetch_and_assign(job_obj):
             desc = await fetch_description(client, sem, job_obj)
             if desc:

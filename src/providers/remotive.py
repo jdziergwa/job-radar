@@ -16,6 +16,33 @@ from src.providers import parse_salary_string, slugify
 logger = logging.getLogger(__name__)
 
 
+def _parse_remotive_job(item: dict[str, object], fetched_at: str) -> RawJob:
+    from src.providers.utils import strip_html
+
+    company_name = str(item.get("company_name", "Unknown"))
+    company_slug = slugify(company_name)
+
+    salary_str = item.get("salary")
+    s_min, s_max, s_cur = parse_salary_string(salary_str if isinstance(salary_str, str) else None)
+
+    return RawJob(
+        ats_platform="remotive",
+        company_slug=company_slug,
+        company_name=company_name,
+        job_id=str(item.get("id", "")),
+        title=str(item.get("title", "")).strip(),
+        location=str(item.get("candidate_required_location", "")),
+        url=str(item.get("url", "")),
+        description=strip_html(str(item.get("description", ""))),
+        posted_at=str(item.get("publication_date")) if item.get("publication_date") is not None else None,
+        fetched_at=fetched_at,
+        salary=salary_str if isinstance(salary_str, str) else None,
+        salary_min=s_min,
+        salary_max=s_max,
+        salary_currency=s_cur,
+    )
+
+
 class RemotiveProvider:
     """Fetches jobs from Remotive's public API."""
 
@@ -30,8 +57,6 @@ class RemotiveProvider:
         progress_callback: ProgressCallback = None,
     ) -> list[RawJob]:
         """Fetch all current jobs from Remotive. No pagination or auth required."""
-        from src.providers.utils import strip_html
-
         url = "https://remotive.com/api/remote-jobs"
         ssl_context = certifi.where()
         
@@ -55,33 +80,12 @@ class RemotiveProvider:
         raw_jobs: list[RawJob] = []
 
         for item in jobs:
-            company_name = item.get("company_name", "Unknown")
-            company_slug = slugify(company_name)
-            
-            salary_str = item.get("salary")
-            s_min, s_max, s_cur = parse_salary_string(salary_str)
-            
-            job = RawJob(
-                ats_platform="remotive",
-                company_slug=company_slug,
-                company_name=company_name,
-                job_id=str(item.get("id", "")),
-                title=(item.get("title") or "").strip(),
-                location=item.get("candidate_required_location", ""),
-                url=item.get("url", ""),
-                description=strip_html(item.get("description", "")),
-                posted_at=item.get("publication_date"),
-                fetched_at=now,
-                salary=salary_str,
-                salary_min=s_min,
-                salary_max=s_max,
-                salary_currency=s_cur,
-            )
-            raw_jobs.append(job)
+            if not isinstance(item, dict):
+                continue
+            raw_jobs.append(_parse_remotive_job(item, now))
 
         if progress_callback:
             progress_callback(1, 1)
 
         logger.info("Remotive: Fetched %d jobs", len(raw_jobs))
         return raw_jobs
-

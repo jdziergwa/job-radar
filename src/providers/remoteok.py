@@ -16,6 +16,36 @@ from src.providers import parse_salary_string, slugify
 logger = logging.getLogger(__name__)
 
 
+def _parse_remoteok_job(item: dict[str, object], fetched_at: str) -> RawJob | None:
+    from src.providers.utils import strip_html
+
+    if "id" not in item:
+        return None
+
+    company_name = str(item.get("company", "Unknown"))
+    company_slug = slugify(company_name)
+
+    salary_str = item.get("salary")
+    s_min, s_max, s_cur = parse_salary_string(salary_str if isinstance(salary_str, str) else None)
+
+    return RawJob(
+        ats_platform="remoteok",
+        company_slug=company_slug,
+        company_name=company_name,
+        job_id=str(item.get("id", "")),
+        title=str(item.get("position", "")).strip(),
+        location=str(item.get("location", "Remote")),
+        url=str(item.get("url", "")),
+        description=strip_html(str(item.get("description", ""))),
+        posted_at=str(item.get("date")) if item.get("date") is not None else None,
+        fetched_at=fetched_at,
+        salary=salary_str if isinstance(salary_str, str) else None,
+        salary_min=s_min,
+        salary_max=s_max,
+        salary_currency=s_cur,
+    )
+
+
 class RemoteOKProvider:
     """Fetches jobs from RemoteOK's public API."""
 
@@ -30,8 +60,6 @@ class RemoteOKProvider:
         progress_callback: ProgressCallback = None,
     ) -> list[RawJob]:
         """Fetch all current jobs from RemoteOK. No pagination or auth required."""
-        from src.providers.utils import strip_html
-
         url = "https://remoteok.com/api"
         # RemoteOK requires a User-Agent or it may block the request
         headers = {"User-Agent": "job-radar/1.0"}
@@ -60,34 +88,11 @@ class RemoteOKProvider:
         raw_jobs: list[RawJob] = []
 
         for item in jobs:
-            # Some items might not be job postings (though usually they are after the first element)
-            if not isinstance(item, dict) or "id" not in item:
+            if not isinstance(item, dict):
                 continue
-                
-            company_name = item.get("company", "Unknown")
-            company_slug = slugify(company_name)
-            
-            # RemoteOK often provides salary as a string
-            salary_str = item.get("salary")
-            s_min, s_max, s_cur = parse_salary_string(salary_str)
-            
-            job = RawJob(
-                ats_platform="remoteok",
-                company_slug=company_slug,
-                company_name=company_name,
-                job_id=str(item.get("id", "")),
-                title=(item.get("position") or "").strip(),
-                location=item.get("location", "Remote"),
-                url=item.get("url", ""),
-                description=strip_html(item.get("description", "")),
-                posted_at=item.get("date"),
-                fetched_at=now,
-                salary=salary_str,
-                salary_min=s_min,
-                salary_max=s_max,
-                salary_currency=s_cur,
-            )
-            raw_jobs.append(job)
+            job = _parse_remoteok_job(item, now)
+            if job is not None:
+                raw_jobs.append(job)
 
         if progress_callback:
             progress_callback(1, 1)
