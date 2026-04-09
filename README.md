@@ -157,6 +157,8 @@ Aggregator module data sourced from [job-board-aggregator](https://github.com/Fe
 Remotive source data provided by [Remotive](https://remotive.com).
 Remote OK source data provided by [Remote OK](https://remoteok.com).
 Hacker News source data provided by [Hacker News](https://news.ycombinator.com) via [Algolia](https://hn.algolia.com).
+Arbeitnow source data provided by [Arbeitnow](https://www.arbeitnow.com).
+We Work Remotely source data provided by [We Work Remotely](https://weworkremotely.com).
 
 ---
 

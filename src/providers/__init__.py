@@ -104,7 +104,11 @@ register(LocalATSProvider())
 from src.providers.remotive import RemotiveProvider
 from src.providers.remoteok import RemoteOKProvider
 from src.providers.hackernews import HackerNewsProvider
+from src.providers.arbeitnow import ArbeitnowProvider
+from src.providers.weworkremotely import WeWorkRemotelyProvider
 
 register(RemotiveProvider())
 register(RemoteOKProvider())
 register(HackerNewsProvider())
+register(ArbeitnowProvider())
+register(WeWorkRemotelyProvider())
