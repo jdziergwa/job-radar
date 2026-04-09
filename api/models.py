@@ -2,6 +2,8 @@ from pydantic import BaseModel
 from typing import Optional, Literal
 import json
 
+from src.score_normalization import normalize_persisted_priority
+
 
 class ScoreBreakdownDimensions(BaseModel):
     tech_stack_match: int = 0
@@ -51,6 +53,15 @@ class JobResponse(BaseModel):
         if row.get("score_breakdown"):
             try:
                 raw = json.loads(row["score_breakdown"])
+                dimensions = raw.get("dimensions", {}) if isinstance(raw, dict) else {}
+                apply_priority, _ = normalize_persisted_priority(
+                    row.get("fit_score", 0),
+                    dimensions if isinstance(dimensions, dict) else {},
+                    raw.get("apply_priority", "skip") if isinstance(raw, dict) else "skip",
+                    raw.get("skip_reason", "none") if isinstance(raw, dict) else "none",
+                )
+                if isinstance(raw, dict):
+                    raw["apply_priority"] = apply_priority
                 breakdown = ScoreBreakdown(**raw)
             except (json.JSONDecodeError, Exception):
                 pass
@@ -231,10 +242,13 @@ class UserPreferences(BaseModel):
     industries: list[str] = []
     careerDirection: str
     careerGoal: Optional[Literal['stay', 'pivot', 'step_up', 'broaden']] = "stay"
+    careerDirectionEdited: bool = False
     goodMatchSignals: list[str] = []
+    goodMatchSignalsConfirmed: bool = False
     companyQualitySignals: list[str] = []
     allowLowerSeniorityAtStrategicCompanies: bool = False
     dealBreakers: list[str] = []
+    dealBreakersConfirmed: bool = False
     enableStandardExclusions: bool = True
     additionalContext: Optional[str] = None
 

@@ -33,18 +33,6 @@ const INDUSTRIES = [
   'Media', 'Startup'
 ]
 
-const EXCITEMENT_SIGNALS = [
-  'Framework/tool ownership', 'Mentoring/leadership', 'Greenfield projects', 
-  'Scale/high-traffic', 'Developer tooling', 'Open source', 'Research', 
-  'Cross-team collaboration', 'Customer-facing', 'Strategic impact'
-]
-
-const DEAL_BREAKERS = [
-  'Contract/agency roles', 'On-site required', 'Specific tech stacks', 
-  'No growth path', 'Very large team', 'Very small team (<5)', 
-  'Heavy on-call', 'Sales-heavy role'
-]
-
 export function PreferencesGoals({ onNext, onBack, onUpdate, data }: StepProps) {
   const analysis = data.cvAnalysis
   
@@ -68,25 +56,29 @@ export function PreferencesGoals({ onNext, onBack, onUpdate, data }: StepProps) 
     ''
   )
   const [isManualEdit, setIsManualEdit] = useState(
-    !!data.careerDirection && 
-    data.careerDirection !== (analysis as any)?.suggested_narratives?.[careerGoal] &&
-    data.careerDirection !== (analysis as any)?.suggested_career_direction
+    data.careerDirectionEdited ??
+      (
+        !!data.careerDirection && 
+        data.careerDirection !== (analysis as any)?.suggested_narratives?.[careerGoal] &&
+        data.careerDirection !== (analysis as any)?.suggested_career_direction
+      )
   )
 
   const [industries, setIndustries] = useState<string[]>(initialIndustries)
   const [goodMatchSignals, setGoodMatchSignals] = useState<string[]>(
-    data.goodMatchSignals || analysis?.suggested_good_match_signals || []
+    data.goodMatchSignals !== undefined ? data.goodMatchSignals : (analysis?.suggested_good_match_signals || [])
+  )
+  const [goodMatchSignalsConfirmed, setGoodMatchSignalsConfirmed] = useState(
+    Boolean(data.goodMatchSignalsConfirmed)
   )
   const [companyQualitySignals, setCompanyQualitySignals] = useState<string[]>(
     dedupeCompanyQualitySignals(data.companyQualitySignals || [])
   )
-  const [allowLowerSeniorityAtStrategicCompanies, setAllowLowerSeniorityAtStrategicCompanies] = useState(
-    dedupeCompanyQualitySignals(data.companyQualitySignals || []).length > 0
-      ? true
-      : Boolean(data.allowLowerSeniorityAtStrategicCompanies)
-  )
   const [dealBreakers, setDealBreakers] = useState<string[]>(
-    data.dealBreakers || analysis?.suggested_lower_fit_signals || []
+    data.dealBreakers !== undefined ? data.dealBreakers : (analysis?.suggested_lower_fit_signals || [])
+  )
+  const [dealBreakersConfirmed, setDealBreakersConfirmed] = useState(
+    Boolean(data.dealBreakersConfirmed)
   )
   const [additionalContext, setAdditionalContext] = useState(data.additionalContext || '')
   
@@ -94,6 +86,7 @@ export function PreferencesGoals({ onNext, onBack, onUpdate, data }: StepProps) 
   const [newExcitement, setNewExcitement] = useState('')
   const [newCompanySignal, setNewCompanySignal] = useState('')
   const [newDealBreaker, setNewDealBreaker] = useState('')
+  const allowLowerSeniorityAtStrategicCompanies = companyQualitySignals.length > 0
 
   // Handle goal change with auto-drafting from LLM-generated narratives
   const handleGoalChange = (newGoal: 'stay' | 'pivot' | 'step_up' | 'broaden') => {
@@ -109,28 +102,30 @@ export function PreferencesGoals({ onNext, onBack, onUpdate, data }: StepProps) 
     onUpdate({
       careerGoal,
       careerDirection,
+      careerDirectionEdited: isManualEdit,
       industries,
       goodMatchSignals,
+      goodMatchSignalsConfirmed,
       companyQualitySignals,
       allowLowerSeniorityAtStrategicCompanies,
       dealBreakers,
+      dealBreakersConfirmed,
       additionalContext
     })
   }, [
     careerGoal,
     careerDirection,
+    isManualEdit,
     industries,
     goodMatchSignals,
+    goodMatchSignalsConfirmed,
     companyQualitySignals,
     allowLowerSeniorityAtStrategicCompanies,
     dealBreakers,
+    dealBreakersConfirmed,
     additionalContext,
     onUpdate,
   ])
-
-  useEffect(() => {
-    setAllowLowerSeniorityAtStrategicCompanies(companyQualitySignals.length > 0)
-  }, [companyQualitySignals])
 
   const toggleItem = (item: string, list: string[], setter: (val: string[]) => void) => {
     if (list.includes(item)) {
@@ -185,23 +180,26 @@ export function PreferencesGoals({ onNext, onBack, onUpdate, data }: StepProps) 
 
   const allExcitementOptions = useMemo(() => {
     const aiSigns = (analysis?.suggested_good_match_signals || []).filter((s): s is string => !!s)
-    return [...new Set([...EXCITEMENT_SIGNALS, ...aiSigns])]
-  }, [analysis])
+    return [...new Set([...goodMatchSignals, ...aiSigns])]
+  }, [analysis, goodMatchSignals])
 
   const allDealBreakerOptions = useMemo(() => {
     const aiLowFit = (analysis?.suggested_lower_fit_signals || []).filter((s): s is string => !!s)
-    return [...new Set([...DEAL_BREAKERS, ...aiLowFit])]
-  }, [analysis])
+    return [...new Set([...dealBreakers, ...aiLowFit])]
+  }, [analysis, dealBreakers])
 
   const handleNext = () => {
     onNext({
       careerGoal,
       careerDirection,
+      careerDirectionEdited: isManualEdit,
       industries,
       goodMatchSignals,
+      goodMatchSignalsConfirmed,
       companyQualitySignals,
       allowLowerSeniorityAtStrategicCompanies,
       dealBreakers,
+      dealBreakersConfirmed,
       additionalContext
     })
   }
@@ -378,7 +376,10 @@ export function PreferencesGoals({ onNext, onBack, onUpdate, data }: StepProps) 
                       "cursor-pointer px-4 py-2 text-sm rounded-xl transition-all h-auto",
                       isActive ? "bg-primary border-primary shadow-lg scale-105" : "bg-background/30 border-border/50 hover:bg-muted/50"
                     )}
-                    onClick={() => toggleItem(signal, goodMatchSignals, setGoodMatchSignals)}
+                    onClick={() => {
+                      setGoodMatchSignalsConfirmed(true)
+                      toggleItem(signal, goodMatchSignals, setGoodMatchSignals)
+                    }}
                   >
                     {signal}
                   </Badge>
@@ -390,7 +391,12 @@ export function PreferencesGoals({ onNext, onBack, onUpdate, data }: StepProps) 
                 <input 
                   value={newExcitement}
                   onChange={(e) => setNewExcitement(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleAddItem(newExcitement, goodMatchSignals, setGoodMatchSignals, setNewExcitement)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      setGoodMatchSignalsConfirmed(true)
+                      handleAddItem(newExcitement, goodMatchSignals, setGoodMatchSignals, setNewExcitement)
+                    }
+                  }}
                   placeholder="Add custom excitement..."
                   className="bg-transparent border-none outline-none text-xs w-full py-1 placeholder:text-muted-foreground/40"
                 />
@@ -409,7 +415,7 @@ export function PreferencesGoals({ onNext, onBack, onUpdate, data }: StepProps) 
 
           <div className="flex flex-col gap-3 pt-2">
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Keep this blank unless certain company qualities justify a strategic exception. This stays explicit and generic: the scorer only uses signals you choose here and only when companies are tagged with matching signals.
+              Keep this blank unless certain company qualities justify a strategic exception. Selecting any signals here automatically enables the narrow lower-seniority exception for matching tagged companies.
             </p>
 
             <div className="flex flex-wrap gap-2">
@@ -470,11 +476,13 @@ export function PreferencesGoals({ onNext, onBack, onUpdate, data }: StepProps) 
             )}>
               <p className="text-sm font-semibold text-foreground">
                 {companyQualitySignals.length > 0
-                  ? 'These signals will automatically enable a lower-seniority exception when a tracked company matches them.'
-                  : 'Select one or more company signals to enable a lower-seniority exception for specially chosen companies.'}
+                  ? "Lower-seniority strategic exception is active"
+                  : "No strategic exception is active"}
               </p>
               <p className="text-xs text-muted-foreground leading-relaxed max-w-xl mt-1">
-                This stays narrow: the exception only applies when a company carries one of the same explicit signals.
+                {companyQualitySignals.length > 0
+                  ? 'This stays narrow: lower-seniority roles only stay in play when a tracked company carries one of the same explicit signals.'
+                  : 'Leave this blank if you do not want any company-based exception.'}
               </p>
             </div>
           </div>
@@ -501,7 +509,10 @@ export function PreferencesGoals({ onNext, onBack, onUpdate, data }: StepProps) 
                       "cursor-pointer px-4 py-2 text-sm rounded-xl transition-all h-auto text-left leading-relaxed",
                       isActive ? "bg-destructive border-destructive shadow-lg scale-105" : "bg-background/30 border-border/50 hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30"
                     )}
-                    onClick={() => toggleItem(breaker, dealBreakers, setDealBreakers)}
+                    onClick={() => {
+                      setDealBreakersConfirmed(true)
+                      toggleItem(breaker, dealBreakers, setDealBreakers)
+                    }}
                   >
                     {breaker}
                   </Badge>
@@ -513,7 +524,12 @@ export function PreferencesGoals({ onNext, onBack, onUpdate, data }: StepProps) 
                 <input 
                   value={newDealBreaker}
                   onChange={(e) => setNewDealBreaker(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleAddItem(newDealBreaker, dealBreakers, setDealBreakers, setNewDealBreaker)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      setDealBreakersConfirmed(true)
+                      handleAddItem(newDealBreaker, dealBreakers, setDealBreakers, setNewDealBreaker)
+                    }
+                  }}
                   placeholder="Add custom deal-breaker..."
                   className="bg-transparent border-none outline-none text-xs w-full py-1 placeholder:text-muted-foreground/40"
                 />

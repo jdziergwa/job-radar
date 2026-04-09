@@ -111,6 +111,18 @@ TIMEZONE_ALIASES = {
     "local": "overlap_strict",
 }
 
+STANDARD_EXCLUSION_TARGET_REGIONS = {
+    "North America",
+    "USA",
+    "Canada",
+    "India",
+    "LATAM",
+    "Australia",
+    "Asia",
+    "APAC",
+    "Global",
+}
+
 def _get_label(id_val: str) -> str:
     """Map internal ID to pretty label, or return capitalized ID."""
     if not id_val: return ""
@@ -123,6 +135,30 @@ def _ensure_list(value: Any) -> list[str]:
     if isinstance(value, str):
         return [value]
     return [str(v) for v in value if v]
+
+
+def _dedupe_preserve_order(values: list[str]) -> list[str]:
+    """Deduplicate string values case-insensitively while preserving order."""
+    seen: set[str] = set()
+    result: list[str] = []
+    for value in values:
+        clean = " ".join((value or "").strip().split())
+        if not clean:
+            continue
+        key = clean.casefold()
+        if key in seen:
+            continue
+        seen.add(key)
+        result.append(clean)
+    return result
+
+
+def _user_selected_or_fallback(selected: Any, fallback: Any, confirmed: bool = False) -> list[str]:
+    """Prefer explicit user selections; optionally preserve confirmed-empty choices."""
+    explicit = _dedupe_preserve_order(_ensure_list(selected))
+    if explicit or confirmed:
+        return explicit
+    return _dedupe_preserve_order(_ensure_list(fallback))
 
 
 def _normalize_alias(value: str | None, aliases: dict[str, str]) -> str:
@@ -188,6 +224,12 @@ def _expand_region_patterns(regions: list[str]) -> list[str]:
 
     return patterns
 
+
+def _should_apply_standard_exclusions(target_regions: list[str]) -> bool:
+    """Avoid applying broad global exclusions when the user explicitly targets those regions."""
+    normalized_targets = {_normalize_region_name(region) for region in target_regions if region}
+    return not bool(normalized_targets & STANDARD_EXCLUSION_TARGET_REGIONS)
+
 def _format_work_setup_option(setup: str, city: str, timezone_pref: str) -> str:
     """Format a work setup option into explicit, readable profile text."""
     label = _get_label(setup)
@@ -230,7 +272,7 @@ def _timezone_constraint_lines(timezone_pref: str) -> list[str]:
 
 
 def _conditional_preference_lines(
-    career_goal: str,
+    adjacent_roles: list[str],
     seniority_preferences: list[str],
     has_portfolio: bool,
     company_quality_signals: list[str],
@@ -238,18 +280,9 @@ def _conditional_preference_lines(
 ) -> list[str]:
     """Generate generic conditional preference guidance for scoring."""
     lines: list[str] = []
-    goal = (career_goal or "stay").strip().lower()
-
-    if goal == "pivot":
-        lines.append("- Adjacent or transition roles are acceptable when transferable strengths are clear and there is concrete bridge evidence.")
-        lines.append("- Gaps without any supporting evidence should remain meaningful penalties even when the role is strategically interesting.")
-    elif goal == "broaden":
-        lines.append("- Adjacent roles are acceptable when they build on the current foundation and expand scope in a credible direction.")
-        lines.append("- Stretch opportunities should score better when the role preserves core strengths while adding new domain exposure.")
-    elif goal == "step_up":
-        lines.append("- Roles with higher scope are acceptable even when the title differs, if the responsibilities clearly imply greater ownership or leadership.")
-    else:
-        lines.append("- Core-specialization roles should outrank adjacent roles when both are otherwise viable.")
+    if adjacent_roles:
+        lines.append("- Core target roles should outrank adjacent roles when both are otherwise viable.")
+        lines.append("- Adjacent roles are acceptable when they build on the current foundation and offer credible bridge evidence.")
 
     seniority_set = {s.lower() for s in seniority_preferences}
     if seniority_set & {"senior", "lead", "staff", "principal"}:
@@ -258,30 +291,31 @@ def _conditional_preference_lines(
             signal_text = ", ".join(company_quality_signals)
             lines.append(f"- Lower-seniority roles are acceptable only when explicit company-quality signals match your strategic preferences: {signal_text}.")
 
-    if has_portfolio and goal in {"pivot", "broaden"}:
+    if has_portfolio and adjacent_roles:
         lines.append("- Portfolio or side-project evidence can offset some adjacent-skill gaps, but it should not be treated as equal to years of production experience.")
 
     return lines
 
 
 def _build_decision_rules(
-    career_goal: str,
+    adjacent_roles: list[str],
+    core_roles: list[str],
     seniority_preferences: list[str],
     has_portfolio: bool,
     company_quality_signals: list[str],
     allow_lower_seniority_at_strategic_companies: bool,
 ) -> dict[str, Any]:
     """Build machine-readable scoring guidance from generic user intent."""
-    goal = (career_goal or "stay").strip().lower()
     seniority_set = {s.lower() for s in seniority_preferences}
     prefers_senior_plus = bool(seniority_set & {"senior", "lead", "staff", "principal"})
+    has_adjacent_roles = bool(adjacent_roles)
 
     return {
         "adjacent_roles": {
-            "enabled": goal in {"broaden", "pivot"},
-            "requires_bridge_evidence": goal in {"broaden", "pivot"},
-            "prefer_core_when_equally_viable": goal == "stay",
-            "portfolio_counts_as_bridge_evidence": has_portfolio and goal in {"broaden", "pivot"},
+            "enabled": has_adjacent_roles,
+            "requires_bridge_evidence": has_adjacent_roles,
+            "prefer_core_when_equally_viable": bool(core_roles and adjacent_roles),
+            "portfolio_counts_as_bridge_evidence": has_portfolio and has_adjacent_roles,
         },
         "lower_seniority_roles": {
             "enabled": prefers_senior_plus,
@@ -297,26 +331,93 @@ def _build_decision_rules(
     }
 
 
+_ADJACENT_INTENT_MARKERS = (
+    "explore",
+    "open to",
+    "interested in",
+)
+
+
+def _normalize_role_phrase(value: str) -> str:
+    """Trim generic role suffix words while preserving user-authored phrasing."""
+    clean = " ".join((value or "").strip().split()).strip(" ,.;:-")
+    clean = re.sub(r"\b(?:positions?|roles?)\b\s*$", "", clean, flags=re.IGNORECASE).strip(" ,.;:-")
+    if clean.lower().endswith(" engineering"):
+        clean = clean[:-12].rstrip() + " Engineer"
+    return clean
+
+
+def _extract_adjacent_roles_from_career_direction(career_direction: str, core_roles: list[str]) -> list[str]:
+    """Infer only explicit adjacent/open-to roles from authored career-direction text."""
+    if not career_direction:
+        return []
+
+    core_set = {role.casefold() for role in core_roles}
+    adjacent_roles: list[str] = []
+
+    for fragment in re.split(r"[.;\n]+", career_direction):
+        fragment = " ".join(fragment.split())
+        lower_fragment = fragment.casefold()
+        marker = next((m for m in _ADJACENT_INTENT_MARKERS if m in lower_fragment), "")
+        if not marker:
+            continue
+
+        start = lower_fragment.index(marker) + len(marker)
+        trailing = fragment[start:].strip(" :-")
+        if not trailing:
+            continue
+
+        for candidate in re.split(r"\s*(?:/|,| and )\s*", trailing):
+            role = _normalize_role_phrase(candidate)
+            if len(role.split()) < 2:
+                continue
+            if role.casefold() in core_set:
+                continue
+            adjacent_roles.append(role)
+
+    return _dedupe_preserve_order(adjacent_roles)
+
+
+def _resolve_adjacent_roles(analysis: CVAnalysisResponse, preferences: Dict[str, Any]) -> list[str]:
+    """Combine adjacent-role signals from analysis and explicit authored intent."""
+    core_roles = _dedupe_preserve_order(_ensure_list(preferences.get("targetRoles", [])))
+    analysis_adjacent = [
+        role for role in _ensure_list(getattr(analysis, "suggested_target_roles", []))
+        if role.casefold() not in {value.casefold() for value in core_roles}
+    ]
+    authored_adjacent = _extract_adjacent_roles_from_career_direction(
+        preferences.get("careerDirection", ""),
+        core_roles,
+    )
+    return _dedupe_preserve_order(analysis_adjacent + authored_adjacent)
+
+
 def _build_scoring_context(analysis: CVAnalysisResponse, preferences: Dict[str, Any]) -> dict[str, Any]:
     """Build a compact structured intent payload for scoring."""
-    target_roles = _ensure_list(preferences.get("targetRoles", []))
-    suggested_roles = [
-        role for role in _ensure_list(getattr(analysis, "suggested_target_roles", []))
-        if role not in target_roles
-    ]
+    target_roles = _dedupe_preserve_order(_ensure_list(preferences.get("targetRoles", [])))
+    adjacent_roles = _resolve_adjacent_roles(analysis, preferences)
     seniority_preferences = [s.lower() for s in _ensure_list(preferences.get("seniority", getattr(analysis, "inferred_seniority", ""))) if s]
     remote_pref = [_normalize_work_setup(v) for v in _ensure_list(preferences.get("remotePref", []))]
     primary_pref = _normalize_work_setup(preferences.get("primaryRemotePref", "")) or (remote_pref[0] if remote_pref else "")
     timezone_pref = _normalize_timezone_pref(preferences.get("timezonePref", ""))
-    good_match_signals = _ensure_list(preferences.get("goodMatchSignals", [])) + _ensure_list(getattr(analysis, "suggested_good_match_signals", []))
+    good_match_signals = _user_selected_or_fallback(
+        preferences.get("goodMatchSignals", []),
+        getattr(analysis, "suggested_good_match_signals", []),
+        bool(preferences.get("goodMatchSignalsConfirmed", False)),
+    )
     company_quality_signals = _ensure_list(preferences.get("companyQualitySignals", []))
-    allow_lower_seniority_at_strategic_companies = bool(preferences.get("allowLowerSeniorityAtStrategicCompanies", False))
-    lower_fit_signals = _ensure_list(preferences.get("dealBreakers", [])) + _ensure_list(getattr(analysis, "suggested_lower_fit_signals", []))
+    allow_lower_seniority_at_strategic_companies = bool(company_quality_signals)
+    lower_fit_signals = _user_selected_or_fallback(
+        preferences.get("dealBreakers", []),
+        getattr(analysis, "suggested_lower_fit_signals", []),
+        bool(preferences.get("dealBreakersConfirmed", False)),
+    )
+    target_industries = _dedupe_preserve_order(_ensure_list(preferences.get("industries", [])))
 
     return {
         "role_targets": {
             "core": target_roles,
-            "adjacent": suggested_roles,
+            "adjacent": adjacent_roles,
             "seniority_preferences": seniority_preferences,
         },
         "work_setup": {
@@ -332,24 +433,27 @@ def _build_scoring_context(analysis: CVAnalysisResponse, preferences: Dict[str, 
             },
         },
         "career_preferences": {
-            "goal": preferences.get("careerGoal", "stay"),
             "direction": preferences.get("careerDirection") or getattr(analysis, "suggested_career_direction", ""),
             "score_higher_signals": good_match_signals,
             "score_lower_signals": lower_fit_signals,
+        },
+        "industry_preferences": {
+            "target_industries": target_industries,
         },
         "company_preferences": {
             "preferred_signals": company_quality_signals,
             "allow_lower_seniority_if_company_matches": allow_lower_seniority_at_strategic_companies,
         },
         "decision_rules": _build_decision_rules(
-            preferences.get("careerGoal", "stay"),
+            adjacent_roles,
+            target_roles,
             seniority_preferences,
             bool(getattr(analysis, "portfolio", [])),
             company_quality_signals,
             allow_lower_seniority_at_strategic_companies,
         ),
         "conditional_preferences": _conditional_preference_lines(
-            preferences.get("careerGoal", "stay"),
+            adjacent_roles,
             seniority_preferences,
             bool(getattr(analysis, "portfolio", [])),
             company_quality_signals,
@@ -362,6 +466,18 @@ _SENIORITY_PREFIXES = {
     "lead", "staff", "principal", "head",
 }
 
+_ROLE_ATOM_EXPANSIONS = {
+    "qa": r"(?:qa|quality\s+assurance)",
+    "sdet": r"(?:sdet|software\s+engineer\s+in\s+test)",
+    "devops": r"(?:devops|dev\s*ops)",
+    "sre": r"(?:sre|site\s+reliability(?:\s+engineer)?)",
+    "ml": r"(?:ml|machine\s+learning)",
+    "mle": r"(?:mle|machine\s+learning\s+engineer)",
+    "ai": r"(?:ai|artificial\s+intelligence)",
+    "ux": r"(?:ux|user\s+experience)",
+    "ui": r"(?:ui|user\s+interface)",
+}
+
 _GENERIC_ROLE_SUFFIXES = {
     "engineer", "developer", "manager", "architect", "specialist",
     "analyst", "consultant", "designer", "researcher", "scientist",
@@ -372,7 +488,6 @@ _GENERIC_SIGNAL_TERMS = {
     "role", "roles", "team", "teams", "product", "products", "system",
     "systems", "work", "working", "delivery", "strategy", "operations",
 }
-
 
 def _role_to_regex(role: str) -> str:
     """Convert a role string into a literal word-boundary regex."""
@@ -414,12 +529,47 @@ def _derive_role_patterns(target_roles: list[str]) -> tuple[list[str], list[str]
             tokens = tokens[1:]
         if len(tokens) >= 2:
             add_broad(_role_to_regex(" ".join(tokens)))
+        elif len(tokens) == 1 and re.fullmatch(r"[A-Za-z0-9\-/+]{3,10}", tokens[0]):
+            add_broad(_role_to_regex(tokens[0]))
 
         acronym_matches = re.findall(r"\(([A-Za-z0-9][A-Za-z0-9\-/+]{1,9})\)", role)
         for acronym in acronym_matches:
             add_broad(_role_to_regex(acronym))
 
     return high_confidence, broad
+
+
+def _derive_semantic_title_patterns(target_roles: list[str]) -> list[str]:
+    """Extract seniority-agnostic role-family patterns from selected titles."""
+    patterns: list[str] = []
+    seen: set[str] = set()
+
+    def add_pattern(pattern: str) -> None:
+        key = pattern.lower()
+        if pattern and key not in seen:
+            patterns.append(pattern)
+            seen.add(key)
+
+    for raw_role in target_roles:
+        role = " ".join((raw_role or "").strip().split())
+        if not role:
+            continue
+
+        clean = re.sub(r"\s*\([^)]*\)", "", role).strip()
+        tokens = clean.split()
+        while tokens and tokens[0].lower() in _SENIORITY_PREFIXES:
+            tokens = tokens[1:]
+        if not tokens:
+            continue
+
+        for token in tokens:
+            expansion = _ROLE_ATOM_EXPANSIONS.get(token.lower())
+            if expansion:
+                add_pattern(rf"\b{expansion}\b")
+
+        add_pattern(_role_to_regex(" ".join(tokens)))
+
+    return patterns
 
 
 def _merge_title_patterns(llm_patterns: list[str], derived_patterns: list[str]) -> list[str]:
@@ -431,6 +581,62 @@ def _merge_title_patterns(llm_patterns: list[str], derived_patterns: list[str]) 
             patterns.append(pattern)
             existing_lower.add(pattern.lower())
     return patterns
+
+
+def _stabilize_title_patterns(
+    llm_high_confidence: list[str],
+    llm_broad: list[str],
+    derived_high_confidence: list[str],
+    derived_broad: list[str],
+) -> tuple[list[str], list[str]]:
+    """Anchor high_confidence to derived semantic cores and push everything else to broad."""
+    merged_broad = _merge_title_patterns(llm_broad, derived_broad)
+
+    if not derived_high_confidence:
+        return list(llm_high_confidence), merged_broad
+
+    exact_core = {pattern.lower() for pattern in derived_high_confidence}
+    demoted: list[str] = []
+    for pattern in llm_high_confidence:
+        key = pattern.lower()
+        if key not in exact_core:
+            demoted.append(pattern)
+
+    existing_broad = {pattern.lower() for pattern in merged_broad}
+    for pattern in demoted:
+        key = pattern.lower()
+        if key not in existing_broad:
+            merged_broad.append(pattern)
+            existing_broad.add(key)
+
+    return list(derived_high_confidence), merged_broad
+
+
+def _ensure_patterns_present(base_patterns: list[str], required_patterns: list[str]) -> list[str]:
+    """Append required patterns while preserving order and avoiding duplicates."""
+    merged = list(base_patterns)
+    existing = {pattern.lower() for pattern in merged}
+    for pattern in required_patterns:
+        key = pattern.lower()
+        if key not in existing:
+            merged.append(pattern)
+            existing.add(key)
+    return merged
+
+
+def _merge_list_preserve_existing(existing_values: list[Any], refined_values: list[Any]) -> list[Any]:
+    """Keep existing list items and append refined additions without subtraction."""
+    merged = list(existing_values)
+    existing_keys = {
+        value.lower() if isinstance(value, str) else str(value).lower()
+        for value in merged
+    }
+    for value in refined_values:
+        key = value.lower() if isinstance(value, str) else str(value).lower()
+        if key not in existing_keys:
+            merged.append(value)
+            existing_keys.add(key)
+    return merged
 
 # Tool/framework names that are too generic to be useful as description signals
 _GENERIC_SKILL_TERMS = {
@@ -529,16 +735,27 @@ def _merge_description_signals(
 
 def generate_profile_yaml(analysis: CVAnalysisResponse, preferences: Dict[str, Any]) -> str:
     """Build search_config.yaml content from CV analysis + user preferences."""
-    
-    target_roles = _ensure_list(preferences.get("targetRoles", []))
-    target_roles += _ensure_list(getattr(analysis, "suggested_target_roles", []))
+
+    target_roles = _dedupe_preserve_order(_ensure_list(preferences.get("targetRoles", [])))
+    adjacent_roles = _resolve_adjacent_roles(analysis, preferences)
     target_regions = preferences.get("targetRegions", [])
     excluded_regions = preferences.get("excludedRegions", [])
     enable_standard_exclusions = preferences.get("enableStandardExclusions", True)
     remote_pref = [_normalize_work_setup(v) for v in _ensure_list(preferences.get("remotePref", []))]
     good_match_signals = _ensure_list(preferences.get("goodMatchSignals", []))
     good_match_signals += _ensure_list(getattr(analysis, "suggested_good_match_signals", []))
-    derived_high_conf, derived_broad = _derive_role_patterns(target_roles)
+    exact_target_high_conf, exact_target_broad = _derive_role_patterns(target_roles)
+    semantic_high_conf = _derive_semantic_title_patterns(target_roles)
+    adjacent_high_conf, adjacent_broad = _derive_role_patterns(adjacent_roles)
+    all_broad = _dedupe_preserve_order(
+        exact_target_high_conf + exact_target_broad + adjacent_high_conf + adjacent_broad
+    )
+    title_high_conf, title_broad = _stabilize_title_patterns(
+        analysis.suggested_title_patterns.get("high_confidence", []),
+        analysis.suggested_title_patterns.get("broad", []),
+        _dedupe_preserve_order(exact_target_high_conf + semantic_high_conf),
+        all_broad,
+    )
     derived_description_signals = _derive_literal_description_signals(
         target_roles,
         good_match_signals,
@@ -550,7 +767,7 @@ def generate_profile_yaml(analysis: CVAnalysisResponse, preferences: Dict[str, A
     
     # Add standard global exclusions for "Noise Reduction" if enabled
     # Only adds it if user hasn't explicitly targeted those regions
-    if enable_standard_exclusions:
+    if enable_standard_exclusions and _should_apply_standard_exclusions(target_regions):
         for ex in STANDARD_GLOBAL_EXCLUSIONS:
             if ex not in location_exclusions:
                 location_exclusions.append(ex)
@@ -561,14 +778,8 @@ def generate_profile_yaml(analysis: CVAnalysisResponse, preferences: Dict[str, A
     config = {
         "keywords": {
             "title_patterns": {
-                "high_confidence": _merge_title_patterns(
-                    analysis.suggested_title_patterns.get("high_confidence", []),
-                    derived_high_conf,
-                ),
-                "broad": _merge_title_patterns(
-                    analysis.suggested_title_patterns.get("broad", []),
-                    derived_broad,
-                ),
+                "high_confidence": title_high_conf,
+                "broad": title_broad,
             },
             "description_signals": {
                 "min_matches": 1,
@@ -605,19 +816,187 @@ def generate_profile_yaml(analysis: CVAnalysisResponse, preferences: Dict[str, A
     yaml_header = "# Generated search_config.yaml\n"
     return yaml_header + yaml.dump(config, sort_keys=False, default_flow_style=False)
 
+
+EDITABLE_PROFILE_DOC_SECTIONS = (
+    "Experience Summary",
+    "Core Technical Stack",
+    "What Makes a Good Match (Score Higher)",
+    "Critical Skill Gaps",
+    "What Lowers Fit (Score Lower)",
+)
+
+EDITABLE_SEARCH_KEYWORD_KEYS = (
+    "description_signals",
+)
+
+
+def _split_markdown_level2_sections(doc: str) -> tuple[list[str], list[tuple[str, str]]]:
+    """Split markdown into preamble lines and ordered level-2 sections."""
+    preamble: list[str] = []
+    sections: list[tuple[str, str]] = []
+    current_heading: str | None = None
+    current_lines: list[str] = []
+
+    for line in doc.splitlines():
+        if line.startswith("## "):
+            if current_heading is None:
+                pass
+            else:
+                sections.append((current_heading, "\n".join(current_lines).strip()))
+            current_heading = line[3:].strip()
+            current_lines = []
+            continue
+
+        if current_heading is None:
+            preamble.append(line)
+        else:
+            current_lines.append(line)
+
+    if current_heading is not None:
+        sections.append((current_heading, "\n".join(current_lines).strip()))
+
+    return preamble, sections
+
+
+def extract_refinable_profile_doc_sections(doc: str) -> dict[str, str]:
+    """Return only the markdown sections the LLM is allowed to refine."""
+    _, sections = _split_markdown_level2_sections(doc)
+    return {
+        heading: body
+        for heading, body in sections
+        if heading in EDITABLE_PROFILE_DOC_SECTIONS
+    }
+
+
+def merge_refined_profile_doc_sections(original_doc: str, refined_sections: Dict[str, Any]) -> str:
+    """Replace only editable markdown sections by heading name."""
+    preamble, sections = _split_markdown_level2_sections(original_doc)
+    merged_parts: list[str] = []
+
+    preamble_text = "\n".join(preamble).strip()
+    if preamble_text:
+        merged_parts.append(preamble_text)
+
+    for heading, body in sections:
+        replacement = body
+        if heading in EDITABLE_PROFILE_DOC_SECTIONS and isinstance(refined_sections.get(heading), str):
+            replacement = refined_sections[heading].strip()
+        section_text = f"## {heading}"
+        if replacement:
+            section_text += f"\n{replacement}"
+        merged_parts.append(section_text)
+
+    return "\n\n".join(merged_parts).strip()
+
+
+def extract_refinable_search_config_keywords(profile_yaml: str) -> dict[str, Any]:
+    """Return only the keyword subsections the LLM is allowed to refine."""
+    config = yaml.safe_load(profile_yaml)
+    if not isinstance(config, dict):
+        return {}
+    keywords = config.get("keywords", {})
+    if not isinstance(keywords, dict):
+        return {}
+    editable_keywords: dict[str, Any] = {}
+    title_patterns = keywords.get("title_patterns")
+    if isinstance(title_patterns, dict):
+        editable_title_patterns: dict[str, Any] = {}
+        if "high_confidence" in title_patterns:
+            editable_title_patterns["high_confidence"] = title_patterns["high_confidence"]
+        if "broad" in title_patterns:
+            editable_title_patterns["broad"] = title_patterns["broad"]
+        if editable_title_patterns:
+            editable_keywords["title_patterns"] = editable_title_patterns
+    for key in EDITABLE_SEARCH_KEYWORD_KEYS:
+        if key in keywords:
+            editable_keywords[key] = keywords[key]
+    return editable_keywords
+
+
+def merge_refined_search_config_keywords(original_yaml: str, refined_keywords: Dict[str, Any]) -> str:
+    """Add refined keyword suggestions without subtracting existing generated rules."""
+    config = yaml.safe_load(original_yaml)
+    if not isinstance(config, dict):
+        return original_yaml
+
+    keywords = config.get("keywords")
+    if not isinstance(keywords, dict):
+        return original_yaml
+
+    refined_title_patterns = refined_keywords.get("title_patterns")
+    existing_title_patterns = keywords.get("title_patterns")
+    if isinstance(existing_title_patterns, dict) and isinstance(refined_title_patterns, dict):
+        role_targets = config.get("scoring_context", {}).get("role_targets", {})
+        core_roles = role_targets.get("core", []) if isinstance(role_targets, dict) else []
+        required_high_conf = [_role_to_regex(role) for role in _ensure_list(core_roles)]
+        existing_high = existing_title_patterns.get("high_confidence")
+        existing_broad = existing_title_patterns.get("broad")
+        refined_high = refined_title_patterns.get("high_confidence")
+        refined_broad = refined_title_patterns.get("broad")
+
+        if isinstance(existing_high, list):
+            if isinstance(refined_high, list):
+                final_high = _ensure_patterns_present(refined_high, required_high_conf)
+            else:
+                final_high = _ensure_patterns_present(existing_high, required_high_conf)
+
+            final_high_keys = {pattern.lower() for pattern in final_high}
+            protected_high_keys = {pattern.lower() for pattern in required_high_conf}
+
+            if isinstance(existing_broad, list):
+                final_broad = list(existing_broad)
+            else:
+                final_broad = []
+
+            if isinstance(refined_broad, list):
+                final_broad = _merge_list_preserve_existing(final_broad, refined_broad)
+
+            demoted_existing_high = [
+                pattern for pattern in existing_high
+                if pattern.lower() not in protected_high_keys and pattern.lower() not in final_high_keys
+            ]
+            final_broad = _merge_list_preserve_existing(final_broad, demoted_existing_high)
+
+            existing_title_patterns["high_confidence"] = final_high
+            existing_title_patterns["broad"] = final_broad
+        keywords["title_patterns"] = existing_title_patterns
+
+    for key in EDITABLE_SEARCH_KEYWORD_KEYS:
+        value = refined_keywords.get(key)
+        existing_value = keywords.get(key)
+        if isinstance(existing_value, dict) and isinstance(value, dict):
+            merged_dict = dict(existing_value)
+            existing_patterns = existing_value.get("patterns")
+            refined_patterns = value.get("patterns")
+            if isinstance(existing_patterns, list) and isinstance(refined_patterns, list):
+                merged_dict["patterns"] = _merge_list_preserve_existing(existing_patterns, refined_patterns)
+            if "min_matches" in value and "min_matches" not in merged_dict:
+                merged_dict["min_matches"] = value["min_matches"]
+            keywords[key] = merged_dict
+
+    config["keywords"] = keywords
+    return "# Generated search_config.yaml\n" + yaml.dump(
+        config,
+        sort_keys=False,
+        default_flow_style=False,
+    )
+
 def generate_profile_doc(analysis: CVAnalysisResponse, preferences: Dict[str, Any]) -> str:
     """Build profile_doc.md from CV analysis + user preferences."""
-    
+
     sections = []
-    
+
     sections.append("# Candidate Profile")
-    
+
     # ## Role Target
-    target_roles = " / ".join(preferences.get("targetRoles", []))
-    role_target_lines = [f"## Role Target", target_roles]
-    if analysis.suggested_target_roles:
-        suggested = " / ".join(analysis.suggested_target_roles)
-        role_target_lines.append(f"Open to: {suggested}")
+    target_roles_list = _dedupe_preserve_order(_ensure_list(preferences.get("targetRoles", [])))
+    target_roles = " / ".join(target_roles_list)
+    adjacent_roles = _resolve_adjacent_roles(analysis, preferences)
+    role_target_lines = [f"## Role Target"]
+    if target_roles:
+        role_target_lines.append(f"Primary target roles: {target_roles}")
+    if adjacent_roles:
+        role_target_lines.append(f"Adjacent/stretch roles: {', '.join(adjacent_roles)}")
     sections.append("\n".join(role_target_lines))
     
     # ## Experience Summary
@@ -649,19 +1028,27 @@ def generate_profile_doc(analysis: CVAnalysisResponse, preferences: Dict[str, An
         tech_stack_lines.append(f"\n### {category}")
         for skill in skills:
             tech_stack_lines.append(f"- {skill}")
+    portfolio_evidenced_skills = [
+        project for project in getattr(analysis, "portfolio", [])
+        if getattr(project, "technologies", None)
+    ]
+    if portfolio_evidenced_skills:
+        tech_stack_lines.append("\n### Portfolio-Evidenced Skills")
+        for project in portfolio_evidenced_skills:
+            tech_tags = ", ".join(project.technologies)
+            tech_stack_lines.append(
+                f"- {project.name}: {tech_tags} (portfolio project, not commercial production)"
+            )
     sections.append("\n".join(tech_stack_lines))
     
-    # ## Soft Preferences (Score Higher)
-    good_match_lines = ["## Soft Preferences (Score Higher)"]
-    
-    # Deduplicate signals using a set while maintaining order
-    raw_signals = preferences.get("goodMatchSignals", []) + analysis.suggested_good_match_signals
-    seen_signals = set()
-    signals = []
-    for s in raw_signals:
-        if s and s.lower() not in seen_signals:
-            signals.append(s)
-            seen_signals.add(s.lower())
+    # ## What Makes a Good Match (Score Higher)
+    good_match_lines = ["## What Makes a Good Match (Score Higher)"]
+
+    signals = _user_selected_or_fallback(
+        preferences.get("goodMatchSignals", []),
+        analysis.suggested_good_match_signals,
+        bool(preferences.get("goodMatchSignalsConfirmed", False)),
+    )
     
     # Inferred defaults based on preferences
     remote_pref = [_normalize_work_setup(v) for v in _ensure_list(preferences.get("remotePref", []))]
@@ -669,10 +1056,10 @@ def generate_profile_doc(analysis: CVAnalysisResponse, preferences: Dict[str, An
     primary_pref = _normalize_work_setup(preferences.get("primaryRemotePref", ""))
     timezone_pref = _normalize_timezone_pref(preferences.get("timezonePref", ""))
     city = preferences.get("location", "").split(",")[0].strip() or "Location"
-    seniority_pref_text = _format_seniority_preferences(preferences.get("seniority", getattr(analysis, "inferred_seniority", None)))
     target_regions = ", ".join(preferences.get("targetRegions", []))
+    target_industries = ", ".join(_dedupe_preserve_order(_ensure_list(preferences.get("industries", []))))
     company_quality_signals = _ensure_list(preferences.get("companyQualitySignals", []))
-    allow_lower_seniority_at_strategic_companies = bool(preferences.get("allowLowerSeniorityAtStrategicCompanies", False))
+    allow_lower_seniority_at_strategic_companies = bool(company_quality_signals)
     preferred_setup = _format_work_setup_option(primary_pref, city, timezone_pref) if primary_pref else ""
     acceptable_setups = [
         _format_work_setup_option(setup, city, timezone_pref)
@@ -680,31 +1067,13 @@ def generate_profile_doc(analysis: CVAnalysisResponse, preferences: Dict[str, An
         if setup != primary_pref
     ]
 
-    if target_roles:
-        good_match_lines.append(f"- Core target roles: {target_roles}")
-    if analysis.suggested_target_roles:
-        suggested_roles = [role for role in analysis.suggested_target_roles if role not in preferences.get("targetRoles", [])]
-        if suggested_roles:
-            good_match_lines.append(f"- Adjacent/open-to roles: {', '.join(suggested_roles)}")
-    if seniority_pref_text:
-        good_match_lines.append(f"- Preferred seniority: {seniority_pref_text}")
-    if preferred_setup:
-        good_match_lines.append(f"- Preferred work setup: {preferred_setup}")
-    if acceptable_setups:
-        good_match_lines.append(f"- Also acceptable: {', '.join(acceptable_setups)}")
-    if target_regions:
-        good_match_lines.append(f"- Target regions: {target_regions}")
+    if adjacent_roles:
+        good_match_lines.append(f"- Adjacent/open-to roles: {', '.join(adjacent_roles)}")
+    if target_industries:
+        good_match_lines.append(f"- Preferred industries: {target_industries}")
     if company_quality_signals:
         good_match_lines.append(f"- Preferred company signals: {', '.join(company_quality_signals)}")
 
-    if "remote" in remote_pref:
-        signals.append(f"{_format_work_setup_option('remote', city, timezone_pref)} roles")
-    if "hybrid" in remote_pref:
-        signals.append(f"{_format_work_setup_option('hybrid', city, timezone_pref)} roles")
-    
-    if seniority_pref_text:
-        signals.append(f"{seniority_pref_text}-level roles")
-        
     for signal in signals:
         good_match_lines.append(f"- {signal}")
     sections.append("\n".join(good_match_lines))
@@ -712,19 +1081,25 @@ def generate_profile_doc(analysis: CVAnalysisResponse, preferences: Dict[str, An
     # ## Critical Skill Gaps
     gap_lines = ["## Critical Skill Gaps"]
 
-    # Career goal context — describes what kind of gaps matter for the scorer,
-    # without prescribing specific score numbers (those belong in scoring_philosophy.md)
-    goal = preferences.get("careerGoal", "stay")
-    if goal == "broaden":
-        context_text = "Career goal: expanding into adjacent domains. Gaps in new areas are expected — distinguish between gaps where the candidate shows bridge evidence (portfolio, secondary experience) vs gaps with zero evidence."
-    elif goal == "pivot":
-        context_text = "Career goal: pivoting to a new field. Transferable skills and bridge evidence (e.g., portfolio projects) partially offset gaps in the new domain. Gaps without any supporting evidence remain significant."
-    elif goal == "step_up":
-        context_text = "Career goal: stepping up to higher scope or leadership. Look for leadership signals in prior roles (led teams, defined strategy, mentored). Management-specific gaps are less critical if leadership evidence exists elsewhere."
-    else:  # stay
-        context_text = "Career goal: deepening current specialization. Gaps in core required skills for the target roles are significant and should not be downplayed."
+    has_adjacent_roles = bool(adjacent_roles)
+    context_text = (
+        "These are confirmed gaps -- not 'learning quickly' adjacencies. "
+        "When a job's primary focus depends on these, lower tech_stack_match significantly. "
+        "Each gap includes per-dimension scoring guidance."
+    )
+    if has_adjacent_roles and analysis.portfolio:
+        context_text += (
+            " Distinguish core target-role gaps from adjacent-role gaps. "
+            "Portfolio or secondary evidence can soften adjacent gaps, but it should not "
+            "be treated as equal to years of production experience."
+        )
+    elif has_adjacent_roles:
+        context_text += (
+            " Distinguish core target-role gaps from adjacent-role gaps. "
+            "Adjacent-role gaps should stay meaningful when there is no supporting bridge evidence."
+        )
 
-    gap_lines.append(f"**Career Context: {goal.replace('_', ' ').title()}**")
+    gap_lines.append("**Scoring Context**")
     gap_lines.append(context_text)
 
     for gap in analysis.suggested_skill_gaps:
@@ -735,17 +1110,14 @@ def generate_profile_doc(analysis: CVAnalysisResponse, preferences: Dict[str, An
             gap_lines.append(f"- {gap}")
     sections.append("\n".join(gap_lines))
     
-    # ## Hard Constraints And Low-Fit Signals
-    lower_fit_lines = ["## Hard Constraints And Low-Fit Signals"]
-    
-    # Deduplicate deal breakers
-    raw_db = preferences.get("dealBreakers", []) + analysis.suggested_lower_fit_signals
-    seen_db = set()
-    deal_breakers = []
-    for db in raw_db:
-        if db and db.lower() not in seen_db:
-            deal_breakers.append(db)
-            seen_db.add(db.lower())
+    # ## What Lowers Fit (Score Lower)
+    lower_fit_lines = ["## What Lowers Fit (Score Lower)"]
+
+    deal_breakers = _user_selected_or_fallback(
+        preferences.get("dealBreakers", []),
+        analysis.suggested_lower_fit_signals,
+        bool(preferences.get("dealBreakersConfirmed", False)),
+    )
     
     # Standard entries based on seniority
     seniority_val = preferences.get("seniority", getattr(analysis, "inferred_seniority", ""))
@@ -761,20 +1133,8 @@ def generate_profile_doc(analysis: CVAnalysisResponse, preferences: Dict[str, An
     excluded = ", ".join(preferences.get("excludedRegions", []))
     remote_pref_set = set(remote_pref)
 
-    lower_fit_lines.append(f"- Work authorization context: {work_auth or 'Unspecified'}")
-    lower_fit_lines.append(f"- Base location: {location}")
-    if excluded:
-        lower_fit_lines.append(f"- Excluded regions: {excluded}")
-
     if any(s in ["senior", "lead", "staff", "principal"] for s in seniority_list):
         lower_fit_lines.append("- Junior or entry-level positions")
-    
-    if "remote" in remote_pref:
-        lower_fit_lines.append("- On-site only positions")
-    if "hybrid" not in remote_pref_set and "onsite" not in remote_pref_set and "remote" in remote_pref_set:
-        lower_fit_lines.append("- Roles that require routine in-office presence")
-
-    lower_fit_lines.extend(_timezone_constraint_lines(timezone_pref))
         
     for db in deal_breakers:
         lower_fit_lines.append(f"- {db}")
@@ -797,15 +1157,14 @@ def generate_profile_doc(analysis: CVAnalysisResponse, preferences: Dict[str, An
     # Add setup negatives
     if "onsite" not in remote_pref_set:
         loc_lines.append("- Not acceptable: On-site only positions")
-    if timezone_pref and timezone_pref != "any":
-        loc_lines.append(f"- Timezone preference: {_get_label(timezone_pref)}")
+    loc_lines.extend(_timezone_constraint_lines(timezone_pref))
         
     sections.append("\n".join(loc_lines))
 
     # ## Conditional Preferences
     conditional_lines = ["## Conditional Preferences"]
     conditional_lines.extend(_conditional_preference_lines(
-        preferences.get("careerGoal", "stay"),
+        adjacent_roles,
         seniority_list,
         bool(analysis.portfolio),
         company_quality_signals,
@@ -815,7 +1174,16 @@ def generate_profile_doc(analysis: CVAnalysisResponse, preferences: Dict[str, An
     
     # ## Career Direction
     career_dir = preferences.get("careerDirection") or analysis.suggested_career_direction
-    sections.append(f"## Career Direction\n{career_dir}")
+    career_goal = preferences.get("careerGoal", "stay")
+    goal_labels = {
+        "stay": "Deepening expertise in current specialization",
+        "pivot": "Transitioning to a new career direction",
+        "step_up": "Stepping up to higher scope and leadership",
+        "broaden": "Broadening scope within the current domain family",
+    }
+    goal_label = goal_labels.get(career_goal, "")
+    goal_line = f"**Goal: {goal_label}**\n" if goal_label else ""
+    sections.append(f"## Career Direction\n{goal_line}{career_dir}")
     
     # ## Portfolio
     if analysis.portfolio:

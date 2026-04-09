@@ -93,3 +93,48 @@ def test_job_detail_response_exposes_company_quality_signals():
         response = JobDetailResponse.from_row(row)
 
         assert response.company_quality_signals == ["strong cv value"]
+
+
+def test_job_response_normalizes_stale_priority_from_fit_score():
+    with tempfile.TemporaryDirectory() as tmpdir:
+        db_path = Path(tmpdir) / "jobs.db"
+        store = Store(str(db_path))
+
+        store.upsert_jobs([
+            RawJob(
+                ats_platform="ashby",
+                company_slug="linear",
+                company_name="Linear",
+                job_id="role-3",
+                title="Senior Backend Engineer",
+                location="Remote",
+                url="https://example.com/jobs/3",
+                description="Example description.",
+                posted_at="2026-04-08T00:00:00Z",
+                fetched_at="2026-04-08T00:00:00Z",
+            )
+        ])
+
+        candidate = store.get_unscored()[0]
+        store.update_score(
+            db_id=candidate.db_id,
+            fit_score=82,
+            reasoning="Strong role fit.",
+            breakdown={
+                "tech_stack_match": 84,
+                "seniority_match": 82,
+                "remote_location_fit": 90,
+                "growth_potential": 78,
+            },
+            fit_category="core_fit",
+            apply_priority="medium",
+        )
+
+        row = store.get_job_detail(candidate.db_id)
+        assert row is not None
+
+        response = JobDetailResponse.from_row(row)
+
+        assert response.fit_score == 82
+        assert response.score_breakdown is not None
+        assert response.score_breakdown.apply_priority == "high"

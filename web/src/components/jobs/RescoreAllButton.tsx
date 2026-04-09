@@ -38,6 +38,15 @@ export function RescoreAllButton({
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [runId, setRunId] = useState<string | null>(null)
 
+  const openProgressDialog = (nextRunId: string) => {
+    setRunId(nextRunId)
+
+    // Let the confirmation dialog fully close before showing progress.
+    window.setTimeout(() => {
+      setShowProgress(true)
+    }, 0)
+  }
+
   const handleRescoreAll = async () => {
     setConfirmOpen(false)
     setLoading(true)
@@ -51,10 +60,14 @@ export function RescoreAllButton({
         toast.error('Failed to start bulk rescore')
         console.error('Rescore all error:', error)
       } else {
-        toast.success('Bulk rescore started in background')
         const id = (data as any)?.run_id
-        setRunId(id)
-        setShowProgress(true)
+        if (!id) {
+          toast.error('Bulk rescore did not return a run ID')
+          return
+        }
+
+        toast.success('Bulk rescore started in background')
+        openProgressDialog(id)
         window.dispatchEvent(new CustomEvent('pipeline-started', { 
           detail: { run_id: id } 
         }))

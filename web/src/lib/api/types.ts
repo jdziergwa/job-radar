@@ -1351,6 +1351,11 @@ export interface components {
              */
             goodMatchSignals: string[];
             /**
+             * Goodmatchsignalsconfirmed
+             * @default false
+             */
+            goodMatchSignalsConfirmed: boolean;
+            /**
              * Companyqualitysignals
              * @default []
              */
@@ -1365,6 +1370,11 @@ export interface components {
              * @default []
              */
             dealBreakers: string[];
+            /**
+             * Dealbreakersconfirmed
+             * @default false
+             */
+            dealBreakersConfirmed: boolean;
             /**
              * Enablestandardexclusions
              * @default true

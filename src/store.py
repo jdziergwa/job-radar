@@ -16,6 +16,7 @@ from datetime import datetime, timedelta
 from typing import Callable, Generator
 
 from src.models import CandidateJob, RawJob, ScoredJob
+from src.score_normalization import normalize_persisted_priority
 
 logger = logging.getLogger(__name__)
 UpsertProgressCallback = Callable[[str, int, int], None]
@@ -303,6 +304,33 @@ class Store:
             )
         logger.debug("Scored job %d: %d%%", db_id, fit_score)
 
+    @staticmethod
+    def _parse_score_breakdown_payload(
+        breakdown_raw: str | None,
+    ) -> tuple[dict[str, int], str, str, dict[str, object]]:
+        """Extract dimensions and metadata from stored score_breakdown JSON."""
+        breakdown: dict[str, int] = {}
+        apply_priority = "skip"
+        skip_reason = "none"
+        payload: dict[str, object] = {}
+
+        if not breakdown_raw:
+            return breakdown, apply_priority, skip_reason, payload
+
+        try:
+            data = json.loads(breakdown_raw)
+            if isinstance(data, dict):
+                payload = data
+                raw_breakdown = data.get("dimensions", {})
+                if isinstance(raw_breakdown, dict):
+                    breakdown = raw_breakdown
+                apply_priority = str(data.get("apply_priority", "skip") or "skip")
+                skip_reason = str(data.get("skip_reason", "none") or "none")
+        except (json.JSONDecodeError, Exception):
+            pass
+
+        return breakdown, apply_priority, skip_reason, payload
+
     # ── Queries ─────────────────────────────────────────────────────
 
     def get_unscored(self) -> list[CandidateJob]:
@@ -490,19 +518,21 @@ class Store:
                 ).fetchone()[0]
                 distribution[label] = count
 
-            # Apply priority counts from score_breakdown JSON
+            # Apply priority counts using normalized persisted score data
             priority_counts = {"high": 0, "medium": 0, "low": 0, "skip": 0}
-            try:
-                rows = conn.execute(
-                    "SELECT score_breakdown FROM jobs WHERE score_breakdown IS NOT NULL"
-                ).fetchall()
-                for row in rows:
-                    data = json.loads(row[0])
-                    p = data.get("apply_priority", "skip")
-                    if p in priority_counts:
-                        priority_counts[p] += 1
-            except (json.JSONDecodeError, Exception):
-                pass
+            rows = conn.execute(
+                "SELECT fit_score, score_breakdown FROM jobs WHERE score_breakdown IS NOT NULL"
+            ).fetchall()
+            for row in rows:
+                breakdown, apply_priority, skip_reason, _ = self._parse_score_breakdown_payload(row["score_breakdown"])
+                priority, _ = normalize_persisted_priority(
+                    row["fit_score"],
+                    breakdown,
+                    apply_priority,
+                    skip_reason,
+                )
+                if priority in priority_counts:
+                    priority_counts[priority] += 1
 
         return {
             "total_jobs": total,
@@ -573,10 +603,6 @@ class Store:
             where_clauses.append("fit_score <= ?")
             params.append(max_score)
         
-        if priority:
-            where_clauses.append("JSON_EXTRACT(score_breakdown, '$.apply_priority') = ?")
-            params.append(priority)
-        
         if company:
             where_clauses.append("LOWER(company_name) LIKE ?")
             params.append(f"%{company.lower()}%")
@@ -609,23 +635,32 @@ class Store:
         sort_col = sort_map.get(sort, "fit_score")
         order_sql = "ASC" if order.lower() == "asc" else "DESC"
         
-        offset = (page - 1) * per_page
-        
         with self._connect() as conn:
-            total = conn.execute(
-                f"SELECT COUNT(*) FROM jobs WHERE {where_sql}", params
-            ).fetchone()[0]
-            
             rows = conn.execute(
                 f"SELECT {columns} FROM jobs WHERE {where_sql} "
-                f"ORDER BY {sort_col} {order_sql} NULLS LAST "
-                f"LIMIT ? OFFSET ?",
-                params + [per_page, offset],
+                f"ORDER BY {sort_col} {order_sql} NULLS LAST",
+                params,
             ).fetchall()
-            
+
             result = [dict(row) for row in rows]
-        
-        return result, total
+
+        if priority:
+            filtered: list[dict] = []
+            for row in result:
+                breakdown, apply_priority, skip_reason, _ = self._parse_score_breakdown_payload(row.get("score_breakdown"))
+                normalized_priority, _ = normalize_persisted_priority(
+                    row.get("fit_score", 0),
+                    breakdown,
+                    apply_priority,
+                    skip_reason,
+                )
+                if normalized_priority == priority:
+                    filtered.append(row)
+            result = filtered
+
+        total = len(result)
+        offset = (page - 1) * per_page
+        return result[offset:offset + per_page], total
 
     def get_job_detail(self, db_id: int) -> dict | None:
         """Get a single job by ID, including description."""
@@ -757,9 +792,15 @@ class Store:
                 skip_counter["none"] += 1
                 continue
             try:
-                data = json.loads(bd)
-                skip_counter[data.get("skip_reason", "none")] += 1
-                priority_counter[data.get("apply_priority", "skip")] += 1
+                breakdown, apply_priority, skip_reason, data = self._parse_score_breakdown_payload(bd)
+                normalized_priority, normalized_skip_reason = normalize_persisted_priority(
+                    row["fit_score"] if "fit_score" in row.keys() else 0,
+                    breakdown,
+                    apply_priority,
+                    skip_reason,
+                )
+                skip_counter[normalized_skip_reason] += 1
+                priority_counter[normalized_priority] += 1
                 for skill in data.get("missing_skills", []):
                     if skill and isinstance(skill, str):
                         missing_counter[skill.strip()] += 1
@@ -786,11 +827,26 @@ class Store:
 
     # ── Rescore support ─────────────────────────────────────────────
 
-    def get_scored_for_rescore(self) -> list[CandidateJob]:
-        """Get all previously scored jobs for re-scoring."""
+    def get_jobs_for_rescore(self) -> list[CandidateJob]:
+        """Get jobs eligible for bulk rescore.
+
+        This includes:
+        - previously scored jobs, regardless of current status
+        - persisted `new` jobs that were collected during an earlier run but never scored
+
+        The second case covers workflows like a fresh database after `--dry-run`,
+        where candidates are saved locally but have no `scored_at` timestamp yet.
+        """
         with self._connect() as conn:
             rows = conn.execute(
-                "SELECT * FROM jobs WHERE scored_at IS NOT NULL ORDER BY scored_at DESC"
+                """
+                SELECT *
+                FROM jobs
+                WHERE scored_at IS NOT NULL
+                   OR status = 'new'
+                ORDER BY
+                    CASE WHEN scored_at IS NULL THEN first_seen_at ELSE scored_at END DESC
+                """
             ).fetchall()
         return [self._row_to_candidate(r) for r in rows]
 
@@ -908,6 +964,13 @@ class Store:
                     normalization_audit = raw_audit
             except json.JSONDecodeError:
                 pass
+
+        apply_priority, skip_reason = normalize_persisted_priority(
+            row["fit_score"] or 0,
+            breakdown,
+            apply_priority,
+            skip_reason,
+        )
 
         return ScoredJob(
             db_id=row["id"],

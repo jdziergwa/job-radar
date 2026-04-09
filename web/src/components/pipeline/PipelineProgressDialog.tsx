@@ -4,8 +4,9 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { api } from '@/lib/api/client'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { Loader2, CheckCircle2, AlertCircle, Terminal, FastForward, Clock, XCircle, History, Zap } from 'lucide-react'
+import { Loader2, CheckCircle2, AlertCircle, FastForward, Clock, XCircle, History } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
+import { toast } from 'sonner'
 
 const PIPELINE_STEPS = [
   'Starting',
@@ -45,10 +46,22 @@ export function PipelineProgressDialog({
   onComplete,
   mode = 'pipeline'
 }: PipelineProgressDialogProps) {
-  const STEPS = mode === 'rescore' ? RESCORE_STEPS : PIPELINE_STEPS;
+  const STEPS = mode === 'rescore' ? RESCORE_STEPS : PIPELINE_STEPS
   const [status, setStatus] = useState<any>(null)
   const [isCancelling, setIsCancelling] = useState(false)
   const pollInterval = useRef<NodeJS.Timeout | null>(null)
+  const lastToastKey = useRef<string | null>(null)
+
+  const isRunStarting = Boolean(runId) && !status
+  const isRunActive = status?.status === 'running'
+  const isDialogLocked = isRunStarting || isRunActive
+  const noun = mode === 'rescore' ? 'Rescore' : 'Pipeline'
+
+  useEffect(() => {
+    if (!open) {
+      setStatus(null)
+    }
+  }, [open])
 
   const fetchStatus = useCallback(async (id: string) => {
     try {
@@ -63,13 +76,34 @@ export function PipelineProgressDialog({
           
           if (data.status === 'done' && onComplete) {
             onComplete()
+          } else if (data.status === 'error') {
+            const errorMessage = data.error || `${noun} failed`
+            const toastKey = `${id}:error:${errorMessage}`
+            if (lastToastKey.current !== toastKey) {
+              toast.error(`${noun} failed`, {
+                description: errorMessage,
+              })
+              lastToastKey.current = toastKey
+            }
+          } else if (data.status === 'cancelled') {
+            const toastKey = `${id}:cancelled`
+            if (lastToastKey.current !== toastKey) {
+              toast.error(`${noun} cancelled`)
+              lastToastKey.current = toastKey
+            }
+          } else if (data.status === 'not_found') {
+            const toastKey = `${id}:not_found`
+            if (lastToastKey.current !== toastKey) {
+              toast.error(`${noun} status could not be loaded`)
+              lastToastKey.current = toastKey
+            }
           }
         }
       }
     } catch (err) {
       console.error('Status fetch failed:', err)
     }
-  }, [onComplete])
+  }, [noun, onComplete])
 
   useEffect(() => {
     if (open && runId) {
@@ -97,18 +131,43 @@ export function PipelineProgressDialog({
   }
 
   const currentStep = status?.step || 0
+  const title =
+    status?.status === 'done'
+      ? mode === 'rescore'
+        ? 'Rescore Complete'
+        : 'Pipeline Complete'
+      : status?.status === 'error'
+        ? mode === 'rescore'
+          ? 'Rescore Failed'
+          : 'Pipeline Failed'
+        : status?.status === 'cancelled'
+          ? mode === 'rescore'
+            ? 'Rescore Cancelled'
+            : 'Pipeline Cancelled'
+          : mode === 'rescore'
+            ? 'Rescoring Candidates'
+            : 'Executing Intelligence Tasks'
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-3xl border-border/50 bg-background/85 backdrop-blur-xl shadow-2xl overflow-hidden">
+    <Dialog
+      open={open}
+      onOpenChange={(nextOpen) => {
+        if (!nextOpen && isDialogLocked) return
+        onOpenChange(nextOpen)
+      }}
+    >
+      <DialogContent
+        showCloseButton={!isDialogLocked}
+        className="sm:max-w-3xl border-border/50 bg-background/85 backdrop-blur-xl shadow-2xl overflow-hidden"
+      >
         <DialogHeader className="pb-4 border-b border-border/50 relative">
           <div className="flex items-center gap-3">
              <div className="bg-primary/20 p-2 rounded-xl text-primary">
-                <Loader2 className={`h-5 w-5 ${status?.status === 'running' ? 'animate-spin' : ''}`} />
+                <Loader2 className={`h-5 w-5 ${isRunActive ? 'animate-spin' : ''}`} />
              </div>
              <div>
                 <DialogTitle className="text-xl">
-                  {status?.status === 'done' ? (mode === 'rescore' ? 'Rescore Complete' : 'Pipeline Complete') : (mode === 'rescore' ? 'Rescoring Candidates' : 'Executing Intelligence Tasks')}
+                  {title}
                 </DialogTitle>
                 <DialogDescription>
                   {mode === 'rescore' ? 'AI Agents are re-evaluating matches.' : 'AI Agents are processing your request.'}
@@ -116,14 +175,16 @@ export function PipelineProgressDialog({
              </div>
           </div>
           {/* Mobile-friendly close button in the header */}
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={() => onOpenChange(false)}
-            className="absolute right-0 top-0 h-10 w-10 rounded-full sm:hidden hover:bg-muted/50"
-          >
-            <XCircle className="h-5 w-5 text-muted-foreground" />
-          </Button>
+          {!isDialogLocked && (
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => onOpenChange(false)}
+              className="absolute right-0 top-0 h-10 w-10 rounded-full sm:hidden hover:bg-muted/50"
+            >
+              <XCircle className="h-5 w-5 text-muted-foreground" />
+            </Button>
+          )}
         </DialogHeader>
 
         <div className="py-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -218,6 +279,24 @@ export function PipelineProgressDialog({
                          <div className="flex items-center gap-2">
                             <CheckCircle2 className="h-4 w-4" />
                             Completed successfully.
+                         </div>
+                         <Button onClick={() => onOpenChange(false)} variant="outline" size="sm" className="w-fit text-xs">Close</Button>
+                      </div>
+                   )}
+                   {status?.status === 'cancelled' && (
+                      <div className="pt-4 text-amber-500 font-bold flex flex-col gap-2">
+                         <div className="flex items-center gap-2">
+                            <AlertCircle className="h-4 w-4" />
+                            Run was cancelled.
+                         </div>
+                         <Button onClick={() => onOpenChange(false)} variant="outline" size="sm" className="w-fit text-xs">Close</Button>
+                      </div>
+                   )}
+                   {status?.status === 'error' && (
+                      <div className="pt-4 text-red-400 font-bold flex flex-col gap-2">
+                         <div className="flex items-center gap-2">
+                            <AlertCircle className="h-4 w-4" />
+                            Run failed.
                          </div>
                          <Button onClick={() => onOpenChange(false)} variant="outline" size="sm" className="w-fit text-xs">Close</Button>
                       </div>

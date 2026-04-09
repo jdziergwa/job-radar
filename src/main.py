@@ -404,8 +404,8 @@ async def run() -> None:
     if args.job_id:
         pass # Already populated in candidates_raw
     elif args.rescore:
-        candidates_raw = store.get_scored_for_rescore()
-        logger.info("Re-scoring %d previously scored jobs", len(candidates_raw))
+        candidates_raw = store.get_jobs_for_rescore()
+        logger.info("Scoring/rescoring %d persisted jobs", len(candidates_raw))
     else:
         # Convert new RawJobs to CandidateJobs via the store
         candidates_raw = store.get_all_new_jobs()

@@ -58,7 +58,15 @@ def _load_refinement_prompt() -> str:
     path = _SRC_DIR / "prompts" / "profile_refinement.md"
     if not path.exists():
         raise HTTPException(status_code=500, detail="Refinement prompt not found")
-    return path.read_text(encoding="utf-8").strip()
+    prompt = path.read_text(encoding="utf-8").strip()
+
+    example_path = _SRC_DIR / "prompts" / "profile_refinement_example.md"
+    if example_path.exists():
+        example = example_path.read_text(encoding="utf-8").strip()
+        if example:
+            prompt += f"\n\n## Reference Example\n\n{example}"
+
+    return prompt
 
 def _extract_json(text: str) -> str:
     """Extract JSON block from text using regex, same as scorer.py."""
@@ -247,7 +255,14 @@ async def analyze_cv(file: UploadFile = File(...)):
     raise HTTPException(status_code=502, detail="Failed to analyze CV after multiple attempts")
 
 
-from api.wizard_helpers import generate_profile_yaml, generate_profile_doc
+from api.wizard_helpers import (
+    generate_profile_yaml,
+    generate_profile_doc,
+    extract_refinable_profile_doc_sections,
+    merge_refined_profile_doc_sections,
+    extract_refinable_search_config_keywords,
+    merge_refined_search_config_keywords,
+)
 
 @router.post("/wizard/generate-profile", response_model=ProfileGenerateResponse)
 async def generate_profile(req: ProfileGenerateRequest):
@@ -275,6 +290,8 @@ async def refine_profile(req: ProfileRefineRequest):
     Falls back to original drafts on any failure.
     """
     system_prompt = _load_refinement_prompt()
+    editable_doc_sections = extract_refinable_profile_doc_sections(req.draft_doc)
+    editable_search_keywords = extract_refinable_search_config_keywords(req.draft_yaml)
 
     # Build user message with all context
     user_message = f"""## CV Analysis (source of truth)
@@ -287,15 +304,17 @@ async def refine_profile(req: ProfileRefineRequest):
 {req.user_preferences.model_dump_json(indent=2)}
 ```
 
-## Draft profile_doc.md
-{req.draft_doc}
-
-## Draft search_config.yaml
-```yaml
-{req.draft_yaml}
+## Editable profile_doc.md sections
+```json
+{json.dumps(editable_doc_sections, indent=2)}
 ```
 
-Refine both files following the instructions. Stay grounded in the CV analysis."""
+## Editable search_config.yaml keywords
+```json
+{json.dumps(editable_search_keywords, indent=2)}
+```
+
+Refine only the editable sections and keyword blocks following the instructions. Do not reconstruct or rename locked sections."""
 
     try:
         async with AsyncAnthropic() as client:
@@ -311,17 +330,11 @@ Refine both files following the instructions. Stay grounded in the CV analysis."
             json_str = _extract_json(raw_text)
             data = json.loads(json_str)
 
-            refined_doc = data.get("profile_doc", req.draft_doc)
-            refined_yaml = data.get("profile_yaml", req.draft_yaml)
+            refined_doc_sections = data.get("profile_doc_sections", {})
+            refined_search_keywords = data.get("search_config_keywords", {})
             changes = data.get("changes_made", [])
-
-            # Validate YAML before returning
-            try:
-                yaml.safe_load(refined_yaml)
-            except yaml.YAMLError:
-                logger.warning("Refined YAML is invalid, falling back to draft")
-                refined_yaml = req.draft_yaml
-                changes.append("Warning: YAML refinement produced invalid syntax, kept original")
+            refined_doc = merge_refined_profile_doc_sections(req.draft_doc, refined_doc_sections)
+            refined_yaml = merge_refined_search_config_keywords(req.draft_yaml, refined_search_keywords)
 
             return ProfileRefineResponse(
                 profile_doc=refined_doc,

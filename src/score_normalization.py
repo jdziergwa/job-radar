@@ -135,3 +135,26 @@ def normalize_scored_job(result: ScoredJob) -> ScoredJob:
         normalized,
         normalization_audit=build_normalization_audit(result, normalized),
     )
+
+
+def normalize_persisted_priority(
+    fit_score: int | float | None,
+    breakdown: dict[str, int] | None,
+    apply_priority: str,
+    skip_reason: str,
+) -> tuple[str, str]:
+    """Re-derive persisted priority/skip fields from normalized score data.
+
+    This keeps legacy rows and UI/API reads consistent even if older
+    score_breakdown JSON contains stale priority metadata.
+    """
+    breakdown = breakdown or {}
+    remote_location_fit = _clamp_score(breakdown.get("remote_location_fit", 0))
+    normalized_fit = _clamp_score(fit_score)
+    normalized_priority = derive_apply_priority(normalized_fit, remote_location_fit)
+    normalized_skip_reason = normalize_skip_reason(
+        skip_reason,
+        normalized_priority,
+        remote_location_fit,
+    )
+    return normalized_priority, normalized_skip_reason

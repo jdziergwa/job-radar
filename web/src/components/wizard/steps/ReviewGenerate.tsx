@@ -16,7 +16,6 @@ import {
 } from '@/components/ui/card'
 import { 
   Loader2, 
-  Save, 
   RefreshCw, 
   FileCode, 
   FileText, 
@@ -31,7 +30,6 @@ import { Badge } from '@/components/ui/badge'
 import { api } from '@/lib/api/client'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
-import { getCompanyQualitySignalLabel } from '@/lib/company-quality'
 
 import { DEFAULT_TIMEZONE_PREF, StepProps, normalizeTimezonePref } from '../types'
 
@@ -52,9 +50,12 @@ export function ReviewGenerate({ onNext, onBack, onUpdate, data }: StepProps) {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [starterYamlContent, setStarterYamlContent] = useState('')
+  const [starterMdContent, setStarterMdContent] = useState('')
   const [yamlContent, setYamlContent] = useState('')
   const [mdContent, setMdContent] = useState('')
   const [activeTab, setActiveTab] = useState('doc')
+  const [versionTab, setVersionTab] = useState<'refined' | 'starter'>('refined')
   const [refineStatus, setRefineStatus] = useState<'idle' | 'refining' | 'done'>('idle')
   const [changesMade, setChangesMade] = useState<string[]>([])
   const [msgIndex, setMsgIndex] = useState(0)
@@ -64,6 +65,8 @@ export function ReviewGenerate({ onNext, onBack, onUpdate, data }: StepProps) {
   const generateProfile = useCallback(async () => {
     setLoading(true)
     setError(null)
+    setChangesMade([])
+    setRefineStatus('idle')
     try {
       if (data?.path === 'manual') {
         const response = await api.GET('/api/wizard/template')
@@ -71,8 +74,13 @@ export function ReviewGenerate({ onNext, onBack, onUpdate, data }: StepProps) {
           const detail = (response.error as any)?.detail || 'Failed to fetch template'
           throw new Error(typeof detail === 'string' ? detail : 'Failed to fetch template')
         }
-        setYamlContent((response as any).data?.profile_yaml || '')
-        setMdContent((response as any).data?.profile_doc || '')
+        const templateYaml = (response as any).data?.profile_yaml || ''
+        const templateDoc = (response as any).data?.profile_doc || ''
+        setStarterYamlContent('')
+        setStarterMdContent('')
+        setYamlContent(templateYaml)
+        setMdContent(templateDoc)
+        setVersionTab('refined')
         return
       }
 
@@ -89,10 +97,13 @@ export function ReviewGenerate({ onNext, onBack, onUpdate, data }: StepProps) {
         industries: data.industries || [],
         careerDirection: data.careerDirection || '',
         careerGoal: data.careerGoal || 'stay',
+        careerDirectionEdited: data.careerDirectionEdited ?? false,
         goodMatchSignals: data.goodMatchSignals || [],
+        goodMatchSignalsConfirmed: data.goodMatchSignalsConfirmed ?? false,
         companyQualitySignals: data.companyQualitySignals || [],
-        allowLowerSeniorityAtStrategicCompanies: data.allowLowerSeniorityAtStrategicCompanies ?? false,
+        allowLowerSeniorityAtStrategicCompanies: (data.companyQualitySignals?.length ?? 0) > 0,
         dealBreakers: data.dealBreakers || [],
+        dealBreakersConfirmed: data.dealBreakersConfirmed ?? false,
         enableStandardExclusions: data.enableStandardExclusions ?? true,
         additionalContext: data.additionalContext || ''
       }
@@ -110,8 +121,11 @@ export function ReviewGenerate({ onNext, onBack, onUpdate, data }: StepProps) {
         throw new Error(typeof detail === 'string' ? detail : 'Failed to generate profile')
       }
 
+      setStarterYamlContent(response.data.profile_yaml)
+      setStarterMdContent(response.data.profile_doc)
       setYamlContent(response.data.profile_yaml)
       setMdContent(response.data.profile_doc)
+      setVersionTab('refined')
 
       // Second pass: refine with LLM (non-blocking — if it fails, we keep template output)
       try {
@@ -180,6 +194,11 @@ export function ReviewGenerate({ onNext, onBack, onUpdate, data }: StepProps) {
       setSaving(false)
     }
   }
+
+  const isGuidedFlow = data?.path !== 'manual'
+  const isStarterView = isGuidedFlow && versionTab === 'starter'
+  const visibleDocContent = isStarterView ? starterMdContent : mdContent
+  const visibleYamlContent = isStarterView ? starterYamlContent : yamlContent
 
   if (loading) {
     const headline = data?.path === 'manual' ? 'Loading Template' : 'Generating Profile'
@@ -267,38 +286,15 @@ export function ReviewGenerate({ onNext, onBack, onUpdate, data }: StepProps) {
       </div>
 
       <div className="flex flex-col gap-4">
-        {(data.companyQualitySignals?.length || data.allowLowerSeniorityAtStrategicCompanies) ? (
-          <div className="p-4 bg-primary/5 border border-primary/10 rounded-2xl flex flex-col gap-3 text-xs text-muted-foreground/80 leading-relaxed shadow-sm">
-            <div className="flex items-center gap-2 text-foreground">
-              <Info className="h-4 w-4 text-primary shrink-0" />
-              <p className="font-semibold">Special-case company signals</p>
-            </div>
-            <p>
-              These company tags can be used as an explicit exception rule when a role is otherwise below your normal seniority target.
-            </p>
-            {data.companyQualitySignals?.length ? (
-              <div className="flex flex-wrap gap-2">
-                {data.companyQualitySignals.map((signal) => (
-                  <Badge key={signal} variant="outline" className="bg-background/60 border-primary/20 text-primary">
-                    {getCompanyQualitySignalLabel(signal)}
-                  </Badge>
-                ))}
-              </div>
-            ) : null}
-            <p>
-              {data.allowLowerSeniorityAtStrategicCompanies
-                ? 'Lower-seniority roles can be considered only when a tracked company carries one of these matching explicit signals.'
-                : 'No company-based lower-seniority exception is enabled.'}
-            </p>
-          </div>
-        ) : null}
-
         {changesMade.length > 0 && (
-          <details className="p-3 bg-emerald-500/5 border border-emerald-500/20 rounded-2xl text-xs">
-            <summary className="font-bold text-emerald-600 cursor-pointer">
-              AI Refinement: {changesMade.length} improvements applied
+          <details className="px-4 py-3 bg-emerald-500/5 border border-emerald-500/20 rounded-2xl text-xs">
+            <summary className="font-bold text-emerald-600 cursor-pointer list-none">
+              <span className="inline-flex items-center gap-2">
+                <Sparkles className="size-3.5" />
+                AI refinement applied {changesMade.length} improvements
+              </span>
             </summary>
-            <ul className="mt-2 space-y-1 text-muted-foreground">
+            <ul className="mt-3 space-y-1 text-muted-foreground">
               {changesMade.map((change, i) => (
                 <li key={i} className="flex gap-2">
                   <span className="text-emerald-500 shrink-0">-</span>
@@ -320,7 +316,7 @@ export function ReviewGenerate({ onNext, onBack, onUpdate, data }: StepProps) {
                 Matching Rules
               </TabsTrigger>
             </TabsList>
-            
+
             <Button 
               variant="ghost" 
               size="sm" 
@@ -335,24 +331,75 @@ export function ReviewGenerate({ onNext, onBack, onUpdate, data }: StepProps) {
           <TabsContent value="doc" className="mt-0 animate-in fade-in slide-in-from-right-4 duration-300">
             <Card className="border-border/50 bg-background/40 backdrop-blur-md overflow-hidden shadow-sm rounded-3xl">
               <CardHeader className="py-2.5 px-4 bg-muted/20 border-b border-border/20 flex flex-row items-center justify-between">
-                <CardTitle className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/70">profile_doc.md</CardTitle>
+                <div className="flex items-center gap-3">
+                  <CardTitle className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/70">profile_doc.md</CardTitle>
+                  {isGuidedFlow && (
+                    <div className="inline-flex items-center rounded-xl border border-border/50 bg-background/60 p-1">
+                      <button
+                        type="button"
+                        onClick={() => setVersionTab('refined')}
+                        className={cn(
+                          "inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[10px] font-medium transition-colors",
+                          !isStarterView
+                            ? "bg-emerald-500/10 text-emerald-500"
+                            : "text-muted-foreground hover:text-foreground"
+                        )}
+                      >
+                        <Sparkles className="size-3" />
+                        AI Refined
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setVersionTab('starter')}
+                        className={cn(
+                          "inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[10px] font-medium transition-colors",
+                          isStarterView
+                            ? "bg-muted text-foreground"
+                            : "text-muted-foreground hover:text-foreground"
+                        )}
+                      >
+                        <FileText className="size-3" />
+                        Starter Draft
+                      </button>
+                    </div>
+                  )}
+                </div>
                 <div className="flex gap-2">
                    <Badge variant="outline" className={cn(
-                     "h-5 text-[9px] font-mono border-emerald-500/30 text-emerald-500/80 bg-emerald-500/5 px-2",
-                     data?.path === 'manual' && "border-blue-500/30 text-blue-500/80 bg-blue-500/5"
+                     "h-5 text-[9px] font-mono px-2",
+                     isStarterView
+                       ? "border-border/40 text-muted-foreground bg-muted/20"
+                       : data?.path === 'manual'
+                         ? "border-blue-500/30 text-blue-500/80 bg-blue-500/5"
+                         : "border-emerald-500/30 text-emerald-500/80 bg-emerald-500/5"
                    )}>
-                     {data?.path === 'manual' ? 'Template' : 'Generated'}
+                     {isStarterView ? 'Reference Only' : data?.path === 'manual' ? 'Template' : 'Used For Matching'}
                    </Badge>
                    <Badge variant="outline" className="h-5 text-[9px] font-mono opacity-50 px-2">
-                     {data?.path === 'manual' ? 'Customizable' : 'Editable'}
+                     {isStarterView ? 'Read Only' : data?.path === 'manual' ? 'Customizable' : 'Editable'}
                    </Badge>
                 </div>
               </CardHeader>
+              {isGuidedFlow && (
+                <div className="px-4 py-2.5 text-[11px] text-muted-foreground border-b border-border/20">
+                  {isStarterView
+                    ? 'Reference baseline for cross-checking.'
+                    : 'Primary editable version used for matching.'}
+                </div>
+              )}
               <CardContent className="p-0">
                 <textarea
-                  className="w-full min-h-[400px] p-6 bg-transparent resize-none font-mono text-sm leading-relaxed focus:outline-none focus:ring-1 focus:ring-primary/20 transition-all scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent"
-                  value={mdContent}
-                  onChange={(e) => setMdContent(e.target.value)}
+                  className={cn(
+                    "w-full min-h-[400px] p-6 resize-none font-mono text-sm leading-relaxed transition-all scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent",
+                    isStarterView
+                      ? "bg-muted/10 text-muted-foreground/90 focus:outline-none"
+                      : "bg-transparent focus:outline-none focus:ring-1 focus:ring-primary/20"
+                  )}
+                  value={visibleDocContent}
+                  onChange={(e) => {
+                    if (!isStarterView) setMdContent(e.target.value)
+                  }}
+                  readOnly={isStarterView}
                   spellCheck={false}
                 />
               </CardContent>
@@ -362,24 +409,75 @@ export function ReviewGenerate({ onNext, onBack, onUpdate, data }: StepProps) {
           <TabsContent value="rules" className="mt-0 animate-in fade-in slide-in-from-right-4 duration-300">
             <Card className="border-border/50 bg-background/40 backdrop-blur-md overflow-hidden shadow-sm rounded-3xl">
               <CardHeader className="py-2.5 px-4 bg-muted/20 border-b border-border/20 flex flex-row items-center justify-between">
-                <CardTitle className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/70">search_config.yaml</CardTitle>
+                <div className="flex items-center gap-3">
+                  <CardTitle className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/70">search_config.yaml</CardTitle>
+                  {isGuidedFlow && (
+                    <div className="inline-flex items-center rounded-xl border border-border/50 bg-background/60 p-1">
+                      <button
+                        type="button"
+                        onClick={() => setVersionTab('refined')}
+                        className={cn(
+                          "inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[10px] font-medium transition-colors",
+                          !isStarterView
+                            ? "bg-emerald-500/10 text-emerald-500"
+                            : "text-muted-foreground hover:text-foreground"
+                        )}
+                      >
+                        <Sparkles className="size-3" />
+                        AI Refined
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setVersionTab('starter')}
+                        className={cn(
+                          "inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[10px] font-medium transition-colors",
+                          isStarterView
+                            ? "bg-muted text-foreground"
+                            : "text-muted-foreground hover:text-foreground"
+                        )}
+                      >
+                        <FileText className="size-3" />
+                        Starter Draft
+                      </button>
+                    </div>
+                  )}
+                </div>
                 <div className="flex gap-2">
                    <Badge variant="outline" className={cn(
-                     "h-5 text-[9px] font-mono border-emerald-500/30 text-emerald-500/80 bg-emerald-500/5 px-2",
-                     data?.path === 'manual' && "border-blue-500/30 text-blue-500/80 bg-blue-500/5"
+                     "h-5 text-[9px] font-mono px-2",
+                     isStarterView
+                       ? "border-border/40 text-muted-foreground bg-muted/20"
+                       : data?.path === 'manual'
+                         ? "border-blue-500/30 text-blue-500/80 bg-blue-500/5"
+                         : "border-emerald-500/30 text-emerald-500/80 bg-emerald-500/5"
                    )}>
-                     {data?.path === 'manual' ? 'Template' : 'Generated'}
+                     {isStarterView ? 'Reference Only' : data?.path === 'manual' ? 'Template' : 'Used For Matching'}
                    </Badge>
                    <Badge variant="outline" className="h-5 text-[9px] font-mono opacity-50 px-2">
-                     {data?.path === 'manual' ? 'Customizable' : 'Editable'}
+                     {isStarterView ? 'Read Only' : data?.path === 'manual' ? 'Customizable' : 'Editable'}
                    </Badge>
                 </div>
               </CardHeader>
+              {isGuidedFlow && (
+                <div className="px-4 py-2.5 text-[11px] text-muted-foreground border-b border-border/20">
+                  {isStarterView
+                    ? 'Reference baseline for cross-checking.'
+                    : 'Primary editable version used for matching.'}
+                </div>
+              )}
               <CardContent className="p-0">
                 <textarea
-                  className="w-full min-h-[400px] p-6 bg-transparent resize-none font-mono text-sm leading-relaxed focus:outline-none focus:ring-1 focus:ring-primary/20 transition-all scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent"
-                  value={yamlContent}
-                  onChange={(e) => setYamlContent(e.target.value)}
+                  className={cn(
+                    "w-full min-h-[400px] p-6 resize-none font-mono text-sm leading-relaxed transition-all scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent",
+                    isStarterView
+                      ? "bg-muted/10 text-muted-foreground/90 focus:outline-none"
+                      : "bg-transparent focus:outline-none focus:ring-1 focus:ring-primary/20"
+                  )}
+                  value={visibleYamlContent}
+                  onChange={(e) => {
+                    if (!isStarterView) setYamlContent(e.target.value)
+                  }}
+                  readOnly={isStarterView}
                   spellCheck={false}
                 />
               </CardContent>

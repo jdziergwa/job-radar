@@ -191,13 +191,20 @@ export function ReviewProfile({ onNext, onBack, onUpdate, data }: StepProps) {
             </div>
             <div className="flex flex-col gap-3">
               <label className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground/70 ml-1 block">Total Experience</label>
-              <Input 
-                type="number"
-                value={profile.experience_years || 0} 
-                onChange={(e) => setProfile(prev => ({ ...prev, experience_years: parseInt(e.target.value) || 0 }))}
-                className="h-12 bg-background/50 border-border/50 focus:border-primary/50 transition-all text-sm rounded-2xl"
-                placeholder="e.g. 5"
-              />
+              <div className="relative">
+                <Input 
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={profile.experience_years ?? 0}
+                  onChange={(e) => setProfile(prev => ({ ...prev, experience_years: parseInt(e.target.value, 10) || 0 }))}
+                  className="h-12 bg-background/50 border-border/50 focus:border-primary/50 transition-all text-sm rounded-2xl pr-16"
+                  placeholder="e.g. 5"
+                />
+                <span className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-xs text-muted-foreground">
+                  years
+                </span>
+              </div>
             </div>
           </div>
         </section>
@@ -654,4 +661,3 @@ export function ReviewProfile({ onNext, onBack, onUpdate, data }: StepProps) {
     </div>
   )
 }
-
