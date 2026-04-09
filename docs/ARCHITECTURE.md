@@ -168,10 +168,11 @@ The direct ATS provider fetches from:
 - **Greenhouse**: `GET https://boards-api.greenhouse.io/v1/boards/{slug}/jobs?content=true`
 - **Lever**: `GET https://api.lever.co/v0/postings/{slug}?mode=json`
 - **Ashby**: `POST https://api.ashbyhq.com/posting-api/job-board/{slug}`
-- **Workable**: `GET https://apply.workable.com/api/v1/widget/{slug}`
+- **Workable**: `POST https://apply.workable.com/api/v3/accounts/{slug}/jobs`
 
 It uses:
 - platform-specific concurrency caps
+- platform-specific request timeouts
 - optional pacing per platform
 - runtime-aware slow mode for large scans
 
@@ -197,5 +198,6 @@ This tooling converts external JSON datasets into mergeable `companies.yaml` fra
 1. **Ashby** uses a POST endpoint and may change behavior without notice.
 2. **Workable** often returns sparse content, so downstream hydration matters.
 3. **Greenhouse** returns HTML in `content`; the frontend can render it directly.
-4. **Dead slugs and provider drift** are expected. Providers log failures and continue instead of crashing the whole run.
-5. **Slow mode** exists for safer ATS scans, but it is currently a CLI/runtime capability rather than a web-exposed pipeline option.
+4. **Lever** may need a longer timeout than the other ATS providers because some boards return large or slow responses.
+5. **Dead slugs and provider drift** are expected. Providers log failures and continue instead of crashing the whole run, and periodic pruning is normal maintenance.
+6. **Slow mode** exists for safer ATS scans, but it is currently a CLI/runtime capability rather than a web-exposed pipeline option.

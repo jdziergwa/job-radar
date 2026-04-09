@@ -209,6 +209,7 @@ Hacker News source data provided by [Hacker News](https://news.ycombinator.com) 
 Arbeitnow source data provided by [Arbeitnow](https://www.arbeitnow.com).
 We Work Remotely source data provided by [We Work Remotely](https://weworkremotely.com).
 Adzuna source data provided by [Adzuna](https://www.adzuna.com).
+Company discovery imports may include normalized ATS company data derived from [Remotebear](https://github.com/remotebear-io/remotebear) and [Awesome Easy Apply](https://github.com/sample-resume/awesome-easy-apply).
 
 ---
 

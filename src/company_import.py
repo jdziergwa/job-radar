@@ -4,12 +4,14 @@ from __future__ import annotations
 
 import json
 import re
+import ssl
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 from urllib.request import urlopen
 
+import certifi
 import yaml
 
 
@@ -30,6 +32,8 @@ URL_PATTERNS = (
     ("ashby", re.compile(r"https?://jobs\.ashbyhq\.com/(?P<slug>[a-z0-9\-]+)", re.IGNORECASE)),
     ("workable", re.compile(r"https?://apply\.workable\.com/(?P<slug>[a-z0-9\-]+)", re.IGNORECASE)),
 )
+
+_ssl_ctx = ssl.create_default_context(cafile=certifi.where())
 
 
 @dataclass(frozen=True)
@@ -88,25 +92,61 @@ def _extract_explicit_slug(record: dict[str, Any]) -> str | None:
     return None
 
 
+def _extract_slug_from_scraping_config(record: dict[str, Any]) -> str | None:
+    config = record.get("scrapingConfig")
+    if not isinstance(config, dict):
+        return None
+
+    config_url = config.get("url")
+    if isinstance(config_url, str) and config_url.strip():
+        for _, pattern in URL_PATTERNS:
+            match = pattern.search(config_url)
+            if match:
+                slug = match.groupdict().get("slug")
+                if slug:
+                    return _slugify(slug)
+
+    config_id = config.get("id")
+    if isinstance(config_id, str) and config_id.strip():
+        return _slugify(config_id)
+
+    return None
+
+
 def _extract_platform_from_record(record: dict[str, Any]) -> tuple[str | None, str | None]:
     explicit_slug = _extract_explicit_slug(record)
+    config_slug = _extract_slug_from_scraping_config(record)
+    record_id = record.get("id")
+    fallback_slug = explicit_slug or config_slug
 
-    for key in ("platform", "provider", "ats", "job_board", "jobBoard", "board"):
+    if not fallback_slug and isinstance(record_id, str) and record_id.strip():
+        fallback_slug = _slugify(record_id)
+
+    for key in (
+        "platform",
+        "provider",
+        "ats",
+        "job_board",
+        "jobBoard",
+        "board",
+        "jobBoardProvider",
+        "scrapingStrategy",
+    ):
         value = record.get(key)
         if isinstance(value, dict):
             nested_platform, nested_slug = _extract_platform_from_record(value)
             if nested_platform:
-                return nested_platform, nested_slug or explicit_slug
+                return nested_platform, nested_slug or fallback_slug
         normalized = _normalize_platform(value)
         if normalized:
-            return normalized, explicit_slug
+            return normalized, fallback_slug
 
     urls = _extract_urls(record)
     for url in urls:
         for platform, pattern in URL_PATTERNS:
             match = pattern.search(url)
             if match:
-                slug = match.groupdict().get("slug") or explicit_slug
+                slug = match.groupdict().get("slug") or fallback_slug
                 if slug:
                     return platform, _slugify(slug)
 
@@ -123,7 +163,7 @@ def _extract_platform_from_record(record: dict[str, Any]) -> tuple[str | None, s
         if host == "apply.workable.com" and path_parts:
             return "workable", _slugify(path_parts[0])
 
-    return None, explicit_slug
+    return None, fallback_slug
 
 
 def normalize_company_record(record: dict[str, Any]) -> ImportedCompany | None:
@@ -183,7 +223,8 @@ def dump_companies_yaml(companies: dict[str, list[dict[str, str]]]) -> str:
 
 def load_payload(input_path: str) -> Any:
     if input_path.startswith("http://") or input_path.startswith("https://"):
-        with urlopen(input_path) as response:
+        context = _ssl_ctx if input_path.startswith("https://") else None
+        with urlopen(input_path, context=context) as response:
             return json.loads(response.read().decode("utf-8"))
 
     path = Path(input_path)

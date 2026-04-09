@@ -25,6 +25,12 @@ logger = logging.getLogger(__name__)
 
 # Concurrency and timeout settings
 REQUEST_TIMEOUT = 10  # seconds
+PLATFORM_REQUEST_TIMEOUT = {
+    "greenhouse": REQUEST_TIMEOUT,
+    "lever": 30,
+    "ashby": REQUEST_TIMEOUT,
+    "workable": REQUEST_TIMEOUT,
+}
 PLATFORM_CONCURRENCY = {
     "greenhouse": 5,
     "lever": 3,
@@ -179,7 +185,7 @@ async def fetch_greenhouse(
 
     async with sem:
         try:
-            async with session.get(url, timeout=aiohttp.ClientTimeout(total=REQUEST_TIMEOUT)) as resp:
+            async with session.get(url, timeout=aiohttp.ClientTimeout(total=_platform_timeout("greenhouse"))) as resp:
                 if resp.status == 404:
                     logger.warning("Greenhouse 404 for %s — slug may be dead", slug)
                     return []
@@ -233,7 +239,7 @@ async def fetch_lever(
 
     async with sem:
         try:
-            async with session.get(url, timeout=aiohttp.ClientTimeout(total=REQUEST_TIMEOUT)) as resp:
+            async with session.get(url, timeout=aiohttp.ClientTimeout(total=_platform_timeout("lever"))) as resp:
                 if resp.status == 404:
                     logger.warning("Lever 404 for %s — slug may be dead", slug)
                     return []
@@ -295,7 +301,7 @@ async def fetch_ashby(
             async with session.post(
                 url,
                 json={},
-                timeout=aiohttp.ClientTimeout(total=REQUEST_TIMEOUT),
+                timeout=aiohttp.ClientTimeout(total=_platform_timeout("ashby")),
             ) as resp:
                 if resp.status == 404:
                     logger.warning("Ashby 404 for %s — endpoint may have changed", slug)
@@ -356,7 +362,7 @@ async def fetch_workable(
             async with session.post(
                 url,
                 json={"query": "", "location": [], "department": [], "worktype": []},
-                timeout=aiohttp.ClientTimeout(total=REQUEST_TIMEOUT),
+                timeout=aiohttp.ClientTimeout(total=_platform_timeout("workable")),
             ) as resp:
                 if resp.status == 404:
                     logger.warning("Workable 404 for %s — slug may be dead", slug)
@@ -421,6 +427,10 @@ def _platform_delay(platform: str, runtime_config: dict[str, object] | None = No
     if runtime_config and runtime_config.get("slow_mode"):
         return 2.0
     return PLATFORM_REQUEST_DELAY.get(platform, 0.0)
+
+
+def _platform_timeout(platform: str) -> float:
+    return PLATFORM_REQUEST_TIMEOUT.get(platform, REQUEST_TIMEOUT)
 
 
 def _build_platform_semaphores(

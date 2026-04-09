@@ -28,6 +28,13 @@ def test_build_platform_semaphores_uses_platform_specific_limits():
     assert semaphores["workable"]._value == 3
 
 
+def test_platform_timeout_uses_longer_budget_for_lever():
+    assert local_ats._platform_timeout("greenhouse") == local_ats.REQUEST_TIMEOUT
+    assert local_ats._platform_timeout("ashby") == local_ats.REQUEST_TIMEOUT
+    assert local_ats._platform_timeout("workable") == local_ats.REQUEST_TIMEOUT
+    assert local_ats._platform_timeout("lever") == 30
+
+
 def test_collect_all_uses_mixed_platform_fetchers_and_progress(monkeypatch):
     seen: list[tuple[str, str, int]] = []
 

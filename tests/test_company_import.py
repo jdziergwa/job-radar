@@ -56,6 +56,60 @@ def test_import_companies_from_payload_extracts_and_dedupes_supported_companies(
     }
 
 
+def test_normalize_company_record_handles_remotebear_scraping_strategy():
+    company = normalize_company_record(
+        {
+            "id": "gitlab",
+            "name": "GitLab",
+            "scrapingStrategy": "greenhouse",
+            "scrapingConfig": {"id": "gitlab"},
+            "url": "https://gitlab.com",
+        }
+    )
+
+    assert company is not None
+    assert company.platform == "greenhouse"
+    assert company.slug == "gitlab"
+    assert company.name == "GitLab"
+
+
+def test_import_companies_from_payload_supports_current_remotebear_shape():
+    payload = [
+        {
+            "id": "gitlab",
+            "name": "GitLab",
+            "scrapingStrategy": "greenhouse",
+            "scrapingConfig": {"id": "gitlab"},
+        },
+        {
+            "id": "1password",
+            "name": "1Password",
+            "scrapingStrategy": "lever",
+            "scrapingConfig": {"id": "1password"},
+        },
+        {
+            "id": "doist",
+            "name": "Doist",
+            "scrapingStrategy": "workable",
+            "scrapingConfig": {"id": "doist"},
+        },
+        {
+            "id": "sentry",
+            "name": "Sentry",
+            "scrapingStrategy": "custom",
+            "scrapingConfig": {"id": "sentry"},
+        },
+    ]
+
+    companies = import_companies_from_payload(payload)
+
+    assert companies == {
+        "greenhouse": [{"slug": "gitlab", "name": "GitLab"}],
+        "lever": [{"slug": "1password", "name": "1Password"}],
+        "workable": [{"slug": "doist", "name": "Doist"}],
+    }
+
+
 def test_dump_companies_yaml_emits_mergeable_fragment():
     rendered = dump_companies_yaml(
         {
