@@ -40,9 +40,9 @@ export function ChoosePath({ onNext, onBack, onUpdate, data }: StepProps) {
               Upload your CV as PDF. AI extracts your profile in ~30 seconds.
             </p>
           </div>
-          <div className="mt-4 pt-4 border-t border-border/50 flex items-center justify-between">
-            <span className="text-[10px] font-bold uppercase tracking-widest opacity-40">Uses Claude Sonnet</span>
-            <span className="text-[10px] font-bold uppercase tracking-widest text-primary/60">$0.03 Credits</span>
+          <div className="mt-4 pt-4 border-t border-border/50 flex items-center justify-between gap-3 text-[11px]">
+            <span className="font-medium text-muted-foreground/70">Claude Sonnet</span>
+            <span className="font-medium text-primary/70 text-right">~2 calls, est. $0.03-$0.06</span>
           </div>
         </button>
 
@@ -71,9 +71,9 @@ export function ChoosePath({ onNext, onBack, onUpdate, data }: StepProps) {
               Start from a template and fill in your profile in Settings.
             </p>
           </div>
-          <div className="mt-4 pt-4 border-t border-border/50 flex items-center justify-between">
-            <span className="text-[10px] font-bold uppercase tracking-widest opacity-40">No API calls</span>
-            <span className="text-[10px] font-bold uppercase tracking-widest opacity-40">Free</span>
+          <div className="mt-4 pt-4 border-t border-border/50 flex items-center justify-between gap-3 text-[11px]">
+            <span className="font-medium text-muted-foreground/70">No API calls</span>
+            <span className="font-medium text-muted-foreground/70">Free</span>
           </div>
         </button>
       </div>

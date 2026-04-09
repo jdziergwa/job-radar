@@ -46,7 +46,172 @@ const TEMPLATE_LOADING_MESSAGES = [
   { icon: Sparkles, text: 'Getting your manual setup workspace ready...' },
 ]
 
+type RefinementContext = {
+  mode: 'fresh_start' | 'preferences_edit'
+  changed_fields: string[]
+  change_summary: string[]
+  preserve_existing_shape: boolean
+}
+
+function buildUserPreferences(data: StepProps['data']) {
+  return {
+    targetRoles: data.targetRoles || [],
+    seniority: data.seniority || [],
+    baseCity: data.baseCity || '',
+    baseCountry: data.baseCountry || '',
+    location: data.location || [data.baseCity, data.baseCountry].filter(Boolean).join(', '),
+    workAuth: data.workAuth || '',
+    remotePref: data.remotePref || ['remote'],
+    primaryRemotePref: data.primaryRemotePref || 'remote',
+    timezonePref: normalizeTimezonePref(data.timezonePref) || DEFAULT_TIMEZONE_PREF,
+    targetRegions: data.targetRegions || ['Europe'],
+    excludedRegions: data.excludedRegions || [],
+    industries: data.industries || [],
+    careerDirection: data.careerDirection || '',
+    careerGoal: data.careerGoal || 'stay',
+    careerDirectionEdited: data.careerDirectionEdited ?? false,
+    goodMatchSignals: data.goodMatchSignals || [],
+    goodMatchSignalsConfirmed: data.goodMatchSignalsConfirmed ?? false,
+    companyQualitySignals: data.companyQualitySignals || [],
+    allowLowerSeniorityAtStrategicCompanies: (data.companyQualitySignals?.length ?? 0) > 0,
+    dealBreakers: data.dealBreakers || [],
+    dealBreakersConfirmed: data.dealBreakersConfirmed ?? false,
+    enableStandardExclusions: data.enableStandardExclusions ?? true,
+    additionalContext: data.additionalContext || ''
+  }
+}
+
+function normalizeForDiff(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    if (value.every(item => ['string', 'number', 'boolean'].includes(typeof item))) {
+      return [...value].sort()
+    }
+    return value.map(normalizeForDiff)
+  }
+  if (value && typeof value === 'object') {
+    return Object.keys(value as Record<string, unknown>)
+      .sort()
+      .reduce<Record<string, unknown>>((acc, key) => {
+        acc[key] = normalizeForDiff((value as Record<string, unknown>)[key])
+        return acc
+      }, {})
+  }
+  return value
+}
+
+function valuesDiffer(left: unknown, right: unknown): boolean {
+  return JSON.stringify(normalizeForDiff(left)) !== JSON.stringify(normalizeForDiff(right))
+}
+
+function describePreferenceChange(key: string, previous: unknown, current: unknown): string {
+  const labels: Record<string, string> = {
+    targetRoles: 'Updated target roles',
+    seniority: 'Adjusted seniority preferences',
+    baseCity: 'Adjusted base city',
+    baseCountry: 'Adjusted base country',
+    location: 'Adjusted location context',
+    workAuth: 'Updated work authorization',
+    remotePref: 'Adjusted acceptable work setups',
+    primaryRemotePref: 'Changed primary work-setup preference',
+    timezonePref: 'Adjusted timezone overlap preference',
+    targetRegions: 'Updated preferred regions',
+    excludedRegions: 'Updated excluded regions',
+    industries: 'Adjusted preferred industries',
+    careerDirection: 'Updated career-direction guidance',
+    careerGoal: 'Changed career-goal preset',
+    goodMatchSignals: 'Adjusted strong-match signals',
+    companyQualitySignals: 'Adjusted preferred company signals',
+    dealBreakers: 'Adjusted low-fit signals',
+    enableStandardExclusions: 'Changed standard-noise filtering',
+    additionalContext: 'Updated additional context',
+  }
+  const baseLabel = labels[key] || `Updated ${key}`
+  if (typeof current === 'string' && typeof previous === 'string') {
+    if (!previous && current) return `${baseLabel}: added "${current}"`
+    if (previous && !current) return `${baseLabel}: removed previous value`
+  }
+  if (Array.isArray(current)) {
+    return `${baseLabel}: now ${current.length} selection${current.length === 1 ? '' : 's'}`
+  }
+  return baseLabel
+}
+
+function buildRefinementContext(data: StepProps['data']): RefinementContext {
+  const mode = data.wizardFlowMode
+
+  if (mode === 'edit_preferences') {
+    const currentPreferences = buildUserPreferences(data)
+    const originalPreferences = data.originalUserPreferences || {}
+    const changedFields = Object.entries(currentPreferences).reduce<string[]>((acc, [key, value]) => {
+      if (valuesDiffer(value, (originalPreferences as Record<string, unknown>)[key])) {
+        acc.push(`user_preferences.${key}`)
+      }
+      return acc
+    }, [])
+    const changeSummary = changedFields.map((field) => {
+      const key = field.replace('user_preferences.', '')
+      return describePreferenceChange(
+        key,
+        (originalPreferences as Record<string, unknown>)[key],
+        (currentPreferences as Record<string, unknown>)[key]
+      )
+    })
+    if (changeSummary.length === 0) {
+      changeSummary.push('No explicit preference changes detected; preserve the existing profile shape and wording unless a section is clearly invalid.')
+    }
+
+    return {
+      mode: 'preferences_edit',
+      changed_fields: changedFields,
+      change_summary: changeSummary,
+      preserve_existing_shape: true,
+    }
+  }
+
+  if (mode === 'update_cv') {
+    const changedFields: string[] = []
+    const changeSummary: string[] = ['Fresh run from CV upload; broader updates are allowed, but preserve stable structure where practical.']
+    const originalCvAnalysis = data.originalCvAnalysis as Record<string, unknown> | undefined
+    const currentCvAnalysis = data.cvAnalysis as Record<string, unknown> | undefined
+
+    if (originalCvAnalysis && currentCvAnalysis) {
+      ;['current_role', 'experience_years', 'experience', 'skills', 'education', 'portfolio'].forEach((key) => {
+        if (valuesDiffer(currentCvAnalysis[key], originalCvAnalysis[key])) {
+          changedFields.push(`cv_analysis.${key}`)
+        }
+      })
+      if (changedFields.includes('cv_analysis.experience')) {
+        changeSummary.push('Professional experience evidence changed')
+      }
+      if (changedFields.includes('cv_analysis.skills')) {
+        changeSummary.push('Skills evidence changed')
+      }
+      if (changedFields.includes('cv_analysis.portfolio')) {
+        changeSummary.push('Portfolio evidence changed')
+      }
+    } else {
+      changedFields.push('cv_analysis')
+      changeSummary.push('No previous CV analysis baseline was available')
+    }
+
+    return {
+      mode: 'fresh_start',
+      changed_fields: changedFields,
+      change_summary: changeSummary,
+      preserve_existing_shape: true,
+    }
+  }
+
+  return {
+    mode: 'fresh_start',
+    changed_fields: [],
+    change_summary: ['Fresh run without incremental baseline; broader updates are acceptable, but preserve stable structure where practical.'],
+    preserve_existing_shape: true,
+  }
+}
+
 export function ReviewGenerate({ onNext, onBack, onUpdate, data }: StepProps) {
+  const isEditFlow = data.wizardFlowMode === 'edit_preferences' || data.wizardFlowMode === 'update_cv'
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -84,31 +249,8 @@ export function ReviewGenerate({ onNext, onBack, onUpdate, data }: StepProps) {
         return
       }
 
-      const user_preferences = {
-        targetRoles: data.targetRoles || [],
-        seniority: data.seniority || [],
-        baseCity: data.baseCity || '',
-        baseCountry: data.baseCountry || '',
-        location: data.location || [data.baseCity, data.baseCountry].filter(Boolean).join(', '),
-        workAuth: data.workAuth || '',
-        remotePref: data.remotePref || ['remote'],
-        primaryRemotePref: data.primaryRemotePref || 'remote',
-        timezonePref: normalizeTimezonePref(data.timezonePref) || DEFAULT_TIMEZONE_PREF,
-        targetRegions: data.targetRegions || ['Europe'],
-        excludedRegions: data.excludedRegions || [],
-        industries: data.industries || [],
-        careerDirection: data.careerDirection || '',
-        careerGoal: data.careerGoal || 'stay',
-        careerDirectionEdited: data.careerDirectionEdited ?? false,
-        goodMatchSignals: data.goodMatchSignals || [],
-        goodMatchSignalsConfirmed: data.goodMatchSignalsConfirmed ?? false,
-        companyQualitySignals: data.companyQualitySignals || [],
-        allowLowerSeniorityAtStrategicCompanies: (data.companyQualitySignals?.length ?? 0) > 0,
-        dealBreakers: data.dealBreakers || [],
-        dealBreakersConfirmed: data.dealBreakersConfirmed ?? false,
-        enableStandardExclusions: data.enableStandardExclusions ?? true,
-        additionalContext: data.additionalContext || ''
-      }
+      const user_preferences = buildUserPreferences(data)
+      const refinementContext = buildRefinementContext(data)
 
       const response = await api.POST('/api/wizard/generate-profile', {
         body: {
@@ -138,6 +280,7 @@ export function ReviewGenerate({ onNext, onBack, onUpdate, data }: StepProps) {
             user_preferences: user_preferences as any,
             draft_doc: response.data.profile_doc,
             draft_yaml: response.data.profile_yaml,
+            refinement_context: refinementContext,
           }
         })
         if (refineRes.data) {
@@ -175,12 +318,15 @@ export function ReviewGenerate({ onNext, onBack, onUpdate, data }: StepProps) {
   const handleSave = async () => {
     setSaving(true)
     try {
+      const user_preferences = buildUserPreferences(data)
       const response = await api.POST('/api/wizard/save-profile', {
         body: {
           profile_name: 'default',
           profile_yaml: yamlContent,
-          profile_doc: mdContent
-        }
+          profile_doc: mdContent,
+          cv_analysis: data.path === 'manual' ? undefined : (data.cvAnalysis as any),
+          user_preferences: data.path === 'manual' ? undefined : (user_preferences as any),
+        } as any
       })
 
       if (response.error) {
@@ -275,17 +421,22 @@ export function ReviewGenerate({ onNext, onBack, onUpdate, data }: StepProps) {
   }
 
   return (
-    <div className="flex flex-col gap-6 py-4 animate-in fade-in slide-in-from-bottom-8 duration-700 max-w-5xl mx-auto w-full">
-      <div className="text-center space-y-1 bg-background/50 py-6 -mt-4 border-b border-border/20 mb-4">
-        <h2 className="text-2xl font-bold tracking-tight text-foreground">
-          {data?.path === 'manual' ? 'Manual Setup' : 'Review & Finalize'}
-        </h2>
-        <p className="text-muted-foreground text-sm max-w-sm mx-auto">
-          {data?.path === 'manual' 
-            ? 'Start with a template and customize your matching rules and profile.' 
-            : 'Your AI-generated job matching profile is ready for a quick check.'}
-        </p>
-      </div>
+    <div className={cn(
+      "flex flex-col gap-6 py-4 animate-in fade-in slide-in-from-bottom-8 duration-700 w-full",
+      isEditFlow ? "max-w-none mx-0" : "max-w-5xl mx-auto"
+    )}>
+      {!isEditFlow && (
+        <div className="text-center space-y-1 bg-background/50 py-6 -mt-4 border-b border-border/20 mb-4">
+          <h2 className="text-2xl font-bold tracking-tight text-foreground">
+            {data?.path === 'manual' ? 'Manual Setup' : 'Review & Finalize'}
+          </h2>
+          <p className="text-muted-foreground text-sm max-w-sm mx-auto">
+            {data?.path === 'manual' 
+              ? 'Start with a template and customize your matching rules and profile.' 
+              : 'Your AI-generated job matching profile is ready for a quick check.'}
+          </p>
+        </div>
+      )}
 
       <div className="flex flex-col gap-4">
         {changesMade.length > 0 && (

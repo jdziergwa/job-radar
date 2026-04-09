@@ -2,6 +2,9 @@
 
 import React, { useEffect, useState } from 'react'
 import { api } from '@/lib/api/client'
+import { QuickStartWizard } from '@/components/wizard/QuickStartWizard'
+import { WizardData } from '@/components/wizard/types'
+import { toast } from 'sonner'
 import { 
   Tabs, 
   TabsContent, 
@@ -22,10 +25,12 @@ import {
   Settings2, 
   Loader2, 
   AlertTriangle,
-  CheckCircle2,
   AlertCircle,
   BrainCircuit,
-  RefreshCw
+  RefreshCw,
+  WandSparkles,
+  Upload,
+  ChevronRight
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 
@@ -36,9 +41,38 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState<string | null>(null)
   const [yamlError, setYamlError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState('resume')
+  const [wizardMode, setWizardMode] = useState<null | 'picker' | 'edit_preferences' | 'update_cv' | 'onboarding'>(null)
+  const [wizardLoading, setWizardLoading] = useState(false)
+  const [wizardInitialData, setWizardInitialData] = useState<Partial<WizardData> | null>(null)
+  const [wizardHasCvAnalysis, setWizardHasCvAnalysis] = useState(false)
+
+  const openGuidedEdit = async () => {
+    setWizardLoading(true)
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/wizard/state?profile=default`)
+      if (!response.ok) {
+        throw new Error('Failed to load saved wizard state')
+      }
+      const state = await response.json()
+      const userPreferences = state.user_preferences
+      const cvAnalysis = state.cv_analysis
+
+      setWizardInitialData({
+        ...(userPreferences || {}),
+        cvAnalysis: cvAnalysis || undefined,
+        originalUserPreferences: userPreferences || undefined,
+        originalCvAnalysis: cvAnalysis || undefined,
+      })
+      setWizardHasCvAnalysis(Boolean(cvAnalysis))
+      setWizardMode('picker')
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to open guided edit flow')
+    } finally {
+      setWizardLoading(false)
+    }
+  }
 
   const fetchProfileData = async () => {
     setLoading(true)
@@ -77,7 +111,6 @@ export default function SettingsPage() {
   const handleSave = async () => {
     setSaving(true)
     setError(null)
-    setSuccess(null)
     setYamlError(null)
 
     try {
@@ -118,8 +151,7 @@ export default function SettingsPage() {
         resume: 'resume',
         philosophy: 'scoring philosophy',
       }
-      setSuccess(`Changes to ${tabLabels[activeTab]} saved successfully.`)
-      setTimeout(() => setSuccess(null), 3000)
+      toast.success(`Changes to ${tabLabels[activeTab]} saved successfully.`)
     } catch (err: any) {
       if (err.message !== 'YAML syntax validation failed' && err.message !== 'Validation failed') {
         setError(err.message || 'Internal saving error')
@@ -144,20 +176,50 @@ export default function SettingsPage() {
         </div>
         
         <div className="flex items-center gap-3">
-          {success && (
-            <div className="flex items-center gap-2 text-emerald-500 bg-emerald-500/10 px-3 py-1.5 rounded-full border border-emerald-500/20 text-xs font-medium animate-in slide-in-from-right-4">
-              <CheckCircle2 className="h-3.5 w-3.5" />
-              {success}
-            </div>
+          {wizardMode ? (
+            <>
+              <Badge variant="outline" className="h-9 px-3 rounded-xl border-primary/20 bg-primary/5 text-primary">
+                {wizardMode === 'picker'
+                  ? 'Guided Edit'
+                  : wizardMode === 'onboarding'
+                    ? 'Fresh Start'
+                  : wizardMode === 'edit_preferences'
+                    ? 'Guided Preferences Edit'
+                    : 'Fresh Start'}
+              </Badge>
+              <Button
+                onClick={() => {
+                  setWizardMode(null)
+                  setWizardInitialData(null)
+                  setWizardHasCvAnalysis(false)
+                }}
+                variant="outline"
+                className="gap-2"
+              >
+                Close Guided Edit
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button
+                onClick={openGuidedEdit}
+                disabled={loading || saving || wizardLoading}
+                variant="outline"
+                className="gap-2"
+              >
+                {wizardLoading && wizardMode === null ? <Loader2 className="h-4 w-4 animate-spin" /> : <WandSparkles className="h-4 w-4" />}
+                Guided Edit
+              </Button>
+              <Button 
+                onClick={handleSave} 
+                disabled={saving || loading}
+                className="gap-2 bg-primary/90 hover:bg-primary shadow-lg border-primary/20 min-w-[120px] transition-all duration-300"
+              >
+                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                Save Changes
+              </Button>
+            </>
           )}
-          <Button 
-            onClick={handleSave} 
-            disabled={saving || loading}
-            className="gap-2 bg-primary/90 hover:bg-primary shadow-lg border-primary/20 min-w-[120px] transition-all duration-300"
-          >
-            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-            Save Changes
-          </Button>
         </div>
       </header>
 
@@ -176,6 +238,109 @@ export default function SettingsPage() {
             <p className="text-muted-foreground text-sm max-w-sm">{error}</p>
           </div>
           <Button onClick={fetchProfileData} variant="outline" size="sm">Try Again</Button>
+        </div>
+      ) : wizardMode && wizardInitialData ? (
+        <div className="flex-1 flex flex-col gap-6">
+          <div className="rounded-2xl border border-primary/15 bg-primary/5 px-4 py-3 text-sm text-muted-foreground">
+            <span className="font-semibold text-foreground">
+              {wizardMode === 'picker'
+                ? 'Guided edit'
+                : wizardMode === 'onboarding'
+                  ? 'Fresh start'
+                : wizardMode === 'edit_preferences'
+                  ? 'Guided preferences edit'
+                  : 'Fresh start'}
+            </span>{' '}
+            regenerates your profile files from structured inputs. Paid AI calls may be made depending on the path you choose. Close this view to return to raw file editing.
+          </div>
+          {wizardMode === 'picker' ? (
+            <>
+              <div className="grid gap-4 md:grid-cols-2">
+                <button
+                  type="button"
+                  onClick={() => setWizardMode('edit_preferences')}
+                  disabled={!wizardHasCvAnalysis}
+                  className="group rounded-3xl border border-border/50 bg-background/50 p-6 text-left transition-all hover:border-primary/30 hover:bg-background/70 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <div className="mb-5 flex items-center justify-between">
+                    <div className="rounded-2xl border border-primary/20 bg-primary/10 p-3 text-primary">
+                      <WandSparkles className="h-5 w-5" />
+                    </div>
+                    <ChevronRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+                  </div>
+                  <h3 className="text-lg font-semibold tracking-tight">Edit Saved Preferences</h3>
+                  <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
+                    Use AI to regenerate your profile from saved preferences, starting directly at location and preference updates.
+                  </p>
+                  <p className="mt-4 text-xs text-muted-foreground/70">
+                    {wizardHasCvAnalysis
+                      ? 'Fastest path when you only want to adjust search preferences.'
+                      : 'Unavailable until saved preferences and CV analysis exist.'}
+                  </p>
+                  <div className="mt-5 border-t border-border/20 pt-3">
+                    <div className="inline-flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+                      <span className="font-medium text-foreground/80">Claude Sonnet</span>
+                      <span className="text-border/60">•</span>
+                      <span>1 AI call</span>
+                      <span className="text-border/60">•</span>
+                      <span>~ $0.01-$0.03</span>
+                    </div>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setWizardInitialData({})
+                    setWizardMode('update_cv')
+                  }}
+                  className="group rounded-3xl border border-border/50 bg-background/50 p-6 text-left transition-all hover:border-primary/30 hover:bg-background/70"
+                >
+                  <div className="mb-5 flex items-center justify-between">
+                    <div className="rounded-2xl border border-primary/20 bg-primary/10 p-3 text-primary">
+                      <Upload className="h-5 w-5" />
+                    </div>
+                    <ChevronRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+                  </div>
+                  <h3 className="text-lg font-semibold tracking-tight">Start Fresh</h3>
+                  <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
+                    Use AI to analyze your CV again and rebuild the guided profile from the beginning.
+                  </p>
+                  <p className="mt-4 text-xs text-muted-foreground/70">
+                    Use this when you want to rebuild the profile instead of editing the saved setup.
+                  </p>
+                  <div className="mt-5 border-t border-border/20 pt-3">
+                    <div className="inline-flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+                      <span className="font-medium text-foreground/80">Claude Sonnet</span>
+                      <span className="text-border/60">•</span>
+                      <span>Typically 2 AI calls</span>
+                      <span className="text-border/60">•</span>
+                      <span>~ $0.03-$0.06</span>
+                    </div>
+                  </div>
+                </button>
+              </div>
+            </>
+          ) : (
+            <QuickStartWizard
+              embedded
+              mode={wizardMode}
+              initialData={wizardInitialData}
+              initialStep={wizardMode === 'edit_preferences' ? 4 : wizardMode === 'update_cv' ? 1 : 0}
+              storageKey={`job-radar-settings-wizard-${wizardMode}`}
+              onExit={() => {
+                setWizardMode(null)
+                setWizardInitialData(null)
+                setWizardHasCvAnalysis(false)
+              }}
+              onComplete={() => {
+                setWizardMode(null)
+                setWizardInitialData(null)
+                setWizardHasCvAnalysis(false)
+                fetchProfileData()
+              }}
+            />
+          )}
         </div>
       ) : (
         <div className="flex-1 flex flex-col gap-6">

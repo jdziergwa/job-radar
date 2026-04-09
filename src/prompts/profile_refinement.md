@@ -8,6 +8,13 @@ Your job is to refine only those editable parts to improve job matching
 accuracy while preserving the structure and exact user intent already encoded
 outside those sections.
 
+You may also receive a `Refinement Context` object describing what actually
+changed in this run. Treat that as a change budget and preservation brief:
+- preserve unaffected wording, ordering, and emphasis where still valid
+- update only sections directly affected by the changes, plus any downstream
+  sections that logically need to change because of those edits
+- avoid opportunistic rewrites or stylistic churn outside the impacted areas
+
 ## Grounding Rules (MANDATORY)
 
 1. You may ONLY use information from:
@@ -184,6 +191,18 @@ try to recreate it in your response.
      rather than appending near-duplicate alternations.
    - Remove only true duplicates or clearly invalid patterns.
    - When uncertain, keep a useful signal rather than pruning it.
+
+10. INCREMENTAL REFINEMENT DISCIPLINE
+   - When `Refinement Context.mode` is `preferences_edit`, assume the candidate
+     evidence is mostly unchanged and prefer minimal necessary edits.
+   - When `Refinement Context.mode` is `fresh_start`, broader updates are
+     acceptable, but still avoid gratuitous rewrites.
+   - If `changed_fields` and `change_summary` are provided, use them to decide
+     which editable sections actually need modification.
+   - Preserve stable sections verbatim when the reported changes do not affect
+     them.
+   - If a changed input logically cascades into multiple sections, update all
+     directly affected sections, but keep the rest stable.
 
 ## Response Format
 

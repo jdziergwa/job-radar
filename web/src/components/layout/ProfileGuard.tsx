@@ -60,6 +60,7 @@ export function ProfileGuard({ children }: { children: React.ReactNode }) {
   if (step === 'setup') {
     return (
       <QuickStartWizard 
+        mode="onboarding"
         onComplete={() => {
           setStep('done')
           setTimeout(() => setStep('ready'), 1500)

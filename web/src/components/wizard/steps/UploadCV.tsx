@@ -15,6 +15,7 @@ export function UploadCV({ onNext, onBack, onUpdate, data }: StepProps) {
   const [error, setError] = useState<string | null>(data?.error || null)
   const [isDragging, setIsDragging] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const canGoBack = data.canGoBack ?? true
 
   // Clear the error from global state on mount so it doesn't persist forever
   useEffect(() => {
@@ -148,9 +149,11 @@ export function UploadCV({ onNext, onBack, onUpdate, data }: StepProps) {
           Analyze CV & Continue
           <ChevronRight className="h-4 w-4" />
         </Button>
-        <Button onClick={() => onBack()} variant="ghost" size="sm" className="text-muted-foreground hover:bg-muted/50 rounded-xl h-10">
-          Back
-        </Button>
+        {canGoBack && (
+          <Button onClick={() => onBack()} variant="ghost" size="sm" className="text-muted-foreground hover:bg-muted/50 rounded-xl h-10">
+            Back
+          </Button>
+        )}
       </div>
     </div>
   )

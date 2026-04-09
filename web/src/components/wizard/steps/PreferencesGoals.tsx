@@ -35,6 +35,7 @@ const INDUSTRIES = [
 
 export function PreferencesGoals({ onNext, onBack, onUpdate, data }: StepProps) {
   const analysis = data.cvAnalysis
+  const isEditFlow = data.wizardFlowMode === 'edit_preferences' || data.wizardFlowMode === 'update_cv'
   
   // Infer industries from experience if none selected
   const initialIndustries = useMemo(() => {
@@ -212,11 +213,16 @@ export function PreferencesGoals({ onNext, onBack, onUpdate, data }: StepProps) 
   ]
 
   return (
-    <div className="flex flex-col gap-8 py-4 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-4xl mx-auto w-full">
-      <div className="text-center space-y-1 bg-background/50 py-6 -mt-4 border-b border-border/20 mb-4">
-        <h2 className="text-2xl font-bold tracking-tight">Preferences & Goals</h2>
-        <p className="text-muted-foreground text-sm max-w-sm mx-auto">Tell us about your career aspirations and boundaries.</p>
-      </div>
+    <div className={cn(
+      "flex flex-col gap-8 py-4 animate-in fade-in slide-in-from-bottom-4 duration-500 w-full",
+      isEditFlow ? "max-w-none mx-0" : "max-w-4xl mx-auto"
+    )}>
+      {!isEditFlow && (
+        <div className="text-center space-y-1 bg-background/50 py-6 -mt-4 border-b border-border/20 mb-4">
+          <h2 className="text-2xl font-bold tracking-tight">Preferences & Goals</h2>
+          <p className="text-muted-foreground text-sm max-w-sm mx-auto">Tell us about your career aspirations and boundaries.</p>
+        </div>
+      )}
 
       <div className="grid gap-5">
         {/* Career Goal Section */}

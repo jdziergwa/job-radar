@@ -315,6 +315,8 @@ class ProfileSaveRequest(BaseModel):
     profile_name: str
     profile_yaml: str
     profile_doc: str
+    cv_analysis: Optional[CVAnalysisResponse] = None
+    user_preferences: Optional[UserPreferences] = None
 
 
 class ProfileTemplateResponse(BaseModel):
@@ -322,14 +324,28 @@ class ProfileTemplateResponse(BaseModel):
     profile_doc: str
 
 
+class ProfileRefinementContext(BaseModel):
+    mode: Literal["fresh_start", "preferences_edit"] = "fresh_start"
+    changed_fields: list[str] = []
+    change_summary: list[str] = []
+    preserve_existing_shape: bool = True
+
+
 class ProfileRefineRequest(BaseModel):
     cv_analysis: CVAnalysisResponse
     user_preferences: UserPreferences
     draft_doc: str
     draft_yaml: str
+    refinement_context: Optional[ProfileRefinementContext] = None
 
 
 class ProfileRefineResponse(BaseModel):
     profile_doc: str
     profile_yaml: str
     changes_made: list[str] = []
+
+
+class WizardStateResponse(BaseModel):
+    profile_name: str
+    cv_analysis: Optional[CVAnalysisResponse] = None
+    user_preferences: Optional[UserPreferences] = None

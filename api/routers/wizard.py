@@ -8,16 +8,19 @@ import re
 import fitz  # pymupdf
 import anthropic
 from anthropic import AsyncAnthropic
-from fastapi import APIRouter, HTTPException, UploadFile, File
+from fastapi import APIRouter, HTTPException, UploadFile, File, Query
 from api.deps import PROFILES_DIR
 from api.models import (
     CVAnalysisResponse,
     ProfileGenerateRequest,
     ProfileGenerateResponse,
+    ProfileRefinementContext,
     ProfileRefineRequest,
     ProfileRefineResponse,
     ProfileSaveRequest,
-    ProfileTemplateResponse
+    ProfileTemplateResponse,
+    WizardStateResponse,
+    UserPreferences,
 )
 
 logger = logging.getLogger(__name__)
@@ -74,6 +77,39 @@ def _extract_json(text: str) -> str:
     if match:
         return match.group(0)
     return text.strip()
+
+
+def _wizard_state_paths(profile_name: str) -> tuple[Path, Path, Path]:
+    profile_dir = PROFILES_DIR / profile_name
+    return (
+        profile_dir,
+        profile_dir / "cv_analysis.json",
+        profile_dir / "preferences.json",
+    )
+
+
+def _load_saved_wizard_state(profile_name: str) -> WizardStateResponse:
+    profile_dir, cv_path, preferences_path = _wizard_state_paths(profile_name)
+    cv_analysis = None
+    user_preferences = None
+
+    if cv_path.exists():
+        try:
+            cv_analysis = CVAnalysisResponse.model_validate_json(cv_path.read_text(encoding="utf-8"))
+        except Exception as e:
+            logger.warning("Failed to load saved cv_analysis for %s: %s", profile_name, e)
+
+    if preferences_path.exists():
+        try:
+            user_preferences = UserPreferences.model_validate_json(preferences_path.read_text(encoding="utf-8"))
+        except Exception as e:
+            logger.warning("Failed to load saved preferences for %s: %s", profile_name, e)
+
+    return WizardStateResponse(
+        profile_name=profile_name,
+        cv_analysis=cv_analysis,
+        user_preferences=user_preferences,
+    )
 
 def _is_extraction_poor(text: str) -> bool:
     """
@@ -292,6 +328,7 @@ async def refine_profile(req: ProfileRefineRequest):
     system_prompt = _load_refinement_prompt()
     editable_doc_sections = extract_refinable_profile_doc_sections(req.draft_doc)
     editable_search_keywords = extract_refinable_search_config_keywords(req.draft_yaml)
+    refinement_context = req.refinement_context or ProfileRefinementContext()
 
     # Build user message with all context
     user_message = f"""## CV Analysis (source of truth)
@@ -302,6 +339,11 @@ async def refine_profile(req: ProfileRefineRequest):
 ## User Preferences
 ```json
 {req.user_preferences.model_dump_json(indent=2)}
+```
+
+## Refinement Context
+```json
+{refinement_context.model_dump_json(indent=2)}
 ```
 
 ## Editable profile_doc.md sections
@@ -384,8 +426,26 @@ async def save_profile(req: ProfileSaveRequest):
     # 4. Overwrite generated files
     (profile_dir / "search_config.yaml").write_text(req.profile_yaml, encoding="utf-8")
     (profile_dir / "profile_doc.md").write_text(req.profile_doc, encoding="utf-8")
+    if req.cv_analysis is not None:
+        (profile_dir / "cv_analysis.json").write_text(
+            req.cv_analysis.model_dump_json(indent=2),
+            encoding="utf-8",
+        )
+    if req.user_preferences is not None:
+        (profile_dir / "preferences.json").write_text(
+            req.user_preferences.model_dump_json(indent=2),
+            encoding="utf-8",
+        )
 
     return {"ok": True, "name": req.profile_name}
+
+
+@router.get("/wizard/state", response_model=WizardStateResponse)
+async def get_wizard_state(profile: str = Query("default")):
+    """
+    Return the last saved wizard inputs so the UI can rerun guided flows.
+    """
+    return _load_saved_wizard_state(profile)
 
 
 @router.get("/wizard/template", response_model=ProfileTemplateResponse)

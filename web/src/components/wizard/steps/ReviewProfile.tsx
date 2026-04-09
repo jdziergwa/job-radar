@@ -34,6 +34,7 @@ type PortfolioEntry = components["schemas"]["PortfolioEntry"]
 type CVAnalysis = components["schemas"]["CVAnalysisResponse"]
 
 export function ReviewProfile({ onNext, onBack, onUpdate, data }: StepProps) {
+  const isEditFlow = data.wizardFlowMode === 'edit_preferences' || data.wizardFlowMode === 'update_cv'
   const [profile, setProfile] = useState<CVAnalysis>(data.cvAnalysis as CVAnalysis)
   const [newSkill, setNewSkill] = useState<{ [category: string]: string }>({})
   const [newCategoryName, setNewCategoryName] = useState('')
@@ -163,11 +164,16 @@ export function ReviewProfile({ onNext, onBack, onUpdate, data }: StepProps) {
   }
 
   return (
-    <div className="flex flex-col gap-8 py-4 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-4xl mx-auto w-full">
-      <div className="text-center space-y-1 bg-background/50 py-6 -mt-4 border-b border-border/20 mb-4">
-        <h2 className="text-2xl font-bold tracking-tight">Review your profile</h2>
-        <p className="text-muted-foreground text-sm max-w-sm mx-auto">We've extracted this from your CV. Make sure everything looks right.</p>
-      </div>
+    <div className={cn(
+      "flex flex-col gap-8 py-4 animate-in fade-in slide-in-from-bottom-4 duration-500 w-full",
+      isEditFlow ? "max-w-none mx-0" : "max-w-4xl mx-auto"
+    )}>
+      {!isEditFlow && (
+        <div className="text-center space-y-1 bg-background/50 py-6 -mt-4 border-b border-border/20 mb-4">
+          <h2 className="text-2xl font-bold tracking-tight">Review your profile</h2>
+          <p className="text-muted-foreground text-sm max-w-sm mx-auto">We've extracted this from your CV. Make sure everything looks right.</p>
+        </div>
+      )}
 
       <div className="grid gap-6">
         {/* About You Card */}

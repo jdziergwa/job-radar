@@ -124,6 +124,8 @@ function formatLocation(baseCity?: string, baseCountry?: string): string {
 export function SearchLocation({ onNext, onBack, onUpdate, data }: StepProps) {
   const analysis = data.cvAnalysis
   const parsedLocation = parseLocation(data.location)
+  const isEditFlow = data.wizardFlowMode === 'edit_preferences' || data.wizardFlowMode === 'update_cv'
+  const canGoBack = data.canGoBack ?? true
   
   const [targetRoles, setTargetRoles] = useState<string[]>(data.targetRoles || analysis?.suggested_target_roles || [])
   const [newRole, setNewRole] = useState('')
@@ -206,11 +208,16 @@ export function SearchLocation({ onNext, onBack, onUpdate, data }: StepProps) {
   }
 
   return (
-    <div className="flex flex-col gap-8 py-4 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-4xl mx-auto w-full">
-      <div className="text-center space-y-1 bg-background/50 py-6 -mt-4 border-b border-border/20 mb-4">
-        <h2 className="text-2xl font-bold tracking-tight">Search & Location</h2>
-        <p className="text-muted-foreground text-sm max-w-sm mx-auto">Where and what jobs are you looking for?</p>
-      </div>
+    <div className={cn(
+      "flex flex-col gap-8 py-4 animate-in fade-in slide-in-from-bottom-4 duration-500 w-full",
+      isEditFlow ? "max-w-none mx-0" : "max-w-4xl mx-auto"
+    )}>
+      {!isEditFlow && (
+        <div className="text-center space-y-1 bg-background/50 py-6 -mt-4 border-b border-border/20 mb-4">
+          <h2 className="text-2xl font-bold tracking-tight">Search & Location</h2>
+          <p className="text-muted-foreground text-sm max-w-sm mx-auto">Where and what jobs are you looking for?</p>
+        </div>
+      )}
 
       <div className="grid gap-6">
         {/* Roles Section */}
@@ -300,24 +307,11 @@ export function SearchLocation({ onNext, onBack, onUpdate, data }: StepProps) {
             <div className="p-2 bg-primary/10 rounded-xl text-primary">
               <MapPin className="h-5 w-5" />
             </div>
-            <h3 className="font-bold text-lg text-foreground">Where do you want to work?</h3>
+            <h3 className="font-bold text-lg text-foreground">Location & work setup</h3>
           </div>
 
-          <div className="grid sm:grid-cols-3 gap-8 pt-2">
-            <div className="flex flex-col gap-3">
-              <label className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground/70 ml-1 block">Base City</label>
-              <div className="relative">
-                <Input 
-                  value={baseCity}
-                  onChange={(e) => setBaseCity(e.target.value)}
-                  className="h-12 pl-12 bg-background/50 border-border/50 text-sm rounded-2xl"
-                  placeholder="e.g. Berlin"
-                />
-                <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-3">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 pt-2">
+            <div className="flex flex-col gap-3 lg:col-span-4">
               <label className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground/70 ml-1 block">Base Country *</label>
               <div className="relative">
                 <Input 
@@ -330,7 +324,20 @@ export function SearchLocation({ onNext, onBack, onUpdate, data }: StepProps) {
               </div>
             </div>
 
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-3 lg:col-span-4">
+              <label className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground/70 ml-1 block">Base City</label>
+              <div className="relative">
+                <Input 
+                  value={baseCity}
+                  onChange={(e) => setBaseCity(e.target.value)}
+                  className="h-12 pl-12 bg-background/50 border-border/50 text-sm rounded-2xl"
+                  placeholder="e.g. Berlin"
+                />
+                <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-3 lg:col-span-4">
               <label className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground/70 ml-1 block">Work Authorization</label>
               <div className="relative w-full">
                 <Globe2 className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground z-10" />
@@ -461,7 +468,7 @@ export function SearchLocation({ onNext, onBack, onUpdate, data }: StepProps) {
 
           <div className="flex flex-col gap-10 pt-4">
             <div className="flex flex-col gap-3">
-              <label className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground/70 ml-2 block">I want to work in...</label>
+              <label className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground/70 ml-2 block">Preferred regions</label>
               <div className="flex flex-wrap gap-2">
                 {REGION_OPTIONS.map(region => {
                   const isSelected = targetRegions.includes(region.id)
@@ -553,14 +560,16 @@ export function SearchLocation({ onNext, onBack, onUpdate, data }: StepProps) {
             "Select at least one role and base country"
           )}
         </Button>
-        <Button 
-          onClick={() => onBack()} 
-          variant="outline" 
-          className="w-full sm:flex-1 h-14 text-base rounded-2xl border-border/50 hover:bg-muted/30 gap-2"
-        >
-          <ChevronLeft className="h-4 w-4" />
-          Back
-        </Button>
+        {canGoBack && (
+          <Button 
+            onClick={() => onBack()} 
+            variant="outline" 
+            className="w-full sm:flex-1 h-14 text-base rounded-2xl border-border/50 hover:bg-muted/30 gap-2"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            Back
+          </Button>
+        )}
       </div>
     </div>
   )

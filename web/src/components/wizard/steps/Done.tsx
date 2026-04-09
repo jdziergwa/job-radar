@@ -7,6 +7,8 @@ import Link from 'next/link'
 import { StepProps } from '../types'
 
 export function Done({ onNext, onBack, onUpdate, data }: StepProps) {
+  const isEditFlow = data.wizardFlowMode === 'edit_preferences' || data.wizardFlowMode === 'update_cv'
+
   return (
     <div className="flex flex-col items-center gap-6 py-6 animate-in fade-in slide-in-from-bottom-8 duration-700 max-w-md mx-auto text-center">
       <div className="relative">
@@ -24,10 +26,14 @@ export function Done({ onNext, onBack, onUpdate, data }: StepProps) {
       </div>
 
       <div className="space-y-1">
-        <h2 className="text-2xl font-bold tracking-tight">Your Profile is Ready!</h2>
+        <h2 className="text-2xl font-bold tracking-tight">
+          {isEditFlow ? 'Your Updates Are Ready!' : 'Your Profile is Ready!'}
+        </h2>
         <div className="space-y-4">
           <p className="text-muted-foreground leading-relaxed">
-            Job Radar is now configured to find jobs matching your exact experience and preferences.
+            {isEditFlow
+              ? 'Your saved profile has been regenerated from the updated guided settings.'
+              : 'Job Radar is now configured to find jobs matching your exact experience and preferences.'}
           </p>
           <div className="flex flex-wrap justify-center gap-2">
             <div className="px-3 py-1 bg-primary/5 rounded-full border border-primary/10 text-[10px] font-bold uppercase tracking-widest text-primary/70">
@@ -45,7 +51,7 @@ export function Done({ onNext, onBack, onUpdate, data }: StepProps) {
           onClick={() => onNext()} 
           className="h-14 text-lg font-bold shadow-xl shadow-primary/20 gap-2 rounded-2xl bg-primary hover:bg-primary/90 hover:scale-[1.02] transition-all"
         >
-          Start searching for jobs
+          {isEditFlow ? 'Back to settings' : 'Start searching for jobs'}
           <ArrowRight className="h-5 w-5" />
         </Button>
         <Link href="/settings" className="w-full">
@@ -60,7 +66,9 @@ export function Done({ onNext, onBack, onUpdate, data }: StepProps) {
       </div>
 
       <p className="text-[11px] text-muted-foreground/50 italic px-8">
-        You can always update your profile, matching rules, or AI parameters in the Settings tab.
+        {isEditFlow
+          ? 'You can reopen this guided editor any time from Settings.'
+          : 'You can always update your profile, matching rules, or AI parameters in the Settings tab.'}
       </p>
     </div>
   )

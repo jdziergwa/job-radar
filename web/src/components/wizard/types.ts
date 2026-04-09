@@ -19,6 +19,10 @@ export function normalizeTimezonePref(value?: string): string {
 }
 
 export interface WizardData {
+  wizardFlowMode?: 'onboarding' | 'edit_preferences' | 'update_cv'
+  canGoBack?: boolean
+  originalCvAnalysis?: CVAnalysis
+  originalUserPreferences?: Partial<UserPreferences>
   path?: 'manual' | 'ai'
   cvFile?: { name: string, size: number }
   cvAnalysis?: CVAnalysis
