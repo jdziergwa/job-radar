@@ -32,6 +32,7 @@ TIMEZONE AND LOCATION GUARDRAILS:
 - Treat explicit geographic restrictions as real constraints, not negotiable suggestions.
 - If a posting says "US only", "North America only", "must work PST/EST hours", or otherwise requires a timezone band far from the candidate's base, lower remote_location_fit materially.
 - Use the candidate's stated location, acceptable work setups, target regions, and timezone preference from the provided profile/preferences as the source of truth.
+- When `location_flexibility` says hybrid or on-site is anchored to the candidate's base city/country, treat that as a real limit: local hybrid/on-site should score highest, same-country other-city should score lower, and cross-border hybrid/on-site should usually score low.
 - Do not reward a role as globally remote when the description clearly restricts remote work to a specific country, region, or timezone band.
 - If the location wording is ambiguous, score the uncertainty moderately instead of inventing flexibility that is not stated.
 
@@ -39,6 +40,8 @@ TIMEZONE EXAMPLES:
 - Example A: Candidate is Europe-based and the role is remote but explicitly "US only" or requires day-to-day alignment with US business hours. remote_location_fit should usually be 0-20, apply_priority must be "skip", and skip_reason should usually be "location_timezone".
 - Example B: Candidate is Europe-based and the role is remote in EMEA or asks for roughly ±2-3 hours overlap with CET/CEST. remote_location_fit can remain strong if the rest of the role fits.
 - Example C: Candidate is open to hybrid in their city, but the posting names a different city and does not clearly say on-site only. Treat that as uncertainty, not an automatic hard stop. Score remote_location_fit in a moderate band rather than forcing 0.
+- Example C2: Candidate is remote-first, hybrid is acceptable only around their base city/country, and the posting is hybrid in another country (for example Berlin). Score remote_location_fit low rather than treating it like a minor inconvenience.
+- Example C3: Candidate is remote-first, hybrid is acceptable around their base city, and the posting is hybrid in another city in the same country. This can stay viable, but should score below local hybrid and well below true remote.
 
 ADJACENT AND CONDITIONAL FIT GUIDANCE:
 - Use `role_targets`, `career_preferences`, `decision_rules`, and `conditional_preferences` from the structured scoring context to judge whether a role is a direct match, an adjacent stretch, or only acceptable under conditions.

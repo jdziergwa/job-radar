@@ -2,6 +2,8 @@ import { components } from "@/lib/api/types"
 
 export type CVAnalysis = components["schemas"]["CVAnalysisResponse"]
 export type UserPreferences = components["schemas"]["UserPreferences"] & {
+  baseCity?: string
+  baseCountry?: string
   careerDirectionEdited?: boolean
   companyQualitySignals?: string[]
   allowLowerSeniorityAtStrategicCompanies?: boolean
@@ -23,6 +25,8 @@ export interface WizardData {
   analysisPromise?: Promise<any>
   targetRoles?: string[]
   seniority?: string[]
+  baseCity?: string
+  baseCountry?: string
   location?: string
   workAuth?: string
   remotePref?: string[]

@@ -28,7 +28,9 @@ def test_generate_profile_doc_formats_preferred_and_acceptable_work_setup():
             "remotePref": ["remote", "hybrid"],
             "primaryRemotePref": "remote",
             "timezonePref": "overlap_strict",
-            "location": "Wroclaw, Poland",
+            "baseCity": "Berlin",
+            "baseCountry": "Germany",
+            "location": "Berlin, Germany",
             "workAuth": "eu_citizen",
             "targetRegions": ["Europe", "UK"],
             "excludedRegions": [],
@@ -44,11 +46,12 @@ def test_generate_profile_doc_formats_preferred_and_acceptable_work_setup():
     assert "Primary target roles: Senior Backend Engineer" in doc
     assert "Open to:" not in doc
     assert "- Preferred work setup: Fully Remote (Same/Overlap (±2h))" in doc
-    assert "- Also acceptable: Hybrid from Wroclaw" in doc
+    assert "- Also acceptable: Hybrid from Berlin" in doc
+    assert "- Hybrid preference is local-first: best fit in/near Berlin; other Germany cities are acceptable with a penalty; cross-border hybrid should score materially lower." in doc
     assert "- Preferred industries: B2B SaaS, Developer Tools" in doc
     assert "**Goal: Deepening expertise in current specialization**" in doc
     assert "- Fully Remote (Same/Overlap (±2h)) roles" not in doc
-    assert "- Hybrid from Wroclaw roles" not in doc
+    assert "- Hybrid from Berlin roles" not in doc
     assert "- Senior-level roles" not in doc
     assert "- Not acceptable: On-site only positions" in doc
     assert "- Preferred timezone overlap: Same/Overlap (±2h)" in doc
@@ -66,6 +69,8 @@ def test_generate_profile_doc_does_not_assume_remote_first():
             "remotePref": ["onsite", "hybrid"],
             "primaryRemotePref": "onsite",
             "timezonePref": "any",
+            "baseCity": "Berlin",
+            "baseCountry": "Germany",
             "location": "Berlin, Germany",
             "workAuth": "other",
             "targetRegions": ["Germany"],
@@ -80,6 +85,29 @@ def test_generate_profile_doc_does_not_assume_remote_first():
     assert "- Not acceptable: On-site only positions" not in doc
     assert "- Preferred timezone overlap:" not in doc
     assert "- Excluded regions: US/North America" in doc
+
+
+def test_generate_profile_doc_country_only_location_uses_country_scoped_language():
+    doc = generate_profile_doc(
+        _analysis_for_profile_doc(),
+        {
+            "targetRoles": ["Senior Backend Engineer"],
+            "remotePref": ["remote", "hybrid"],
+            "primaryRemotePref": "remote",
+            "timezonePref": "overlap_strict",
+            "baseCountry": "Germany",
+            "location": "Germany",
+            "workAuth": "eu_citizen",
+            "targetRegions": ["Europe"],
+            "excludedRegions": [],
+            "careerDirection": "Grow as a backend engineer.",
+            "careerGoal": "stay",
+        },
+    )
+
+    assert "- Based in: Germany" in doc
+    assert "- Also acceptable: Hybrid in Germany" in doc
+    assert "- Hybrid preference is country-scoped: roles in Germany are acceptable; cross-border hybrid should score materially lower." in doc
 
 
 def test_generate_profile_doc_normalizes_legacy_preference_labels():
@@ -146,7 +174,7 @@ def test_generate_profile_doc_uses_authored_career_direction_for_adjacent_roles(
             "remotePref": ["remote"],
             "primaryRemotePref": "remote",
             "timezonePref": "overlap_strict",
-            "location": "Wroclaw, Poland",
+            "location": "Berlin, Germany",
             "workAuth": "eu_citizen",
             "targetRegions": ["Europe"],
             "excludedRegions": [],

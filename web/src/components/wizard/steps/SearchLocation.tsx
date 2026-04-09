@@ -104,15 +104,34 @@ function normalizeRegions(values?: string[]): string[] {
   return normalized
 }
 
+function parseLocation(value?: string): { baseCity: string, baseCountry: string } {
+  const clean = value?.trim() || ''
+  if (!clean) return { baseCity: '', baseCountry: '' }
+  const parts = clean.split(',').map(part => part.trim()).filter(Boolean)
+  if (parts.length >= 2) {
+    return { baseCity: parts[0], baseCountry: parts[parts.length - 1] }
+  }
+  return { baseCity: '', baseCountry: parts[0] || '' }
+}
+
+function formatLocation(baseCity?: string, baseCountry?: string): string {
+  const city = baseCity?.trim() || ''
+  const country = baseCountry?.trim() || ''
+  if (city && country) return `${city}, ${country}`
+  return city || country
+}
+
 export function SearchLocation({ onNext, onBack, onUpdate, data }: StepProps) {
   const analysis = data.cvAnalysis
+  const parsedLocation = parseLocation(data.location)
   
   const [targetRoles, setTargetRoles] = useState<string[]>(data.targetRoles || analysis?.suggested_target_roles || [])
   const [newRole, setNewRole] = useState('')
   const [seniority, setSeniority] = useState<string[]>(
     data.seniority || (analysis?.inferred_seniority ? [analysis.inferred_seniority.toLowerCase()] : ['senior'])
   )
-  const [location, setLocation] = useState(data.location || '')
+  const [baseCity, setBaseCity] = useState(data.baseCity ?? parsedLocation.baseCity)
+  const [baseCountry, setBaseCountry] = useState(data.baseCountry ?? parsedLocation.baseCountry)
   const [workAuth, setWorkAuth] = useState<string>(normalizeWorkAuth(data.workAuth))
   const [remotePref, setRemotePref] = useState<string[]>(data.remotePref || ['remote'])
   const [primaryRemotePref, setPrimaryRemotePref] = useState<string>(data.primaryRemotePref || 'remote')
@@ -122,12 +141,15 @@ export function SearchLocation({ onNext, onBack, onUpdate, data }: StepProps) {
   const [enableStandardExclusions, setEnableStandardExclusions] = useState<boolean>(
     data.enableStandardExclusions !== undefined ? data.enableStandardExclusions : true
   )
+  const location = formatLocation(baseCity, baseCountry)
 
   // Auto-sync state back to wizardData for refresh resilience
   useEffect(() => {
     onUpdate({
       targetRoles,
       seniority,
+      baseCity,
+      baseCountry,
       location,
       workAuth,
       remotePref,
@@ -137,7 +159,7 @@ export function SearchLocation({ onNext, onBack, onUpdate, data }: StepProps) {
       excludedRegions,
       enableStandardExclusions
     })
-  }, [targetRoles, seniority, location, workAuth, remotePref, primaryRemotePref, timezonePref, targetRegions, excludedRegions, enableStandardExclusions, onUpdate])
+  }, [targetRoles, seniority, baseCity, baseCountry, location, workAuth, remotePref, primaryRemotePref, timezonePref, targetRegions, excludedRegions, enableStandardExclusions, onUpdate])
 
   const handleAddRole = () => {
     const role = newRole.trim()
@@ -163,13 +185,15 @@ export function SearchLocation({ onNext, onBack, onUpdate, data }: StepProps) {
     }
   }
 
-  const isValid = targetRoles.length > 0 && location.trim().length > 0 && remotePref.length > 0
+  const isValid = targetRoles.length > 0 && baseCountry.trim().length > 0 && remotePref.length > 0
 
   const handleNext = () => {
     if (!isValid) return
     onNext({
       targetRoles,
       seniority,
+      baseCity,
+      baseCountry,
       location,
       workAuth,
       remotePref,
@@ -279,17 +303,30 @@ export function SearchLocation({ onNext, onBack, onUpdate, data }: StepProps) {
             <h3 className="font-bold text-lg text-foreground">Where do you want to work?</h3>
           </div>
 
-          <div className="grid sm:grid-cols-2 gap-8 pt-2">
+          <div className="grid sm:grid-cols-3 gap-8 pt-2">
             <div className="flex flex-col gap-3">
-              <label className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground/70 ml-1 block">Where are you based? *</label>
+              <label className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground/70 ml-1 block">Base City</label>
               <div className="relative">
                 <Input 
-                  value={location} 
-                  onChange={(e) => setLocation(e.target.value)}
+                  value={baseCity}
+                  onChange={(e) => setBaseCity(e.target.value)}
                   className="h-12 pl-12 bg-background/50 border-border/50 text-sm rounded-2xl"
-                  placeholder="e.g. Berlin, Germany"
+                  placeholder="e.g. Berlin"
                 />
                 <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-3">
+              <label className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground/70 ml-1 block">Base Country *</label>
+              <div className="relative">
+                <Input 
+                  value={baseCountry}
+                  onChange={(e) => setBaseCountry(e.target.value)}
+                  className="h-12 pl-12 bg-background/50 border-border/50 text-sm rounded-2xl"
+                  placeholder="e.g. Germany"
+                />
+                <Globe2 className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               </div>
             </div>
 
@@ -321,8 +358,9 @@ export function SearchLocation({ onNext, onBack, onUpdate, data }: StepProps) {
                 {REMOTE_PREF.map((pref) => {
                   const Icon = pref.icon
                   const isActive = remotePref.includes(pref.id)
-                  const city = location.split(',')[0].trim() || 'my location'
-                  const label = pref.id === 'remote' ? pref.label : `${pref.label.split(' ')[0]} from ${city}`
+                  const place = baseCity.trim() || baseCountry.trim() || 'my area'
+                  const preposition = baseCity.trim() ? 'from' : 'in'
+                  const label = pref.id === 'remote' ? pref.label : `${pref.label.split(' ')[0]} ${preposition} ${place}`
 
                   return (
                     <button
@@ -512,7 +550,7 @@ export function SearchLocation({ onNext, onBack, onUpdate, data }: StepProps) {
               <ChevronRight className="h-5 w-5" />
             </>
           ) : (
-            "Select at least one role & location"
+            "Select at least one role and base country"
           )}
         </Button>
         <Button 

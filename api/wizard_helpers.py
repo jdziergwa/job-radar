@@ -187,6 +187,41 @@ def _normalize_work_setup(value: str | None) -> str:
 def _normalize_timezone_pref(value: str | None) -> str:
     return _normalize_alias(value, TIMEZONE_ALIASES)
 
+
+def _split_location_parts(location: str | None) -> tuple[str, str]:
+    """Split a freeform location string into city and country-ish components."""
+    clean = " ".join((location or "").strip().split())
+    if not clean:
+        return "", ""
+    parts = [part.strip() for part in clean.split(",") if part.strip()]
+    if not parts:
+        return "", ""
+    city = parts[0]
+    country = parts[-1] if len(parts) > 1 else ""
+    return city, country
+
+
+def _compose_location(base_city: str | None, base_country: str | None) -> str:
+    """Build a readable location string from explicit base-city/country fields."""
+    city = " ".join((base_city or "").strip().split())
+    country = " ".join((base_country or "").strip().split())
+    if city and country:
+        return f"{city}, {country}"
+    return city or country
+
+
+def _resolve_base_location(preferences: Dict[str, Any]) -> tuple[str, str, str]:
+    """Resolve base city/country, preferring explicit wizard fields."""
+    explicit_city = " ".join((preferences.get("baseCity") or "").strip().split())
+    explicit_country = " ".join((preferences.get("baseCountry") or "").strip().split())
+    explicit_location = _compose_location(explicit_city, explicit_country)
+    if explicit_city or explicit_country:
+        return explicit_city, explicit_country, explicit_location
+
+    legacy_location = " ".join((preferences.get("location") or "").strip().split())
+    city, country = _split_location_parts(legacy_location)
+    return city, country, legacy_location or _compose_location(city, country)
+
 def _build_literal_region_regex(region: str) -> str:
     """Build a safe literal regex for freeform region inputs."""
     parts = [re.escape(part) for part in region.lower().split()]
@@ -230,7 +265,7 @@ def _should_apply_standard_exclusions(target_regions: list[str]) -> bool:
     normalized_targets = {_normalize_region_name(region) for region in target_regions if region}
     return not bool(normalized_targets & STANDARD_EXCLUSION_TARGET_REGIONS)
 
-def _format_work_setup_option(setup: str, city: str, timezone_pref: str) -> str:
+def _format_work_setup_option(setup: str, city: str, country: str, timezone_pref: str) -> str:
     """Format a work setup option into explicit, readable profile text."""
     label = _get_label(setup)
     if setup == "remote":
@@ -238,6 +273,8 @@ def _format_work_setup_option(setup: str, city: str, timezone_pref: str) -> str:
         return f"{label} ({tz_label})" if timezone_pref and timezone_pref != "any" and tz_label else label
     if setup in {"hybrid", "onsite"} and city and city != "Location":
         return f"{label} from {city}"
+    if setup in {"hybrid", "onsite"} and country:
+        return f"{label} in {country}"
     return label
 
 
@@ -400,6 +437,7 @@ def _build_scoring_context(analysis: CVAnalysisResponse, preferences: Dict[str, 
     remote_pref = [_normalize_work_setup(v) for v in _ensure_list(preferences.get("remotePref", []))]
     primary_pref = _normalize_work_setup(preferences.get("primaryRemotePref", "")) or (remote_pref[0] if remote_pref else "")
     timezone_pref = _normalize_timezone_pref(preferences.get("timezonePref", ""))
+    base_city, base_country, base_location = _resolve_base_location(preferences)
     good_match_signals = _user_selected_or_fallback(
         preferences.get("goodMatchSignals", []),
         getattr(analysis, "suggested_good_match_signals", []),
@@ -421,10 +459,37 @@ def _build_scoring_context(analysis: CVAnalysisResponse, preferences: Dict[str, 
             "seniority_preferences": seniority_preferences,
         },
         "work_setup": {
-            "base_location": preferences.get("location", ""),
+            "base_location": base_location,
+            "base_city": base_city,
+            "base_country": base_country,
             "work_authorization": _normalize_work_auth(preferences.get("workAuth", "")),
             "preferred_setup": primary_pref,
             "acceptable_setups": [setup for setup in remote_pref if setup != primary_pref],
+            "location_flexibility": {
+                "remote_first": primary_pref == "remote",
+                "hybrid": {
+                    "anchored_to_base_location": "hybrid" in remote_pref,
+                    "base_city": base_city if "hybrid" in remote_pref else "",
+                    "base_country": base_country if "hybrid" in remote_pref else "",
+                    "same_country_other_city": (
+                        "acceptable_with_penalty" if "hybrid" in remote_pref and base_city and base_country
+                        else "acceptable" if "hybrid" in remote_pref and base_country
+                        else ""
+                    ),
+                    "cross_border": "strong_penalty" if "hybrid" in remote_pref and base_country else "",
+                },
+                "onsite": {
+                    "anchored_to_base_location": "onsite" in remote_pref,
+                    "base_city": base_city if "onsite" in remote_pref else "",
+                    "base_country": base_country if "onsite" in remote_pref else "",
+                    "same_country_other_city": (
+                        "acceptable_with_penalty" if "onsite" in remote_pref and base_city and base_country
+                        else "acceptable" if "onsite" in remote_pref and base_country
+                        else ""
+                    ),
+                    "cross_border": "strong_penalty" if "onsite" in remote_pref and base_country else "",
+                },
+            },
             "target_regions": _ensure_list(preferences.get("targetRegions", [])),
             "excluded_regions": _ensure_list(preferences.get("excludedRegions", [])),
             "timezone": {
@@ -1055,14 +1120,15 @@ def generate_profile_doc(analysis: CVAnalysisResponse, preferences: Dict[str, An
     
     primary_pref = _normalize_work_setup(preferences.get("primaryRemotePref", ""))
     timezone_pref = _normalize_timezone_pref(preferences.get("timezonePref", ""))
-    city = preferences.get("location", "").split(",")[0].strip() or "Location"
+    city, country, location = _resolve_base_location(preferences)
+    city = city or "Location"
     target_regions = ", ".join(preferences.get("targetRegions", []))
     target_industries = ", ".join(_dedupe_preserve_order(_ensure_list(preferences.get("industries", []))))
     company_quality_signals = _ensure_list(preferences.get("companyQualitySignals", []))
     allow_lower_seniority_at_strategic_companies = bool(company_quality_signals)
-    preferred_setup = _format_work_setup_option(primary_pref, city, timezone_pref) if primary_pref else ""
+    preferred_setup = _format_work_setup_option(primary_pref, city, country, timezone_pref) if primary_pref else ""
     acceptable_setups = [
-        _format_work_setup_option(setup, city, timezone_pref)
+        _format_work_setup_option(setup, city, country, timezone_pref)
         for setup in remote_pref
         if setup != primary_pref
     ]
@@ -1129,7 +1195,6 @@ def generate_profile_doc(analysis: CVAnalysisResponse, preferences: Dict[str, An
         seniority_list = []
 
     work_auth = _get_label(_normalize_work_auth(preferences.get('workAuth', '')))
-    location = preferences.get('location', 'Unknown')
     excluded = ", ".join(preferences.get("excludedRegions", []))
     remote_pref_set = set(remote_pref)
 
@@ -1148,6 +1213,24 @@ def generate_profile_doc(analysis: CVAnalysisResponse, preferences: Dict[str, An
         loc_lines.append(f"- Preferred work setup: {preferred_setup}")
     if acceptable_setups:
         loc_lines.append(f"- Also acceptable: {', '.join(acceptable_setups)}")
+    if primary_pref == "remote" and "hybrid" in remote_pref and country:
+        if city != "Location":
+            loc_lines.append(
+                f"- Hybrid preference is local-first: best fit in/near {city}; other {country} cities are acceptable with a penalty; cross-border hybrid should score materially lower."
+            )
+        else:
+            loc_lines.append(
+                f"- Hybrid preference is country-scoped: roles in {country} are acceptable; cross-border hybrid should score materially lower."
+            )
+    if primary_pref == "remote" and "onsite" in remote_pref and country:
+        if city != "Location":
+            loc_lines.append(
+                f"- On-site preference is local-first: best fit in/near {city}; other {country} cities are acceptable only with a clear tradeoff; cross-border on-site should score materially lower."
+            )
+        else:
+            loc_lines.append(
+                f"- On-site preference is country-scoped: roles in {country} are acceptable; cross-border on-site should score materially lower."
+            )
     
     if target_regions:
         loc_lines.append(f"- Acceptable regions: {target_regions}")

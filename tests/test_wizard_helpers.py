@@ -165,6 +165,64 @@ def test_generate_profile_yaml_normalizes_legacy_remote_pref_labels():
     assert r"\bhybrid\b" in patterns
 
 
+def test_generate_profile_yaml_preserves_hybrid_locality_rules_in_scoring_context():
+    config = yaml.safe_load(generate_profile_yaml(
+        _minimal_analysis(),
+        {
+            "targetRegions": ["Europe"],
+            "excludedRegions": [],
+            "enableStandardExclusions": False,
+            "targetRoles": ["Senior Backend Engineer"],
+            "remotePref": ["remote", "hybrid"],
+            "primaryRemotePref": "remote",
+            "baseCity": "Berlin",
+            "baseCountry": "Germany",
+            "location": "Berlin, Germany",
+        },
+    ))
+
+    work_setup = config["scoring_context"]["work_setup"]
+    hybrid_rules = work_setup["location_flexibility"]["hybrid"]
+
+    assert work_setup["base_city"] == "Berlin"
+    assert work_setup["base_country"] == "Germany"
+    assert work_setup["preferred_setup"] == "remote"
+    assert work_setup["acceptable_setups"] == ["hybrid"]
+    assert work_setup["location_flexibility"]["remote_first"] is True
+    assert hybrid_rules["anchored_to_base_location"] is True
+    assert hybrid_rules["base_city"] == "Berlin"
+    assert hybrid_rules["base_country"] == "Germany"
+    assert hybrid_rules["same_country_other_city"] == "acceptable_with_penalty"
+    assert hybrid_rules["cross_border"] == "strong_penalty"
+
+
+def test_generate_profile_yaml_country_only_base_location_keeps_country_scope():
+    config = yaml.safe_load(generate_profile_yaml(
+        _minimal_analysis(),
+        {
+            "targetRegions": ["Europe"],
+            "excludedRegions": [],
+            "enableStandardExclusions": False,
+            "targetRoles": ["Senior Backend Engineer"],
+            "remotePref": ["remote", "hybrid"],
+            "primaryRemotePref": "remote",
+            "baseCountry": "Germany",
+            "location": "Germany",
+        },
+    ))
+
+    work_setup = config["scoring_context"]["work_setup"]
+    hybrid_rules = work_setup["location_flexibility"]["hybrid"]
+
+    assert work_setup["base_city"] == ""
+    assert work_setup["base_country"] == "Germany"
+    assert work_setup["base_location"] == "Germany"
+    assert hybrid_rules["base_city"] == ""
+    assert hybrid_rules["base_country"] == "Germany"
+    assert hybrid_rules["same_country_other_city"] == "acceptable"
+    assert hybrid_rules["cross_border"] == "strong_penalty"
+
+
 def test_generate_profile_yaml_derives_literal_signals_from_roles_and_match_chips():
     analysis = SimpleNamespace(
         suggested_title_patterns={"high_confidence": [], "broad": []},

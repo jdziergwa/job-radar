@@ -233,6 +233,8 @@ class UserPreferences(BaseModel):
     targetRoles: list[str] = []
     seniority: list[str] = []
     location: str
+    baseCity: Optional[str] = None
+    baseCountry: str = ""
     workAuth: str
     remotePref: list[str] = []
     primaryRemotePref: Optional[str] = None

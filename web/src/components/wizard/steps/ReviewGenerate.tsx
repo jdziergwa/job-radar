@@ -87,7 +87,9 @@ export function ReviewGenerate({ onNext, onBack, onUpdate, data }: StepProps) {
       const user_preferences = {
         targetRoles: data.targetRoles || [],
         seniority: data.seniority || [],
-        location: data.location || '',
+        baseCity: data.baseCity || '',
+        baseCountry: data.baseCountry || '',
+        location: data.location || [data.baseCity, data.baseCountry].filter(Boolean).join(', '),
         workAuth: data.workAuth || '',
         remotePref: data.remotePref || ['remote'],
         primaryRemotePref: data.primaryRemotePref || 'remote',

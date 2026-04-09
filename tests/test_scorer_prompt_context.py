@@ -26,7 +26,14 @@ def test_build_system_prompt_includes_scoring_context_block():
             "keywords": {"title_patterns": {"high_confidence": [r"\bbackend\s+engineer\b"]}},
             "scoring_context": {
                 "role_targets": {"core": ["Senior Backend Engineer"]},
-                "work_setup": {"preferred_setup": "remote"},
+                "work_setup": {
+                    "preferred_setup": "remote",
+                    "base_city": "Berlin",
+                    "location_flexibility": {
+                        "remote_first": True,
+                        "hybrid": {"cross_border": "strong_penalty"},
+                    },
+                },
                 "company_preferences": {
                     "preferred_signals": ["strong product company"],
                     "allow_lower_seniority_if_company_matches": True,
@@ -41,6 +48,8 @@ def test_build_system_prompt_includes_scoring_context_block():
     assert "scoring_context:" in text
     assert "role_targets:" in text
     assert "preferred_setup: remote" in text
+    assert "base_city: Berlin" in text
+    assert "cross_border: strong_penalty" in text
     assert "company_preferences:" in text
     assert "strong product company" in text
 
