@@ -17,12 +17,62 @@ greenhouse:
   name: Datadog
 - slug: cloudflare
   name: Cloudflare
+- slug: affirm
+  name: Affirm
+- slug: airbnb
+  name: Airbnb
+- slug: asana
+  name: Asana
+- slug: brex
+  name: Brex
+- slug: chime
+  name: Chime
+- slug: coinbase
+  name: Coinbase
+- slug: coursera
+  name: Coursera
+- slug: databricks
+  name: Databricks
+- slug: discord
+  name: Discord
+- slug: duolingo
+  name: Duolingo
 - slug: gitlab
   name: GitLab
 - slug: figma
   name: Figma
+- slug: fivetran
+  name: Fivetran
+- slug: hubspot
+  name: HubSpot
+- slug: instacart
+  name: Instacart
+- slug: intercom
+  name: Intercom
 - slug: mongodb
   name: MongoDB
+- slug: lyft
+  name: Lyft
+- slug: okta
+  name: Okta
+- slug: pinterest
+  name: Pinterest
+- slug: postman
+  name: Postman
+- slug: reddit
+  name: Reddit
+- slug: amplitude
+  name: Amplitude
+- slug: roblox
+  name: Roblox
+- slug: scaleai
+  name: Scale AI
+- slug: toast
+  name: Toast
+- slug: tripadvisor
+  name: Tripadvisor
+- slug: webflow
+  name: Webflow
 - slug: elastic
   name: Elastic
 - slug: twilio
@@ -33,10 +83,10 @@ greenhouse:
 lever:
 - slug: spotify
   name: Spotify
-- slug: vercel
-  name: Vercel
-- slug: supabase
-  name: Supabase
+- slug: apollographql
+  name: Apollo GraphQL
+- slug: wealthsimple
+  name: Wealthsimple
 
 ashby:
 - slug: linear

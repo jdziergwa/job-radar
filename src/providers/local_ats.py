@@ -1,6 +1,6 @@
 """ATS API fetcher — collects jobs from Greenhouse, Lever, Ashby, Workable.
 
-Uses asyncio + aiohttp with a semaphore for polite concurrency.
+Uses asyncio + aiohttp with platform-specific concurrency limits for polite access.
 """
 
 from __future__ import annotations
@@ -24,8 +24,19 @@ from src.models import RawJob
 logger = logging.getLogger(__name__)
 
 # Concurrency and timeout settings
-MAX_CONCURRENT = 5
 REQUEST_TIMEOUT = 10  # seconds
+PLATFORM_CONCURRENCY = {
+    "greenhouse": 5,
+    "lever": 3,
+    "ashby": 3,
+    "workable": 3,
+}
+PLATFORM_REQUEST_DELAY = {
+    "greenhouse": 0.0,
+    "lever": 0.0,
+    "ashby": 0.0,
+    "workable": 0.0,
+}
 
 # SSL context using certifi for macOS compatibility
 _ssl_ctx = ssl.create_default_context(cafile=certifi.where())
@@ -400,6 +411,48 @@ FETCHERS = {
 }
 
 
+def _platform_concurrency(platform: str) -> int:
+    return PLATFORM_CONCURRENCY.get(platform, 2)
+
+
+def _platform_delay(platform: str) -> float:
+    return PLATFORM_REQUEST_DELAY.get(platform, 0.0)
+
+
+def _build_platform_semaphores(companies: dict[str, list[dict[str, str]]]) -> dict[str, asyncio.Semaphore]:
+    return {
+        platform: asyncio.Semaphore(_platform_concurrency(platform))
+        for platform in companies
+        if platform in FETCHERS
+    }
+
+
+async def _fetch_company_jobs(
+    session: aiohttp.ClientSession,
+    platform: str,
+    company: dict[str, str],
+    semaphores: dict[str, asyncio.Semaphore],
+) -> list[RawJob]:
+    fetcher = FETCHERS.get(platform)
+    if fetcher is None:
+        logger.warning("Unknown ATS platform: %s — skipping", platform)
+        return []
+
+    semaphore = semaphores[platform]
+
+    try:
+        result = await fetcher(session, semaphore, company)
+    except Exception as exc:  # pragma: no cover - defensive guard
+        logger.warning("%s/%s fetch failed: %s", platform, company.get("slug", "?"), exc)
+        return []
+
+    delay = _platform_delay(platform)
+    if delay > 0:
+        await asyncio.sleep(delay)
+
+    return result
+
+
 async def collect_all(
     companies: dict[str, list[dict[str, str]]],
     progress_callback: Optional[Callable[[int, int], None]] = None,
@@ -414,22 +467,29 @@ async def collect_all(
     Returns:
         Flat list of all fetched RawJob objects.
     """
-    sem = asyncio.Semaphore(MAX_CONCURRENT)
     all_jobs: list[RawJob] = []
+    semaphores = _build_platform_semaphores(companies)
 
     connector = aiohttp.TCPConnector(ssl=_ssl_ctx)
     async with aiohttp.ClientSession(connector=connector) as session:
         tasks: list[asyncio.Task[list[RawJob]]] = []
 
         for platform, company_list in companies.items():
-            fetcher = FETCHERS.get(platform)
-            if fetcher is None:
+            if platform not in FETCHERS:
                 logger.warning("Unknown ATS platform: %s — skipping", platform)
                 continue
 
+            logger.info(
+                "ATS platform %s: %d companies (concurrency=%d, delay=%.1fs)",
+                platform,
+                len(company_list),
+                _platform_concurrency(platform),
+                _platform_delay(platform),
+            )
+
             for company in company_list:
                 task = asyncio.create_task(
-                    fetcher(session, sem, company),
+                    _fetch_company_jobs(session, platform, company, semaphores),
                     name=f"{platform}/{company.get('slug', '?')}",
                 )
                 tasks.append(task)
@@ -442,10 +502,8 @@ async def collect_all(
         for coro in asyncio.as_completed(tasks):
             result = await coro
             completed_count += 1
-            
-            if isinstance(result, Exception):
-                logger.warning("An ATS fetch task failed: %s", result)
-            elif isinstance(result, list):
+
+            if isinstance(result, list):
                 all_jobs.extend(result)
             
             if progress_callback:
