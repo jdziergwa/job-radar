@@ -2,6 +2,7 @@ import Link from 'next/link'
 import type { components } from '@/lib/api/types'
 import { ScoreRing } from '@/components/score/ScoreRing'
 import { PriorityBadge } from '@/components/score/PriorityBadge'
+import { MatchTierBadge } from '@/components/score/MatchTierBadge'
 import { FitCategoryBadge } from '@/components/score/FitCategoryBadge'
 import { timeAgo, getPlatformName } from '@/lib/utils/format'
 import { Badge } from '@/components/ui/badge'
@@ -60,19 +61,7 @@ export function JobListItem({ job }: { job: JobResponse }) {
               )}
               {job.match_tier && job.status !== 'dismissed' && (
                 <div className="flex items-center gap-1.5">
-                  {job.match_tier === 'high_confidence' ? (
-                    <Badge className="text-[9px] font-bold px-1.5 py-0 h-4 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20 whitespace-nowrap">
-                      🎯 Direct Match
-                    </Badge>
-                  ) : job.match_tier === 'signal_match' || job.match_tier === 'broad_match' ? (
-                    <Badge className="text-[9px] font-bold px-1.5 py-0 h-4 bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/20 whitespace-nowrap">
-                      🔍 Signal Match
-                    </Badge>
-                  ) : (
-                    <Badge className="text-[9px] font-bold px-1.5 py-0 h-4 bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 whitespace-nowrap">
-                      🌐 {job.match_tier.replace(/_/g, ' ')}
-                    </Badge>
-                  )}
+                  <MatchTierBadge matchTier={job.match_tier} compact />
                 </div>
               )}
               {job.is_sparse && (
@@ -80,7 +69,7 @@ export function JobListItem({ job }: { job: JobResponse }) {
                   ⚠️ Sparse Posting
                 </Badge>
               )}
-              {job.status !== 'dismissed' && <FitCategoryBadge fitCategory={fitCategory} />}
+              {job.status !== 'dismissed' && <FitCategoryBadge fitCategory={fitCategory} compact />}
             </div>
             <h3 className="font-bold truncate text-lg group-hover:text-primary transition-colors leading-tight">
               {job.title}

@@ -9,9 +9,9 @@ import { ScoreRing } from '@/components/score/ScoreRing'
 import { ScoreBar } from '@/components/score/ScoreBar'
 import { PriorityBadge } from '@/components/score/PriorityBadge'
 import { FitCategoryBadge } from '@/components/score/FitCategoryBadge'
+import { MatchTierBadge } from '@/components/score/MatchTierBadge'
 import { timeAgo, formatDate, getPlatformName } from '@/lib/utils/format'
 import { getCompanyQualitySignalLabel } from '@/lib/company-quality'
-import { getFitCategoryExplanation, getFitCategoryLabel } from '@/lib/fit-category'
 import { Badge } from '@/components/ui/badge'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -31,8 +31,7 @@ import {
   Loader2,
   Banknote,
   HelpCircle,
-  Sparkles,
-  Target
+  Sparkles
 } from 'lucide-react'
 import Link from 'next/link'
 import { 
@@ -176,8 +175,6 @@ function JobDetailContent() {
 
   const dimensions = job.score_breakdown?.dimensions || {}
   const fitCategory = job.score_breakdown?.fit_category as string | undefined
-  const fitCategoryLabel = getFitCategoryLabel(fitCategory)
-  const fitCategoryExplanation = getFitCategoryExplanation(fitCategory)
   const companySignals = Array.isArray(job.company_quality_signals) ? job.company_quality_signals : []
 
   return (
@@ -212,15 +209,7 @@ function JobDetailContent() {
                 <Badge variant="outline" className="capitalize px-3 border-border/50 bg-muted/20">
                   Status: {job.status}
                 </Badge>
-                {job.match_tier && (
-                  <Badge className={`px-3 border-none font-bold ${
-                    job.match_tier === 'high_confidence' 
-                      ? 'bg-indigo-500/15 text-indigo-600 dark:text-indigo-400' 
-                      : 'bg-slate-500/15 text-slate-600 dark:text-slate-400'
-                  }`}>
-                    {job.match_tier === 'high_confidence' ? '🎯 Direct Match' : '🔍 Signal Match'}
-                  </Badge>
-                )}
+                {job.match_tier && <MatchTierBadge matchTier={job.match_tier} />}
                 {job.status === 'dismissed' && job.dismissal_reason && (
                   <Badge variant="destructive" className="px-3 border-none bg-destructive/15 text-destructive font-bold">
                     Reason: {job.dismissal_reason}
@@ -290,20 +279,6 @@ function JobDetailContent() {
               <p className="text-muted-foreground leading-relaxed max-w-xl italic border-l-2 border-primary/30 pl-4">
                 {job.score_reasoning || "No detailed reasoning provided."}
               </p>
-              {fitCategoryLabel && (
-                <div className="rounded-2xl border border-border/40 bg-background/40 px-4 py-3 max-w-2xl">
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <Target className="h-4 w-4 text-primary" />
-                    <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
-                      Fit Classification
-                    </p>
-                  </div>
-                  <p className="text-sm font-semibold text-foreground">{fitCategoryLabel}</p>
-                  <p className="text-sm text-muted-foreground leading-relaxed mt-1">
-                    {fitCategoryExplanation}
-                  </p>
-                </div>
-              )}
             </div>
           </div>
         </div>

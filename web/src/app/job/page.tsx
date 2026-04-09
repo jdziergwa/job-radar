@@ -11,7 +11,6 @@ import { PriorityBadge } from '@/components/score/PriorityBadge'
 import { FitCategoryBadge } from '@/components/score/FitCategoryBadge'
 import { timeAgo, formatDate } from '@/lib/utils/format'
 import { getCompanyQualitySignalLabel } from '@/lib/company-quality'
-import { getFitCategoryExplanation, getFitCategoryLabel } from '@/lib/fit-category'
 import { Badge } from '@/components/ui/badge'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -29,8 +28,7 @@ import {
   AlertTriangle,
   Loader2,
   Banknote,
-  Sparkles,
-  Target
+  Sparkles
 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -121,8 +119,6 @@ function JobDetailContent() {
 
   const dimensions = job.score_breakdown?.dimensions || {}
   const fitCategory = job.score_breakdown?.fit_category as string | undefined
-  const fitCategoryLabel = getFitCategoryLabel(fitCategory)
-  const fitCategoryExplanation = getFitCategoryExplanation(fitCategory)
   const companySignals = Array.isArray(job.company_quality_signals) ? job.company_quality_signals : []
 
   return (
@@ -180,20 +176,6 @@ function JobDetailContent() {
               <p className="text-muted-foreground leading-relaxed max-w-xl italic border-l-2 border-primary/30 pl-4">
                 {job.score_reasoning || "No detailed reasoning provided."}
               </p>
-              {fitCategoryLabel && (
-                <div className="rounded-2xl border border-border/40 bg-background/40 px-4 py-3 max-w-2xl">
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <Target className="h-4 w-4 text-primary" />
-                    <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
-                      Fit Classification
-                    </p>
-                  </div>
-                  <p className="text-sm font-semibold text-foreground">{fitCategoryLabel}</p>
-                  <p className="text-sm text-muted-foreground leading-relaxed mt-1">
-                    {fitCategoryExplanation}
-                  </p>
-                </div>
-              )}
             </div>
           </div>
         </div>
