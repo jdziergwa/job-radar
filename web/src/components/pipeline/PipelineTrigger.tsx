@@ -297,7 +297,10 @@ export function PipelineTrigger({ collapsed = false }: { collapsed?: boolean }) 
         runId={activeRun?.run_id || null}
         open={showProgress}
         onOpenChange={setShowProgress}
-        onComplete={() => fetchActive()}
+        onComplete={() => {
+          fetchActive()
+          window.dispatchEvent(new Event('pipeline-finished'))
+        }}
       />
     </>
   )
