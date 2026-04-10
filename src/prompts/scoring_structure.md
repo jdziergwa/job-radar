@@ -12,7 +12,13 @@ REASONING FORMAT:
 - Reasoning MUST be a single string. Do NOT use nested objects for reasoning.
 - Be concise. Focus on the core matches and gaps. Aim for 2-4 sentences total.
 - Address the user as "you" or "your".
-- CRITICAL: Treat each job in complete isolation. NEVER reference other jobs in the batch.
+- CRITICAL: Treat each job in complete isolation.
+- Each reasoning string may mention only:
+  - the current job's title, company, description, salary, and location/company context
+  - the candidate profile and candidate preferences
+- NEVER mention, imply, or compare against any other job in the batch.
+- Forbidden patterns include: "Job 1", "Job 2", "the first job", "the second role", "the other job", "another role in the batch", "previous job", "next job", "compared to", and "unlike the other role".
+- Any reasoning that compares jobs or mentions job ordering is invalid.
 
 RESPONSE FORMAT:
 - Response MUST be valid JSON.

@@ -9,7 +9,6 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-import time
 import re
 from dataclasses import replace
 from pathlib import Path
@@ -88,12 +87,15 @@ def load_scoring_philosophy(profile_dir: Path | None = None) -> str:
 def _build_system_prompt(scoring_instructions: str, profile_doc: str, profile_config: dict[str, Any] | None = None) -> list[dict[str, Any]]:
     """Build the system message with cache_control for prompt caching."""
     import yaml
-    
-    # Format the structured profile data (keywords/preferences) for the prompt
+
+    # Send only the scoring-relevant subset of config to avoid token-heavy
+    # prefilter regex noise in the cached system prompt.
     preferences_block = ""
     if profile_config:
-        formatted_config = yaml.dump(profile_config, sort_keys=False, default_flow_style=False)
-        preferences_block = f"\n\nCANDIDATE PREFERENCES (from search_config.yaml):\n\n{formatted_config}"
+        prompt_config = _build_prompt_profile_config(profile_config)
+        if prompt_config:
+            formatted_config = yaml.dump(prompt_config, sort_keys=False, default_flow_style=False)
+            preferences_block = f"\n\nCANDIDATE PREFERENCES (from search_config.yaml):\n\n{formatted_config}"
 
     return [{
         "type": "text",
@@ -102,16 +104,82 @@ def _build_system_prompt(scoring_instructions: str, profile_doc: str, profile_co
     }]
 
 
+def _build_prompt_profile_config(profile_config: dict[str, Any]) -> dict[str, Any]:
+    """Keep only scoring-relevant config in the prompt context."""
+    curated: dict[str, Any] = {}
+
+    scoring_context = profile_config.get("scoring_context")
+    if isinstance(scoring_context, dict) and scoring_context:
+        curated["scoring_context"] = scoring_context
+
+    # Backward-compatible fallback for profiles that do not yet provide
+    # structured scoring_context. Keep only the most relevant keyword signals.
+    if "scoring_context" not in curated:
+        keywords = profile_config.get("keywords")
+        if isinstance(keywords, dict) and keywords:
+            compact_keywords: dict[str, Any] = {}
+
+            title_patterns = keywords.get("title_patterns")
+            if isinstance(title_patterns, dict):
+                compact_titles: dict[str, list[str]] = {}
+                for key in ("high_confidence", "broad"):
+                    values = _ensure_string_list(title_patterns.get(key))
+                    if values:
+                        compact_titles[key] = values
+                if compact_titles:
+                    compact_keywords["title_patterns"] = compact_titles
+
+            exclusions = _ensure_string_list(keywords.get("exclusions"))
+            if exclusions:
+                compact_keywords["exclusions"] = exclusions
+
+            if compact_keywords:
+                curated["keywords"] = compact_keywords
+
+    return curated
+
+
+def _summarize_location_metadata(location_metadata: dict[str, object]) -> dict[str, object]:
+    summary: dict[str, object] = {}
+
+    workplace_type = location_metadata.get("workplace_type")
+    if isinstance(workplace_type, str) and workplace_type.strip():
+        summary["workplace_type"] = workplace_type.strip()
+
+    employment_type = location_metadata.get("employment_type")
+    if isinstance(employment_type, str) and employment_type.strip():
+        summary["employment_type"] = employment_type.strip()
+
+    derived_signals = _ensure_string_list(location_metadata.get("derived_geographic_signals"))
+    if derived_signals:
+        summary["derived_geographic_signals"] = derived_signals
+
+    location_fragments = _ensure_string_list(location_metadata.get("location_fragments"))
+    if location_fragments and "derived_geographic_signals" not in summary:
+        summary["location_fragments"] = location_fragments
+
+    return summary
+
+
 def _format_location_context(location_metadata: dict[str, object]) -> str:
     if not location_metadata:
         return ""
 
     import yaml
 
-    formatted = yaml.dump(location_metadata, sort_keys=False, default_flow_style=False).strip()
+    prompt_metadata = _summarize_location_metadata(location_metadata)
+    formatted = yaml.dump(prompt_metadata or location_metadata, sort_keys=False, default_flow_style=False).strip()
     if not formatted:
         return ""
     return f"\nLocation Context:\n{formatted}\n"
+
+
+def _summarize_company_metadata(company_metadata: dict[str, object]) -> dict[str, object]:
+    summary: dict[str, object] = {}
+    quality_signals = _ensure_string_list(company_metadata.get("quality_signals"))
+    if quality_signals:
+        summary["quality_signals"] = quality_signals
+    return summary
 
 
 def _format_company_context(company_metadata: dict[str, object]) -> str:
@@ -120,7 +188,8 @@ def _format_company_context(company_metadata: dict[str, object]) -> str:
 
     import yaml
 
-    formatted = yaml.dump(company_metadata, sort_keys=False, default_flow_style=False).strip()
+    prompt_metadata = _summarize_company_metadata(company_metadata)
+    formatted = yaml.dump(prompt_metadata or company_metadata, sort_keys=False, default_flow_style=False).strip()
     if not formatted:
         return ""
     return f"\nCompany Context:\n{formatted}\n"
@@ -459,6 +528,7 @@ def _build_batch_user_message(jobs: list[CandidateJob], max_desc_chars: int = 20
 Title: {job.title}
 Company: {job.company_name}
 Location: {job.location}
+Salary (extracted): {job.salary}
 URL: {job.url}
 
 Description:
@@ -466,7 +536,7 @@ Description:
 </job>
 {_format_company_context(job.company_metadata)}
 {_format_location_context(job.location_metadata)}""")
-    return "\n\n".join(parts) + "\n\nScore each job's fit for the candidate. Treat each job in complete isolation — do NOT reference other jobs in the batch within any job's reasoning."
+    return "\n\n".join(parts) + "\n\nScore each job's fit for the candidate. Treat each job in complete isolation. For each reasoning string, mention only the current job and the candidate profile. Never mention job numbers, ordering, previous/next jobs, other jobs in the batch, or comparisons between jobs."
 
 
 def _parse_batch_response(text: str, expected_count: int) -> list[dict] | None:
