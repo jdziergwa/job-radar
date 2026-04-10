@@ -3,24 +3,32 @@
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { api } from '@/lib/api/client'
+import type { components } from '@/lib/api/types'
 import { MetricCard } from '@/components/stats/MetricCard'
 import { HighPriorityTable } from '@/components/dashboard/HighPriorityTable'
-import { QuickActions } from '@/components/dashboard/QuickActions'
+import { PipelineFreshnessCard } from '@/components/dashboard/PipelineFreshnessCard'
 import { ActivityChart } from '@/components/stats/TrendCharts'
 import {
   Zap,
   FileSearch,
-  Trash2,
+  CalendarDays,
+  CheckCircle2,
   BarChart3,
   LayoutDashboard,
   RefreshCw
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
+type DashboardStats = components['schemas']['StatsOverview'] & {
+  last_pipeline_run_at?: string | null
+}
+type DashboardJob = components['schemas']['JobResponse']
+type DailyCount = components['schemas']['DailyCount']
+
 export default function DashboardPage() {
-  const [stats, setStats] = useState<any>(null)
-  const [recentJobs, setRecentJobs] = useState<any[]>([])
-  const [activityData, setActivityData] = useState<any[]>([])
+  const [stats, setStats] = useState<DashboardStats | null>(null)
+  const [recentJobs, setRecentJobs] = useState<DashboardJob[]>([])
+  const [activityData, setActivityData] = useState<DailyCount[]>([])
   const [loading, setLoading] = useState(true)
 
   const fetchData = async () => {
@@ -34,17 +42,17 @@ export default function DashboardPage() {
               limit: 5,
               sort: 'score',
               status: 'scored'
-            } as any
+            } as never
           }
         }),
         api.GET('/api/stats/trends', {
-          params: { query: { days: 7 } as any }
+          params: { query: { days: 7 } as never }
         })
       ])
 
-      if (!statsRes.error) setStats(statsRes.data)
-      if (!jobsRes.error) setRecentJobs((jobsRes.data as any)?.jobs || [])
-      if (!trendsRes.error) setActivityData((trendsRes.data as any)?.daily_counts || [])
+      if (!statsRes.error && statsRes.data) setStats(statsRes.data as DashboardStats)
+      if (!jobsRes.error && jobsRes.data) setRecentJobs(jobsRes.data.jobs)
+      if (!trendsRes.error && trendsRes.data) setActivityData(trendsRes.data.daily_counts)
     } finally {
       setLoading(false)
     }
@@ -58,8 +66,6 @@ export default function DashboardPage() {
     window.addEventListener('pipeline-finished', handleRefresh)
     return () => window.removeEventListener('pipeline-finished', handleRefresh)
   }, [])
-
-  const unscoredCount = stats?.pending ?? 0
 
   return (
     <div className="flex flex-col bg-background/30 px-6 py-8 animate-in fade-in duration-700">
@@ -86,24 +92,37 @@ export default function DashboardPage() {
 
       {/* Metric Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        {[
-          { 
-            title: 'New Today', 
-            value: stats?.new_today ?? 0, 
-            subtitle: `Matching today (Total discovered: ${stats?.total_new_today ?? 0})`, 
-            icon: Zap, 
-            delay: 0 
-          },
-          { title: 'Total Unscored', value: unscoredCount, subtitle: 'Pending AI evaluation', icon: FileSearch, delay: 75 },
-          { 
-            title: 'Dismissed', 
-            value: stats?.dismissed ?? 0, 
-            subtitle: 'Not a good fit', 
-            icon: Trash2, 
-            delay: 150,
-            href: '/jobs?status=dismissed'
-          },
-          { title: 'Avg Match', value: stats?.scored > 0 ? '78%' : '0%', subtitle: 'Top match avg score', icon: BarChart3, delay: 225 },
+          {[
+            {
+              title: 'New Today',
+              value: stats?.new_today ?? 0,
+              subtitle: `Matching today (Total discovered: ${stats?.total_new_today ?? 0})`,
+              icon: Zap,
+              delay: 0,
+            },
+            {
+              title: 'This Week',
+              value: stats?.new_this_week ?? 0,
+              subtitle: 'New matches in last 7 days',
+              icon: CalendarDays,
+              delay: 75,
+            },
+            {
+              title: 'Unscored',
+              value: stats?.pending ?? 0,
+              subtitle: 'Pending AI evaluation',
+              icon: FileSearch,
+              delay: 150,
+              href: '/jobs?status=new',
+            },
+            {
+              title: 'Applied',
+              value: stats?.applied ?? 0,
+              subtitle: 'Tracked applications',
+              icon: CheckCircle2,
+              delay: 225,
+              href: '/jobs?status=applied',
+            },
         ].map(({ title, value, subtitle, icon, delay, href }) => (
           <div key={title} className="animate-in fade-in slide-in-from-bottom-2 duration-500" style={{ animationDelay: `${delay}ms`, animationFillMode: 'both' }}>
             {href ? (
@@ -132,9 +151,12 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* Sidebar: Quick Actions & Status */}
+        {/* Sidebar: Pipeline Freshness */}
         <div className="space-y-6">
-          <QuickActions />
+          <PipelineFreshnessCard
+            lastRunAt={stats?.last_pipeline_run_at}
+            newJobsToday={stats?.new_today ?? 0}
+          />
         </div>
       </div>
     </div>
