@@ -157,9 +157,10 @@ export function PipelineProgressDialog({
     >
       <DialogContent
         showCloseButton={!isDialogLocked}
-        className="sm:max-w-3xl border-border/50 bg-background/85 backdrop-blur-xl shadow-2xl overflow-hidden"
+        className="relative flex max-h-[calc(100vh-2rem)] w-full flex-col gap-0 overflow-hidden border-border/50 bg-transparent p-0 shadow-2xl sm:max-w-3xl"
       >
-        <DialogHeader className="pb-4 border-b border-border/50 relative">
+        <div className="pointer-events-none absolute inset-0 rounded-[inherit] bg-background/85 backdrop-blur-xl" />
+        <DialogHeader className="relative z-10 shrink-0 border-b border-border/50 px-4 pb-4 pt-6 sm:px-6">
           <div className="flex items-center gap-3">
              <div className="bg-primary/20 p-2 rounded-xl text-primary">
                 <Loader2 className={`h-5 w-5 ${isRunActive ? 'animate-spin' : ''}`} />
@@ -188,7 +189,8 @@ export function PipelineProgressDialog({
           )}
         </DialogHeader>
 
-        <div className="py-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="relative z-10 min-h-0 overflow-y-auto overscroll-contain px-4 py-6 sm:px-6 sm:py-8">
+          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
              {/* Stepper */}
              <div className="relative flex justify-between px-2">
                 <div className="absolute top-4 left-0 w-full h-0.5 bg-muted/30 -z-10" />
@@ -305,8 +307,9 @@ export function PipelineProgressDialog({
                 </div>
              </div>
           </div>
+        </div>
 
-        <DialogFooter className={`pt-4 border-t border-border/50 text-[10px] text-muted-foreground`}>
+        <DialogFooter className="relative z-10 mx-0 mb-0 mt-auto shrink-0 rounded-none border-t border-border/50 px-4 py-4 text-[10px] text-muted-foreground sm:px-6">
           <div className="flex items-center gap-2">
              <History className="h-3 w-3" />
              Pipeline Active

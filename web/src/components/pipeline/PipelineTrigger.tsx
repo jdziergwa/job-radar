@@ -138,8 +138,9 @@ export function PipelineTrigger({ collapsed = false }: { collapsed?: boolean }) 
             </div>
           )}
         </DialogTrigger>
-        <DialogContent className="sm:max-w-3xl border-border/50 bg-background/85 backdrop-blur-xl shadow-2xl overflow-hidden">
-          <DialogHeader className="pb-4 border-b border-border/50">
+        <DialogContent className="relative flex max-h-[calc(100vh-2rem)] w-full flex-col gap-0 overflow-hidden border-border/50 bg-transparent p-0 shadow-2xl sm:max-w-3xl">
+          <div className="pointer-events-none absolute inset-0 rounded-[inherit] bg-background/85 backdrop-blur-xl" />
+          <DialogHeader className="relative z-10 shrink-0 border-b border-border/50 px-4 pb-4 pt-6 sm:px-6">
             <div className="flex items-center gap-3">
                <div className="bg-primary/20 p-2 rounded-xl text-primary">
                   <Zap className="h-5 w-5" />
@@ -151,9 +152,9 @@ export function PipelineTrigger({ collapsed = false }: { collapsed?: boolean }) 
             </div>
           </DialogHeader>
 
-          <div className="py-8 space-y-8 animate-in fade-in zoom-in-95 duration-300">
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-8">
-              <div className="md:col-span-3 space-y-4">
+          <div className="relative z-10 flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain px-4 py-6 sm:px-6 sm:py-8 md:overflow-hidden">
+            <div className="grid grid-cols-1 gap-8 animate-in fade-in zoom-in-95 duration-300 md:min-h-0 md:flex-1 md:grid-cols-5">
+              <div className="flex flex-col gap-4 md:col-span-3 md:min-h-0">
                 <div className="flex items-center justify-between">
                   <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground whitespace-nowrap">
                     Execution Strategy {selectedSources.length > 0 && `(${selectedSources.length})`}
@@ -172,7 +173,7 @@ export function PipelineTrigger({ collapsed = false }: { collapsed?: boolean }) 
                     )}
                   </button>
                 </div>
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-2 md:min-h-0 md:overflow-y-auto md:pr-2">
                   {providers.map((option) => (
                     <div
                       key={option.name}
@@ -218,7 +219,7 @@ export function PipelineTrigger({ collapsed = false }: { collapsed?: boolean }) 
                 </div>
               </div>
 
-              <div className="md:col-span-2 space-y-6">
+              <div className="space-y-6 md:col-span-2">
                 <div className="space-y-4">
                   <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Run Type</Label>
                   <div className="flex flex-col gap-2">
@@ -272,18 +273,20 @@ export function PipelineTrigger({ collapsed = false }: { collapsed?: boolean }) 
               </div>
             </div>
 
-            <Button onClick={handleStart} disabled={isStarting || selectedSources.length === 0} className="w-full h-14 text-lg font-bold gap-3 shadow-xl hover:scale-[1.01] active:scale-[0.99] transition-all">
-              {isStarting ? <Loader2 className="h-5 w-5 animate-spin" /> : <Play className="h-5 w-5 fill-current" />}
-              {selectedSources.length === 0 ? 'Select a source' : (dryRun ? 'Start Dry Run' : 'Start Intelligence Pass')}
-            </Button>
-            {activeRun?.running && (
-              <Button onClick={() => setShowProgress(true)} variant="outline" className="w-full gap-2 italic">
-                <Terminal className="h-4 w-4" /> View active progress logs
+            <div className="shrink-0 space-y-3 pt-8">
+              <Button onClick={handleStart} disabled={isStarting || selectedSources.length === 0} className="w-full h-14 text-lg font-bold gap-3 shadow-xl hover:scale-[1.01] active:scale-[0.99] transition-all">
+                {isStarting ? <Loader2 className="h-5 w-5 animate-spin" /> : <Play className="h-5 w-5 fill-current" />}
+                {selectedSources.length === 0 ? 'Select a source' : (dryRun ? 'Start Dry Run' : 'Start Intelligence Pass')}
               </Button>
-            )}
+              {activeRun?.running && (
+                <Button onClick={() => setShowProgress(true)} variant="outline" className="w-full gap-2 italic">
+                  <Terminal className="h-4 w-4" /> View active progress logs
+                </Button>
+              )}
+            </div>
           </div>
 
-          <DialogFooter className={`pt-4 border-t border-border/50 text-[10px] text-muted-foreground`}>
+          <DialogFooter className="relative z-10 mx-0 mb-0 mt-auto shrink-0 rounded-none border-t border-border/50 px-4 py-4 text-[10px] text-muted-foreground sm:px-6">
             <div className="flex items-center gap-2">
                <History className="h-3 w-3" />
                Selected: {selectedSources.length} source(s)
