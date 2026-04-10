@@ -5,7 +5,6 @@ import { api } from '@/lib/api/client'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Loader2, CheckCircle2, AlertCircle, FastForward, Clock, XCircle, History } from 'lucide-react'
-import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
 
 const PIPELINE_STEPS = [
@@ -170,7 +169,9 @@ export function PipelineProgressDialog({
                   {title}
                 </DialogTitle>
                 <DialogDescription>
-                  {mode === 'rescore' ? 'AI Agents are re-evaluating matches.' : 'AI Agents are processing your request.'}
+                  {mode === 'rescore'
+                    ? 'AI scoring is re-evaluating saved matches.'
+                    : 'Collectors and scoring are running in the background.'}
                 </DialogDescription>
              </div>
           </div>
@@ -305,12 +306,11 @@ export function PipelineProgressDialog({
              </div>
           </div>
 
-        <DialogFooter className={`pt-4 border-t border-border/50 text-[10px] text-muted-foreground flex items-center sm:justify-between`}>
+        <DialogFooter className={`pt-4 border-t border-border/50 text-[10px] text-muted-foreground`}>
           <div className="flex items-center gap-2">
              <History className="h-3 w-3" />
              Pipeline Active
           </div>
-          <Badge variant="outline" className="font-mono text-[9px] border-border/30 px-1 opacity-50">v1.2.0-stable</Badge>
         </DialogFooter>
       </DialogContent>
     </Dialog>

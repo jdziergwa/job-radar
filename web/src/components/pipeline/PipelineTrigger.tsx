@@ -5,9 +5,9 @@ import { toast } from 'sonner'
 import { api } from '@/lib/api/client'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Button, buttonVariants } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { Loader2, Play, Terminal, Zap, History, Info } from 'lucide-react'
-import { Badge } from '@/components/ui/badge'
 import { Label } from '@/components/ui/label'
 import { PipelineProgressDialog } from './PipelineProgressDialog'
 import type { components } from '@/lib/api/types'
@@ -283,12 +283,11 @@ export function PipelineTrigger({ collapsed = false }: { collapsed?: boolean }) 
             )}
           </div>
 
-          <DialogFooter className={`pt-4 border-t border-border/50 text-[10px] text-muted-foreground flex items-center sm:justify-between`}>
+          <DialogFooter className={`pt-4 border-t border-border/50 text-[10px] text-muted-foreground`}>
             <div className="flex items-center gap-2">
                <History className="h-3 w-3" />
                Selected: {selectedSources.length} source(s)
             </div>
-            <Badge variant="outline" className="font-mono text-[9px] border-border/30 px-1 opacity-50">v1.3.0-multi</Badge>
           </DialogFooter>
         </DialogContent>
       </Dialog>

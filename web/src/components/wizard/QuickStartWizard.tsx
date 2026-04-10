@@ -365,10 +365,9 @@ export function QuickStartWizard({
           </div>
         </div>
 
-        {/* Footer Info */}
         {!isEditFlow && (
           <p className="text-center text-[10px] text-muted-foreground/40 uppercase tracking-widest font-mono">
-            Job Radar v1.2 &bull; AI Powered Onboarding
+            Job Radar &bull; AI Powered Onboarding
           </p>
         )}
       </div>

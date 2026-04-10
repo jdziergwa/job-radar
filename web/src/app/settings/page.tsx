@@ -278,12 +278,9 @@ export default function SettingsPage() {
                       : 'Unavailable until saved preferences and CV analysis exist.'}
                   </p>
                   <div className="mt-5 border-t border-border/20 pt-3">
-                    <div className="inline-flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
-                      <span className="font-medium text-foreground/80">Claude Sonnet</span>
-                      <span className="text-border/60">•</span>
-                      <span>1 AI call</span>
-                      <span className="text-border/60">•</span>
-                      <span>~ $0.01-$0.03</span>
+                    <div className="inline-flex flex-wrap items-center gap-2 text-[11px]">
+                      <span className="font-medium text-muted-foreground/70">Claude Sonnet</span>
+                      <span className="font-medium text-primary/70">1 AI call, est. $0.08</span>
                     </div>
                   </div>
                 </button>
@@ -310,12 +307,9 @@ export default function SettingsPage() {
                     Use this when you want to rebuild the profile instead of editing the saved setup.
                   </p>
                   <div className="mt-5 border-t border-border/20 pt-3">
-                    <div className="inline-flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
-                      <span className="font-medium text-foreground/80">Claude Sonnet</span>
-                      <span className="text-border/60">•</span>
-                      <span>Typically 2 AI calls</span>
-                      <span className="text-border/60">•</span>
-                      <span>~ $0.03-$0.06</span>
+                    <div className="inline-flex flex-wrap items-center gap-2 text-[11px]">
+                      <span className="font-medium text-muted-foreground/70">Claude Sonnet</span>
+                      <span className="font-medium text-primary/70">Typically 2 AI calls, est. $0.15</span>
                     </div>
                   </div>
                 </button>

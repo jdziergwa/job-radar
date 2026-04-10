@@ -432,7 +432,7 @@ export function ReviewGenerate({ onNext, onBack, onUpdate, data }: StepProps) {
           </h2>
           <p className="text-muted-foreground text-sm max-w-sm mx-auto">
             {data?.path === 'manual' 
-              ? 'Start with a template and customize your matching rules and profile.' 
+              ? 'Start with a template, review the files, and save your profile.' 
               : 'Your AI-generated job matching profile is ready for a quick check.'}
           </p>
         </div>

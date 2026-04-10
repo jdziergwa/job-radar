@@ -42,7 +42,7 @@ export function ChoosePath({ onNext, onBack, onUpdate, data }: StepProps) {
           </div>
           <div className="mt-4 pt-4 border-t border-border/50 flex items-center justify-between gap-3 text-[11px]">
             <span className="font-medium text-muted-foreground/70">Claude Sonnet</span>
-            <span className="font-medium text-primary/70 text-right">~2 calls, est. $0.03-$0.06</span>
+            <span className="font-medium text-primary/70 text-right">~2 AI calls, est. $0.15</span>
           </div>
         </button>
 
@@ -68,7 +68,7 @@ export function ChoosePath({ onNext, onBack, onUpdate, data }: StepProps) {
             </div>
             <h4 className="text-xl font-bold">Set up manually</h4>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Start from a template and fill in your profile in Settings.
+              Start from a template, review the files, and save your profile.
             </p>
           </div>
           <div className="mt-4 pt-4 border-t border-border/50 flex items-center justify-between gap-3 text-[11px]">
