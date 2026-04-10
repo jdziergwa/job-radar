@@ -6,7 +6,7 @@
   </picture>
 </p>
 
-Job Radar monitors your job search across curated ATS boards, public remote-job APIs, hiring feeds, and an optional large remote-job aggregator. It collects, hydrates, filters, and scores job listings against your profile using Claude, then presents the results in a web dashboard.
+Job Radar scans curated ATS boards, public remote-job APIs, hiring feeds, and an optional large job aggregator for roles that match your profile. It collects, hydrates, filters, and scores job listings against your profile using Claude, then presents the results in a web dashboard.
 
 Try the live demo: [https://jdziergwa.github.io/job-radar/](https://jdziergwa.github.io/job-radar/)
 
@@ -45,6 +45,8 @@ docker compose up --build
 
 If you want AI scoring, create a `.env` file first so the API can see your Anthropic key:
 
+Create an Anthropic API key in [Console Settings → API Keys](https://platform.claude.com/settings/keys) and add prepaid credits from the [Billing page](https://support.claude.com/en/articles/8977456-how-do-i-pay-for-my-api-usage). Then paste the key into `.env` as `ANTHROPIC_API_KEY`.
+
 ```bash
 cp .env.example .env
 # Edit .env and set ANTHROPIC_API_KEY=sk-ant-...
@@ -62,6 +64,8 @@ docker compose up --build
 On Windows, Docker Desktop is the recommended path. The compose setup enables polling-based file watching for both Next.js and FastAPI so hot reload is more reliable on bind mounts, especially when the repo lives outside WSL.
 
 When running via Docker Compose, the API stores SQLite databases in a Docker named volume mounted at `/app/data` instead of the host `./data` directory. This keeps the code bind-mounted for hot reload, but avoids the severe SQLite write slowdown that can happen on macOS bind mounts. As a result, deleting `data/*.db` on the host does not reset the Docker-backed database; use `make clean-db` or `make clean-db-volume` instead.
+
+### Local Development
 
 ### 1. Prerequisites
 
@@ -83,8 +87,6 @@ cp .env.example .env
 # Edit .env and paste your ANTHROPIC_API_KEY=sk-ant-...
 ```
 
-Before your first AI-backed run, create an Anthropic API key in [Console Settings → API Keys](https://platform.claude.com/settings/keys) and add prepaid credits from the [Billing page](https://support.claude.com/en/articles/8977456-how-do-i-pay-for-my-api-usage). Then paste the key into `.env` as `ANTHROPIC_API_KEY`.
-
 ### 3. Launch
 
 ```bash
@@ -92,6 +94,10 @@ make dev
 ```
 -   **Backend**: [http://localhost:8000](http://localhost:8000) (FastAPI)
 -   **Frontend**: [http://localhost:3000](http://localhost:3000) (Next.js)
+
+---
+
+### First Run
 
 On first launch the setup wizard appears automatically. The guided flow uploads your CV, runs AI CV analysis, lets you review extracted facts, set location and preference constraints, and then generates both `profile_doc.md` and `search_config.yaml` before you save the profile and run your first scan.
 
@@ -101,7 +107,7 @@ Later, you can reopen the same guided workflow from **Settings → Guided Edit**
 
 If you prefer direct editing, **Settings** still exposes the raw `profile_doc.md`, `search_config.yaml`, and `scoring_philosophy.md` files.
 
-### 4. Cost and Runtime Expectations
+### Cost and Runtime Expectations
 
 Claude costs are reasonable enough to try with a small credit balance. One real first-run example from my setup:
 
