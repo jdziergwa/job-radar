@@ -1,0 +1,2740 @@
+{
+  "greenhouse": [
+    {
+      "slug": "stripe",
+      "name": "Stripe",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "datadog",
+      "name": "Datadog",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "cloudflare",
+      "name": "Cloudflare",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "affirm",
+      "name": "Affirm",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "airbnb",
+      "name": "Airbnb",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "asana",
+      "name": "Asana",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "brex",
+      "name": "Brex",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "chime",
+      "name": "Chime",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "coinbase",
+      "name": "Coinbase",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "coursera",
+      "name": "Coursera",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "databricks",
+      "name": "Databricks",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "discord",
+      "name": "Discord",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "duolingo",
+      "name": "Duolingo",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "gitlab",
+      "name": "GitLab",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "figma",
+      "name": "Figma",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "fivetran",
+      "name": "Fivetran",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "hubspot",
+      "name": "HubSpot",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "instacart",
+      "name": "Instacart",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "intercom",
+      "name": "Intercom",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "mongodb",
+      "name": "MongoDB",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "lyft",
+      "name": "Lyft",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "okta",
+      "name": "Okta",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "pinterest",
+      "name": "Pinterest",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "postman",
+      "name": "Postman",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "reddit",
+      "name": "Reddit",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "amplitude",
+      "name": "Amplitude",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "roblox",
+      "name": "Roblox",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "scaleai",
+      "name": "Scale AI",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "toast",
+      "name": "Toast",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "tripadvisor",
+      "name": "Tripadvisor",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "webflow",
+      "name": "Webflow",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "elastic",
+      "name": "Elastic",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "twilio",
+      "name": "Twilio",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "dropbox",
+      "name": "Dropbox",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "1uphealth",
+      "name": "1upHealth",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "2k",
+      "name": "2K",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "6sense",
+      "name": "6sense",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "athinkingape",
+      "name": "A Thinking Ape",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "abelsontaylor",
+      "name": "AbelsonTaylor",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "abnormalsecurity",
+      "name": "Abnormal Security",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "addepar1",
+      "name": "Addepar",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "adyen",
+      "name": "Adyen",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "affinitiv",
+      "name": "Affinitiv",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "affinity",
+      "name": "Affinity",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "afresh",
+      "name": "Afresh",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "agero",
+      "name": "Agero",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "airtable",
+      "name": "Airtable",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "akunacapital",
+      "name": "Akuna Capital",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "alchemy",
+      "name": "Alchemy",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "algolia",
+      "name": "Algolia",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "alloy",
+      "name": "Alloy",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "alpaca",
+      "name": "Alpaca",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "altanaai",
+      "name": "Altana AI",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "amperity",
+      "name": "Amperity",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "anaplan",
+      "name": "Anaplan",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "angi",
+      "name": "ANGI Homeservices",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "appian",
+      "name": "Appian",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "appliedintuition",
+      "name": "Applied Intuition",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "aptoslabs",
+      "name": "Aptos",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "aquaticcapitalmanagement",
+      "name": "Aquatic Group",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "arcadiacareers",
+      "name": "Arcadia",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "assemblyai",
+      "name": "AssemblyAI",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "astranis",
+      "name": "Astranis",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "atomwise",
+      "name": "Atomwise",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "aurorainnovation",
+      "name": "Aurora",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "auterion",
+      "name": "Auterion",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "avalabs",
+      "name": "Ava Labs",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "aviatrix",
+      "name": "Aviatrix",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "b12",
+      "name": "B12",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "bandwidth",
+      "name": "Bandwidth",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "beaconplatform",
+      "name": "Beacon Platform",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "berlinrosen",
+      "name": "BerlinRosen",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "billiontoone",
+      "name": "BillionToOne",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "bitcoindepot",
+      "name": "Bitcoin Depot",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "bitgo",
+      "name": "BitGo",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "bitwarden",
+      "name": "Bitwarden",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "blend",
+      "name": "Blend",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "bondvet",
+      "name": "Bond Vet",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "boostinsurance",
+      "name": "Boost",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "boulevard",
+      "name": "Boulevard",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "bracebridgecapital",
+      "name": "Bracebridge Capital",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "brave",
+      "name": "Brave",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "braze",
+      "name": "Braze",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "breezeairways",
+      "name": "Breeze Airways",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "brooklinen",
+      "name": "Brooklinen",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "bugcrowd",
+      "name": "Bugcrowd",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "builtin",
+      "name": "Built In",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "businessolver",
+      "name": "Businessolver",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "butterflynetwork",
+      "name": "Butterfly Network",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "buzzfeed",
+      "name": "BuzzFeed",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "calendly",
+      "name": "Calendly",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "calm",
+      "name": "Calm",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "cameo",
+      "name": "Cameo",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "careem",
+      "name": "Careem",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "carrotfertility",
+      "name": "Carrot Fertility",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "carta",
+      "name": "Carta",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "cartahealthcare",
+      "name": "Carta Healthcare",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "castiron",
+      "name": "Castiron",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "cbinsights",
+      "name": "CB Insights",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "cerebral",
+      "name": "Cerebral",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "chargepoint",
+      "name": "ChargePoint",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "check",
+      "name": "Check",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "checkr",
+      "name": "Checkr",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "circleci",
+      "name": "CircleCI",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "classpass",
+      "name": "ClassPass",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "clever",
+      "name": "Clever",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "clockwise",
+      "name": "Clockwise",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "coalition",
+      "name": "Coalition",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "coast",
+      "name": "Coast",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "coherusbiosciences",
+      "name": "Coherus Biosciences",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "collectivehealth",
+      "name": "Collective Health",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "commercetools",
+      "name": "commercetools",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "corelight",
+      "name": "Corelight",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "couchbaseinc",
+      "name": "Couchbase",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "coursehero",
+      "name": "Course Hero",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "creativex",
+      "name": "CreativeX",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "credible",
+      "name": "Credible",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "cribl",
+      "name": "Cribl",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "criticalmass",
+      "name": "Critical Mass",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "crossbeam",
+      "name": "Crossbeam",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "curaleaf",
+      "name": "Curaleaf",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "dagger",
+      "name": "Dagger",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "dailyharvest",
+      "name": "Daily Harvest",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "datacamp",
+      "name": "DataCamp",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "datagrail",
+      "name": "DataGrail",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "dataiku",
+      "name": "Dataiku",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "dealpath",
+      "name": "Dealpath",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "deepmind",
+      "name": "DeepMind",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "degreed",
+      "name": "Degreed",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "descript",
+      "name": "Descript",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "digit",
+      "name": "Digit",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "diligentrobotics",
+      "name": "Diligent Robotics",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "disco",
+      "name": "DISCO",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "docugami",
+      "name": "Docugami",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "doma",
+      "name": "Doma",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "dominodatalab",
+      "name": "Domino Data Lab",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "doximity",
+      "name": "Doximity",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "doxo",
+      "name": "doxo",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "ducerapartners",
+      "name": "Ducera Partners",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "ecobee",
+      "name": "ecobee",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "eh2",
+      "name": "Electric Hydrogen",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "elementbiosciences",
+      "name": "Element Biosciences",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "elwoodtechnologies",
+      "name": "Elwood Technologies",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "embrace",
+      "name": "Embrace",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "enova",
+      "name": "Enova International",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "epicgames",
+      "name": "Epic Games",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "epirus",
+      "name": "Epirus",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "ergeon",
+      "name": "Ergeon",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "everlaw",
+      "name": "Everlaw",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "exabeam",
+      "name": "Exabeam",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "exiger",
+      "name": "Exiger",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "exoduspoint",
+      "name": "ExodusPoint",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "fairmarkit",
+      "name": "Fairmarkit",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "falconx",
+      "name": "FalconX",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "fanduel",
+      "name": "FanDuel",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "fictiv",
+      "name": "Fictiv",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "figure",
+      "name": "Figure",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "filecoinfoundation",
+      "name": "Filecoin Foundation",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "fireblocks",
+      "name": "Fireblocks",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "five9",
+      "name": "Five9",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "flatironhealth",
+      "name": "Flatiron Health",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "flexe",
+      "name": "Flexe",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "flexport",
+      "name": "Flexport",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "flowtraders",
+      "name": "Flow Traders",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "formic",
+      "name": "Formic Technologies",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "formlabs",
+      "name": "Formlabs",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "forte",
+      "name": "Forte",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "foundenergy",
+      "name": "Found Energy",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "foundrydigital",
+      "name": "Foundry Digital",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "fourkites",
+      "name": "FourKites",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "freenome",
+      "name": "Freenome",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "garnerhealth",
+      "name": "Garner Health",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "gatherai",
+      "name": "Gather AI",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "gemini",
+      "name": "Gemini",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "generalassembly",
+      "name": "General Assembly",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "glance",
+      "name": "Glance",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "glassdoor",
+      "name": "Glassdoor",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "gleanwork",
+      "name": "Glean",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "goatgroup",
+      "name": "Goat Group",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "godaddy",
+      "name": "GoDaddy",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "goguardian",
+      "name": "GoGuardian",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "goldenhippo",
+      "name": "Golden Hippo",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "grafanalabs",
+      "name": "Grafana Labs",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "grailed",
+      "name": "Grailed",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "guidepoint",
+      "name": "Guidepoint",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "gusto",
+      "name": "Gusto",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "hackerrank",
+      "name": "HackerRank",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "headway",
+      "name": "Headway",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "hellofresh",
+      "name": "HelloFresh",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "hextechnologies",
+      "name": "Hex Technologies",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "heycar",
+      "name": "Heycar",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "highnote",
+      "name": "Highnote",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "hightouch",
+      "name": "Hightouch",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "homelight",
+      "name": "HomeLight",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "hudl",
+      "name": "Hudl",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "humaninterest",
+      "name": "Human Interest",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "huntress",
+      "name": "Huntress",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "hypr",
+      "name": "HYPR",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "misfitsmarket",
+      "name": "Imperfect Foods",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "inspire11",
+      "name": "Inspire11",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "instabase",
+      "name": "Instabase",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "invoca",
+      "name": "Invoca",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "ionq",
+      "name": "IonQ",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "iterativehealth",
+      "name": "Iterative Scopes",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "ixllearning",
+      "name": "IXL Learning",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "jamf",
+      "name": "Jamf",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "jumptrading",
+      "name": "Jump Trading",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "justworks",
+      "name": "Justworks",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "juullabs",
+      "name": "JUUL",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "kalepa",
+      "name": "Kalepa",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "kalshi",
+      "name": "Kalshi",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "karat",
+      "name": "Karat",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "kasisto",
+      "name": "Kasisto",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "kayak",
+      "name": "KAYAK",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "kentik",
+      "name": "Kentik",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "khanacademy",
+      "name": "Khan Academy",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "klaviyo",
+      "name": "Klaviyo",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "knowbe4",
+      "name": "KnowBe4",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "komodohealth",
+      "name": "Komodo Health",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "konradgroup",
+      "name": "Konrad Group",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "launchdarkly",
+      "name": "LaunchDarkly",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "leaflink",
+      "name": "LeafLink",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "ledgerinvesting",
+      "name": "Ledger Investing",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "lendingtree",
+      "name": "LendingTree",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "linushealth",
+      "name": "Linus Health",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "lob",
+      "name": "Lob",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "lumos",
+      "name": "Lumos",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "mark43",
+      "name": "Mark43",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "marqeta",
+      "name": "Marqeta",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "maymobility",
+      "name": "May Mobility",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "mento",
+      "name": "Mento",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "mercury",
+      "name": "Mercury",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "merge",
+      "name": "Merge",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "metropolis",
+      "name": "Metropolis",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "mezmo",
+      "name": "Mezmo",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "missionlane",
+      "name": "Mission Lane",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "mixpanel",
+      "name": "Mixpanel",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "modernanimal",
+      "name": "Modern Animal",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "monzo",
+      "name": "Monzo",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "motional",
+      "name": "Motional",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "moveworks",
+      "name": "Moveworks",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "moxehealth",
+      "name": "Moxe Health",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "mozilla",
+      "name": "Mozilla",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "mutiny",
+      "name": "Mutiny",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "myfitnesspal",
+      "name": "MyFitnessPal",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "natera",
+      "name": "Natera",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "navtechnologies",
+      "name": "Nav",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "neocybernetica",
+      "name": "Neo Cybernetica",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "netlify",
+      "name": "Netlify",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "neuralink",
+      "name": "Neuralink",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "newsela",
+      "name": "Newsela",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "nexhealth",
+      "name": "NexHealth",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "nextroll",
+      "name": "NextRoll",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "northspyre",
+      "name": "Northspyre",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "odeko",
+      "name": "Odeko",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "omadahealth",
+      "name": "Omada Health",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "onemedical",
+      "name": "One Medical",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "opendoor",
+      "name": "Opendoor",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "openzeppelin",
+      "name": "OpenZeppelin",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "optiverus",
+      "name": "Optiver",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "orchard",
+      "name": "Orchard",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "outschool",
+      "name": "Outschool",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "outsetmedical",
+      "name": "Outset Medical",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "owllabs",
+      "name": "Owl Labs",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "pagerduty",
+      "name": "PagerDuty",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "pantherlabs",
+      "name": "Panther",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "papa",
+      "name": "Papa Inc.",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "payit",
+      "name": "PayIt",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "pdtpartners",
+      "name": "PDT Partners",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "peloton",
+      "name": "Peloton",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "peptilogics",
+      "name": "Peptilogics",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "phonepe",
+      "name": "PhonePe",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "pieinsurance",
+      "name": "Pie Insurance",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "platformscience",
+      "name": "Platform Science",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "plotly",
+      "name": "Plotly",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "plume",
+      "name": "Plume Design",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "pocketgems",
+      "name": "Pocket Gems",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "point72",
+      "name": "Point72",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "poshmark",
+      "name": "Poshmark",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "powerfinance",
+      "name": "Power",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "primemedicine",
+      "name": "Prime Medicine",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "primerai",
+      "name": "Primer",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "propel",
+      "name": "Propel",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "prove",
+      "name": "Prove",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "public",
+      "name": "Public",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "pushpay",
+      "name": "Pushpay",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "qualtrics",
+      "name": "Qualtrics",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "rapp",
+      "name": "RAPP",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "rti",
+      "name": "Real-Time Innovations",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "recordedfuture",
+      "name": "Recorded Future",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "redventures",
+      "name": "Red Ventures",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "redwoodmaterials",
+      "name": "Redwood Materials",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "relaypro",
+      "name": "Relay",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "relaytherapeutics",
+      "name": "Relay Therapeutics",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "renttherunway",
+      "name": "Rent the Runway",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "rhombuspower",
+      "name": "Rhombus Power",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "ridgeline",
+      "name": "Ridgeline",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "ripple",
+      "name": "Ripple",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "robinhood",
+      "name": "Robinhood",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "roku",
+      "name": "Roku",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "roofr",
+      "name": "Roofr",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "rvohealth",
+      "name": "RVO Health",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "sambanovasystems",
+      "name": "SambaNova Systems",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "samsara",
+      "name": "Samsara",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "samsungresearchamerica",
+      "name": "Samsung Research America",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "seatgeek",
+      "name": "SeatGeek",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "securityscorecard",
+      "name": "SecurityScorecard",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "seekout",
+      "name": "SeekOut",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "seesaw",
+      "name": "Seesaw Learning",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "selffinancial",
+      "name": "Self Financial",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "sezzle",
+      "name": "Sezzle",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "shopmonkey",
+      "name": "Shopmonkey",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "sigmacomputing",
+      "name": "Sigma Computing",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "simplisafe",
+      "name": "SimpliSafe",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "simpplr",
+      "name": "Simpplr",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "singlestore",
+      "name": "SingleStore",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "skupos",
+      "name": "Skupos",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "skyryse",
+      "name": "Skyryse",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "skyscanner",
+      "name": "Skyscanner",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "slickdeals",
+      "name": "Slickdeals",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "smartasset",
+      "name": "SmartAsset",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "smartrent",
+      "name": "SmartRent",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "smartsheet",
+      "name": "Smartsheet",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "snackpass",
+      "name": "Snackpass",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "snorkelai",
+      "name": "Snorkel AI",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "sofi",
+      "name": "SoFi",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "splice",
+      "name": "Splice",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "squarespace",
+      "name": "Squarespace",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "stackline",
+      "name": "Stackline",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "startree",
+      "name": "StarTree",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "stockx",
+      "name": "StockX",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "storable",
+      "name": "Storable",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "submittable",
+      "name": "Submittable",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "sumologic",
+      "name": "Sumo Logic",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "superblocks",
+      "name": "Superblocks",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "synack",
+      "name": "Synack",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "taboola",
+      "name": "Taboola",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "tailscale",
+      "name": "Tailscale",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "tanium",
+      "name": "Tanium",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "tatari",
+      "name": "Tatari",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "tecovas",
+      "name": "Tecovas",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "tekion",
+      "name": "Tekion",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "textio",
+      "name": "Textio",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "thenewyorktimes",
+      "name": "The New York Times",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "tifin",
+      "name": "TIFIN",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "tomorrowhealth",
+      "name": "Tomorrow Health",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "torcrobotics",
+      "name": "Torc Robotics",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "towerresearchcapital",
+      "name": "Tower Research Capital, LLC.",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "triplelift",
+      "name": "TripleLift",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "truveta",
+      "name": "Truveta",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "twitch",
+      "name": "Twitch",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "udacity",
+      "name": "Udacity",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "uniteus",
+      "name": "Unite Us",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "upbound",
+      "name": "Upbound",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "upgrade",
+      "name": "Upgrade",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "vardaspace",
+      "name": "Varda",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "vestmark",
+      "name": "Vestmark",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "via",
+      "name": "Via",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "walnut",
+      "name": "Walnut",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "waltzhealth",
+      "name": "Waltz Health",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "warp",
+      "name": "Warp",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "wholesail",
+      "name": "Wholesail",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "wildtype",
+      "name": "Wildtype",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "wizinc",
+      "name": "Wiz",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "wonderschool",
+      "name": "Wonderschool",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "workera",
+      "name": "Workera",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "workstream",
+      "name": "Workstream",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "xealth",
+      "name": "Xealth",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "yext",
+      "name": "Yext",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "yugabyte",
+      "name": "Yugabyte",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "ziprecruiter",
+      "name": "ZipRecruiter",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "zora",
+      "name": "Zora",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "canonical",
+      "name": "Canonical",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "digitalocean98",
+      "name": "DigitalOcean",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "fastly",
+      "name": "Fastly",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "gradle",
+      "name": "Gradle",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "gremlin",
+      "name": "Gremlin",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "honor",
+      "name": "Honor",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "remotecom",
+      "name": "Remote.com",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "sourcegraph91",
+      "name": "Sourcegraph",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "stackexchange",
+      "name": "StackExchange",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "surveymonkey",
+      "name": "Surveymonkey",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "wikimedia",
+      "name": "Wikimedia",
+      "company_quality_signals": []
+    }
+  ],
+  "lever": [
+    {
+      "slug": "spotify",
+      "name": "Spotify",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "apollographql",
+      "name": "Apollo GraphQL",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "wealthsimple",
+      "name": "Wealthsimple",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "accesssoftek",
+      "name": "Access Softek",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "aeva",
+      "name": "Aeva",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "agtonomy",
+      "name": "Agtonomy",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "aigen",
+      "name": "Aigen",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "aircall",
+      "name": "Aircall",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "alluxio",
+      "name": "Alluxio",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "anchorage",
+      "name": "Anchorage Digital",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "ansira",
+      "name": "Ansira",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "anyscale",
+      "name": "Anyscale",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "arrivelogistics",
+      "name": "Arrive Logistics",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "arsenalbio",
+      "name": "ArsenalBio",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "attentive",
+      "name": "Attentive",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "beam",
+      "name": "Beam",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "belvederetrading",
+      "name": "Belvedere Trading, LLC",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "benchsci",
+      "name": "BenchSci",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "bighealth",
+      "name": "Big Health",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "bigtime",
+      "name": "Big Time Studios",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "binance",
+      "name": "Binance",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "blinkux",
+      "name": "Blink",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "bluebottlecoffee",
+      "name": "Blue Bottle Coffee",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "bounteous",
+      "name": "Bounteous",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "brightedge",
+      "name": "BrightEdge",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "brightwheel",
+      "name": "Brightwheel",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "brooksrunning",
+      "name": "Brooks Running",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "businesswire",
+      "name": "Business Wire",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "canarytechnologies",
+      "name": "Canary Technologies",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "cardiologs",
+      "name": "Cardiologs",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "cents",
+      "name": "Cents",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "certik",
+      "name": "CertiK",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "cherre",
+      "name": "Cherre",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "chownow",
+      "name": "ChowNow",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "clabs",
+      "name": "cLabs",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "clari",
+      "name": "Clari",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "color",
+      "name": "Color",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "contentsquare",
+      "name": "Contentsquare",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "coredigitalmedia",
+      "name": "Core Digital Media",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "cprime",
+      "name": "Cprime",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "cred",
+      "name": "CRED",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "culdesac",
+      "name": "Culdesac",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "demiurgestudios",
+      "name": "Demiurge Studios",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "dexterity",
+      "name": "Dexterity",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "dronedeploy",
+      "name": "DroneDeploy",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "dwolla",
+      "name": "Dwolla",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "ekimetrics",
+      "name": "Ekimetrics",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "ekohealth",
+      "name": "Eko Health",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "enable",
+      "name": "Enable",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "energyrecovery",
+      "name": "Energy Recovery",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "epsilon3",
+      "name": "Epsilon3",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "ethena",
+      "name": "Ethena",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "everbridge",
+      "name": "EverBridge",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "extremenetworks",
+      "name": "Extreme Networks",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "fabricgenomics",
+      "name": "Fabric Genomics (formerly Omicia)",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "fampay",
+      "name": "FamPay",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "filevine",
+      "name": "Filevine",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "finix",
+      "name": "Finix",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "fiscalnote",
+      "name": "FiscalNote",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "flatfile",
+      "name": "Flatfile",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "floqast",
+      "name": "FloQast",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "fnatic",
+      "name": "Fnatic",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "foodsmart",
+      "name": "Foodsmart",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "gausslabs",
+      "name": "Gauss Labs",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "gettyimages",
+      "name": "Getty Images",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "gopuff",
+      "name": "Gopuff",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "greenlight",
+      "name": "Greenlight",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "hap-capital",
+      "name": "HAP Capital",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "harmony",
+      "name": "Harmony",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "hatchit",
+      "name": "hatch IT",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "heartbeathealth",
+      "name": "Heartbeat Health",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "hermeus",
+      "name": "Hermeus",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "hive",
+      "name": "Hive",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "hyperscience",
+      "name": "Hyperscience",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "immuta",
+      "name": "Immuta",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "jamcity",
+      "name": "Jam City",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "kabam",
+      "name": "Kabam",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "kapwing",
+      "name": "Kapwing",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "kitware",
+      "name": "Kitware",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "kraken",
+      "name": "Kraken",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "leantaas",
+      "name": "LeanTaaS",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "lendbuzz",
+      "name": "Lendbuzz",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "lever",
+      "name": "Lever",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "logrocket",
+      "name": "LogRocket",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "luxurypresence",
+      "name": "Luxury Presence",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "lyrahealth",
+      "name": "Lyra Health",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "mashgin",
+      "name": "Mashgin",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "matchgroup",
+      "name": "Match Group",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "minted",
+      "name": "Minted",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "morningbrew",
+      "name": "Morning Brew",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "narmi",
+      "name": "Narmi",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "nava",
+      "name": "Nava",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "netflix",
+      "name": "Netflix",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "nimblerx",
+      "name": "NimbleRx",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "ninjavan",
+      "name": "Ninja Van",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "nomihealth",
+      "name": "Nomi Health",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "normalyze",
+      "name": "Normalyze",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "ockam",
+      "name": "Ockam",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "orum",
+      "name": "Orum",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "osaro",
+      "name": "Osaro",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "outreach",
+      "name": "Outreach",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "palantir",
+      "name": "Palantir Technologies",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "parallelwireless",
+      "name": "Parallel Wireless",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "piccollage",
+      "name": "PicCollage",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "picklerobot",
+      "name": "Pickle Robot",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "plaid",
+      "name": "Plaid",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "pointb",
+      "name": "Point B",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "pointclickcare",
+      "name": "PointClickCare",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "pollyex",
+      "name": "Polly",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "postera",
+      "name": "PostEra",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "prelim",
+      "name": "Prelim",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "pythian",
+      "name": "Pythian",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "quantcast",
+      "name": "Quantcast",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "quantummetric",
+      "name": "Quantum Metric",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "quartzy",
+      "name": "Quartzy",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "questanalytics",
+      "name": "Quest Analytics",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "rigetti",
+      "name": "Rigetti Computing",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "ro",
+      "name": "Ro",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "sanctuary",
+      "name": "Sanctuary Cognitive Systems Corporation",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "scality",
+      "name": "Scality",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "shieldai",
+      "name": "Shield AI",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "signal",
+      "name": "Signal Messenger",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "smartcar",
+      "name": "Smartcar",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "sonatype",
+      "name": "Sonatype",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "spendesk",
+      "name": "Spendesk",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "spreetail",
+      "name": "Spreetail",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "super-com",
+      "name": "Super.com",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "sure",
+      "name": "Sure",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "swordhealth",
+      "name": "Sword Health",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "symplicity",
+      "name": "Symplicity Corporation",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "synthego",
+      "name": "Synthego",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "system1",
+      "name": "System1",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "tackle",
+      "name": "Tackle",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "tamr",
+      "name": "Tamr",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "tecton",
+      "name": "Tecton",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "teleport",
+      "name": "Teleport",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "teller",
+      "name": "Teller",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "uncountable",
+      "name": "Uncountable",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "upguard",
+      "name": "UpGuard",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "upstox",
+      "name": "Upstox",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "valkyrietrading",
+      "name": "Valkyrie Trading",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "vergegenomics",
+      "name": "Verge Genomics",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "vergesense",
+      "name": "VergeSense",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "vevo",
+      "name": "Vevo",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "voltus",
+      "name": "Voltus",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "walkme",
+      "name": "WalkMe",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "wealthfront",
+      "name": "Wealthfront",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "webfx",
+      "name": "WebFX",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "weride",
+      "name": "WeRide",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "whoop",
+      "name": "WHOOP",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "wonolo",
+      "name": "Wonolo",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "workramp",
+      "name": "WorkRamp",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "zerion",
+      "name": "Zerion",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "zeta",
+      "name": "Zeta",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "zoox",
+      "name": "Zoox",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "atlassian",
+      "name": "Atlassian",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "medium",
+      "name": "Medium",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "skillshare",
+      "name": "Skillshare",
+      "company_quality_signals": []
+    }
+  ],
+  "ashby": [
+    {
+      "slug": "linear",
+      "name": "Linear",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "posthog",
+      "name": "PostHog",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "ramp",
+      "name": "Ramp",
+      "company_quality_signals": []
+    },
+    {
+      "slug": "notion",
+      "name": "Notion",
+      "company_quality_signals": []
+    }
+  ],
+  "workable": [
+    {
+      "slug": "doist",
+      "name": "Doist",
+      "company_quality_signals": []
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "total_jobs": 27331,
+  "new_today": 292,
+  "total_new_today": 27331,
+  "new_this_week": 292,
+  "last_pipeline_run_at": "2026-04-10T13:59:49.425686",
+  "scored": 292,
+  "pending": 0,
+  "applied": 0,
+  "dismissed": 27039,
+  "closed": 0,
+  "score_distribution": {
+    "90-100": 0,
+    "80-89": 6,
+    "70-79": 9,
+    "60-69": 21,
+    "50-59": 17,
+    "below-50": 239
+  },
+  "apply_priority_counts": {
+    "high": 6,
+    "medium": 30,
+    "low": 30,
+    "skip": 226
+  }
+}

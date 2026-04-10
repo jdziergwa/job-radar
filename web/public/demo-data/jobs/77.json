@@ -1,0 +1,51 @@
+{
+  "id": 77,
+  "ats_platform": "greenhouse",
+  "company_slug": "tripadvisor",
+  "company_name": "Tripadvisor",
+  "title": "Software Engineer II - Backend focused (Experiences) ",
+  "location": "Lisbon",
+  "url": "https://job-boards.greenhouse.io/tripadvisor/jobs/5917973",
+  "posted_at": "2026-03-19T07:59:41-04:00",
+  "first_seen_at": "2026-04-10T13:15:58.489074",
+  "last_seen_at": "2026-04-10T13:15:58.489074",
+  "fit_score": 61,
+  "score_reasoning": "Your backend expertise in Python and Go aligns well with Tripadvisor's microservices and distributed systems focus, but the role's primary requirement for a statically typed language (Java, C#, or C++) is a notable gap—you have no commercial experience in these languages. The Software Engineer II title matches your mid-to-senior trajectory, though the hybrid Lisbon location with mandatory 2-hour commute distance creates significant friction against your remote-first preference and Berlin base (timezone overlap is reasonable at ~1h, but on-site frequency is not clearly defined and the location is outside your acceptable regions). The role offers solid growth in a high-scale travel platform with AWS infrastructure and modern practices (Kubernetes, daily releases), but the language requirement and location constraints combine to lower overall fit. This is a medium-priority role that merits exploration only if you're willing to relocate or commit to regular Lisbon office time.",
+  "score_breakdown": {
+    "dimensions": {
+      "tech_stack_match": 65,
+      "seniority_match": 70,
+      "remote_location_fit": 45,
+      "growth_potential": 65
+    },
+    "key_matches": [
+      "Backend microservices",
+      "AWS infrastructure",
+      "Kubernetes",
+      "High-scale systems",
+      "Python/Go (adjacent experience)",
+      "SQL/NoSQL databases",
+      "Daily deployments",
+      "Distributed systems"
+    ],
+    "red_flags": [
+      "Primary tech stack requires Java/C#/C++ expertise—you lack commercial experience in statically typed OOP languages",
+      "Hybrid role anchored to Lisbon (2+ hour commute requirement)—conflicts with your remote-first preference and Berlin base location",
+      "On-site frequency not clearly defined; described as 'remote-first with periodic in-person gatherings' but commute distance requirement suggests regular on-site presence expected",
+      "Europe/UK/Switzerland region preference matched, but Lisbon is outside your typical target (Portugal is acceptable but not strongly signaled)"
+    ],
+    "fit_category": "",
+    "apply_priority": "medium"
+  },
+  "scored_at": "2026-04-10T13:55:07.732527",
+  "status": "scored",
+  "dismissal_reason": null,
+  "match_tier": "high_confidence",
+  "salary": null,
+  "salary_min": null,
+  "salary_max": null,
+  "salary_currency": null,
+  "is_sparse": false,
+  "company_quality_signals": [],
+  "description": "&lt;p&gt;The Tripadvisor Group connects people to experiences worth sharing, and aims to be the world’s most trusted source for travel and experiences. We leverage our brands, technology, and capabilities to connect our global audience with partners through rich content, travel guidance, and two-sided marketplaces for experiences, accommodations, restaurants, and other travel categories. The subsidiaries of Tripadvisor, Inc. (Nasdaq: TRIP), include a portfolio of travel brands and businesses, including Tripadvisor, Viator, and TheFork.&lt;/p&gt;\n&lt;p&gt;The Tripadvisor Experiences Engineering team is distributed across Europe and is responsible for Tripadvisor.com, the Tripadvisor mobile apps and all their supporting infrastructure. We run the systems that help operators build their businesses and those which enable third parties to utilise our inventory. We provide the tools which help our customer services team provide world class service to travellers and operators internationally.&lt;/p&gt;\n&lt;p&gt;We’re looking for a&amp;nbsp;&lt;strong&gt;Software Engineer&lt;/strong&gt; &lt;strong&gt;II &lt;/strong&gt;to join our fast-growing team. This role is open to candidates based within a commutable distance (generally up to 2 hours) of one of our office hubs in Lisbon, Saldanha. We embrace flexibility in where and how work gets done and also value meaningful in-person moments to connect and collaborate. You can expect a remote-first working model with periodic in-person gatherings at your closest office for team connection, planning, or other key moments.&lt;/p&gt;\n&lt;p&gt;At Tripadvisor our Engineers are versatile and enjoy working on a variety of technical challenges. This is a backend focused full-stack position in which you will be working mostly on the backend with some front end projects from time to time. While you need to be hungry to learn, you don&#39;t need to be an expert at front end development right away - we can teach that part on the job and you won&#39;t be tested on it in interviews.&lt;/p&gt;\n&lt;p&gt;Within Tripadvisor we have a fun and friendly environment where the key objective is getting things done. Working closely alongside product managers and designers, our engineers are part of the full process from software design, to code, to test, to deployment and back again. Most of our engineers release code to production every few days and we have a daily release cycle.&lt;/p&gt;\n&lt;p&gt;Tripadvisor&#39;s&amp;nbsp;web stack includes Java, React, TypeScript, GraphQL,Kubernetes, SQL and NoSQL databases, and runs on AWS. You don’t need to have experience with everything listed but you do need to be hungry to learn. You will need to have experience of a statically typed, object-oriented language such as Java, C# or C++&lt;/p&gt;\n&lt;p&gt;&lt;strong&gt;Perks of Working at Tripadvisor &lt;/strong&gt;&lt;/p&gt;\n&lt;ul&gt;\n&lt;li&gt;&lt;strong&gt;Competitive compensation packages&lt;/strong&gt;, including base salary, annual bonus, and more.&lt;/li&gt;\n&lt;li&gt;&lt;strong&gt;“Work your way”&lt;/strong&gt; with flexibility to suit your lifestyle. We take a remote-friendly approach to collaboration, with the option to join on-site as often as you’d like in select locations.&amp;nbsp;&lt;/li&gt;\n&lt;li&gt;&lt;strong&gt;Flexible schedule&lt;/strong&gt;. Work-life balance is ingrained in our culture by design. Trust and accountability make it work.&lt;/li&gt;\n&lt;li&gt;&lt;strong&gt;Donation matching&lt;/strong&gt;. Give back? Give more! We match qualifying charitable donations annually.&lt;/li&gt;\n&lt;li&gt;&lt;strong&gt;Tuition assistance&lt;/strong&gt;. Want to level up your career? We love to hear it! Receive annual support for qualified programs.&lt;/li&gt;\n&lt;li&gt;&lt;strong&gt;Lifestyle benefit&lt;/strong&gt;. An annual benefit to spend on yourself. Use it on travel, wellness, or whatever suits you.&lt;/li&gt;\n&lt;li&gt;&lt;strong&gt;Travel perks&lt;/strong&gt;. We believe that travel is employee development, so we provide discounts and more.&lt;/li&gt;\n&lt;li&gt;&lt;strong&gt;Employee assistance program&lt;/strong&gt;. We’re here for you with resources and programs to help you through life’s challenges.&lt;/li&gt;\n&lt;li&gt;&lt;strong&gt;Health benefits&lt;/strong&gt;. We offer great coverage and competitive premiums.&lt;/li&gt;\n&lt;/ul&gt;\n&lt;p&gt;&lt;strong&gt;Our Values&lt;/strong&gt;&lt;/p&gt;\n&lt;p&gt;&lt;strong&gt;We aspire to lead; We’re relentlessly curious;... want to know more? Read up on our values:&amp;nbsp;&lt;/strong&gt;&lt;/p&gt;\n&lt;ul&gt;\n&lt;li&gt;&lt;strong&gt;We aspire to lead&lt;/strong&gt;. Tap into your talent, ambition, and knowledge to bring us – and you – to new heights.&lt;/li&gt;\n&lt;li&gt;&lt;strong&gt;We’re relentlessly curious&lt;/strong&gt;. We push beyond the usual, the known, the “that’s just how it’s done.”&lt;/li&gt;\n&lt;li&gt;&lt;strong&gt;We’re better together&lt;/strong&gt;. We learn from, accept, respect, support, and value one another– and are creating something remarkable in the process.&lt;/li&gt;\n&lt;li&gt;&lt;strong&gt;We serve our customers, always&lt;/strong&gt;. We listen, question, respond, and strive for wow moments.&amp;nbsp;&amp;nbsp;&lt;/li&gt;\n&lt;/ul&gt;\n&lt;p&gt;&lt;strong&gt;We strive for better, not perfect&lt;/strong&gt;. We won’t get it right the first time – or every time. We’ll provide a safe environment in which to make mistakes, iterate, improve, and grow.&lt;/p&gt;\n&lt;p&gt;Our workplace is for everyone, as is our people powered platform. At Tripadvisor, we want you to bring your unique identities, abilities, and experiences, so we can collectively revolutionize travel and together find the good out there.&lt;/p&gt;\n&lt;p&gt;&lt;strong&gt;Application process&lt;/strong&gt;&lt;/p&gt;\n&lt;ul&gt;\n&lt;li&gt;30 minute call with a recruiter to learn more about the role&lt;/li&gt;\n&lt;li&gt;1 hour technical coding interview with someone from the Tripadvisor Engineering team&lt;/li&gt;\n&lt;li&gt;Three one-hour interviews with members of the team, covering technical topics - including some coding - and what you would bring to Tripadvisor.&lt;/li&gt;\n&lt;/ul&gt;\n&lt;p&gt;&lt;strong&gt;We strive to create an accessible and inclusive experience for all candidates. If you need a reasonable accommodation during the application or the recruiting process, please make sure to reach out to your individual recruiter or our team at&amp;nbsp;&lt;/strong&gt;&lt;a href=&quot;mailto:greenhouse@tripadvisor.com&quot;&gt;&lt;strong&gt;greenhouse@tripadvisor.com&lt;/strong&gt;&lt;/a&gt;&lt;strong&gt;.&lt;/strong&gt;&lt;/p&gt;\n&lt;p&gt;&amp;nbsp;&lt;/p&gt;\n&lt;p&gt;#LI-Tripadvisor&lt;/p&gt;\n&lt;p&gt;&amp;nbsp;&lt;/p&gt;\n&lt;div&gt;\n&lt;div class=&quot;attachment-overlay preview&quot;&gt;\n&lt;div id=&quot;viewer-container&quot;&gt;\n&lt;div id=&quot;canvas-container&quot;&gt;\n&lt;div id=&quot;viewer&quot; class=&quot;pdfViewer&quot;&gt;\n&lt;div class=&quot;page&quot; data-page-number=&quot;1&quot; data-loaded=&quot;true&quot;&gt;\n&lt;div class=&quot;textLayer&quot;&gt;&amp;nbsp;&lt;/div&gt;\n&lt;/div&gt;\n&lt;/div&gt;\n&lt;/div&gt;\n&lt;/div&gt;\n&lt;/div&gt;\n&lt;/div&gt;\n&lt;p&gt;&amp;nbsp;&lt;/p&gt;"
+}

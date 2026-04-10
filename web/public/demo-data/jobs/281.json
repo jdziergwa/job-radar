@@ -1,0 +1,48 @@
+{
+  "id": 281,
+  "ats_platform": "lever",
+  "company_slug": "palantir",
+  "company_name": "Palantir Technologies",
+  "title": "Forward Deployed Infrastructure Engineer - UK Government",
+  "location": "London, United Kingdom",
+  "url": "https://jobs.lever.co/palantir/72e51928-07f0-4be0-aae5-0ae6956a4846",
+  "posted_at": null,
+  "first_seen_at": "2026-04-10T13:15:58.489074",
+  "last_seen_at": "2026-04-10T13:15:58.489074",
+  "fit_score": 52,
+  "score_reasoning": "Your backend experience with Docker, AWS (ECS, S3, SQS), and observability tools (OpenTelemetry, Prometheus) provides partial overlap with infrastructure engineering work, but the role emphasizes scalable operations and forward-deployment support rather than backend service design—your core strength. The location is London, which creates a timezone challenge from Berlin (1h offset, technically acceptable, but the posting does not explicitly state remote flexibility, creating meaningful uncertainty). Palantir's government focus and infrastructure-heavy scope are adjacent to your distributed systems background, but without clear evidence of large-scale IaC, Kubernetes, or systems-wide architectural ownership in your CV, the tech match remains moderate. This is a viable but not ideal fit given the infrastructure-heavy emphasis and geographic ambiguity.",
+  "score_breakdown": {
+    "dimensions": {
+      "tech_stack_match": 55,
+      "seniority_match": 65,
+      "remote_location_fit": 35,
+      "growth_potential": 50
+    },
+    "key_matches": [
+      "Docker containerization",
+      "AWS infrastructure",
+      "Observability (OpenTelemetry, Prometheus)",
+      "CI/CD pipelines",
+      "Production systems"
+    ],
+    "red_flags": [
+      "No explicit remote work statement; London location ambiguity",
+      "Limited IaC experience (basic Terraform only)",
+      "No Kubernetes experience despite infrastructure focus",
+      "Role emphasizes infrastructure operations over backend service design"
+    ],
+    "fit_category": "",
+    "apply_priority": "low"
+  },
+  "scored_at": "2026-04-10T13:58:12.783239",
+  "status": "scored",
+  "dismissal_reason": null,
+  "match_tier": "broad_match",
+  "salary": null,
+  "salary_min": null,
+  "salary_max": null,
+  "salary_currency": null,
+  "is_sparse": false,
+  "company_quality_signals": [],
+  "description": "<div><b><span style=\"font-size: 18px\">A World-Changing Company</span></b></div><div><br></div><div>Palantir builds the world’s leading software for data-driven decisions and operations. By bringing the right data to the people who need it, our platforms empower our partners to develop lifesaving drugs, forecast supply chain disruptions, locate missing children, and more.</div><div><br></div><div><strong style=\"font-size: 18px;\">The Role</strong></div>\n<div>&nbsp;</div>\n<div>We’re looking for Forward Deployed Infrastructure Engineers who can help us build, operate, and maintain high-performance, scalable, and reliable services for Palantir platforms, products, and deployments. You'll get to use your creativity to develop novel solutions to evolving challenges and automate processes wherever possible, using whichever tools are best for the job including industry-leading LLM and AI technology!</div>\n<div>&nbsp;</div>\n<div>As a Forward Deployed Infrastructure Engineer, every day is different! You will be developing software and providing high-quality support for software systems that are critical to solving our government’s greatest challenges. We strongly believe in engineering teams being responsible for the operations of their services in production. As such, you’ll work closely with forward deployed teams and product teams to participate in sensible, scalable, systems design and share responsibility with them in diagnosing, resolving, and preventing production issues.</div>"
+}

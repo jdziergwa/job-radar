@@ -1,0 +1,48 @@
+{
+  "id": 28,
+  "ats_platform": "greenhouse",
+  "company_slug": "asana",
+  "company_name": "Asana",
+  "title": "Software Engineer, Backend",
+  "location": "Warsaw",
+  "url": "https://www.asana.com/jobs/apply/6169243?gh_jid=6169243",
+  "posted_at": "2026-04-09T16:50:00-04:00",
+  "first_seen_at": "2026-04-10T13:15:58.489074",
+  "last_seen_at": "2026-04-10T13:15:58.489074",
+  "fit_score": 56,
+  "score_reasoning": "Your 7 years of backend experience and Python/Go skills directly address this role's core technical needs. However, the posting lists 4+ years as the target level, placing you at a senior-mid seniority mismatch. While your scope is demonstrably stronger (multi-tenant microservices, billing engines, migration leadership), the role emphasizes TypeScript and Scala experience with 'large, well-maintained codebases'—neither your primary languages, and TypeScript is not evidenced in your CV. The Warsaw hybrid location (Mon/Tue/Thu in-office) introduces the same cross-border friction as job #2, conflicting with your Berlin-anchored hybrid preference. The product-focused backend work (user-facing features) is a slight sideways move from your infrastructure and systems specialization, though still within backend domain.",
+  "score_breakdown": {
+    "dimensions": {
+      "tech_stack_match": 65,
+      "seniority_match": 50,
+      "remote_location_fit": 50,
+      "growth_potential": 60
+    },
+    "key_matches": [
+      "Backend systems design",
+      "Python experience",
+      "Large-scale distributed systems",
+      "Cross-functional collaboration",
+      "Product-focused development"
+    ],
+    "red_flags": [
+      "4+ years is the posted target—you are significantly more senior; role may not offer growth",
+      "TypeScript and Scala required—not in your primary stack",
+      "Warsaw hybrid role—cross-border from Berlin base; not your preferred local setup",
+      "Product-centric backend vs. your infrastructure/systems specialization (sideways move)"
+    ],
+    "fit_category": "",
+    "apply_priority": "low"
+  },
+  "scored_at": "2026-04-10T13:52:12.510419",
+  "status": "scored",
+  "dismissal_reason": null,
+  "match_tier": "high_confidence",
+  "salary": "25,667–33,896 PLN",
+  "salary_min": 100,
+  "salary_max": 100,
+  "salary_currency": "PLN",
+  "is_sparse": false,
+  "company_quality_signals": [],
+  "description": "&lt;p&gt;As a member of the backend engineering team developing the software of a product-led company, you won’t just code — you will be an integral part of the entire product development process, from conception to post-launch reflection. Asana is helping teams become significantly more productive with our leading work management platform. You will be manifesting continuous improvements in their experience and helping us achieve our mission to enable all teams to work together effortlessly.&lt;/p&gt;\n&lt;p&gt;The R&amp;amp;D team builds features end-to-end. From designing our data models to implementing the subtle interaction behaviors that differentiate good software from great software. We work closely with UI designers and are supported by our infrastructure team. We aim to delight users with both large new features and smaller, daily product enhancements—thanks to our continuous deployment architecture. We want to create a superlative user experience, down to the smallest details.&lt;/p&gt;\n&lt;p&gt;This role is based in our Warsaw office with an office-centric hybrid schedule. The standard in-office days are Monday, Tuesday, and Thursday. Most Asanas have the option to work from home on Wednesdays. Working from home on Fridays depends on the type of work you do, and your recruiter can share more about the in-office requirements.&lt;/p&gt;\n&lt;p&gt;&lt;strong&gt;Our employees in Poland are employed under a contract of employment.&lt;/strong&gt;&lt;/p&gt;\n&lt;p&gt;&lt;strong&gt;What you’ll achieve&lt;/strong&gt;&lt;/p&gt;\n&lt;ul&gt;\n&lt;li&gt;As a backend engineer, you get to build and own a broad swath of the product across creating efficient, flexible, and scalable back-end processing logic&lt;/li&gt;\n&lt;li&gt;Participate in every step of the product development process with an open and curious team, working cross-functionally with a product manager, designer, user researcher, and data scientist&lt;/li&gt;\n&lt;li&gt;Develop clean, beautiful code and leave it better than you found it&lt;/li&gt;\n&lt;li&gt;Experience growth and development through opportunities to stretch and learn&lt;/li&gt;\n&lt;/ul&gt;\n&lt;p&gt;&lt;strong&gt;About you&lt;/strong&gt;&lt;/p&gt;\n&lt;ul&gt;\n&lt;li&gt;4 or more years of backend experience working in large, well-maintained codebases building user-facing products (integration development preferred), with professional experience in TypeScript, React, or Scala&lt;/li&gt;\n&lt;li&gt;Excellent communication skills for collaborating with cross-functional partners (e.g. PM, design) and cross-timezone with partner teams&lt;/li&gt;\n&lt;li&gt;Sound autonomous judgment when balancing moving quickly with producing quality, long-term maintainable code&lt;/li&gt;\n&lt;li&gt;Passionate about creating a superlative user experience and attentive to details&lt;/li&gt;\n&lt;li&gt;Appreciate productivity and care deeply about helping teams collaborate more effectively and efficiently, including your own&lt;/li&gt;\n&lt;li&gt;Excited to be a part of an inclusive culture where everyone brings the aspects of themselves to the workplace that they need to thrive&lt;/li&gt;\n&lt;li&gt;Demonstrated curiosity about AI tools and emerging technologies, with a willingness to learn and leverage them to enhance productivity, collaboration, or decision-making&lt;/li&gt;\n&lt;/ul&gt;\n&lt;p&gt;At Asana, we&#39;re committed to building teams that include a variety of backgrounds, perspectives, and skills, as this is critical to helping us achieve our mission. If you&#39;re interested in this role and don&#39;t meet every listed requirement, we still encourage you to apply.&lt;/p&gt;\n&lt;p&gt;&lt;strong&gt;What we’ll offer&lt;/strong&gt;&lt;/p&gt;\n&lt;p&gt;For this role, the estimated base salary range is between 25,667 PLN - 33,896 PLN. The actual base salary will vary based on various factors, including market and individual qualifications objectively assessed during the interview process. The listed range above is a guideline, and the base salary range for this role may be modified.&lt;/p&gt;\n&lt;p&gt;In addition to base salary, your compensation package may include additional components such as equity, sales incentive pay (for most sales roles), and benefits. If you&#39;re interviewing for this role, speak with your Talent Acquisition Partner to learn more about the total compensation and benefits for this role.&lt;/p&gt;\n&lt;p&gt;We strive to provide equitable and competitive benefits packages that support our employees worldwide and include:&lt;/p&gt;\n&lt;ul&gt;\n&lt;li&gt;Generous, transparent and fair compensation system&lt;/li&gt;\n&lt;li&gt;Contract of Employment (&lt;strong&gt;and the option of &lt;/strong&gt;&amp;nbsp;&lt;strong&gt;50% tax deductible costs for author’s rights usage in respect of&amp;nbsp; applicable roles )&amp;nbsp;&lt;/strong&gt;&lt;/li&gt;\n&lt;li&gt;Health insurance with dental and travel coverage (Lux Med)&amp;nbsp;&lt;/li&gt;\n&lt;li&gt;Meals reimbursement on the days that you work from the office&lt;/li&gt;\n&lt;li&gt;Career growth budget&amp;nbsp;&lt;/li&gt;\n&lt;li&gt;Home office setup budget&amp;nbsp;&lt;/li&gt;\n&lt;li&gt;Gym/Fitness reimbursement&lt;/li&gt;\n&lt;li&gt;Fertility healthcare and family-forming support with &lt;a href=&quot;https://www.get-carrot.com/&quot;&gt;Carrot&lt;/a&gt;&lt;/li&gt;\n&lt;li&gt;Mental Health Support in Modern Health&lt;/li&gt;\n&lt;li&gt;Group life insurance&lt;/li&gt;\n&lt;li&gt;MacBooks with all necessary accessories&lt;/li&gt;\n&lt;/ul&gt;\n&lt;p&gt;#LI-Hybrid&lt;/p&gt;&lt;div class=&quot;content-conclusion&quot;&gt;&lt;p&gt;&lt;strong&gt;About us&lt;/strong&gt;&lt;/p&gt;\n&lt;p data-pm-slice=&quot;1 1 []&quot;&gt;Asana is a leading platform for human + AI collaboration. Millions of teams around the world rely on Asana to achieve their most important goals, faster. Asana has been named to Fortune&#39;s Best Workplaces for 7+ years and recognized by Fast Company, Forbes, and Gartner for excellence in workplace culture and innovation. We offer an exceptional office-centric culture while adopting the best elements of hybrid models to ensure that every one of our global team members can work together effortlessly. With 13+ offices all over the world, we are always looking for individuals who care about building technology that drives positive change in the world and a culture where everyone feels that they belong.&lt;/p&gt;\n&lt;p data-pm-slice=&quot;1 1 []&quot;&gt;&lt;strong&gt;&lt;a class=&quot;LinkThemeablePresentation LinkPrimaryPresentation LinkPrimaryPresentation--sentimentSelected PrimaryLink HighlightSol HighlightSol--core HighlightSol--buildingBlock&quot; href=&quot;https://www.gem.com/form?formID=fbcdec8c-3442-43b9-9b45-d2b5f4ea25db&quot; target=&quot;_blank&quot;&gt;Join Asana’s Talent Network&lt;/a&gt;&lt;/strong&gt;&amp;nbsp;to stay up to date on job opportunities and life at Asana.&lt;/p&gt;&lt;/div&gt;"
+}

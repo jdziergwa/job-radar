@@ -1,0 +1,50 @@
+[
+  {
+    "name": "aggregator",
+    "display_name": "Global Aggregator",
+    "description": "Broad Market: Scans 910k+ jobs from the open aggregator.",
+    "shows_aggregator_badge": true
+  },
+  {
+    "name": "local",
+    "display_name": "Targeted Boards",
+    "description": "Direct Source: Scans your curated company list via direct API (Supports Greenhouse, Lever, Ashby, Workable).",
+    "shows_aggregator_badge": false
+  },
+  {
+    "name": "remotive",
+    "display_name": "Remotive",
+    "description": "Remote tech jobs (Free Tier: 20 most recent jobs).",
+    "shows_aggregator_badge": false
+  },
+  {
+    "name": "remoteok",
+    "display_name": "RemoteOK",
+    "description": "Remote tech jobs from RemoteOK's public API.",
+    "shows_aggregator_badge": false
+  },
+  {
+    "name": "hackernews",
+    "display_name": "HN Who is Hiring",
+    "description": "Monthly hiring threads from Hacker News. Tech/startup focused.",
+    "shows_aggregator_badge": false
+  },
+  {
+    "name": "arbeitnow",
+    "display_name": "Arbeitnow",
+    "description": "European tech jobs from Arbeitnow's public API. Attribution: arbeitnow.com.",
+    "shows_aggregator_badge": false
+  },
+  {
+    "name": "weworkremotely",
+    "display_name": "We Work Remotely",
+    "description": "Remote jobs from We Work Remotely's public RSS feed. Attribution: weworkremotely.com.",
+    "shows_aggregator_badge": false
+  },
+  {
+    "name": "adzuna",
+    "display_name": "Adzuna",
+    "description": "Official Adzuna API source. Requires ADZUNA_APP_ID and ADZUNA_APP_KEY.",
+    "shows_aggregator_badge": false
+  }
+]

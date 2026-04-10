@@ -1,0 +1,286 @@
+{
+  "daily_counts": [
+    {
+      "date": "2026-04-10",
+      "new_jobs": 27331,
+      "in_funnel": 292,
+      "scored": 292
+    }
+  ],
+  "pipeline_funnel": {
+    "collected": 27331,
+    "passed_prefilter": 292,
+    "high_priority": 6,
+    "applied": 0
+  },
+  "top_skills": [
+    {
+      "skill": "Distributed systems",
+      "count": 45
+    },
+    {
+      "skill": "AWS infrastructure",
+      "count": 40
+    },
+    {
+      "skill": "PostgreSQL",
+      "count": 22
+    },
+    {
+      "skill": "Docker containerization",
+      "count": 16
+    },
+    {
+      "skill": "Distributed Systems",
+      "count": 14
+    },
+    {
+      "skill": "High-scale systems",
+      "count": 12
+    },
+    {
+      "skill": "Microservices architecture",
+      "count": 12
+    },
+    {
+      "skill": "Microservices Architecture",
+      "count": 12
+    },
+    {
+      "skill": "Python backend",
+      "count": 10
+    },
+    {
+      "skill": "Docker",
+      "count": 10
+    },
+    {
+      "skill": "Microservices",
+      "count": 8
+    },
+    {
+      "skill": "Python/Go",
+      "count": 7
+    },
+    {
+      "skill": "High-Scale Systems",
+      "count": 7
+    },
+    {
+      "skill": "CI/CD pipelines",
+      "count": 7
+    },
+    {
+      "skill": "AWS",
+      "count": 7
+    },
+    {
+      "skill": "CI/CD (GitLab)",
+      "count": 7
+    },
+    {
+      "skill": "Observability (OpenTelemetry, Prometheus)",
+      "count": 5
+    },
+    {
+      "skill": "Python/Go backend",
+      "count": 5
+    },
+    {
+      "skill": "SaaS Platforms",
+      "count": 5
+    },
+    {
+      "skill": "SQL",
+      "count": 5
+    }
+  ],
+  "company_stats": [
+    {
+      "company_name": "Remote.com",
+      "job_count": 25,
+      "avg_score": 28.3,
+      "last_seen": "2026-04-10"
+    },
+    {
+      "company_name": "Databricks",
+      "job_count": 15,
+      "avg_score": 28.2,
+      "last_seen": "2026-04-10"
+    },
+    {
+      "company_name": "Affirm",
+      "job_count": 14,
+      "avg_score": 23.9,
+      "last_seen": "2026-04-10"
+    },
+    {
+      "company_name": "HelloFresh",
+      "job_count": 13,
+      "avg_score": 5.1,
+      "last_seen": "2026-04-10"
+    },
+    {
+      "company_name": "Sezzle",
+      "job_count": 9,
+      "avg_score": 11.3,
+      "last_seen": "2026-04-10"
+    },
+    {
+      "company_name": "Grafana Labs",
+      "job_count": 8,
+      "avg_score": 10.2,
+      "last_seen": "2026-04-10"
+    },
+    {
+      "company_name": "Cloudflare",
+      "job_count": 8,
+      "avg_score": 45.9,
+      "last_seen": "2026-04-10"
+    },
+    {
+      "company_name": "Braze",
+      "job_count": 8,
+      "avg_score": 12.5,
+      "last_seen": "2026-04-10"
+    },
+    {
+      "company_name": "Sword Health",
+      "job_count": 7,
+      "avg_score": 58.6,
+      "last_seen": "2026-04-10"
+    },
+    {
+      "company_name": "Okta",
+      "job_count": 7,
+      "avg_score": 4.0,
+      "last_seen": "2026-04-10"
+    },
+    {
+      "company_name": "Monzo",
+      "job_count": 7,
+      "avg_score": 10.3,
+      "last_seen": "2026-04-10"
+    },
+    {
+      "company_name": "Canonical",
+      "job_count": 7,
+      "avg_score": 47.7,
+      "last_seen": "2026-04-10"
+    },
+    {
+      "company_name": "Stripe",
+      "job_count": 6,
+      "avg_score": 59.2,
+      "last_seen": "2026-04-10"
+    },
+    {
+      "company_name": "Squarespace",
+      "job_count": 6,
+      "avg_score": null,
+      "last_seen": "2026-04-10"
+    },
+    {
+      "company_name": "Kalepa",
+      "job_count": 6,
+      "avg_score": null,
+      "last_seen": "2026-04-10"
+    },
+    {
+      "company_name": "Adyen",
+      "job_count": 6,
+      "avg_score": null,
+      "last_seen": "2026-04-10"
+    },
+    {
+      "company_name": "PhonePe",
+      "job_count": 5,
+      "avg_score": 6.4,
+      "last_seen": "2026-04-10"
+    },
+    {
+      "company_name": "Optiver",
+      "job_count": 5,
+      "avg_score": null,
+      "last_seen": "2026-04-10"
+    },
+    {
+      "company_name": "Jump Trading",
+      "job_count": 5,
+      "avg_score": null,
+      "last_seen": "2026-04-10"
+    },
+    {
+      "company_name": "Glean",
+      "job_count": 5,
+      "avg_score": 7.6,
+      "last_seen": "2026-04-10"
+    },
+    {
+      "company_name": "Wiz",
+      "job_count": 4,
+      "avg_score": null,
+      "last_seen": "2026-04-10"
+    },
+    {
+      "company_name": "Via",
+      "job_count": 4,
+      "avg_score": 39.0,
+      "last_seen": "2026-04-10"
+    },
+    {
+      "company_name": "MongoDB",
+      "job_count": 4,
+      "avg_score": null,
+      "last_seen": "2026-04-10"
+    },
+    {
+      "company_name": "GitLab",
+      "job_count": 4,
+      "avg_score": 13.0,
+      "last_seen": "2026-04-10"
+    },
+    {
+      "company_name": "Anaplan",
+      "job_count": 4,
+      "avg_score": 36.2,
+      "last_seen": "2026-04-10"
+    },
+    {
+      "company_name": "Taboola",
+      "job_count": 3,
+      "avg_score": 26.0,
+      "last_seen": "2026-04-10"
+    },
+    {
+      "company_name": "GoDaddy",
+      "job_count": 3,
+      "avg_score": 67.7,
+      "last_seen": "2026-04-10"
+    },
+    {
+      "company_name": "Elastic",
+      "job_count": 3,
+      "avg_score": 44.3,
+      "last_seen": "2026-04-10"
+    },
+    {
+      "company_name": "Dropbox",
+      "job_count": 3,
+      "avg_score": null,
+      "last_seen": "2026-04-10"
+    },
+    {
+      "company_name": "Coinbase",
+      "job_count": 3,
+      "avg_score": 17.3,
+      "last_seen": "2026-04-10"
+    }
+  ],
+  "score_trend": [
+    {
+      "date": "2026-04-10",
+      "avg_score": 21.8
+    }
+  ]
+}

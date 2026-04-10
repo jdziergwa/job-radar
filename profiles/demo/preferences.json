@@ -1,0 +1,71 @@
+{
+  "targetRoles": [
+    "Senior Backend Engineer",
+    "Backend Engineer",
+    "Distributed Systems Engineer",
+    "Platform Engineer",
+    "Staff Backend Engineer"
+  ],
+  "seniority": [
+    "mid",
+    "senior"
+  ],
+  "location": "Berlin, Germany",
+  "baseCity": "Berlin",
+  "baseCountry": "Germany",
+  "workAuth": "eu_citizen",
+  "remotePref": [
+    "remote",
+    "hybrid"
+  ],
+  "primaryRemotePref": "remote",
+  "timezonePref": "overlap_strict",
+  "targetRegions": [
+    "Europe",
+    "UK",
+    "Switzerland"
+  ],
+  "excludedRegions": [],
+  "industries": [
+    "Scale-up",
+    "Start-up",
+    "Agency",
+    "Fintech",
+    "Travel",
+    "IoT",
+    "SaaS",
+    "E-commerce",
+    "Consulting",
+    "Crypto/Web3",
+    "Healthcare",
+    "Gaming",
+    "Education",
+    "Startup",
+    "Media"
+  ],
+  "careerDirection": "Mid-level backend engineer with 7 years building distributed services in Python and Go. Seeking senior backend roles to deepen technical leadership in high-scale systems. Using zero-downtime migration framework at Velox as proof of systems thinking and multi-team impact. Targeting senior backend positions at scale-ups or mid-stage companies with complex distributed architectures.",
+  "careerGoal": "stay",
+  "careerDirectionEdited": false,
+  "goodMatchSignals": [
+    "Microservices Architecture",
+    "High-Scale Systems",
+    "Python/Go Stack",
+    "AWS Infrastructure",
+    "Observable Systems"
+  ],
+  "goodMatchSignalsConfirmed": true,
+  "companyQualitySignals": [
+    "notable brand",
+    "strong product company",
+    "strong cv value"
+  ],
+  "allowLowerSeniorityAtStrategicCompanies": true,
+  "dealBreakers": [
+    "Monolith Architecture",
+    "On-Premise Only",
+    "Legacy Maintenance"
+  ],
+  "dealBreakersConfirmed": true,
+  "enableStandardExclusions": true,
+  "additionalContext": ""
+}

@@ -1,0 +1,49 @@
+{
+  "id": 291,
+  "ats_platform": "lever",
+  "company_slug": "uncountable",
+  "company_name": "Uncountable",
+  "title": "Platform Engineer - Generative AI",
+  "location": "New York, San Francisco, Munich or London",
+  "url": "https://jobs.lever.co/uncountable/503ed581-d189-437a-a8ba-7e0b3e9677c6",
+  "posted_at": null,
+  "first_seen_at": "2026-04-10T13:15:58.489074",
+  "last_seen_at": "2026-04-10T13:15:58.489074",
+  "fit_score": 48,
+  "score_reasoning": "Your backend and distributed systems expertise translates partially to this role's infrastructure needs (API integration, observability, caching), but the position is heavily weighted toward Generative AI deployment, LLM optimization, and multimodal UI work—areas with no evidence in your CV. The role explicitly requires full-stack development including frontend work, which sits outside your stated focus. While Munich offers some timezone alignment (±0h), the posting lists multiple cities without clarifying remote eligibility; this ambiguity, combined with the strong US presence (NYC, SF), introduces meaningful location risk. The seniority level and title ('Platform Engineer') are roughly aligned with your current scope, but the domain shift away from distributed systems and toward AI-first product development misaligns with your stated career direction to deepen backend systems expertise at scale-ups with complex distributed architectures.",
+  "score_breakdown": {
+    "dimensions": {
+      "tech_stack_match": 45,
+      "seniority_match": 60,
+      "remote_location_fit": 35,
+      "growth_potential": 55
+    },
+    "key_matches": [
+      "Microservices architecture (infrastructure layer)",
+      "API design and development",
+      "Observability and monitoring",
+      "Docker containerization",
+      "Fast iteration and deployment"
+    ],
+    "red_flags": [
+      "Heavy focus on Generative AI and LLMs—no evidence in your background",
+      "Requires full-stack and frontend development—outside your specialization",
+      "No Kubernetes mentioned but 'LLM stack infrastructure' and 'inference' suggest complex orchestration",
+      "Location ambiguity: lists US cities (NYC, SF) prominently; Munich mentioned but no clarity on remote work from Berlin",
+      "Domain shift away from your stated goal of deepening distributed systems expertise"
+    ],
+    "fit_category": "",
+    "apply_priority": "low"
+  },
+  "scored_at": "2026-04-10T13:58:59.859608",
+  "status": "scored",
+  "dismissal_reason": null,
+  "match_tier": "high_confidence",
+  "salary": "$120K–$160K + Equity",
+  "salary_min": 100,
+  "salary_max": 100,
+  "salary_currency": "USD",
+  "is_sparse": false,
+  "company_quality_signals": [],
+  "description": "<div>Thank you for your interest in Uncountable Engineering!</div><div><br></div><div><b style=\"font-size: 18px\">Description</b></div><div><span style=\"font-size: 11pt\">‍Uncountable is seeking driven software engineers with a focus on Generative AI deployment in software.&nbsp;</span></div><div><br></div><div><span style=\"font-size: 11pt\">Uncountable’s software platform is used by scientists in leading scientific R&amp;D organizations to structure and analyze experimental data. Uncountable’s users are solving critical problems in materials science, chemistry, biotech, and other scientific fields, and our goal is to help them solve those problems faster.</span></div><div><br></div><div><span style=\"font-size: 11pt\">Your role will be to bring the full power of ongoing advances in LLMs to bear on real-world problems and friction faced by scientists every day. You’ll be building AI-powered search and visualization tools, next-generation UX that use multimodal LLMs as the UI, intelligent research assistants, and more. This is a unique opportunity to join the front-line effort to accelerate scientific progress using LLMs and generative AI.</span></div><div><br></div><div><b style=\"font-size: 18px\">Primary Responsibility</b></div><div><span style=\"font-size: 11pt\">You will be responsible for:</span></div><div><span style=\"font-size: 11pt\">- Building specific LLM powered features end-to-end, including both LLM-specific tasks (prompting, optimizing latency, tuning/testing behavior) and traditional fullstack development tasks (coding frontends/backends, designing APIs and databases)</span></div><div><span style=\"font-size: 11pt\">- Developing a great in-house LLM stack to serve the evolving needs of our product (API integration, testing, observability, caching, infrastructure for fine-tuning and inference, etc)</span></div><div><br></div><div><span style=\"font-size: 11pt\">Uncountable has a strong culture of continuous deployment and fast iteration cycles. You’ll expect to ship your work early and often to Uncountable’s users and iterate based on their feedback.&nbsp;</span></div><div><br></div><div><span style=\"font-size: 11pt\">Many of the features you build will represent new and unprecedented ways to use software, so you’ll wear various hats as a designer, researcher, engineer, product manager, and whatever else is needed to create an amazing product. This is a great role for someone who is looking to grow their skills and perspective quickly, or who wants to found their own company in the future.</span></div><div><br></div><div><b style=\"font-size: 18px\">Salary Range: $120K-$160K + Equity</b></div>"
+}

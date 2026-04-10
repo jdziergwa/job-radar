@@ -1,0 +1,218 @@
+{
+  "skip_reason_distribution": [
+    {
+      "reason": "location_onsite",
+      "count": 32
+    },
+    {
+      "reason": "seniority_mismatch",
+      "count": 7
+    },
+    {
+      "reason": "tech_gap",
+      "count": 22
+    },
+    {
+      "reason": "none",
+      "count": 36
+    },
+    {
+      "reason": "location_timezone",
+      "count": 193
+    },
+    {
+      "reason": "growth_mismatch",
+      "count": 2
+    }
+  ],
+  "country_distribution": [
+    {
+      "country": "Remote",
+      "count": 20
+    },
+    {
+      "country": "Poland",
+      "count": 14
+    },
+    {
+      "country": "United States",
+      "count": 13
+    },
+    {
+      "country": "United Kingdom",
+      "count": 10
+    },
+    {
+      "country": "San Francisco",
+      "count": 8
+    },
+    {
+      "country": "Remote Spain",
+      "count": 7
+    },
+    {
+      "country": "Remote Poland",
+      "count": 7
+    },
+    {
+      "country": "Porto",
+      "count": 7
+    },
+    {
+      "country": "Israel",
+      "count": 6
+    },
+    {
+      "country": "Hybrid",
+      "count": 6
+    }
+  ],
+  "missing_skills": [
+    {
+      "skill": "Elixir",
+      "count": 15
+    },
+    {
+      "skill": "Java",
+      "count": 11
+    },
+    {
+      "skill": "Phoenix framework",
+      "count": 9
+    },
+    {
+      "skill": "Kubernetes/container orchestration",
+      "count": 6
+    },
+    {
+      "skill": "Phoenix",
+      "count": 6
+    },
+    {
+      "skill": "Agentic/automation workflow design",
+      "count": 5
+    },
+    {
+      "skill": "Scala",
+      "count": 4
+    },
+    {
+      "skill": "C++",
+      "count": 4
+    },
+    {
+      "skill": "Kubernetes (plus, not required)",
+      "count": 3
+    },
+    {
+      "skill": "Kubernetes orchestration",
+      "count": 3
+    }
+  ],
+  "total_scored": 292,
+  "apply_priority_counts": {
+    "skip": 292
+  },
+  "salary_distribution": [
+    {
+      "currency": null,
+      "range": "Undisclosed",
+      "count": 239
+    },
+    {
+      "currency": "BRL",
+      "range": "< 60k",
+      "count": 1
+    },
+    {
+      "currency": "CAD",
+      "range": "190k-200k",
+      "count": 1
+    },
+    {
+      "currency": "EUR",
+      "range": "80k-90k",
+      "count": 1
+    },
+    {
+      "currency": "EUR",
+      "range": "90k-100k",
+      "count": 1
+    },
+    {
+      "currency": "EUR",
+      "range": "100k-110k",
+      "count": 2
+    },
+    {
+      "currency": "EUR",
+      "range": "110k-120k",
+      "count": 1
+    },
+    {
+      "currency": "GBP",
+      "range": "110k-120k",
+      "count": 1
+    },
+    {
+      "currency": "PLN",
+      "range": "< 60k",
+      "count": 1
+    },
+    {
+      "currency": "PLN",
+      "range": "200k+",
+      "count": 4
+    },
+    {
+      "currency": "SGD",
+      "range": "190k-200k",
+      "count": 1
+    },
+    {
+      "currency": "USD",
+      "range": "80k-90k",
+      "count": 18
+    },
+    {
+      "currency": "USD",
+      "range": "140k-150k",
+      "count": 5
+    },
+    {
+      "currency": "USD",
+      "range": "150k-160k",
+      "count": 2
+    },
+    {
+      "currency": "USD",
+      "range": "160k-170k",
+      "count": 1
+    },
+    {
+      "currency": "USD",
+      "range": "170k-180k",
+      "count": 2
+    },
+    {
+      "currency": "USD",
+      "range": "180k-190k",
+      "count": 1
+    },
+    {
+      "currency": "USD",
+      "range": "190k-200k",
+      "count": 3
+    },
+    {
+      "currency": "USD",
+      "range": "200k+",
+      "count": 6
+    },
+    {
+      "currency": "USD/CAD",
+      "range": "200k+",
+      "count": 1
+    }
+  ]
+}

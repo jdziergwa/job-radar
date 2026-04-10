@@ -1,0 +1,47 @@
+{
+  "id": 284,
+  "ats_platform": "lever",
+  "company_slug": "swordhealth",
+  "company_name": "Sword Health",
+  "title": "Backend Engineer (Portugal-based Remote/Hybrid)",
+  "location": "Porto",
+  "url": "https://jobs.lever.co/swordhealth/25e34748-71cb-4770-ab86-6a38f012d4dd",
+  "posted_at": null,
+  "first_seen_at": "2026-04-10T13:15:58.489074",
+  "last_seen_at": "2026-04-10T13:15:58.489074",
+  "fit_score": 72,
+  "score_reasoning": "Your Python/Go backend expertise and proven experience with high-scale distributed systems (4M+ events/day, €2M/month billing engine) align well with Sword's AI-driven infrastructure backend role. The healthcare vertical (fintech-adjacent industry) is in your target sectors. Porto is in Portugal with a minimal timezone offset from Berlin (±1h), and the posting explicitly mentions remote/hybrid flexibility, making location fit strong. However, the role emphasizes AI/ML infrastructure and data-driven clinical features, areas not explicitly highlighted in your CV—your strength is transactional reliability and microservices, not ML systems. The seniority framing is slightly below your current senior level (Backend Engineer vs. Senior), but the AI scale-up context and Sword's strong growth trajectory support career development. This is a solid medium fit with good growth potential, though the AI specialization introduces moderate uncertainty.",
+  "score_breakdown": {
+    "dimensions": {
+      "tech_stack_match": 72,
+      "seniority_match": 60,
+      "remote_location_fit": 78,
+      "growth_potential": 78
+    },
+    "key_matches": [
+      "Backend systems design",
+      "Python/Go production experience",
+      "High-scale infrastructure",
+      "Healthcare SaaS",
+      "Distributed systems"
+    ],
+    "red_flags": [
+      "Role emphasizes AI/ML infrastructure; limited AI/ML background in CV",
+      "Seniority slightly below current senior-level responsibilities",
+      "Limited detail on specific tech stack and infrastructure requirements"
+    ],
+    "fit_category": "core_fit",
+    "apply_priority": "medium"
+  },
+  "scored_at": "2026-04-10T13:58:12.788847",
+  "status": "scored",
+  "dismissal_reason": null,
+  "match_tier": "high_confidence",
+  "salary": null,
+  "salary_min": null,
+  "salary_max": null,
+  "salary_currency": null,
+  "is_sparse": false,
+  "company_quality_signals": [],
+  "description": "<div><span style=\"font-size: 16px;\">Sword Health is shifting healthcare from human-first to AI-first through its AI Care platform, making world-class healthcare available anytime, anywhere, while significantly reducing costs for payers, self-insured employers, national health systems, and other healthcare organizations. Sword began by reinventing pain care with AI at its core, and has since expanded into women’s health, movement health, and more recently mental health. Since 2020, more than 700,000 members across three continents have completed 10 million AI sessions, helping Sword's 1,000+ enterprise clients avoid over $1 billion in unnecessary healthcare costs. Backed by 42 clinical studies and over 44 patents, Sword Health has raised more than $500 million from leading investors, including Khosla Ventures, General Catalyst, Transformation Capital, and Founders Fund. Learn more at </span><a href=\"http://www.swordhealth.com\"><span style=\"font-size: 16px;\">www.swordhealth.com</span></a><span style=\"font-size: 16px;\">.</span></div><div><br></div><div><span style=\"font-size: 16px;\">At Sword, we are reimagining healthcare by combining cutting-edge AI/ML technology with personalized care. Our goal is to provide world-class clinical support at a scale never seen before - where each patient’s journey is as individualized as possible. As a </span><b style=\"font-size: 16px;\">Backend Engineer</b><span style=\"font-size: 16px;\"> on the AI Team, you will play a critical role in building, scaling, and optimizing the infrastructure that supports our ML-powered clinical features, decision support systems, and upcoming innovations in Generative AI.</span></div><div><br></div><div><span style=\"font-size: 16px;\">You’ll work directly with cross-functional teams to ensure Sword’s products are robust, scalable, and secure, empowering both our internal and external users with seamless access to personalized, data-driven care.</span></div><div><br></div><div><span style=\"font-size: 16px;\">If you’re a backend engineer eager to dive deep into AI, this is the opportunity you’ve been waiting for.</span></div>"
+}

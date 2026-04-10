@@ -28,6 +28,8 @@ web/.env.production.local
 # User profiles (except the example template)
 profiles/*/
 !profiles/example/
+!profiles/demo/
+!profiles/demo/**
 
 # Generated reports
 reports/

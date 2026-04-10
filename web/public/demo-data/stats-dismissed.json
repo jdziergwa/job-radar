@@ -1,0 +1,29 @@
+{
+  "reasons": {
+    "Failed Title Filter": 26624,
+    "Location Excluded: \\b(us|usa|united states|north america|can|canada|india|latam|south america|australia|asia|philippines|manila|bangalore|san\\s+francis|boston|\\bma\\b|california|\\bca\\b|texas|\\btx\\b|florida|\\bfl\\b)\\b": 359,
+    "Location Mismatch: New York, NY": 10,
+    "Location Mismatch: Hyderabad": 9,
+    "Location Mismatch: San Francisco": 5,
+    "Excluded: \\b(intern|internship)\\b": 5,
+    "Location Mismatch: Tel Aviv": 3,
+    "Location Mismatch: Seattle": 3,
+    "Location Mismatch: bengaluru": 2,
+    "Location Mismatch: Washington, D.C.": 2,
+    "Location Mismatch: Vancouver": 2,
+    "Location Mismatch: New York": 2,
+    "Excluded: \\bfrontend\\b": 2,
+    "Location Mismatch: Toronto": 1,
+    "Location Mismatch: Seattle, WA": 1,
+    "Location Mismatch: Prague": 1,
+    "Location Mismatch: Pittsburgh, Pennsylvania": 1,
+    "Location Mismatch: Karachi, Pakistan; Lahore, Pakistan": 1,
+    "Location Mismatch: Karachi, Pakistan": 1,
+    "Location Mismatch: Guadalajara, JAL": 1,
+    "Location Mismatch: Chicago, IL": 1,
+    "Location Mismatch: Bratislava": 1,
+    "Location Mismatch: Beijing, China": 1,
+    "Location Mismatch: Ann Arbor, MI": 1
+  },
+  "total": 27039
+}

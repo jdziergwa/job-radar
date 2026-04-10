@@ -1,0 +1,48 @@
+{
+  "id": 288,
+  "ats_platform": "lever",
+  "company_slug": "swordhealth",
+  "company_name": "Sword Health",
+  "title": "Senior Backend Engineer - Data Platform",
+  "location": "Porto",
+  "url": "https://jobs.lever.co/swordhealth/a0ce46f3-6366-40e8-91ed-39e3b6e6d5f2",
+  "posted_at": null,
+  "first_seen_at": "2026-04-10T13:15:58.489074",
+  "last_seen_at": "2026-04-10T13:15:58.489074",
+  "fit_score": 64,
+  "score_reasoning": "Your 7 years of backend engineering with microservices, APIs, and observability experience aligns well with the core data platform API and resilient workflow requirements. The Senior title and platform ownership scope match your current level, and the regulated healthcare environment builds on your systems-thinking approach. However, the role is located in Porto with no explicit remote option stated, creating a significant geographic gap from your Berlin base—beyond your preferred ±2h timezone and hybrid anchor point. Additionally, the posting lacks technical specificity on required languages and frameworks; if it's not Python/Go-primary, your tech fit may be lower once clarified.",
+  "score_breakdown": {
+    "dimensions": {
+      "tech_stack_match": 68,
+      "seniority_match": 78,
+      "remote_location_fit": 35,
+      "growth_potential": 75
+    },
+    "key_matches": [
+      "Backend API design",
+      "Microservices architecture",
+      "Platform engineering",
+      "Resilient systems",
+      "Data infrastructure"
+    ],
+    "red_flags": [
+      "Location Porto with no explicit remote/hybrid detail—unclear if on-site required; 4.5h timezone difference from Berlin",
+      "Sparse job description lacks specific tech stack, making true tech_stack_match assessment difficult",
+      "Healthcare/regulated environment mentioned but no compliance or regulatory experience in your CV",
+      "No mention of Python, Go, or specific backend frameworks—assumes alignment without confirmation"
+    ],
+    "fit_category": "core_fit",
+    "apply_priority": "medium"
+  },
+  "scored_at": "2026-04-10T13:59:47.755480",
+  "status": "scored",
+  "dismissal_reason": null,
+  "match_tier": "high_confidence",
+  "salary": null,
+  "salary_min": null,
+  "salary_max": null,
+  "salary_currency": null,
+  "is_sparse": true,
+  "company_quality_signals": [],
+  "description": "<div><span style=\"font-size: 16px;\">Sword Health is shifting healthcare from human-first to AI-first through its AI Care platform, making world-class healthcare available anytime, anywhere, while significantly reducing costs for payers, self-insured employers, national health systems, and other healthcare organizations. Sword began by reinventing pain care with AI at its core, and has since expanded into women’s health, movement health, and more recently mental health. Since 2020, more than 700,000 members across three continents have completed 10 million AI sessions, helping Sword's 1,000+ enterprise clients avoid over $1 billion in unnecessary healthcare costs. Backed by 42 clinical studies and over 44 patents, Sword Health has raised more than $500 million from leading investors, including Khosla Ventures, General Catalyst, Transformation Capital, and Founders Fund. Learn more at </span><a href=\"http://www.swordhealth.com\"><span style=\"font-size: 16px;\">www.swordhealth.com</span></a><span style=\"font-size: 16px;\">.</span></div><div><br></div><div><span style=\"font-size: 16px;\">At Sword, data powers our mission to build a pain-free world. The Platform Team is building the infrastructure that makes this possible, high-performance APIs enabling self-service data access for clinical, operations, and AI teams. We're moving from a traditional data warehouse to an end-to-end platform, and this role is central to that transformation.</span></div>\n<div>&nbsp;</div>\n<div><span style=\"font-size: 16px;\">Design and build the APIs that make data accessible across Sword. You'll own critical platform services, implement resilient workflows, and collaborate with Data Engineers to define contracts that scale. Requires production API experience and comfort working in regulated environments.</span></div>"
+}

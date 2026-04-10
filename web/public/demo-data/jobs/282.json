@@ -1,0 +1,48 @@
+{
+  "id": 282,
+  "ats_platform": "lever",
+  "company_slug": "palantir",
+  "company_name": "Palantir Technologies",
+  "title": "Platform Engineer - Identity and Access Management (IAM)",
+  "location": "London, United Kingdom",
+  "url": "https://jobs.lever.co/palantir/666d13c7-c6f0-43fb-a0ab-091c338085dc",
+  "posted_at": null,
+  "first_seen_at": "2026-04-10T13:15:58.489074",
+  "last_seen_at": "2026-04-10T13:15:58.489074",
+  "fit_score": 48,
+  "score_reasoning": "Your Python/Go backend experience, AWS infrastructure knowledge, and strong observability background provide a foundation for platform engineering, but IAM and identity-focused infrastructure is a specialized domain not evident in your CV. The role requires designing secure-by-design identity platforms and web services—a shift from distributed transaction systems and microservices reliability, your proven expertise. Additionally, the London location creates geographic and timezone uncertainty without explicit remote-work confirmation. Palantir's scale and the platform engineering label are aligned with your career direction, but the IAM specialization, lack of clarity on work setup, and absence of security/identity background make this a stretch fit rather than a strong match.",
+  "score_breakdown": {
+    "dimensions": {
+      "tech_stack_match": 50,
+      "seniority_match": 70,
+      "remote_location_fit": 35,
+      "growth_potential": 45
+    },
+    "key_matches": [
+      "Web services design",
+      "AWS infrastructure",
+      "Python/Go backend",
+      "Observability and resilience",
+      "Infrastructure as code"
+    ],
+    "red_flags": [
+      "No explicit remote work statement; London location ambiguity",
+      "No evidence of identity, security, or IAM expertise in CV",
+      "Specialized security focus may require different skill set than distributed systems",
+      "Limited IaC experience (basic Terraform only)"
+    ],
+    "fit_category": "",
+    "apply_priority": "low"
+  },
+  "scored_at": "2026-04-10T13:58:12.786220",
+  "status": "scored",
+  "dismissal_reason": null,
+  "match_tier": "high_confidence",
+  "salary": null,
+  "salary_min": null,
+  "salary_max": null,
+  "salary_currency": null,
+  "is_sparse": false,
+  "company_quality_signals": [],
+  "description": "<div><b><span style=\"font-size: 18px\">A World-Changing Company</span></b></div><div><br></div><div>Palantir builds the world’s leading software for data-driven decisions and operations. By bringing the right data to the people who need it, our platforms empower our partners to develop lifesaving drugs, forecast supply chain disruptions, locate missing children, and more.</div><div><br></div><div><strong style=\"font-size: 18px;\">The Role</strong></div>\n<div>&nbsp;</div>\n<div>As a Platform Engineer on Palantir's Identity Security team, you will design, build, and operate secure-by-design identity infrastructure and tooling. You will make it easier — and more secure — to implement identity governance and access management for Palantirians and customers worldwide. As part of Palantir's best-in-class Information Security organisation, you will research, implement, and scale innovative solutions that help Palantir stay ahead of a dynamic threat landscape.&nbsp;The Identity team is made up of engineers who are passionate about reducing risk and friction, and eliminating toil. <br><br>The team's primary focus is the development and management of identity platforms across both corporate and production (customer-facing) infrastructure. You will build purpose-built web services that help Palantirians stay compliant while minimising impact on their day-to-day productivity. Your work will directly strengthen the resilience of critical Palantir infrastructure that enables a globally distributed workforce.</div>"
+}

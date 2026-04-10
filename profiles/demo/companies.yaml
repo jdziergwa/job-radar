@@ -1,0 +1,1108 @@
+# companies.yaml — companies to scrape directly via their ATS
+# Add entries under the ATS platform key (greenhouse, lever, ashby, workable).
+# The "slug" is the company's identifier in that ATS URL.
+# Find it by visiting jobs.lever.co/<slug> or boards.greenhouse.io/<slug> etc.
+# Optional: add `company_quality_signals` to an entry when you want explicit
+# strategic/company-quality context to flow into scoring, e.g.:
+# - slug: linear
+#   name: Linear
+#   company_quality_signals: [strong product company, high engineering reputation]
+#
+# Copy this file to profiles/default/companies.yaml and customise.
+
+greenhouse:
+- slug: stripe
+  name: Stripe
+- slug: datadog
+  name: Datadog
+- slug: cloudflare
+  name: Cloudflare
+- slug: affirm
+  name: Affirm
+- slug: airbnb
+  name: Airbnb
+- slug: asana
+  name: Asana
+- slug: brex
+  name: Brex
+- slug: chime
+  name: Chime
+- slug: coinbase
+  name: Coinbase
+- slug: coursera
+  name: Coursera
+- slug: databricks
+  name: Databricks
+- slug: discord
+  name: Discord
+- slug: duolingo
+  name: Duolingo
+- slug: gitlab
+  name: GitLab
+- slug: figma
+  name: Figma
+- slug: fivetran
+  name: Fivetran
+- slug: hubspot
+  name: HubSpot
+- slug: instacart
+  name: Instacart
+- slug: intercom
+  name: Intercom
+- slug: mongodb
+  name: MongoDB
+- slug: lyft
+  name: Lyft
+- slug: okta
+  name: Okta
+- slug: pinterest
+  name: Pinterest
+- slug: postman
+  name: Postman
+- slug: reddit
+  name: Reddit
+- slug: amplitude
+  name: Amplitude
+- slug: roblox
+  name: Roblox
+- slug: scaleai
+  name: Scale AI
+- slug: toast
+  name: Toast
+- slug: tripadvisor
+  name: Tripadvisor
+- slug: webflow
+  name: Webflow
+- slug: elastic
+  name: Elastic
+- slug: twilio
+  name: Twilio
+- slug: dropbox
+  name: Dropbox
+- slug: 1uphealth
+  name: 1upHealth
+- slug: 2k
+  name: 2K
+- slug: 6sense
+  name: 6sense
+- slug: athinkingape
+  name: A Thinking Ape
+- slug: abelsontaylor
+  name: AbelsonTaylor
+- slug: abnormalsecurity
+  name: Abnormal Security
+- slug: addepar1
+  name: Addepar
+- slug: adyen
+  name: Adyen
+- slug: affinitiv
+  name: Affinitiv
+- slug: affinity
+  name: Affinity
+- slug: afresh
+  name: Afresh
+- slug: agero
+  name: Agero
+- slug: airtable
+  name: Airtable
+- slug: akunacapital
+  name: Akuna Capital
+- slug: alchemy
+  name: Alchemy
+- slug: algolia
+  name: Algolia
+- slug: alloy
+  name: Alloy
+- slug: alpaca
+  name: Alpaca
+- slug: altanaai
+  name: Altana AI
+- slug: amperity
+  name: Amperity
+- slug: anaplan
+  name: Anaplan
+- slug: angi
+  name: ANGI Homeservices
+- slug: appian
+  name: Appian
+- slug: appliedintuition
+  name: Applied Intuition
+- slug: aptoslabs
+  name: Aptos
+- slug: aquaticcapitalmanagement
+  name: Aquatic Group
+- slug: arcadiacareers
+  name: Arcadia
+- slug: assemblyai
+  name: AssemblyAI
+- slug: astranis
+  name: Astranis
+- slug: atomwise
+  name: Atomwise
+- slug: aurorainnovation
+  name: Aurora
+- slug: auterion
+  name: Auterion
+- slug: avalabs
+  name: Ava Labs
+- slug: aviatrix
+  name: Aviatrix
+- slug: b12
+  name: B12
+- slug: bandwidth
+  name: Bandwidth
+- slug: beaconplatform
+  name: Beacon Platform
+- slug: berlinrosen
+  name: BerlinRosen
+- slug: billiontoone
+  name: BillionToOne
+- slug: bitcoindepot
+  name: Bitcoin Depot
+- slug: bitgo
+  name: BitGo
+- slug: bitwarden
+  name: Bitwarden
+- slug: blend
+  name: Blend
+- slug: bondvet
+  name: Bond Vet
+- slug: boostinsurance
+  name: Boost
+- slug: boulevard
+  name: Boulevard
+- slug: bracebridgecapital
+  name: Bracebridge Capital
+- slug: brave
+  name: Brave
+- slug: braze
+  name: Braze
+- slug: breezeairways
+  name: Breeze Airways
+- slug: brooklinen
+  name: Brooklinen
+- slug: bugcrowd
+  name: Bugcrowd
+- slug: builtin
+  name: Built In
+- slug: businessolver
+  name: Businessolver
+- slug: butterflynetwork
+  name: Butterfly Network
+- slug: buzzfeed
+  name: BuzzFeed
+- slug: calendly
+  name: Calendly
+- slug: calm
+  name: Calm
+- slug: cameo
+  name: Cameo
+- slug: careem
+  name: Careem
+- slug: carrotfertility
+  name: Carrot Fertility
+- slug: carta
+  name: Carta
+- slug: cartahealthcare
+  name: Carta Healthcare
+- slug: castiron
+  name: Castiron
+- slug: cbinsights
+  name: CB Insights
+- slug: cerebral
+  name: Cerebral
+- slug: chargepoint
+  name: ChargePoint
+- slug: check
+  name: Check
+- slug: checkr
+  name: Checkr
+- slug: circleci
+  name: CircleCI
+- slug: classpass
+  name: ClassPass
+- slug: clever
+  name: Clever
+- slug: clockwise
+  name: Clockwise
+- slug: coalition
+  name: Coalition
+- slug: coast
+  name: Coast
+- slug: coherusbiosciences
+  name: Coherus Biosciences
+- slug: collectivehealth
+  name: Collective Health
+- slug: commercetools
+  name: commercetools
+- slug: corelight
+  name: Corelight
+- slug: couchbaseinc
+  name: Couchbase
+- slug: coursehero
+  name: Course Hero
+- slug: creativex
+  name: CreativeX
+- slug: credible
+  name: Credible
+- slug: cribl
+  name: Cribl
+- slug: criticalmass
+  name: Critical Mass
+- slug: crossbeam
+  name: Crossbeam
+- slug: curaleaf
+  name: Curaleaf
+- slug: dagger
+  name: Dagger
+- slug: dailyharvest
+  name: Daily Harvest
+- slug: datacamp
+  name: DataCamp
+- slug: datagrail
+  name: DataGrail
+- slug: dataiku
+  name: Dataiku
+- slug: dealpath
+  name: Dealpath
+- slug: deepmind
+  name: DeepMind
+- slug: degreed
+  name: Degreed
+- slug: descript
+  name: Descript
+- slug: digit
+  name: Digit
+- slug: diligentrobotics
+  name: Diligent Robotics
+- slug: disco
+  name: DISCO
+- slug: docugami
+  name: Docugami
+- slug: doma
+  name: Doma
+- slug: dominodatalab
+  name: Domino Data Lab
+- slug: doximity
+  name: Doximity
+- slug: doxo
+  name: doxo
+- slug: ducerapartners
+  name: Ducera Partners
+- slug: ecobee
+  name: ecobee
+- slug: eh2
+  name: Electric Hydrogen
+- slug: elementbiosciences
+  name: Element Biosciences
+- slug: elwoodtechnologies
+  name: Elwood Technologies
+- slug: embrace
+  name: Embrace
+- slug: enova
+  name: Enova International
+- slug: epicgames
+  name: Epic Games
+- slug: epirus
+  name: Epirus
+- slug: ergeon
+  name: Ergeon
+- slug: everlaw
+  name: Everlaw
+- slug: exabeam
+  name: Exabeam
+- slug: exiger
+  name: Exiger
+- slug: exoduspoint
+  name: ExodusPoint
+- slug: fairmarkit
+  name: Fairmarkit
+- slug: falconx
+  name: FalconX
+- slug: fanduel
+  name: FanDuel
+- slug: fictiv
+  name: Fictiv
+- slug: figure
+  name: Figure
+- slug: filecoinfoundation
+  name: Filecoin Foundation
+- slug: fireblocks
+  name: Fireblocks
+- slug: five9
+  name: Five9
+- slug: flatironhealth
+  name: Flatiron Health
+- slug: flexe
+  name: Flexe
+- slug: flexport
+  name: Flexport
+- slug: flowtraders
+  name: Flow Traders
+- slug: formic
+  name: Formic Technologies
+- slug: formlabs
+  name: Formlabs
+- slug: forte
+  name: Forte
+- slug: foundenergy
+  name: Found Energy
+- slug: foundrydigital
+  name: Foundry Digital
+- slug: fourkites
+  name: FourKites
+- slug: freenome
+  name: Freenome
+- slug: garnerhealth
+  name: Garner Health
+- slug: gatherai
+  name: Gather AI
+- slug: gemini
+  name: Gemini
+- slug: generalassembly
+  name: General Assembly
+- slug: glance
+  name: Glance
+- slug: glassdoor
+  name: Glassdoor
+- slug: gleanwork
+  name: Glean
+- slug: goatgroup
+  name: Goat Group
+- slug: godaddy
+  name: GoDaddy
+- slug: goguardian
+  name: GoGuardian
+- slug: goldenhippo
+  name: Golden Hippo
+- slug: grafanalabs
+  name: Grafana Labs
+- slug: grailed
+  name: Grailed
+- slug: guidepoint
+  name: Guidepoint
+- slug: gusto
+  name: Gusto
+- slug: hackerrank
+  name: HackerRank
+- slug: headway
+  name: Headway
+- slug: hellofresh
+  name: HelloFresh
+- slug: hextechnologies
+  name: Hex Technologies
+- slug: heycar
+  name: Heycar
+- slug: highnote
+  name: Highnote
+- slug: hightouch
+  name: Hightouch
+- slug: homelight
+  name: HomeLight
+- slug: hudl
+  name: Hudl
+- slug: humaninterest
+  name: Human Interest
+- slug: huntress
+  name: Huntress
+- slug: hypr
+  name: HYPR
+- slug: misfitsmarket
+  name: Imperfect Foods
+- slug: inspire11
+  name: Inspire11
+- slug: instabase
+  name: Instabase
+- slug: invoca
+  name: Invoca
+- slug: ionq
+  name: IonQ
+- slug: iterativehealth
+  name: Iterative Scopes
+- slug: ixllearning
+  name: IXL Learning
+- slug: jamf
+  name: Jamf
+- slug: jumptrading
+  name: Jump Trading
+- slug: justworks
+  name: Justworks
+- slug: juullabs
+  name: JUUL
+- slug: kalepa
+  name: Kalepa
+- slug: kalshi
+  name: Kalshi
+- slug: karat
+  name: Karat
+- slug: kasisto
+  name: Kasisto
+- slug: kayak
+  name: KAYAK
+- slug: kentik
+  name: Kentik
+- slug: khanacademy
+  name: Khan Academy
+- slug: klaviyo
+  name: Klaviyo
+- slug: knowbe4
+  name: KnowBe4
+- slug: komodohealth
+  name: Komodo Health
+- slug: konradgroup
+  name: Konrad Group
+- slug: launchdarkly
+  name: LaunchDarkly
+- slug: leaflink
+  name: LeafLink
+- slug: ledgerinvesting
+  name: Ledger Investing
+- slug: lendingtree
+  name: LendingTree
+- slug: linushealth
+  name: Linus Health
+- slug: lob
+  name: Lob
+- slug: lumos
+  name: Lumos
+- slug: mark43
+  name: Mark43
+- slug: marqeta
+  name: Marqeta
+- slug: maymobility
+  name: May Mobility
+- slug: mento
+  name: Mento
+- slug: mercury
+  name: Mercury
+- slug: merge
+  name: Merge
+- slug: metropolis
+  name: Metropolis
+- slug: mezmo
+  name: Mezmo
+- slug: missionlane
+  name: Mission Lane
+- slug: mixpanel
+  name: Mixpanel
+- slug: modernanimal
+  name: Modern Animal
+- slug: monzo
+  name: Monzo
+- slug: motional
+  name: Motional
+- slug: moveworks
+  name: Moveworks
+- slug: moxehealth
+  name: Moxe Health
+- slug: mozilla
+  name: Mozilla
+- slug: mutiny
+  name: Mutiny
+- slug: myfitnesspal
+  name: MyFitnessPal
+- slug: natera
+  name: Natera
+- slug: navtechnologies
+  name: Nav
+- slug: neocybernetica
+  name: Neo Cybernetica
+- slug: netlify
+  name: Netlify
+- slug: neuralink
+  name: Neuralink
+- slug: newsela
+  name: Newsela
+- slug: nexhealth
+  name: NexHealth
+- slug: nextroll
+  name: NextRoll
+- slug: northspyre
+  name: Northspyre
+- slug: odeko
+  name: Odeko
+- slug: omadahealth
+  name: Omada Health
+- slug: onemedical
+  name: One Medical
+- slug: opendoor
+  name: Opendoor
+- slug: openzeppelin
+  name: OpenZeppelin
+- slug: optiverus
+  name: Optiver
+- slug: orchard
+  name: Orchard
+- slug: outschool
+  name: Outschool
+- slug: outsetmedical
+  name: Outset Medical
+- slug: owllabs
+  name: Owl Labs
+- slug: pagerduty
+  name: PagerDuty
+- slug: pantherlabs
+  name: Panther
+- slug: papa
+  name: Papa Inc.
+- slug: payit
+  name: PayIt
+- slug: pdtpartners
+  name: PDT Partners
+- slug: peloton
+  name: Peloton
+- slug: peptilogics
+  name: Peptilogics
+- slug: phonepe
+  name: PhonePe
+- slug: pieinsurance
+  name: Pie Insurance
+- slug: platformscience
+  name: Platform Science
+- slug: plotly
+  name: Plotly
+- slug: plume
+  name: Plume Design
+- slug: pocketgems
+  name: Pocket Gems
+- slug: point72
+  name: Point72
+- slug: poshmark
+  name: Poshmark
+- slug: powerfinance
+  name: Power
+- slug: primemedicine
+  name: Prime Medicine
+- slug: primerai
+  name: Primer
+- slug: propel
+  name: Propel
+- slug: prove
+  name: Prove
+- slug: public
+  name: Public
+- slug: pushpay
+  name: Pushpay
+- slug: qualtrics
+  name: Qualtrics
+- slug: rapp
+  name: RAPP
+- slug: rti
+  name: Real-Time Innovations
+- slug: recordedfuture
+  name: Recorded Future
+- slug: redventures
+  name: Red Ventures
+- slug: redwoodmaterials
+  name: Redwood Materials
+- slug: relaypro
+  name: Relay
+- slug: relaytherapeutics
+  name: Relay Therapeutics
+- slug: renttherunway
+  name: Rent the Runway
+- slug: rhombuspower
+  name: Rhombus Power
+- slug: ridgeline
+  name: Ridgeline
+- slug: ripple
+  name: Ripple
+- slug: robinhood
+  name: Robinhood
+- slug: roku
+  name: Roku
+- slug: roofr
+  name: Roofr
+- slug: rvohealth
+  name: RVO Health
+- slug: sambanovasystems
+  name: SambaNova Systems
+- slug: samsara
+  name: Samsara
+- slug: samsungresearchamerica
+  name: Samsung Research America
+- slug: seatgeek
+  name: SeatGeek
+- slug: securityscorecard
+  name: SecurityScorecard
+- slug: seekout
+  name: SeekOut
+- slug: seesaw
+  name: Seesaw Learning
+- slug: selffinancial
+  name: Self Financial
+- slug: sezzle
+  name: Sezzle
+- slug: shopmonkey
+  name: Shopmonkey
+- slug: sigmacomputing
+  name: Sigma Computing
+- slug: simplisafe
+  name: SimpliSafe
+- slug: simpplr
+  name: Simpplr
+- slug: singlestore
+  name: SingleStore
+- slug: skupos
+  name: Skupos
+- slug: skyryse
+  name: Skyryse
+- slug: skyscanner
+  name: Skyscanner
+- slug: slickdeals
+  name: Slickdeals
+- slug: smartasset
+  name: SmartAsset
+- slug: smartrent
+  name: SmartRent
+- slug: smartsheet
+  name: Smartsheet
+- slug: snackpass
+  name: Snackpass
+- slug: snorkelai
+  name: Snorkel AI
+- slug: sofi
+  name: SoFi
+- slug: splice
+  name: Splice
+- slug: squarespace
+  name: Squarespace
+- slug: stackline
+  name: Stackline
+- slug: startree
+  name: StarTree
+- slug: stockx
+  name: StockX
+- slug: storable
+  name: Storable
+- slug: submittable
+  name: Submittable
+- slug: sumologic
+  name: Sumo Logic
+- slug: superblocks
+  name: Superblocks
+- slug: synack
+  name: Synack
+- slug: taboola
+  name: Taboola
+- slug: tailscale
+  name: Tailscale
+- slug: tanium
+  name: Tanium
+- slug: tatari
+  name: Tatari
+- slug: tecovas
+  name: Tecovas
+- slug: tekion
+  name: Tekion
+- slug: textio
+  name: Textio
+- slug: thenewyorktimes
+  name: The New York Times
+- slug: tifin
+  name: TIFIN
+- slug: tomorrowhealth
+  name: Tomorrow Health
+- slug: torcrobotics
+  name: Torc Robotics
+- slug: towerresearchcapital
+  name: Tower Research Capital, LLC.
+- slug: triplelift
+  name: TripleLift
+- slug: truveta
+  name: Truveta
+- slug: twitch
+  name: Twitch
+- slug: udacity
+  name: Udacity
+- slug: uniteus
+  name: Unite Us
+- slug: upbound
+  name: Upbound
+- slug: upgrade
+  name: Upgrade
+- slug: vardaspace
+  name: Varda
+- slug: vestmark
+  name: Vestmark
+- slug: via
+  name: Via
+- slug: walnut
+  name: Walnut
+- slug: waltzhealth
+  name: Waltz Health
+- slug: warp
+  name: Warp
+- slug: wholesail
+  name: Wholesail
+- slug: wildtype
+  name: Wildtype
+- slug: wizinc
+  name: Wiz
+- slug: wonderschool
+  name: Wonderschool
+- slug: workera
+  name: Workera
+- slug: workstream
+  name: Workstream
+- slug: xealth
+  name: Xealth
+- slug: yext
+  name: Yext
+- slug: yugabyte
+  name: Yugabyte
+- slug: ziprecruiter
+  name: ZipRecruiter
+- slug: zora
+  name: Zora
+- slug: canonical
+  name: Canonical
+- slug: digitalocean98
+  name: DigitalOcean
+- slug: fastly
+  name: Fastly
+- slug: gradle
+  name: Gradle
+- slug: gremlin
+  name: Gremlin
+- slug: honor
+  name: Honor
+- slug: remotecom
+  name: Remote.com
+- slug: sourcegraph91
+  name: Sourcegraph
+- slug: stackexchange
+  name: StackExchange
+- slug: surveymonkey
+  name: Surveymonkey
+- slug: wikimedia
+  name: Wikimedia
+lever:
+- slug: spotify
+  name: Spotify
+- slug: apollographql
+  name: Apollo GraphQL
+- slug: wealthsimple
+  name: Wealthsimple
+- slug: accesssoftek
+  name: Access Softek
+- slug: aeva
+  name: Aeva
+- slug: agtonomy
+  name: Agtonomy
+- slug: aigen
+  name: Aigen
+- slug: aircall
+  name: Aircall
+- slug: alluxio
+  name: Alluxio
+- slug: anchorage
+  name: Anchorage Digital
+- slug: ansira
+  name: Ansira
+- slug: anyscale
+  name: Anyscale
+- slug: arrivelogistics
+  name: Arrive Logistics
+- slug: arsenalbio
+  name: ArsenalBio
+- slug: attentive
+  name: Attentive
+- slug: beam
+  name: Beam
+- slug: belvederetrading
+  name: Belvedere Trading, LLC
+- slug: benchsci
+  name: BenchSci
+- slug: bighealth
+  name: Big Health
+- slug: bigtime
+  name: Big Time Studios
+- slug: binance
+  name: Binance
+- slug: blinkux
+  name: Blink
+- slug: bluebottlecoffee
+  name: Blue Bottle Coffee
+- slug: bounteous
+  name: Bounteous
+- slug: brightedge
+  name: BrightEdge
+- slug: brightwheel
+  name: Brightwheel
+- slug: brooksrunning
+  name: Brooks Running
+- slug: businesswire
+  name: Business Wire
+- slug: canarytechnologies
+  name: Canary Technologies
+- slug: cardiologs
+  name: Cardiologs
+- slug: cents
+  name: Cents
+- slug: certik
+  name: CertiK
+- slug: cherre
+  name: Cherre
+- slug: chownow
+  name: ChowNow
+- slug: clabs
+  name: cLabs
+- slug: clari
+  name: Clari
+- slug: color
+  name: Color
+- slug: contentsquare
+  name: Contentsquare
+- slug: coredigitalmedia
+  name: Core Digital Media
+- slug: cprime
+  name: Cprime
+- slug: cred
+  name: CRED
+- slug: culdesac
+  name: Culdesac
+- slug: demiurgestudios
+  name: Demiurge Studios
+- slug: dexterity
+  name: Dexterity
+- slug: dronedeploy
+  name: DroneDeploy
+- slug: dwolla
+  name: Dwolla
+- slug: ekimetrics
+  name: Ekimetrics
+- slug: ekohealth
+  name: Eko Health
+- slug: enable
+  name: Enable
+- slug: energyrecovery
+  name: Energy Recovery
+- slug: epsilon3
+  name: Epsilon3
+- slug: ethena
+  name: Ethena
+- slug: everbridge
+  name: EverBridge
+- slug: extremenetworks
+  name: Extreme Networks
+- slug: fabricgenomics
+  name: Fabric Genomics (formerly Omicia)
+- slug: fampay
+  name: FamPay
+- slug: filevine
+  name: Filevine
+- slug: finix
+  name: Finix
+- slug: fiscalnote
+  name: FiscalNote
+- slug: flatfile
+  name: Flatfile
+- slug: floqast
+  name: FloQast
+- slug: fnatic
+  name: Fnatic
+- slug: foodsmart
+  name: Foodsmart
+- slug: gausslabs
+  name: Gauss Labs
+- slug: gettyimages
+  name: Getty Images
+- slug: gopuff
+  name: Gopuff
+- slug: greenlight
+  name: Greenlight
+- slug: hap-capital
+  name: HAP Capital
+- slug: harmony
+  name: Harmony
+- slug: hatchit
+  name: hatch IT
+- slug: heartbeathealth
+  name: Heartbeat Health
+- slug: hermeus
+  name: Hermeus
+- slug: hive
+  name: Hive
+- slug: hyperscience
+  name: Hyperscience
+- slug: immuta
+  name: Immuta
+- slug: jamcity
+  name: Jam City
+- slug: kabam
+  name: Kabam
+- slug: kapwing
+  name: Kapwing
+- slug: kitware
+  name: Kitware
+- slug: kraken
+  name: Kraken
+- slug: leantaas
+  name: LeanTaaS
+- slug: lendbuzz
+  name: Lendbuzz
+- slug: lever
+  name: Lever
+- slug: logrocket
+  name: LogRocket
+- slug: luxurypresence
+  name: Luxury Presence
+- slug: lyrahealth
+  name: Lyra Health
+- slug: mashgin
+  name: Mashgin
+- slug: matchgroup
+  name: Match Group
+- slug: minted
+  name: Minted
+- slug: morningbrew
+  name: Morning Brew
+- slug: narmi
+  name: Narmi
+- slug: nava
+  name: Nava
+- slug: netflix
+  name: Netflix
+- slug: nimblerx
+  name: NimbleRx
+- slug: ninjavan
+  name: Ninja Van
+- slug: nomihealth
+  name: Nomi Health
+- slug: normalyze
+  name: Normalyze
+- slug: ockam
+  name: Ockam
+- slug: orum
+  name: Orum
+- slug: osaro
+  name: Osaro
+- slug: outreach
+  name: Outreach
+- slug: palantir
+  name: Palantir Technologies
+- slug: parallelwireless
+  name: Parallel Wireless
+- slug: piccollage
+  name: PicCollage
+- slug: picklerobot
+  name: Pickle Robot
+- slug: plaid
+  name: Plaid
+- slug: pointb
+  name: Point B
+- slug: pointclickcare
+  name: PointClickCare
+- slug: pollyex
+  name: Polly
+- slug: postera
+  name: PostEra
+- slug: prelim
+  name: Prelim
+- slug: pythian
+  name: Pythian
+- slug: quantcast
+  name: Quantcast
+- slug: quantummetric
+  name: Quantum Metric
+- slug: quartzy
+  name: Quartzy
+- slug: questanalytics
+  name: Quest Analytics
+- slug: rigetti
+  name: Rigetti Computing
+- slug: ro
+  name: Ro
+- slug: sanctuary
+  name: Sanctuary Cognitive Systems Corporation
+- slug: scality
+  name: Scality
+- slug: shieldai
+  name: Shield AI
+- slug: signal
+  name: Signal Messenger
+- slug: smartcar
+  name: Smartcar
+- slug: sonatype
+  name: Sonatype
+- slug: spendesk
+  name: Spendesk
+- slug: spreetail
+  name: Spreetail
+- slug: super-com
+  name: Super.com
+- slug: sure
+  name: Sure
+- slug: swordhealth
+  name: Sword Health
+- slug: symplicity
+  name: Symplicity Corporation
+- slug: synthego
+  name: Synthego
+- slug: system1
+  name: System1
+- slug: tackle
+  name: Tackle
+- slug: tamr
+  name: Tamr
+- slug: tecton
+  name: Tecton
+- slug: teleport
+  name: Teleport
+- slug: teller
+  name: Teller
+- slug: uncountable
+  name: Uncountable
+- slug: upguard
+  name: UpGuard
+- slug: upstox
+  name: Upstox
+- slug: valkyrietrading
+  name: Valkyrie Trading
+- slug: vergegenomics
+  name: Verge Genomics
+- slug: vergesense
+  name: VergeSense
+- slug: vevo
+  name: Vevo
+- slug: voltus
+  name: Voltus
+- slug: walkme
+  name: WalkMe
+- slug: wealthfront
+  name: Wealthfront
+- slug: webfx
+  name: WebFX
+- slug: weride
+  name: WeRide
+- slug: whoop
+  name: WHOOP
+- slug: wonolo
+  name: Wonolo
+- slug: workramp
+  name: WorkRamp
+- slug: zerion
+  name: Zerion
+- slug: zeta
+  name: Zeta
+- slug: zoox
+  name: Zoox
+- slug: atlassian
+  name: Atlassian
+- slug: medium
+  name: Medium
+- slug: skillshare
+  name: Skillshare
+ashby:
+- slug: linear
+  name: Linear
+- slug: posthog
+  name: PostHog
+- slug: ramp
+  name: Ramp
+- slug: notion
+  name: Notion
+workable:
+- slug: doist
+  name: Doist

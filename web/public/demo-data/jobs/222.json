@@ -1,0 +1,46 @@
+{
+  "id": 222,
+  "ats_platform": "greenhouse",
+  "company_slug": "taboola",
+  "company_name": "Taboola",
+  "title": "Experienced Backend Engineer",
+  "location": "Tel Aviv, Israel",
+  "url": "https://www.taboola.com/careers/job/7116045?gh_jid=7116045",
+  "posted_at": "2026-03-24T13:07:40-04:00",
+  "first_seen_at": "2026-04-10T13:15:58.489074",
+  "last_seen_at": "2026-04-10T13:15:58.489074",
+  "fit_score": 39,
+  "score_reasoning": "Your experience with Python and Go distributed systems is a strong foundation, but Taboola's primary stack centers on Java and Spring, which you don't have commercial experience with—this represents a significant core tech gap and limits your ability to hit the ground running. The role itself (titled 'Experienced') aligns with your current mid-to-senior level, but the on-site requirement in Tel Aviv, Israel (9+ hours ahead of Berlin) creates a hard location barrier that conflicts with your remote-first preference and ±2h timezone overlap requirement. While the high-scale distributed systems work (140TB/day, real-time big data) matches your career goals, the location mismatch and Java/Spring requirement together disqualify this role from serious consideration.",
+  "score_breakdown": {
+    "dimensions": {
+      "tech_stack_match": 35,
+      "seniority_match": 60,
+      "remote_location_fit": 15,
+      "growth_potential": 50
+    },
+    "key_matches": [
+      "Distributed systems",
+      "High-scale infrastructure",
+      "Real-time data processing"
+    ],
+    "red_flags": [
+      "Primary language is Java/Spring; you have no commercial Java experience",
+      "On-site only in Tel Aviv, Israel—9+ hour timezone difference from Berlin",
+      "No explicit remote option despite hybrid being mentioned in benefits",
+      "Hybrid is anchored to Tel Aviv office, not Berlin"
+    ],
+    "fit_category": "",
+    "apply_priority": "skip"
+  },
+  "scored_at": "2026-04-10T13:57:17.023261",
+  "status": "scored",
+  "dismissal_reason": null,
+  "match_tier": "signal_match",
+  "salary": null,
+  "salary_min": null,
+  "salary_max": null,
+  "salary_currency": null,
+  "is_sparse": false,
+  "company_quality_signals": [],
+  "description": "&lt;p&gt;&amp;nbsp;&lt;/p&gt;\n&lt;p&gt;&lt;strong&gt;Realize your potential by joining the leading performance-driven advertising company!&amp;nbsp;&amp;nbsp;&lt;/strong&gt;&lt;/p&gt;\n&lt;p&gt;As an &lt;strong&gt;Experienced Backend Engineer in Demand&lt;/strong&gt; in our Tel-Aviv Office, you’ll play a vital role in developing one of the largest real-time big data operations in the world to support over 40TB of new data every day.&lt;/p&gt;\n&lt;p&gt;&lt;strong&gt;To thrive in this role, you&#39;ll need:&lt;/strong&gt;&lt;/p&gt;\n&lt;ul&gt;\n&lt;li&gt;1+ years of programming experience in Java or an equivalent Object-Oriented language (preferably Java + Spring).&lt;/li&gt;\n&lt;li&gt;BSc in Computer Science or equivalent.&lt;/li&gt;\n&lt;li&gt;Experienced in designing and developing large-scale distributed systems.&lt;/li&gt;\n&lt;li&gt;Deep understanding and strong Computer Science fundamentals: object-oriented design, data structures, applications programming, and multithreading programming.&lt;/li&gt;\n&lt;/ul&gt;\n&lt;p&gt;&lt;strong&gt;Bonus points if you have:&lt;/strong&gt;&lt;/p&gt;\n&lt;ul&gt;\n&lt;li&gt;Experience in developing high-scale distributed systems is a plus.&lt;/li&gt;\n&lt;/ul&gt;\n&lt;p&gt;&lt;strong&gt;How you’ll make an impact:&lt;/strong&gt;&lt;/p&gt;\n&lt;p&gt;As an &lt;strong&gt;Experienced Backend Engineer&lt;/strong&gt;, you’ll bring value by:&lt;/p&gt;\n&lt;ul&gt;\n&lt;li data-start=&quot;93&quot; data-end=&quot;220&quot;&gt;Design and develop systems that help Taboola advertisers manage budgets and optimize performance toward their business goals.&lt;/li&gt;\n&lt;li data-start=&quot;93&quot; data-end=&quot;220&quot;&gt;Build scalable, reliable solutions to process and analyze massive data sets and generate actionable insights.&lt;/li&gt;\n&lt;li data-start=&quot;93&quot; data-end=&quot;220&quot;&gt;Work on a large-scale, high-throughput recommendation system that impacts how billions of people discover the internet.&lt;/li&gt;\n&lt;li data-start=&quot;93&quot; data-end=&quot;220&quot;&gt;Leverage one of the world’s largest real-time big data operations, processing over 140TB of new data daily.&lt;/li&gt;\n&lt;li data-start=&quot;93&quot; data-end=&quot;220&quot;&gt;Take full ownership: design, build, launch, measure, and maintain products that help advertisers achieve their goals effectively and at scale.&lt;/li&gt;\n&lt;li data-start=&quot;93&quot; data-end=&quot;220&quot;&gt;Collaborate with talented engineers, data scientists, and product managers to create innovative, high-impact solutions.&lt;/li&gt;\n&lt;/ul&gt;\n&lt;p&gt;&lt;strong&gt;Why Taboola?&lt;/strong&gt;&lt;/p&gt;\n&lt;p&gt;If you ask Taboolar&#39;s what they love about working here, they’ll tell you that they’ve been empowered to realize their full potential while growing and learning from and with smart and talented people. They’ll also share more about:&lt;/p&gt;\n&lt;ul&gt;\n&lt;li&gt;Adam Singolda, Taboola Founder and CEO says; “You can copy anything from another business, but you can’t copy a company’s culture.&lt;/li&gt;\n&lt;li&gt;&lt;strong&gt;Well-being:&lt;/strong&gt; Enjoy comprehensive benefits (health, etc.), a fully stocked kitchen, and location-specific perks (gym partnerships, parking).&lt;/li&gt;\n&lt;li&gt;&lt;strong&gt;Flexibility: &lt;/strong&gt;We offer a hybrid work schedule with 3 days in-office with an option to come in more often if desired.&lt;/li&gt;\n&lt;li&gt;&lt;strong&gt;Work with some of the biggest names: &lt;/strong&gt;We work with some of the biggest names in the business. Our publisher partners include Yahoo, Conde Nast, Fox Sports, NBCU, ESPN, CBS, and E! Online. Our advertiser clients include Wells Fargo, Honda, Pinterest, Expedia and Honda.&lt;/li&gt;\n&lt;/ul&gt;\n&lt;p&gt;&lt;strong&gt;Ready to realize your potential?&lt;/strong&gt;&lt;/p&gt;\n&lt;p&gt;Taboola is an equal opportunity employer, and we value diversity in all forms. We are committed to creating an inclusive environment for all employees and believe such an environment is critical for success. Employment is decided based on qualifications, merit, and business need.&lt;/p&gt;\n&lt;p&gt;Learn more about #TaboolaLife on&lt;a href=&quot;https://www.linkedin.com/search/results/all/?fetchDeterministicClustersOnly=true&amp;amp;heroEntityKey=urn%3Ali%3Aorganization%3A128707&amp;amp;keywords=taboola&amp;amp;origin=RICH_QUERY_SUGGESTION&amp;amp;position=2&amp;amp;searchId=dcc8bfbb-b05c-458e-a7f1-726d30e7dd80&amp;amp;sid=9(y&amp;amp;spellCorrectionEnabled=false&quot;&gt; LinkedIn&lt;/a&gt;,&lt;a href=&quot;https://www.facebook.com/taboola/&quot;&gt; Facebook&lt;/a&gt;,&lt;a href=&quot;https://www.instagram.com/taboola.israel/?hl=en&quot;&gt; Instagram&lt;/a&gt;,&lt;a href=&quot;https://docs.google.com/document/d/1BctKkw2Vj_EOjvy24kjRKq_ZxZzmZxweIqNLQgsLtcs/edit?tab=t.0&quot;&gt; X&lt;/a&gt;,&lt;a href=&quot;https://www.youtube.com/channel/UC6W0hdStO0jRVYhg4ABzjRw&quot;&gt; YouTube&lt;/a&gt;, &amp;amp; the&lt;a href=&quot;https://blog.taboola.com/category/taboola-life/?_gl=1*1c2v1ec*_ga*MTI4NTM3OTcyNy4xNjkxNTA0MjA0*_ga_ERHENNM7DM*MTcxMDM1MDIwMi4yMjMuMS4xNzEwMzUwMjI5LjMzLjAuMA..&quot;&gt; Taboola Life Blog&lt;/a&gt;.&lt;/p&gt;\n&lt;p&gt;&lt;strong&gt;About Taboola&lt;/strong&gt;&lt;/p&gt;\n&lt;p&gt;Taboola empowers businesses to grow through performance advertising technology that goes beyond search and social and delivers measurable outcomes at scale.&lt;/p&gt;\n&lt;p&gt;Taboola works with thousands of businesses who advertise directly on Realize, Taboola’s powerful ad platform, reaching approximately 600M daily active users across some of the best publishers in the world. Publishers like NBC News, Yahoo, and OEMs such as Samsung, Xiaomi and others use Taboola’s technology to grow audience and revenue, enabling Realize to offer unique data, specialized algorithms, and unmatched scale.&lt;/p&gt;\n&lt;p&gt;&amp;nbsp;&lt;/p&gt;\n&lt;p&gt;#LI-Hybrid&lt;/p&gt;\n&lt;p&gt;&lt;strong&gt;#LI-LY1&lt;/strong&gt;&lt;/p&gt;\n&lt;p&gt;&amp;nbsp;&lt;/p&gt;"
+}

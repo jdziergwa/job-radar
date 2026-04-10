@@ -1,0 +1,47 @@
+{
+  "id": 290,
+  "ats_platform": "lever",
+  "company_slug": "swordhealth",
+  "company_name": "Sword Health",
+  "title": "Senior Backend Engineer, Consumer Growth",
+  "location": "Porto",
+  "url": "https://jobs.lever.co/swordhealth/424984c0-a455-4e92-84bc-378ebc379eb6",
+  "posted_at": null,
+  "first_seen_at": "2026-04-10T13:15:58.489074",
+  "last_seen_at": "2026-04-10T13:15:58.489074",
+  "fit_score": 61,
+  "score_reasoning": "Your Senior Backend Engineer profile aligns well with the title and seniority level, and your distributed systems experience in Python/Go matches typical consumer growth backend work. However, the job posting is critically sparse—it provides only company context and mission without any technical details, frameworks, or concrete responsibilities. More importantly, the location is listed as Porto, Portugal, which creates a material geographic challenge: you are based in Berlin and prefer remote work with ±2h timezone overlap. Porto is roughly 1h ahead of Berlin (acceptable timezone-wise), but without explicit confirmation that this role is fully remote, it appears to be Porto-based or requires hybrid work there. This geographic uncertainty combined with the sparse technical description significantly lowers fit. The healthcare/AI domain is not among your stated target industries, though it aligns with your scale-up/enterprise growth preferences.",
+  "score_breakdown": {
+    "dimensions": {
+      "tech_stack_match": 65,
+      "seniority_match": 75,
+      "remote_location_fit": 35,
+      "growth_potential": 70
+    },
+    "key_matches": [
+      "Senior Backend Engineer",
+      "Consumer Growth",
+      "Scale-up environment",
+      "Distributed systems mindset"
+    ],
+    "red_flags": [
+      "Sparse job description—no technical stack, frameworks, or daily responsibilities specified",
+      "Location listed as Porto; remote status not explicitly stated",
+      "Healthcare domain is not in your stated target industries",
+      "No mention of Python, Go, AWS, or any core tech matching your experience"
+    ],
+    "fit_category": "core_fit",
+    "apply_priority": "medium"
+  },
+  "scored_at": "2026-04-10T13:59:47.758582",
+  "status": "scored",
+  "dismissal_reason": null,
+  "match_tier": "high_confidence",
+  "salary": null,
+  "salary_min": null,
+  "salary_max": null,
+  "salary_currency": null,
+  "is_sparse": true,
+  "company_quality_signals": [],
+  "description": "<div><span style=\"font-size: 16px;\">Sword Health is shifting healthcare from human-first to AI-first through its AI Care platform, making world-class healthcare available anytime, anywhere, while significantly reducing costs for payers, self-insured employers, national health systems, and other healthcare organizations. Sword began by reinventing pain care with AI at its core, and has since expanded into women’s health, movement health, and more recently mental health. Since 2020, more than 700,000 members across three continents have completed 10 million AI sessions, helping Sword's 1,000+ enterprise clients avoid over $1 billion in unnecessary healthcare costs. Backed by 42 clinical studies and over 44 patents, Sword Health has raised more than $500 million from leading investors, including Khosla Ventures, General Catalyst, Transformation Capital, and Founders Fund. Learn more at </span><a href=\"http://www.swordhealth.com\"><span style=\"font-size: 16px;\">www.swordhealth.com</span></a><span style=\"font-size: 16px;\">.</span></div>"
+}

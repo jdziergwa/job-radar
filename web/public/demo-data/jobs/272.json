@@ -1,0 +1,50 @@
+{
+  "id": 272,
+  "ats_platform": "lever",
+  "company_slug": "anchorage",
+  "company_name": "Anchorage Digital",
+  "title": "Member of Technical Staff, Transparency, Billing & Revenue (Backend Engineer)",
+  "location": "Portugal",
+  "url": "https://jobs.lever.co/anchorage/f6cd35e5-e4f7-420f-bdae-5ca91531c0e0",
+  "posted_at": null,
+  "first_seen_at": "2026-04-10T13:15:58.489074",
+  "last_seen_at": "2026-04-10T13:15:58.489074",
+  "fit_score": 52,
+  "score_reasoning": "Your backend experience with distributed systems, payment processing (€2M/month billing engine at Stackflo), and Python/Go aligns reasonably with a billing and revenue platform role at an institutional crypto company. However, the job description is incomplete—it lacks technical stack details, framework specifics, and concrete responsibilities beyond the mission statement. More critically, the location is listed as Portugal with no explicit remote flexibility stated, creating a material timezone mismatch from your Berlin base (±1-2h is acceptable, but the posting does not clarify whether this is on-site, hybrid, or remote). The role's title 'Member of Technical Staff' suggests senior-level scope, but without fuller context on autonomy and architectural ownership, seniority alignment is uncertain. Anchorage Digital carries strong institutional backing and crypto/fintech credentials that align with your industry preferences, which moderately supports growth_potential, but the sparse description and location ambiguity prevent a stronger fit assessment.",
+  "score_breakdown": {
+    "dimensions": {
+      "tech_stack_match": 55,
+      "seniority_match": 65,
+      "remote_location_fit": 35,
+      "growth_potential": 60
+    },
+    "key_matches": [
+      "Billing & payment systems",
+      "Backend engineering",
+      "Distributed systems",
+      "Python/Go capable",
+      "Crypto/Fintech",
+      "Institutional scale"
+    ],
+    "red_flags": [
+      "Sparse job description—lacks technical stack, frameworks, and daily responsibilities",
+      "Location ambiguity: Portugal listed but no explicit remote/hybrid/on-site clarity",
+      "No mention of required technologies (Python, Go, PostgreSQL, etc.)",
+      "Title 'Member of Technical Staff' is non-standard; seniority level unclear",
+      "Timezone mismatch uncertain without remote confirmation"
+    ],
+    "fit_category": "",
+    "apply_priority": "low"
+  },
+  "scored_at": "2026-04-10T13:59:00.371711",
+  "status": "scored",
+  "dismissal_reason": null,
+  "match_tier": "high_confidence",
+  "salary": null,
+  "salary_min": null,
+  "salary_max": null,
+  "salary_currency": null,
+  "is_sparse": true,
+  "company_quality_signals": [],
+  "description": "<div><span style=\"font-size: 18px\"><b>At Anchorage Digital, we are building the world’s most advanced digital asset platform for institutions to participate in crypto.</b></span></div><div><br></div><div>Anchorage Digital is a crypto platform that enables institutions to participate in digital assets through custody, staking, trading, governance, settlement, and the industry's leading security infrastructure. Home to Anchorage Digital Bank N.A., the first federally chartered crypto bank in the U.S., Anchorage Digital also serves institutions through Anchorage Digital Singapore, Porto by Anchorage Digital<span style=\"font-size: 15px\">, and other offerings.</span></div><div><br></div><div>The company is funded by leading institutions including Andreessen Horowitz, GIC, Goldman Sachs, KKR, and Visa, with its Series D valuation over $3 billion. Founded in 2017 in San Francisco, California, Anchorage Digital has offices in New York, New York; Porto, Portugal; Singapore; and Sioux Falls, South Dakota. Learn more at anchorage.com, on X @Anchorage, and on LinkedIn.&nbsp;</div><div><br></div><div>You will be part of a full stack engineering team responsible for implementing products within billing and revenue management in order to support the growth of the organization as the business scope, complexity, and regulatory oversight increases. You will be part of a tem with the vision, strategy, and execution of Finance products and services.</div><div><br></div><div><span style=\"font-size: 15px;\">We have created the Factors of Growth &amp; Impact to help Villagers better measure impact and articulate coaching, feedback, and the rich and rewarding learning that happens while exploring, developing, and mastering the capabilities and contributions within and outside of the Member of Technical Staff, Transparency (Billing &amp; Revenue) role:</span></div>"
+}

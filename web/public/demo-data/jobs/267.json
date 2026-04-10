@@ -1,0 +1,48 @@
+{
+  "id": 267,
+  "ats_platform": "greenhouse",
+  "company_slug": "via",
+  "company_name": "Via",
+  "title": "Backend Engineer ",
+  "location": "Tel Aviv",
+  "url": "https://job-boards.greenhouse.io/via/jobs/7986188002",
+  "posted_at": "2025-09-17T11:32:55-04:00",
+  "first_seen_at": "2026-04-10T13:15:58.489074",
+  "last_seen_at": "2026-04-10T13:15:58.489074",
+  "fit_score": 39,
+  "score_reasoning": "Your Python and Go experience align well with Via's backend stack, and their microservices-heavy architecture directly matches your distributed systems expertise. However, the role is based in Tel Aviv with hybrid work anchored there—a significant geographic mismatch for your Berlin base and remote-first preference. While the company (transportation/scale-up) fits your target industries, the location constraint and slightly below-target seniority (3+ years vs. your senior-level trajectory) lower the overall fit. The work is meaningful and scalable, but the timezone and commute barriers make this a poor practical match despite the technical alignment.",
+  "score_breakdown": {
+    "dimensions": {
+      "tech_stack_match": 75,
+      "seniority_match": 55,
+      "remote_location_fit": 15,
+      "growth_potential": 65
+    },
+    "key_matches": [
+      "Microservices Architecture",
+      "Python/Go Stack",
+      "Distributed Systems",
+      "End-to-End Ownership",
+      "High-Scale Systems"
+    ],
+    "red_flags": [
+      "On-site hybrid anchored to Tel Aviv, not remote-compatible with Berlin base",
+      ">5h timezone mismatch (Israel UTC+2/+3 vs. Germany UTC+1/+2)",
+      "Seniority titled 'Backend Engineer' (mid-level) vs. your senior-level current role",
+      "No explicit mention of AWS or modern cloud infrastructure in job description"
+    ],
+    "fit_category": "",
+    "apply_priority": "skip"
+  },
+  "scored_at": "2026-04-10T13:58:58.418321",
+  "status": "scored",
+  "dismissal_reason": null,
+  "match_tier": "signal_match",
+  "salary": null,
+  "salary_min": null,
+  "salary_max": null,
+  "salary_currency": null,
+  "is_sparse": false,
+  "company_quality_signals": [],
+  "description": "&lt;p&gt;Join Via to be a part of something meaningful. We are transforming transportation worldwide, helping cities become smarter, greener, and more connected. From redefining daily commutes to tackling humanity’s environmental challenges, our vision is bold — and we need exceptional minds like yours to make it happen.&lt;/p&gt;\n&lt;p&gt;As a&amp;nbsp;&lt;strong&gt;Backend Engineer&lt;/strong&gt; at Via, you’ll be a vital part of our TLV-based R&amp;amp;D team. Together, we design, build, and scale cutting-edge backend systems that power our global operations. You’ll thrive in a culture that blends innovation, collaboration, and agility, where your work will directly impact the lives of countless individuals and transform how communities move.&lt;/p&gt;\n&lt;p&gt;&lt;strong&gt;What You’ll Do:&lt;/strong&gt;&lt;/p&gt;\n&lt;ul&gt;\n&lt;li&gt;Design, implement, and maintain state-of-the-art microservices from conceptualization to production.&lt;/li&gt;\n&lt;li&gt;Take full end-to-end ownership of new product features and systems.&lt;/li&gt;\n&lt;li&gt;Play a key role in shaping system architecture, making top-level technical decisions, and driving product developments that scale across the globe.&lt;/li&gt;\n&lt;li&gt;Write high-quality, scalable, and efficient code to ensure world-class performance and uptime.&lt;/li&gt;\n&lt;li&gt;Collaborate with a cross-functional, agile team of talented engineers, designers, and product managers, all driven to build products that grow value for users.&lt;/li&gt;\n&lt;li&gt;Continuously learn, champion, and implement the latest technologies and practices to maintain a cutting-edge stack.&lt;/li&gt;\n&lt;li&gt;Advocate for clean code and industry best practices to maintain and elevate standards across the codebase.&lt;/li&gt;\n&lt;li&gt;Explore and research new technologies, proactively suggesting the tools or processes that will help drive innovation and excellence in our platform.&lt;/li&gt;\n&lt;li&gt;Mentor and support team members, sharing expertise and growing technical knowledge within your team.&lt;/li&gt;\n&lt;/ul&gt;\n&lt;p&gt;&lt;strong&gt;Who You Are:&lt;/strong&gt;&lt;/p&gt;\n&lt;ul&gt;\n&lt;li&gt;Bachelor&#39;s degree in Computer Science or equivalent practical experience.&lt;/li&gt;\n&lt;li&gt;3+ years of professional experience in backend development, with a strong track record.&lt;/li&gt;\n&lt;li&gt;Proficient in modern backend frameworks and programming languages (e.g., Java, Python, Go, Node.js — we don’t expect you to know all of them but value adaptability and expertise).&lt;/li&gt;\n&lt;li&gt;Deep understanding of core programming principles, including data structures, multi-threading, object-oriented programming (OOP), and design patterns.&lt;/li&gt;\n&lt;li&gt;A quick learner, capable of mastering new concepts, technologies, and methodologies with ease.&lt;/li&gt;\n&lt;li&gt;A collaborative team player with excellent communication skills who thrives in a fast-paced environment.&lt;/li&gt;\n&lt;/ul&gt;\n&lt;p&gt;&lt;strong&gt;Compensation and Benefits:&lt;/strong&gt;&lt;/p&gt;\n&lt;ul&gt;\n&lt;li&gt;Our product impacts millions of users around the world&amp;nbsp; providing alternative transport solutions that are more: efficient and accessible, changing cities to make them greener.&lt;/li&gt;\n&lt;li&gt;Competitive compensation package which includes base salary and equity.&lt;/li&gt;\n&lt;li&gt;Health insurance with a discount for family members.&lt;/li&gt;\n&lt;li&gt;Hybrid work and a lovely office situated in the heart of TLV, in Midtown, close to the light rail and train station.&lt;/li&gt;\n&lt;li&gt;Career development and growth opportunities.&lt;/li&gt;\n&lt;li&gt;Other perks: Freefit and other sports lessons, 10bis/Cibus - you choose!, happy hours, team events, communities and many more benefits.&lt;/li&gt;\n&lt;/ul&gt;\n&lt;p&gt;&amp;nbsp;&lt;/p&gt;\n&lt;p&gt;We’re Via, and we build technology that changes the way the world moves. We’re driven by a simple mission: to create modern and efficient public transportation systems that provide far greater access to jobs, healthcare, and education. With our best in class suite of products, we make transit thrive.&amp;nbsp;&lt;/p&gt;\n&lt;p&gt;Our teams of world-class engineers, data-scientists, product managers, operations specialists, marketers, transit experts and more bring cutting-edge AI-powered software and innovative technology-enabled operations to our partners across the globe. Founded in 2012, Via builds solutions to digitize, automate, and enable data-driven decision making for entire transportation networks; fixed-route buses, microtransit, paratransit, school buses, autonomous vehicles, and more.&amp;nbsp;&lt;/p&gt;\n&lt;p&gt;If you’re excited to be at the forefront of modernizing the future of transportation, are up for solving tough problems, and willing to become/already are a transit nerd, we are the place for you. Even if your past experience doesn’t align perfectly with every qualification in the job description for this role, we encourage you to apply. You may be just the right candidate for this or other opportunities.&amp;nbsp;&lt;/p&gt;\n&lt;p&gt;Ready to join the ride?&lt;/p&gt;\n&lt;p&gt;&lt;em&gt;Via is an equal opportunity employer.&lt;/em&gt;&lt;/p&gt;"
+}

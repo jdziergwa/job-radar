@@ -1,0 +1,49 @@
+{
+  "id": 264,
+  "ats_platform": "greenhouse",
+  "company_slug": "honor",
+  "company_name": "Honor",
+  "title": "Senior Backend Engineer",
+  "location": "Remote Position",
+  "url": "https://boards.greenhouse.io/honor/jobs/8382000002?gh_jid=8382000002",
+  "posted_at": "2026-04-09T16:58:32-04:00",
+  "first_seen_at": "2026-04-10T13:15:58.489074",
+  "last_seen_at": "2026-04-10T13:15:58.489074",
+  "fit_score": 82,
+  "score_reasoning": "Your 7 years of backend engineering in Python and Go align very well with Honor's core requirements. The Senior Backend Engineer title matches your trajectory perfectly, and your proven experience designing relational data models, building distributed systems at scale (4M+ events/day), and working with AWS (ECS, SQS, S3) directly matches their tech stack. The role emphasizes service-oriented architecture and API design — both areas where you have strong production experience. The fully remote position with US-based company creates a significant timezone mismatch (Berlin is UTC+1/+2, US ranges 5–8 hours behind), but the posting explicitly mentions remote-first and uses national averages, suggesting genuine remote flexibility. Growth potential is solid: the roles span workforce optimization and growth systems (meaningful domain work), though the healthcare/aging-care context is not your stated industry preference. The lack of Kubernetes/advanced IaC requirements means no core tech gaps, though the absence of mention about observability or distributed system complexity is a minor gap.",
+  "score_breakdown": {
+    "dimensions": {
+      "tech_stack_match": 85,
+      "seniority_match": 90,
+      "remote_location_fit": 90,
+      "growth_potential": 75
+    },
+    "key_matches": [
+      "Python/Go Backend",
+      "Relational Databases",
+      "AWS Infrastructure",
+      "Distributed Systems",
+      "API Design",
+      "Service-Oriented Architecture",
+      "Production Systems at Scale"
+    ],
+    "red_flags": [
+      "Timezone mismatch: Berlin (UTC+1/2) to US-based (typically UTC-5 to UTC-8) is 5–8 hours, exceeding your ±2h preference and approaching your skip threshold",
+      "Healthcare/aging care is not in your target industry list; growth potential is in domain unfamiliar to your background",
+      "No mention of observability, monitoring, or incident response emphasis; observability has been a strength you highlight"
+    ],
+    "fit_category": "core_fit",
+    "apply_priority": "high"
+  },
+  "scored_at": "2026-04-10T13:59:00.537395",
+  "status": "scored",
+  "dismissal_reason": null,
+  "match_tier": "signal_match",
+  "salary": "$160,000 – $180,000 USD",
+  "salary_min": 100,
+  "salary_max": 100,
+  "salary_currency": "USD",
+  "is_sparse": false,
+  "company_quality_signals": [],
+  "description": "&lt;div class=&quot;content-intro&quot;&gt;&lt;p&gt;Honor Technology’s mission is to change the way society cares for older adults. As a leader in aging care innovation, Honor provides the technology, tools, and services that empower older adults to live life on their own terms. Honor’s growing portfolio includes its consumer care brand, Home Instead, Inc., the world’s leading provider of in-home care for older adults. With a global franchise network and more than 100,000 Care Pros, Home Instead delivers over 50 million hours of personalized care annually.&lt;/p&gt;\n&lt;p&gt;Together, Honor and Home Instead are setting a new standard for aging in place, backed by powerful technology, compassionate care, and a commitment to aging on your own terms.&lt;/p&gt;\n&lt;p&gt;Join us to create a new and better aging experience for our clients, their families, and our Care Professionals.&amp;nbsp;&lt;/p&gt;&lt;/div&gt;&lt;p&gt;&lt;strong&gt;As a Senior Backend Engineer at Honor:&amp;nbsp;&lt;/strong&gt;&lt;/p&gt;\n&lt;ul&gt;\n&lt;li&gt;You care about building systems that have real-world impact.&lt;/li&gt;\n&lt;li&gt;You’re creative and curious, and enjoy thinking outside the box.&lt;/li&gt;\n&lt;li&gt;You thrive in diverse, cross-functional environments, collaborating with design, product, data, and care operations.&lt;/li&gt;\n&lt;li&gt;You have a builder’s mindset, evolving systems from design through operation.&lt;/li&gt;\n&lt;li&gt;You enjoy sharing knowledge, mentoring others, and contributing to a healthy, inclusive engineering culture.&lt;/li&gt;\n&lt;li&gt;You’re an excellent, proactive communicator — able to translate complex ideas (both in writing and verbally) into clear, actionable solutions for technical and non-technical partners.&lt;/li&gt;\n&lt;/ul&gt;\n&lt;p&gt;&lt;strong&gt;We&#39;re looking for you to bring:&lt;/strong&gt;&lt;/p&gt;\n&lt;ul&gt;\n&lt;li&gt;Strong backend engineering experience, with a track record of building and operating production systems.&lt;/li&gt;\n&lt;li&gt;Experience designing relational data models and working with databases at scale.&lt;/li&gt;\n&lt;li&gt;Familiarity with cloud platforms (AWS preferred) and service-oriented architectures.&lt;/li&gt;\n&lt;li&gt;Experience with API design, distributed systems, and backend performance considerations.&lt;/li&gt;\n&lt;li&gt;Proficiency in Python or transferable backend experience with a willingness to learn Python.&lt;/li&gt;\n&lt;/ul&gt;\n&lt;p&gt;&lt;strong&gt;About the role:&lt;/strong&gt;&lt;/p&gt;\n&lt;p&gt;You’ll work on core services that power how families find care and how Care Professionals do their work—systems that directly support Honor’s mission every day.&lt;/p&gt;\n&lt;p&gt;Depending on your interests and experience, you may join one of the following teams:&lt;/p&gt;\n&lt;ul&gt;\n&lt;li&gt;&lt;strong&gt;Workforce Team&lt;/strong&gt; — building the systems that support Care Professionals, including hiring, scheduling, and workforce optimization.&lt;/li&gt;\n&lt;li&gt;&lt;strong&gt;DemandGen Team&lt;/strong&gt;&amp;nbsp; — powering Honor’s public digital experiences and growth channels that help thousands of families find the care they need.&lt;/li&gt;\n&lt;li&gt;&lt;strong&gt;Growth Team&lt;/strong&gt; — developing a multi-channel sales and communication stack (phone, sms, email) that connects families, Care Professionals, and care operations.&lt;/li&gt;\n&lt;/ul&gt;\n&lt;p&gt;&lt;strong&gt;Why you&lt;/strong&gt;&lt;strong&gt;’ll &lt;/strong&gt;&lt;strong&gt;love &lt;/strong&gt;&lt;strong&gt;working with us&lt;/strong&gt;&lt;strong&gt;&amp;nbsp;&lt;/strong&gt;&lt;/p&gt;\n&lt;ul&gt;\n&lt;li&gt;Your work will shape how people discover and receive the care they need.&lt;/li&gt;\n&lt;li&gt;You’ll solve real, complex problems at the intersection of engineering, operations, and human impact.&lt;/li&gt;\n&lt;li&gt;You’ll collaborate with thoughtful, mission-driven teammates across engineering, product, design, and operations.&lt;/li&gt;\n&lt;li&gt;You’ll have ownership, autonomy, and the opportunity to grow as both an engineer and a product-minded technologist.&lt;/li&gt;\n&lt;/ul&gt;\n&lt;p&gt;&lt;em&gt;#LI-DNI&lt;/em&gt;&lt;/p&gt;&lt;div class=&quot;content-pay-transparency&quot;&gt;&lt;div class=&quot;pay-input&quot;&gt;&lt;div class=&quot;description&quot;&gt;&lt;p&gt;&lt;em&gt;&lt;span style=&quot;font-weight: 400;&quot;&gt;Our range reflects the hiring range for this position.&amp;nbsp; We use national average to determine pay as we are a remote first company.&amp;nbsp; Individual pay is based on a number of factors including qualifications, skills, experience, education, and training.&lt;br&gt;&lt;/span&gt;&lt;/em&gt;&lt;/p&gt;\n&lt;p&gt;&lt;em&gt;&lt;span style=&quot;font-weight: 400;&quot;&gt;&lt;br&gt;Base pay is just a part of our total rewards program.&amp;nbsp; Honor offers generous equity packages that increase with position level and responsibilities, and a 401K with up to a 4% employer match.&lt;br&gt;&lt;/span&gt;&lt;/em&gt;&lt;em&gt;&lt;span style=&quot;font-weight: 400;&quot;&gt;We provide medical, dental and vision coverage including zero cost plans for employees.&amp;nbsp; Short Term Disability, Long Term Disability and Life Insurance are fully employer paid with a voluntary additional Life Insurance option.&amp;nbsp; We offer a generous time off program, mental health benefits, wellness program, and discount program.&lt;/span&gt;&lt;/em&gt;&lt;/p&gt;\n&lt;p&gt;&lt;em&gt;&lt;span style=&quot;font-weight: 400;&quot;&gt;&amp;nbsp;&lt;/span&gt;&lt;/em&gt;&lt;/p&gt;&lt;/div&gt;&lt;div class=&quot;title&quot;&gt;Hiring Salary Range&lt;/div&gt;&lt;div class=&quot;pay-range&quot;&gt;&lt;span&gt;$160,000&lt;/span&gt;&lt;span class=&quot;divider&quot;&gt;&amp;mdash;&lt;/span&gt;&lt;span&gt;$180,000 USD&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class=&quot;content-conclusion&quot;&gt;&lt;p&gt;At Honor, we put people first. Our leadership culture is guided by&amp;nbsp;&lt;a href=&quot;https://www.honorcare.com/news/honor-leadership-principles/&quot;&gt;Leadership Principles&lt;/a&gt; that prioritize integrity, compassion, and excellence. We offer a unique opportunity to lead with purpose and make a meaningful impact no matter your role.&lt;/p&gt;\n&lt;p&gt;Honor is an equal opportunity employer. All qualified applicants will receive consideration for employment without regard to race, color, religion, sex (including pregnancy), national origin, age, disability, genetic information, political affiliation or belief.&amp;nbsp;&lt;em&gt;&lt;br&gt;&lt;/em&gt;&lt;/p&gt;&lt;/div&gt;"
+}

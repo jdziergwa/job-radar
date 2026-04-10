@@ -1,0 +1,48 @@
+{
+  "id": 271,
+  "ats_platform": "lever",
+  "company_slug": "anchorage",
+  "company_name": "Anchorage Digital",
+  "title": "Member of Technical Staff, Core Experience (Backend Engineer)",
+  "location": "Portugal",
+  "url": "https://jobs.lever.co/anchorage/428b5826-6000-47ce-991e-cc4732ea4198",
+  "posted_at": null,
+  "first_seen_at": "2026-04-10T13:15:58.489074",
+  "last_seen_at": "2026-04-10T13:15:58.489074",
+  "fit_score": 66,
+  "score_reasoning": "Your backend experience with distributed systems, Python/Go, and observability aligns well with Core Experience's foundational platform work, and the role emphasizes technical leadership and architecture—matching your senior trajectory. However, the posting is sparse on technical details, making it hard to assess specific tech stack overlap beyond the crypto domain. More critically, the role is listed as Porto-based with no explicit remote option stated; while Portugal is in your acceptable region and timezone, the lack of clarity on work arrangement creates meaningful uncertainty. The crypto/Web3 industry is on your target list, which supports growth_potential, but the sparse description and location ambiguity prevent a higher score.",
+  "score_breakdown": {
+    "dimensions": {
+      "tech_stack_match": 65,
+      "seniority_match": 72,
+      "remote_location_fit": 55,
+      "growth_potential": 75
+    },
+    "key_matches": [
+      "Distributed systems",
+      "Backend architecture",
+      "Technical leadership",
+      "Python/Go capable",
+      "Crypto/Web3"
+    ],
+    "red_flags": [
+      "Sparse job description—missing specific tech stack, frameworks, and daily responsibilities",
+      "Location ambiguity—Porto listed as office location with no explicit remote statement",
+      "No mention of primary languages, frameworks, or infrastructure technologies",
+      "Crypto industry may carry regulatory/compliance expectations not evident in CV"
+    ],
+    "fit_category": "core_fit",
+    "apply_priority": "medium"
+  },
+  "scored_at": "2026-04-10T13:59:00.365130",
+  "status": "scored",
+  "dismissal_reason": null,
+  "match_tier": "high_confidence",
+  "salary": null,
+  "salary_min": null,
+  "salary_max": null,
+  "salary_currency": null,
+  "is_sparse": true,
+  "company_quality_signals": [],
+  "description": "<div><span style=\"font-size: 18px\"><b>At Anchorage Digital, we are building the world’s most advanced digital asset platform for institutions to participate in crypto.</b></span></div><div><br></div><div>Anchorage Digital is a crypto platform that enables institutions to participate in digital assets through custody, staking, trading, governance, settlement, and the industry's leading security infrastructure. Home to Anchorage Digital Bank N.A., the first federally chartered crypto bank in the U.S., Anchorage Digital also serves institutions through Anchorage Digital Singapore, Porto by Anchorage Digital<span style=\"font-size: 15px\">, and other offerings.</span></div><div><br></div><div>The company is funded by leading institutions including Andreessen Horowitz, GIC, Goldman Sachs, KKR, and Visa, with its Series D valuation over $3 billion. Founded in 2017 in San Francisco, California, Anchorage Digital has offices in New York, New York; Porto, Portugal; Singapore; and Sioux Falls, South Dakota. Learn more at anchorage.com, on X @Anchorage, and on LinkedIn.&nbsp;</div><div><br></div><div>Core Experience builds foundations that other teams can use, but we also use those foundations ourselves by having a vertical integration into the system. Being part of our team means you can improve any part of our system, and you have impact across every team.</div><div><br></div><div>You will work with the Engineering Manager, Product Manager and the rest of the engineering team to plan, build, release and maintain high quality software. You will be the primary driver of the system architecture, technical direction and  team member’s technical skill development. At Anchorage Digital, we believe the product is never \"done,\" we can always do better! When you join Anchorage, we expect you to drive our products forward by developing novel solutions for our institutional clients. As a team, we are constantly striving to innovate in order to build the future of cryptocurrency and the digital asset ecosystem.</div><div><br></div><div>We have created the Factors of Growth &amp; Impact to help Villagers better measure impact and articulate coaching, feedback, and the rich and rewarding learning that happens while exploring, developing, and mastering the capabilities and contributions within and outside of the Tech Lead role:</div>"
+}

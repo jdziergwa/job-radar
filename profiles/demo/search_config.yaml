@@ -1,0 +1,191 @@
+# Generated search_config.yaml
+keywords:
+  title_patterns:
+    high_confidence:
+    - \bsenior\s+backend\s+engineer\b
+    - \bbackend\s+engineer\b
+    - \bdistributed\s+systems\s+engineer\b
+    - \bplatform\s+engineer\b
+    - \bstaff\s+backend\s+engineer\b
+    - \bsoftware\s+engineer.*backend\b
+    broad:
+    - \bsystem\s+engineer\b
+    - \bcloud\s+engineer\b
+    - \bsenior\s+backend\s+engineer\b
+    - \bbackend\s+engineer\b
+    - \bdistributed\s+systems\s+engineer\b
+    - \bstaff\s+backend\s+engineer\b
+    - \bsoftware\s+engineer.*backend\b
+    - \bsite\s+reliability\s+engineer\b
+    - \binfrastructure\s+engineer\b
+    - \blead\s+backend\s+engineer\b
+  description_signals:
+    min_matches: 1
+    patterns:
+    - \b(python|go|golang)\b
+    - \b(fastapi|django|flask)\b
+    - \b(postgresql|postgres|mysql|redis)\b
+    - \b(docker|kubernetes|k8s)\b
+    - \b(aws|cloud|microservices)\b
+    - \b(grpc|rest|api)\b
+    - \b(ci/cd|github\s+actions|pipeline)\b
+    - \b(observability|monitoring|prometheus|grafana)\b
+    - \b(testing|pytest|integration)\b
+    - \b(distributed|scalability|performance)\b
+    - \bdistributed\s+systems\b
+    - \bmicroservices\s+architecture\b
+    - \bhigh\-scale\s+systems\b
+    - \bpython/go\s+stack\b
+    - \baws\s+infrastructure\b
+    - \b(fastapi|django|flask|grpc)\b
+    - \b(docker|kubernetes|k8s|containers)\b
+    - \b(rest|api|grpc)\b
+    - \b(ci/cd|github\s+actions|pipeline|deployment)\b
+    - \b(observability|monitoring|prometheus|grafana|tracing)\b
+    - \b(testing|pytest|unit\s+test|integration)\b
+    - \b(distributed|scalability|performance|high\s+scale)\b
+    - \b(event\s+driven|message\s+queue|kafka|pubsub)\b
+    - \b(terraform|infrastructure\s+as\s+code|iac)\b
+    - \b(zero\s+downtime|migration|system\s+design)\b
+  exclusions:
+  - \b(intern|internship)\b
+  - \bjunior\b
+  - \bfrontend\b
+  - \bmobile\s+(developer|engineer)\b
+  location_exclusions:
+  - \b(us|usa|united states|north america|can|canada|india|latam|south america|australia|asia|philippines|manila|bangalore|san\s+francis|boston|\bma\b|california|\bca\b|texas|\btx\b|florida|\bfl\b)\b
+  location_patterns:
+  - \b(europe|eu)\b
+  - \bemea\b
+  - \b(uk|united kingdom|england|scotland|wales)\b
+  - \b(germany|deutschland|berlin|munich|hamburg)\b
+  - \b(poland|polska|warsaw|krakow|wroclaw|poznan)\b
+  - \b(spain|espana|madrid|barcelona|valencia)\b
+  - \b(portugal|lisbon|porto)\b
+  - \b(netherlands|holland|amsterdam|rotterdam|utrecht)\b
+  - \b(france|paris|lyon|marseille)\b
+  - \b(switzerland|swiss|zurich|geneva|basel)\b
+  - \b(ireland|dublin|cork)\b
+  - \b(italy|italia|rome|milan)\b
+  - \b(nordics|sweden|norway|denmark|finland|stockholm|oslo|helsinki|copenhagen)\b
+  - \b(benelux|belgium|luxembourg|netherlands)\b
+  - \bhybrid\b
+  remote_patterns:
+  - \b(remote|worldwide|global|distributed|anywhere|flexible)\b
+  fallback_tier: signal_match
+scoring_context:
+  role_targets:
+    core:
+    - Senior Backend Engineer
+    - Backend Engineer
+    - Distributed Systems Engineer
+    - Platform Engineer
+    - Staff Backend Engineer
+    adjacent: []
+    seniority_preferences:
+    - mid
+    - senior
+  work_setup:
+    base_location: Berlin, Germany
+    base_city: Berlin
+    base_country: Germany
+    work_authorization: eu_citizen
+    preferred_setup: remote
+    acceptable_setups:
+    - hybrid
+    location_flexibility:
+      remote_first: true
+      hybrid:
+        anchored_to_base_location: true
+        base_city: Berlin
+        base_country: Germany
+        same_country_other_city: acceptable_with_penalty
+        cross_border: strong_penalty
+      onsite:
+        anchored_to_base_location: false
+        base_city: ''
+        base_country: ''
+        same_country_other_city: ''
+        cross_border: ''
+    target_regions:
+    - Europe
+    - UK
+    - Switzerland
+    excluded_regions: []
+    timezone:
+      preference: overlap_strict
+      guidance:
+      - "- Preferred timezone overlap: Same/Overlap (\xB12h)"
+      - '- Meaningful penalty: >3h timezone mismatch'
+      - '- Reject/skip threshold: >5h timezone mismatch unless the role is explicitly
+        global'
+  career_preferences:
+    direction: Mid-level backend engineer with 7 years building distributed services
+      in Python and Go. Seeking senior backend roles to deepen technical leadership
+      in high-scale systems. Using zero-downtime migration framework at Velox as proof
+      of systems thinking and multi-team impact. Targeting senior backend positions
+      at scale-ups or mid-stage companies with complex distributed architectures.
+    score_higher_signals:
+    - Microservices Architecture
+    - High-Scale Systems
+    - Python/Go Stack
+    - AWS Infrastructure
+    - Observable Systems
+    score_lower_signals:
+    - Monolith Architecture
+    - On-Premise Only
+    - Legacy Maintenance
+  industry_preferences:
+    target_industries:
+    - Scale-up
+    - Start-up
+    - Agency
+    - Fintech
+    - Travel
+    - IoT
+    - SaaS
+    - E-commerce
+    - Consulting
+    - Crypto/Web3
+    - Healthcare
+    - Gaming
+    - Education
+    - Startup
+    - Media
+  company_preferences:
+    preferred_signals: &id001
+    - notable brand
+    - strong product company
+    - strong cv value
+    allow_lower_seniority_if_company_matches: true
+  decision_rules:
+    adjacent_roles:
+      enabled: false
+      requires_bridge_evidence: false
+      prefer_core_when_equally_viable: false
+      portfolio_counts_as_bridge_evidence: false
+    lower_seniority_roles:
+      enabled: true
+      require_unusually_strong_scope: true
+    company_quality:
+      enabled: true
+      preferred_signals: *id001
+      allow_lower_seniority_exception: true
+  conditional_preferences:
+  - '- Lower-seniority roles should generally rank lower unless the scope and long-term
+    growth case are unusually strong.'
+  - '- Lower-seniority roles are acceptable only when explicit company-quality signals
+    match your strategic preferences: notable brand, strong product company, strong
+    cv value.'
+scoring:
+  model: claude-haiku-4-5-20251001
+  max_description_chars: 20000
+  min_score_to_display: 50
+  concurrency: 25
+  batch_size: 5
+output:
+  terminal: true
+  markdown_report: true
+  telegram:
+    enabled: false
+    top_n: 5

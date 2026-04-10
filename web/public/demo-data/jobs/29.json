@@ -1,0 +1,48 @@
+{
+  "id": 29,
+  "ats_platform": "greenhouse",
+  "company_slug": "stripe",
+  "company_name": "Stripe",
+  "title": "Backend Engineer/API, Payments and Risk",
+  "location": "Dublin, Ireland",
+  "url": "https://stripe.com/jobs/search?gh_jid=4921361",
+  "posted_at": "2026-04-01T11:46:05-04:00",
+  "first_seen_at": "2026-04-10T13:15:58.489074",
+  "last_seen_at": "2026-04-10T13:15:58.489074",
+  "fit_score": 77,
+  "score_reasoning": "Your 7 years of distributed systems and backend engineering experience align strongly with Stripe's payments infrastructure focus. Your billing engine work at Stackflo (€2M/month processing, Go, Postgres-backed job queues) is directly transferable to this payments and risk role. The tech stack (APIs, large-scale systems, cloud services, Docker/Kubernetes) matches your core strengths, though Kubernetes remains a gap. The 2–12+ years range positions you solidly as a strong mid-to-senior candidate. Dublin is within your acceptable European regions and timezone (+0 to +1h from Berlin), making this role remote-compatible if not explicitly restricted. The role's emphasis on building ergonomic APIs and managing money at scale aligns with your career direction toward high-scale distributed systems.",
+  "score_breakdown": {
+    "dimensions": {
+      "tech_stack_match": 78,
+      "seniority_match": 80,
+      "remote_location_fit": 72,
+      "growth_potential": 80
+    },
+    "key_matches": [
+      "Distributed systems at scale",
+      "Payment/billing domain experience",
+      "Python/Go backend",
+      "API design and large-scale systems",
+      "Cloud-native infrastructure",
+      "Financial systems reliability"
+    ],
+    "red_flags": [
+      "Location listing 'Dublin, Ireland' without explicit remote statement—assumed on-site or hybrid in office, not fully remote",
+      "Kubernetes preferred but you have only basic Docker experience",
+      "No specific mention of Python/Go preference; language-agnostic interview may favor other stacks"
+    ],
+    "fit_category": "core_fit",
+    "apply_priority": "medium"
+  },
+  "scored_at": "2026-04-10T13:52:12.512074",
+  "status": "scored",
+  "dismissal_reason": null,
+  "match_tier": "high_confidence",
+  "salary": null,
+  "salary_min": null,
+  "salary_max": null,
+  "salary_currency": null,
+  "is_sparse": false,
+  "company_quality_signals": [],
+  "description": "&lt;p&gt;&lt;span style=&quot;font-size: 10pt;&quot;&gt;Note:&amp;nbsp;if you are an intern, new grad, or staff applicant, please do not apply using this link and visit our &lt;a href=&quot;https://stripe.com/jobs/search&quot;&gt;jobs page&lt;/a&gt; for those specific postings.&lt;/span&gt;&lt;/p&gt;\n&lt;h2&gt;&lt;strong&gt;Who we are&lt;/strong&gt;&lt;/h2&gt;\n&lt;h3&gt;&lt;strong&gt;About Stripe&lt;/strong&gt;&lt;/h3&gt;\n&lt;p&gt;Stripe is a financial infrastructure platform for businesses. Millions of companies - from the world’s largest enterprises to the most ambitious startups - use Stripe to accept payments, grow their revenue, and accelerate new business opportunities. Our mission is to increase the GDP of the internet, and we have a staggering amount of work ahead. That means you have an unprecedented opportunity to put the global economy within everyone&#39;s reach while doing the most important work of your career.&lt;/p&gt;\n&lt;h3&gt;&lt;strong&gt;About the Organization&amp;nbsp;&lt;/strong&gt;&lt;/h3&gt;\n&lt;p&gt;The Payments organization focuses on developing products and platforms that enable users to accept payments from customers efficiently. This includes building APIs for processing payments, enabling regional, non-card payment options, and extending Stripe&#39;s capabilities to make it easy for businesses to accept in-person payments. The Risk Engineering team develops products that minimize financial and regulatory risks while ensuring a seamless user experience, thereby safeguarding Stripe’s brand and financial stability.&amp;nbsp;&lt;/p&gt;\n&lt;p&gt;&lt;strong&gt;Team Matching:&lt;/strong&gt; exact team matching for one of the subteams within this org will begin during final stages.&lt;em&gt; Please note we may also consider you for different orgs based on your experience, location, etc. &lt;/em&gt;More information on our team matching process can be found&lt;a href=&quot;https://docs.google.com/document/d/15zZJetyRWG5DAk96sawRjLDI_cpN1QoeLMn4aAPCrYs/edit?tab=t.0#heading=h.1jkobrruckv7&quot;&gt; here&lt;/a&gt;. &amp;nbsp;&lt;/p&gt;\n&lt;h2&gt;&lt;strong&gt;What you’ll do&lt;/strong&gt;&lt;/h2&gt;\n&lt;p&gt;We’re looking for Backend engineers who want to make an impact on managing money at a global scale with a passion for building ergonomic APIs. You’ll play a key role in extending our balance management platform and in building out a new funds accessibility platform leveraged by enterprises and SMBs alike. Our team collaborates with many cross-functional teams – from Infrastructure to Product –&amp;nbsp; at Stripe to deliver innovative solutions that address evolving user needs.&lt;/p&gt;\n&lt;h3&gt;&lt;strong&gt;Responsibilities&lt;/strong&gt;&lt;/h3&gt;\n&lt;ul&gt;\n&lt;li&gt;Scope, design, build, and maintain APIs, services, and large-scale systems that reliably and efficiently handle billions of money movement requests&lt;/li&gt;\n&lt;li&gt;Debug and solve critical production issues across services and multiple levels of the stack&lt;/li&gt;\n&lt;li&gt;Mentor engineers to help them grow&lt;/li&gt;\n&lt;li&gt;Collaborate with stakeholders across the company to build new features at large-scale, while improving internal engineering standards, tooling, and processes&lt;/li&gt;\n&lt;li&gt;Collaborate effectively in a distributed and hybrid team, maintaining open communication and strong connections with colleagues&lt;/li&gt;\n&lt;/ul&gt;\n&lt;h2&gt;&lt;strong&gt;Who you are&lt;/strong&gt;&lt;/h2&gt;\n&lt;p&gt;We&#39;re looking for someone who meets the minimum requirements to be considered for the role. If you meet these requirements, you are encouraged to apply. The preferred qualifications are a bonus, not a requirement.&lt;/p&gt;\n&lt;h3&gt;&lt;strong&gt;Minimum requirements&lt;/strong&gt;&lt;/h3&gt;\n&lt;ul&gt;\n&lt;li&gt;2-12+ years of industry software engineering experience (does not include internships nor includes co-ops)&lt;/li&gt;\n&lt;li&gt;Strong coding skills in any programming language &lt;em&gt;(we understand new languages can be learned on the job so our interview process is language agnostic)&lt;/em&gt;&lt;/li&gt;\n&lt;li&gt;Strong collaboration skills, can work across workstreams within your team and contribute to your peers’ success&lt;/li&gt;\n&lt;li&gt;Have the ability to thrive on a high level of autonomy, responsibility, and think of yourself as entrepreneurial&lt;/li&gt;\n&lt;li&gt;Interest in working as a generalist across varying technologies and stacks to solve problems and delight both internal and external users&lt;/li&gt;\n&lt;/ul&gt;\n&lt;h3&gt;&lt;strong&gt;Preferred Qualifications&lt;/strong&gt;&lt;/h3&gt;\n&lt;ul&gt;\n&lt;li&gt;Experience with large-scale financial tracking systems&lt;/li&gt;\n&lt;li&gt;Good understanding and practical knowledge in cloud based services (e.g. gRPC, GraphQL, Docker/Kubernetes, cloud services such as AWS, etc.)&amp;nbsp;&lt;/li&gt;\n&lt;/ul&gt;"
+}

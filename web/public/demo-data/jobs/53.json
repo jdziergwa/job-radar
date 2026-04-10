@@ -1,0 +1,47 @@
+{
+  "id": 53,
+  "ats_platform": "greenhouse",
+  "company_slug": "databricks",
+  "company_name": "Databricks",
+  "title": "Staff Software Engineer - Backend  ",
+  "location": "Aarhus, Denmark",
+  "url": "https://databricks.com/company/careers/open-positions/job?gh_jid=7642799002",
+  "posted_at": "2026-04-09T16:51:11-04:00",
+  "first_seen_at": "2026-04-10T13:15:58.489074",
+  "last_seen_at": "2026-04-10T13:15:58.489074",
+  "fit_score": 62,
+  "score_reasoning": "This role is significantly more aligned than the Belgrade and London postings. Your 7 years of distributed systems, microservices, and infrastructure work directly match the emphasis on large-scale critical systems, and Go is explicitly listed as a preferred backend language alongside Java and Scala. The role's focus on infrastructure, cloud-agnostic abstractions, and developer experience aligns with your systems-thinking demonstrated in your zero-downtime migration work at Velox. Your staff-level responsibilities and proven leadership fit well. However, Aarhus is in Scandinavia (~1h ahead of Berlin), within your acceptable timezone band, but the posting does not explicitly state remote work; this creates moderate ambiguity. Additionally, you lack Kubernetes experience, which is mentioned as a preference, and the role emphasizes mentorship and cross-team influence — important for staff level, though not a gap. The strong overlap on Go and distributed systems keeps this viable.",
+  "score_breakdown": {
+    "dimensions": {
+      "tech_stack_match": 60,
+      "seniority_match": 80,
+      "remote_location_fit": 70,
+      "growth_potential": 75
+    },
+    "key_matches": [
+      "Distributed systems",
+      "Go (explicitly listed)",
+      "Infrastructure platforms",
+      "High-scale systems",
+      "Leadership and mentorship"
+    ],
+    "red_flags": [
+      "Kubernetes experience preferred but not in your skillset",
+      "Aarhus location with unclear remote eligibility; ~1h timezone offset from Berlin",
+      "Staff+ role requires explicit mentorship and architectural leadership; your CV shows technical proof but limited explicit leadership narrative"
+    ],
+    "fit_category": "",
+    "apply_priority": "medium"
+  },
+  "scored_at": "2026-04-10T13:53:09.670563",
+  "status": "scored",
+  "dismissal_reason": null,
+  "match_tier": "high_confidence",
+  "salary": null,
+  "salary_min": null,
+  "salary_max": null,
+  "salary_currency": null,
+  "is_sparse": false,
+  "company_quality_signals": [],
+  "description": "&lt;p&gt;P-1344&lt;/p&gt;\n&lt;p&gt;As a software engineer with a backend focus, you will work with your team to build infrastructure for the Databricks platform at scale.&lt;/p&gt;\n&lt;p&gt;&lt;strong&gt;The impact you&#39;ll have:&lt;/strong&gt;&lt;/p&gt;\n&lt;p&gt;Our backend teams cover a diverse range of domains, from core compute fabric resource management to service platforms and machine learning infrastructure. For example, you might work on challenges such as:&lt;/p&gt;\n&lt;ul&gt;\n&lt;li&gt;Supporting Databricks&#39; growth by building foundational infrastructure platforms that enable seamless operation across numerous geographic regions and cloud providers.&lt;/li&gt;\n&lt;li&gt;Implementing cloud-agnostic infrastructure abstractions to help Databricks engineers more efficiently manage and operate their services.&lt;/li&gt;\n&lt;li&gt;Develop tools and processes that drive engineering efficiency at Databricks. We enhance the developer experience for Databricks engineers across various areas, including programming languages, linters, static analysis, IDEs, remote development environments, automated release pipelines, and test automation frameworks. Our current focus is on optimizing the Rust development experience across the organization.&lt;/li&gt;\n&lt;/ul&gt;\n&lt;p&gt;&lt;strong&gt;What we look for:&lt;/strong&gt;&lt;/p&gt;\n&lt;ul&gt;\n&lt;li&gt;8+ years of professional software development experience.&lt;/li&gt;\n&lt;li&gt;Bachelor’s degree or higher in Computer Science, a related field, or equivalent experience.&lt;/li&gt;\n&lt;li&gt;Proficiency in one or more backend languages such as Java, Scala, or Go.&lt;/li&gt;\n&lt;li&gt;Hands-on experience in developing and operating large-scale, critical distributed backend systems.&lt;/li&gt;\n&lt;li&gt;Demonstrated leadership throughout all project phases, from inception and design to implementation and operations, with a strong ability to drive architectural decisions and guide teams through complex challenges.&lt;/li&gt;\n&lt;li&gt;Experience mentoring engineers, influencing best practices, and fostering a collaborative engineering environment.&lt;/li&gt;\n&lt;li&gt;Self-driven and passionate with a strong focus on delivering impact through team collaboration.&lt;/li&gt;\n&lt;li&gt;Strong written and verbal communication skills to drive alignment across teams, and contribute to both technical documentation and strategic decisions.&lt;/li&gt;\n&lt;li&gt;Experience with infrastructure systems, security, and sensitive data, as well as familiarity with Kubernetes or cloud platforms like AWS, Azure, or GCP.&lt;/li&gt;\n&lt;/ul&gt;&lt;div class=&quot;content-conclusion&quot;&gt;&lt;p&gt;&lt;strong&gt;About Databricks&lt;/strong&gt;&lt;/p&gt;\n&lt;p&gt;&lt;span style=&quot;font-family: arial, sans-serif;&quot;&gt;Databricks is the data and AI company. More than 10,000 organizations worldwide — including Comcast, Condé Nast, Grammarly, and over 50% of the Fortune 500 — rely on the Databricks Data Intelligence Platform to unify and democratize data, analytics and AI. Databricks is headquartered in San Francisco, with offices around the globe and was founded by the original creators of Lakehouse, Apache Spark™, Delta Lake and MLflow. To learn more, follow Databricks on&amp;nbsp;&lt;span style=&quot;color: rgb(255, 54, 33);&quot;&gt;&lt;a style=&quot;color: rgb(255, 54, 33);&quot; href=&quot;https://twitter.com/databricks&quot; target=&quot;_blank&quot; data-saferedirecturl=&quot;https://www.google.com/url?q=https://twitter.com/databricks&amp;amp;source=gmail&amp;amp;ust=1700237575733000&amp;amp;usg=AOvVaw03FL8fJvOD97ytN02f5G2C&quot;&gt;Twitter&lt;/a&gt;,&amp;nbsp;&lt;a style=&quot;color: rgb(255, 54, 33);&quot; href=&quot;https://www.linkedin.com/company/databricks&quot; target=&quot;_blank&quot; data-saferedirecturl=&quot;https://www.google.com/url?q=https://www.linkedin.com/company/databricks&amp;amp;source=gmail&amp;amp;ust=1700237575733000&amp;amp;usg=AOvVaw15dLk3q8VxTfHEgCUg7NSt&quot;&gt;LinkedIn&lt;/a&gt;&amp;nbsp;&lt;span style=&quot;color: rgb(0, 0, 0);&quot;&gt;and&lt;/span&gt;&amp;nbsp;&lt;a style=&quot;color: rgb(255, 54, 33);&quot; href=&quot;https://www.facebook.com/databricksinc&quot; target=&quot;_blank&quot; data-saferedirecturl=&quot;https://www.google.com/url?q=https://www.facebook.com/databricksinc&amp;amp;source=gmail&amp;amp;ust=1700237575733000&amp;amp;usg=AOvVaw39EcncitnlqV72EG2-RqXJ&quot;&gt;Facebook&lt;/a&gt;&lt;/span&gt;.&lt;br&gt;&lt;br&gt;&lt;strong&gt;Benefits&lt;br&gt;&lt;br&gt;&lt;/strong&gt;&lt;/span&gt;At Databricks, we strive to provide comprehensive benefits and perks that meet the needs of all of our employees. For specific details on the benefits offered in your region, please visit&amp;nbsp;&lt;a href=&quot;https://www.mybenefitsnow.com/databricks&quot;&gt;https://www.mybenefitsnow.com/databricks&lt;/a&gt;.&amp;nbsp;&lt;br&gt;&lt;br&gt;&lt;/p&gt;\n&lt;p&gt;&lt;strong&gt;Our Commitment to Diversity and Inclusion&lt;/strong&gt;&lt;/p&gt;\n&lt;p&gt;At Databricks, we are committed to fostering a diverse and inclusive culture where everyone can excel. We take great care to ensure that our hiring practices are inclusive and meet equal employment opportunity standards. Individuals looking for employment at Databricks are considered without regard to age, color, disability, ethnicity, family or marital status, gender identity or expression, language, national origin, physical and mental ability, political affiliation, race, religion, sexual orientation, socio-economic status, veteran status, and other protected characteristics.&lt;/p&gt;\n&lt;p&gt;&lt;strong&gt;Compliance&lt;/strong&gt;&lt;/p&gt;\n&lt;p&gt;&lt;strong&gt;&lt;span style=&quot;font-weight: 400;&quot;&gt;If access to export-controlled technology or source code is required for performance of job duties, it is within Employer&#39;s discretion whether to apply for a U.S. government license for such positions, and Employer may decline to proceed with an applicant on this basis alone.&lt;/span&gt;&lt;/strong&gt;&lt;/p&gt;&lt;/div&gt;"
+}

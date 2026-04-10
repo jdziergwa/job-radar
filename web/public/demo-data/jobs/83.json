@@ -1,0 +1,47 @@
+{
+  "id": 83,
+  "ats_platform": "greenhouse",
+  "company_slug": "abnormalsecurity",
+  "company_name": "Abnormal Security",
+  "title": "Senior Software Engineer (Backend) - Behavioral Security Products",
+  "location": "Remote - UK",
+  "url": "https://abnormal.ai/careers/jobs/7551263003?gh_jid=7551263003",
+  "posted_at": "2026-04-03T11:31:53-04:00",
+  "first_seen_at": "2026-04-10T13:15:58.489074",
+  "last_seen_at": "2026-04-10T13:15:58.489074",
+  "fit_score": 68,
+  "score_reasoning": "Your experience is a strong technical match for this senior role: 7 years of production Python backend systems, proven expertise with distributed systems, AWS infrastructure (S3, RDS), Docker, Kubernetes, PostgreSQL, Redis, gRPC, and comprehensive testing align very well with the must-haves. The senior level and expectations around design ownership, system reliability, and mentorship fit your profile well. Location is acceptable: remote-UK is compatible with your Berlin timezone (±1h overlap), and UK is explicitly in your target regions. However, the role focuses on ATO (Account Takeover) security products and ML-driven behavioral systems—a pivot away from your stated goal of 'deepening technical leadership in high-scale distributed microservices architectures.' This is a solid mid-size tech company role but does not advance your core trajectory in infrastructure and scale.",
+  "score_breakdown": {
+    "dimensions": {
+      "tech_stack_match": 80,
+      "seniority_match": 85,
+      "remote_location_fit": 80,
+      "growth_potential": 50
+    },
+    "key_matches": [
+      "Python backend",
+      "AWS (S3, RDS)",
+      "PostgreSQL",
+      "Docker/Kubernetes",
+      "gRPC, Redis, Kafka"
+    ],
+    "red_flags": [
+      "Security/behavioral detection focus—domain shift from distributed systems and high-scale microservices",
+      "ML-heavy platform may require domain ramp-up outside your stated specialization",
+      "Growth potential is moderate: strong engineering environment but not your stated direction"
+    ],
+    "fit_category": "",
+    "apply_priority": "medium"
+  },
+  "scored_at": "2026-04-10T13:54:02.418821",
+  "status": "scored",
+  "dismissal_reason": null,
+  "match_tier": "high_confidence",
+  "salary": null,
+  "salary_min": null,
+  "salary_max": null,
+  "salary_currency": null,
+  "is_sparse": false,
+  "company_quality_signals": [],
+  "description": "&lt;p&gt;At Abnormal AI, we protect our customers against nefarious adversaries who are constantly evolving their techniques and tactics to outwit and undermine the traditional approaches to Security.&amp;nbsp;&lt;/p&gt;\n&lt;p&gt;Abnormal is recognized as a top cybersecurity startup (Leader in the 2025 Gartner Magic Quadrant for Email Security Platforms), securing a Series D funding of $250 million at a $5.1 billion valuation in August 2024.&amp;nbsp;&lt;/p&gt;\n&lt;p&gt;&lt;strong&gt;About The Team&amp;nbsp;&lt;/strong&gt;&lt;/p&gt;\n&lt;p&gt;The team is responsible for the ownership, development, and operation of the infrastructure and ML models, customer facing APIs and internal tools that drive Abnormal&#39;s Account Takeover (ATO) protection product. This product is crucial for detecting malicious activity and safeguarding customers from account theft.&lt;/p&gt;\n&lt;p&gt;&lt;strong&gt;About The Role&lt;/strong&gt;&lt;/p&gt;\n&lt;p&gt;We are looking for a Senior Software Engineer to take ownership of complex feature delivery and technical design for our ATO platform. This pivotal role involves evolving the platform to scale with expanding product requirements. The position requires a blend of hands-on backend systems development, production ownership, stakeholder management, and team mentorship. The core goal is to enhance system reliability, reduce latency, and significantly accelerate feature release cycles.&lt;/p&gt;\n&lt;p&gt;&lt;strong&gt;What You’ll Do&lt;/strong&gt;&lt;/p&gt;\n&lt;h4&gt;&lt;strong&gt;Technical Delivery &amp;amp; Excellence&lt;/strong&gt;&lt;/h4&gt;\n&lt;ul&gt;\n&lt;ul&gt;\n&lt;li&gt;Design, build, and iterate on scalable backend and ML systems, APIs, frameworks, and internal tools&amp;nbsp;&lt;/li&gt;\n&lt;li&gt;Own end-to-end delivery of complex features that directly impact customer experience.&lt;/li&gt;\n&lt;li&gt;Ensure stability, reliability, and operational excellence of critical systems.&lt;/li&gt;\n&lt;li&gt;Write clean, testable, and resilient code with attention to edge cases and performance.&lt;/li&gt;\n&lt;li&gt;Write and review technical design documents and influence adoption across the team.&lt;/li&gt;\n&lt;li&gt;Participate in code and design reviews, and contribute to on-call rotations.&lt;/li&gt;\n&lt;/ul&gt;\n&lt;/ul&gt;\n&lt;h4&gt;&lt;strong&gt;Leadership &amp;amp; Collaboration&lt;/strong&gt;&lt;/h4&gt;\n&lt;ul&gt;\n&lt;ul&gt;\n&lt;li&gt;Collaborate with product managers, designers, and engineers to align on specifications and priorities.&lt;/li&gt;\n&lt;li&gt;Break down complex projects into clear executable steps and drive them to completion.&lt;/li&gt;\n&lt;li&gt;Actively contribute to roadmap discussions and propose long-term technical plans.&lt;/li&gt;\n&lt;li&gt;Communicate effectively in an async-first environment, providing clarity on updates, challenges, and solutions.&lt;/li&gt;\n&lt;li&gt;Mentor peers, share knowledge, and influence engineering practices across the team.&lt;/li&gt;\n&lt;/ul&gt;\n&lt;/ul&gt;\n&lt;p&gt;&lt;strong&gt;What We’re Looking For&lt;/strong&gt;&lt;/p&gt;\n&lt;ul&gt;\n&lt;li&gt;&lt;strong&gt;Ownership &amp;amp; Growth:&lt;/strong&gt; A senior engineer mindset—able to independently lead complex projects and grow into a technical leader within the team.&lt;/li&gt;\n&lt;li&gt;&lt;strong&gt;Attention to Detail&lt;/strong&gt;: Deep focus on code quality, reliability, monitoring, and performance.&lt;/li&gt;\n&lt;li&gt;&lt;strong&gt;System Thinker&lt;/strong&gt;: Ability to anticipate long-term scaling needs and design resilient architectures.&lt;/li&gt;\n&lt;li&gt;&lt;strong&gt;Strong Collaborator:&lt;/strong&gt; Comfortable influencing cross-team goals, mentoring peers, and working in a distributed environment.&lt;/li&gt;\n&lt;li&gt;&lt;strong&gt;GenAI Affinity:&lt;/strong&gt; Proactive in leveraging modern developer productivity tools, including GenAI assistants, to accelerate delivery.&lt;/li&gt;\n&lt;/ul&gt;\n&lt;p&gt;&lt;strong&gt;Must-Have Skills&lt;/strong&gt;&lt;/p&gt;\n&lt;ul&gt;\n&lt;li&gt;7+ years of industry experience, with proven expertise as a Senior Software Engineer.&lt;/li&gt;\n&lt;li&gt;Strong backend proficiency in Python, with experience designing and scaling production systems.&lt;/li&gt;\n&lt;li&gt;Proven experience with large scale system design, building resilient, scalable, and fault-tolerant applications.&lt;/li&gt;\n&lt;li&gt;Strong knowledge of relational databases and modern data storage technologies .&lt;/li&gt;\n&lt;li&gt;Familiarity with service-to-service communication (gRPC, Kafka) and caching (Redis).&lt;/li&gt;\n&lt;li&gt;Experience with AWS cloud services (S3, RDS) and deployment practices.&lt;br&gt;Familiarity with containerization and orchestration (Docker, Kubernetes, Helm).&lt;/li&gt;\n&lt;li&gt;Strong understanding of service health, monitoring, and incident response practices.&lt;/li&gt;\n&lt;li&gt;Experience writing technical design documents and influencing adoption across teams.&lt;/li&gt;\n&lt;/ul&gt;\n&lt;p&gt;#LI-RT1&lt;/p&gt;&lt;div class=&quot;content-conclusion&quot;&gt;&lt;p&gt;&lt;br&gt;Abnormal AI is an equal opportunity employer. Qualified applicants will receive consideration for employment without regard to race, color, religion, sex, national origin, disability, protected veteran status or other characteristics protected by law. For our EEO policy statement please&amp;nbsp;&lt;a href=&quot;https://abnormal.ai/aap-eeoc-statement&quot; target=&quot;_blank&quot;&gt;&lt;span style=&quot;text-decoration: underline;&quot;&gt;&lt;em&gt;click here&lt;/em&gt;&lt;/span&gt;&lt;/a&gt;. If you would like more information on your EEO rights under the law, please&amp;nbsp;&lt;em&gt;&lt;span style=&quot;text-decoration: underline;&quot;&gt;&lt;a href=&quot;https://abnormal.ai/eeoc-poster&quot; target=&quot;_blank&quot;&gt;click here&lt;/a&gt;&lt;/span&gt;&lt;/em&gt;.&lt;/p&gt;&lt;/div&gt;"
+}

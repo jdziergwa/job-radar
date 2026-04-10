@@ -1,4 +1,4 @@
-.PHONY: install dev types build start lint test clean-db clean-db-volume clean-web
+.PHONY: install dev types build start lint test clean-db clean-db-volume clean-web demo-snapshot demo-refresh
 
 COMPOSE ?= docker compose
 PROJECT_NAME ?= $(notdir $(CURDIR))
@@ -50,3 +50,8 @@ clean-db-volume:
 
 clean-web:
 	rm -rf web/.next web/node_modules web/out
+
+demo-snapshot:
+	.venv/bin/python scripts/build_demo_snapshot.py --profile demo --out web/public/demo-data
+
+demo-refresh: demo-snapshot

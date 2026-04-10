@@ -1,0 +1,171 @@
+{
+  "page_count": 2,
+  "current_role": "Backend Engineer",
+  "experience_years": 7,
+  "experience_summary": "Backend engineer with 7 years building distributed services and internal platforms in Python and Go. Proven track record owning features end-to-end from schema design through deployment, with strong focus on observable, well-tested systems.",
+  "experience": [
+    {
+      "company": "Velox Systems",
+      "role": "Backend Engineer",
+      "dates": "Mar 2022 — Present",
+      "industry": "Scale-up",
+      "highlights": [
+        "Designed multi-tenant notification microservice handling 4M+ events/day with p99 latency under 80ms",
+        "Migrated three legacy Flask monolith modules to microservices, reducing deploy time from 22min to 6min",
+        "Introduced OpenTelemetry tracing, cutting MTTR on P1 incidents by ~40%"
+      ]
+    },
+    {
+      "company": "Stackflo",
+      "role": "Software Engineer – Backend",
+      "dates": "Jun 2019 — Feb 2022",
+      "industry": "Start-up",
+      "highlights": [
+        "Built core billing and subscription engine in Go processing €2M/month at launch",
+        "Designed Postgres-backed job queue reducing missed-job incidents from ~15/month to zero",
+        "Achieved 85% test coverage on critical payment flows using pytest and Pact"
+      ]
+    },
+    {
+      "company": "Digitane GmbH",
+      "role": "Junior Backend Developer",
+      "dates": "Sep 2017 — May 2019",
+      "industry": "Agency",
+      "highlights": [
+        "Developed REST APIs in Django REST Framework for three client products",
+        "Optimized MySQL queries halving response time on most-used report endpoint",
+        "Set up CI with GitHub Actions for automated linting and unit tests"
+      ]
+    }
+  ],
+  "skills": {
+    "Languages": [
+      "Python",
+      "Go",
+      "SQL",
+      "Bash"
+    ],
+    "Frameworks": [
+      "FastAPI",
+      "Django REST",
+      "gRPC",
+      "Flask"
+    ],
+    "Data": [
+      "PostgreSQL",
+      "Redis",
+      "MySQL",
+      "Kafka (consumer)"
+    ],
+    "Infra / CI": [
+      "Docker",
+      "GitHub Actions",
+      "AWS ECS / S3 / SQS",
+      "Terraform (basic)"
+    ],
+    "Observability": [
+      "OpenTelemetry",
+      "Prometheus",
+      "Grafana",
+      "Sentry"
+    ],
+    "Testing": [
+      "pytest",
+      "Pact (contract)",
+      "Testcontainers",
+      "Postman / HTTPie"
+    ]
+  },
+  "education": [
+    {
+      "school": "University of Applied Sciences Darmstadt (h_da)",
+      "degree": "BSc Computer Science",
+      "start_year": "2013",
+      "end_year": "2017"
+    }
+  ],
+  "portfolio": [],
+  "spoken_languages": [
+    "German (native)",
+    "English (C1, professional)",
+    "Dutch (A2, basic)"
+  ],
+  "inferred_seniority": "mid",
+  "suggested_target_roles": [
+    "Senior Backend Engineer",
+    "Backend Engineer",
+    "Distributed Systems Engineer",
+    "Platform Engineer",
+    "Staff Backend Engineer"
+  ],
+  "suggested_title_patterns": {
+    "high_confidence": [
+      "\\bbackend\\s+engineer\\b",
+      "\\bsenior\\s+backend\\s+engineer\\b",
+      "\\bsoftware\\s+engineer.*backend\\b",
+      "\\bdistributed\\s+systems\\s+engineer\\b",
+      "\\bplatform\\s+engineer\\b"
+    ],
+    "broad": [
+      "\\bfull.?stack\\s+engineer\\b",
+      "\\bsoftware\\s+engineer\\b",
+      "\\bsystem\\s+engineer\\b",
+      "\\bcloud\\s+engineer\\b",
+      "\\bdevops\\s+engineer\\b"
+    ]
+  },
+  "suggested_description_signals": [
+    "\\b(python|go|golang)\\b",
+    "\\b(fastapi|django|flask)\\b",
+    "\\b(postgresql|postgres|mysql|redis)\\b",
+    "\\b(docker|kubernetes|k8s)\\b",
+    "\\b(aws|cloud|microservices)\\b",
+    "\\b(grpc|rest|api)\\b",
+    "\\b(ci/cd|github\\s+actions|pipeline)\\b",
+    "\\b(observability|monitoring|prometheus|grafana)\\b",
+    "\\b(testing|pytest|integration)\\b",
+    "\\b(distributed|scalability|performance)\\b"
+  ],
+  "suggested_exclusions": [
+    "\\b(intern|internship)\\b",
+    "\\bjunior\\b",
+    "\\bfrontend\\b",
+    "\\bmobile\\s+(developer|engineer)\\b"
+  ],
+  "suggested_skill_gaps": [
+    "Kubernetes: Not mentioned in CV. Essential for container orchestration in most senior backend roles. Gap severity: Medium - reduce infrastructure_match by 10-15 when primary requirement",
+    "Message Queues (Production): Only Kafka consumer mentioned. Full message queue expertise (RabbitMQ, Apache Kafka producers, SQS) commonly required for distributed systems roles. Gap severity: Medium",
+    "NoSQL Databases: Only relational databases mentioned. MongoDB, DynamoDB, or Cassandra experience often required for high-scale backend positions. Gap severity: Low-Medium",
+    "Event-Driven Architecture: Mentioned in thesis but no production evidence. Critical for many senior backend roles. Gap severity: Medium",
+    "System Design: No explicit large-scale system design experience mentioned. Expected for senior+ backend roles. Gap severity: Medium",
+    "Service Mesh: No mention of Istio, Envoy, or similar. Increasingly common in microservices environments. Gap severity: Low",
+    "Infrastructure as Code: Only basic Terraform mentioned. Advanced IaC skills (CloudFormation, Pulumi, advanced Terraform) often required. Gap severity: Low-Medium"
+  ],
+  "suggested_career_direction": "",
+  "suggested_narratives": {
+    "stay": "Mid-level backend engineer with 7 years building distributed services in Python and Go. Seeking senior backend roles to deepen technical leadership in high-scale systems. Using zero-downtime migration framework at Velox as proof of systems thinking and multi-team impact. Targeting senior backend positions at scale-ups or mid-stage companies with complex distributed architectures.",
+    "pivot": "Backend engineer with 7 years distributed systems experience pivoting toward platform engineering. Using internal developer portal and CI/CD pipeline work at current role as bridge to infrastructure-focused positions. Acknowledging gap in advanced Kubernetes and infrastructure-as-code but demonstrating eagerness to expand via current Terraform work.",
+    "step_up": "Mid-level backend engineer ready for staff-level technical leadership. 7 years building distributed systems with proven mentorship of junior engineers and cross-team architectural impact via zero-downtime migration framework. Targeting staff engineer roles requiring technical strategy and system design ownership.",
+    "broaden": "Backend specialist expanding toward full-stack distributed systems ownership. 7 years deep in Python/Go backend services, now targeting roles combining backend expertise with infrastructure and platform concerns. Using current AWS ECS and observability work as proof of broader systems interest."
+  },
+  "suggested_good_match_signals": [
+    "Microservices Architecture",
+    "High-Scale Systems",
+    "Python/Go Stack",
+    "AWS Infrastructure",
+    "Remote-First Culture",
+    "Observable Systems",
+    "CI/CD Ownership",
+    "Mentorship Opportunities"
+  ],
+  "suggested_lower_fit_signals": [
+    "Frontend Heavy",
+    "Monolith Architecture",
+    "Java/.NET Primary",
+    "On-Premise Only",
+    "Waterfall Process",
+    "Junior-Heavy Team",
+    "Legacy Maintenance"
+  ],
+  "extraction_method": "text"
+}
