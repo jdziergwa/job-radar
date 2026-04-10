@@ -71,11 +71,18 @@ def crop_image(
     pixels = image.load()
     width, height = image.size
     min_x, min_y, max_x, max_y = width, height, 0, 0
+    bg_r, bg_g, bg_b, bg_a = pixels[0, 0]
 
     for y in range(height):
         for x in range(width):
             r, g, b, a = pixels[x, y]
-            if a and (r > threshold or g > threshold or b > threshold):
+            differs_from_bg = (
+                abs(r - bg_r) > threshold
+                or abs(g - bg_g) > threshold
+                or abs(b - bg_b) > threshold
+                or abs(a - bg_a) > threshold
+            )
+            if differs_from_bg:
                 min_x = min(min_x, x)
                 min_y = min(min_y, y)
                 max_x = max(max_x, x)

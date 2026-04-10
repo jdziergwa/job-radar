@@ -1,5 +1,9 @@
 <p align="center">
-  <img src=".github/assets/readme-header.png" alt="Job Radar" width="350" />
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset=".github/assets/readme-header.png" />
+    <source media="(prefers-color-scheme: light)" srcset=".github/assets/readme-header-light.png" />
+    <img src=".github/assets/readme-header-light.png" alt="Job Radar" width="350" />
+  </picture>
 </p>
 
 Job Radar monitors your job search across curated ATS boards, public remote-job APIs, hiring feeds, and an optional large remote-job aggregator. It collects, hydrates, filters, and scores job listings against your profile using Claude, then presents the results in a web dashboard.
@@ -23,7 +27,6 @@ Try the live demo: [https://jdziergwa.github.io/job-radar/](https://jdziergwa.gi
 -   **🛰️ Aggregator**: Optional broad remote-job scan alongside targeted direct sources.
 -   **🎭 Profiles**: Support for multiple career profiles with separate CVs and keywords.
 -   **🛠️ Import Tooling**: Generate mergeable `companies.yaml` fragments from external JSON datasets.
--   **🔔 Notifications**: Optional Telegram alerts for top matches.
 
 ---
 
@@ -80,6 +83,8 @@ cp .env.example .env
 # Edit .env and paste your ANTHROPIC_API_KEY=sk-ant-...
 ```
 
+Before your first AI-backed run, create an Anthropic API key in [Console Settings → API Keys](https://platform.claude.com/settings/keys) and add prepaid credits from the [Billing page](https://support.claude.com/en/articles/8977456-how-do-i-pay-for-my-api-usage). Then paste the key into `.env` as `ANTHROPIC_API_KEY`.
+
 ### 3. Launch
 
 ```bash
@@ -96,6 +101,16 @@ Later, you can reopen the same guided workflow from **Settings → Guided Edit**
 
 If you prefer direct editing, **Settings** still exposes the raw `profile_doc.md`, `search_config.yaml`, and `scoring_philosophy.md` files.
 
+### 4. Cost and Runtime Expectations
+
+Claude costs are reasonable enough to try with a small credit balance. One real first-run example from my setup:
+
+- One-time profile generation with Sonnet: about `$0.15`
+- Scoring `855` jobs with Haiku: about `$1.88`
+- First broad run with all providers: roughly `30-40 minutes`
+
+Your numbers will vary with provider mix and how many jobs survive filtering, but in that run Haiku scoring came out to about `$0.22` per `100` scored jobs. After the first run, later runs are usually much cheaper and faster because only new surviving jobs need scoring. A `$5` top-up is usually enough to try profile generation plus many incremental runs.
+
 ---
 
 ## ⚙️ Configuration
@@ -107,8 +122,6 @@ Job Radar is highly configurable to match your specific career goals.
 | Variable | Required | Purpose |
 |----------|----------|---------|
 | `ANTHROPIC_API_KEY` | **Yes** | Used by Claude AI to score job descriptions. |
-| `TELEGRAM_BOT_TOKEN`| No | Token for Telegram notifications. |
-| `TELEGRAM_CHAT_ID` | No | Your numeric Telegram ID for notification delivery. |
 | `ADZUNA_APP_ID` | No | Required only if you enable the Adzuna provider. |
 | `ADZUNA_APP_KEY` | No | Required only if you enable the Adzuna provider. |
 
@@ -121,7 +134,6 @@ Each profile is a directory containing four main editable files:
     -   `keywords.title_patterns`: Split into `high_confidence` and `broad` tiers for precise filtering.
     -   `keywords.location_patterns` / `remote_patterns`: Primary location targets and a remote tier (governed by the `fallback_tier` field).
     -   `scoring`: Choose your model (e.g., `claude-haiku-4-5-20251001`) and set thresholds.
-    -   `output`: Toggle reports and Telegram alerts.
 3.  **`scoring_philosophy.md`**: The per-profile scoring rubric used by the LLM after pre-filtering. This is editable from **Settings**.
 4.  **`companies.yaml`**: Specific companies to monitor directly via their ATS boards, grouped by platform.
 
@@ -174,7 +186,7 @@ graph TD
     C -->|Fetch fuller descriptions| D[Pre-filter]
     D -->|Regex Check| E[Score]
     E -->|Claude AI| F[Report]
-    F -->|UI / Telegram| G[Opportunity]
+    F -->|UI / Reports| G[Opportunity]
     
     style E fill:#f96,stroke:#333,stroke-width:2px
 ```
@@ -184,7 +196,7 @@ graph TD
 3.  **Hydrate**: Fetches fuller descriptions for jobs with missing or sparse text.
 4.  **Pre-filter**: Matches against your `title_patterns` and `location_patterns`.
 5.  **Score**: Sends survivors to Claude to compute a fit score (0-100).
-6.  **Report**: Persists results and triggers notifications.
+6.  **Report**: Persists results and updates the dashboard and reports.
 
 ---
 
@@ -211,12 +223,11 @@ graph TD
 ## 🔒 Security & Privacy
 
 - **Never commit `.env`** — it contains your `ANTHROPIC_API_KEY`. The `.gitignore` already excludes it, but double-check before pushing. If you accidentally expose a key, revoke it immediately at [console.anthropic.com](https://console.anthropic.com).
-- **All data stays local** — job listings, scores, and your `profile_doc.md` are stored only on your machine. Native runs use `data/{profile}.db`; Docker Compose runs keep SQLite databases in the Docker API volume mounted at `/app/data`. Nothing is sent to third parties except job descriptions forwarded to the Claude API for scoring.
-- **Your personal profile is not tracked** — `profiles/` is gitignored except for the `example/` template and the synthetic `demo/` profile used for the hosted showcase. Your real CV (`profile_doc.md`) and company list stay private unless you explicitly change that.
+- **All data stays local** — job listings, scores, and your `profile_doc.md` are stored only on your machine. Native runs use `data/{profile}.db`; Docker Compose runs keep SQLite databases in the Docker API volume mounted at `/app/data`. The only third-party processing is the Claude API calls used for CV analysis, profile generation, and job scoring, which send the relevant job and profile context needed for those prompts.
 
 ## 🙌 Acknowledgments
 
-Aggregator module data sourced from [job-board-aggregator](https://github.com/Feashliaa/job-board-aggregator).
+Aggregator data derived from [job-board-aggregator](https://github.com/Feashliaa/job-board-aggregator), licensed under [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/).
 Remotive source data provided by [Remotive](https://remotive.com).
 Remote OK source data provided by [Remote OK](https://remoteok.com).
 Hacker News source data provided by [Hacker News](https://news.ycombinator.com) via [Algolia](https://hn.algolia.com).

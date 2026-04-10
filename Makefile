@@ -58,3 +58,4 @@ demo-refresh: demo-snapshot
 
 readme-header:
 	python3 scripts/render_readme_header.py
+	python3 scripts/render_readme_header.py --source .github/assets/readme-header-light-source.html --out .github/assets/readme-header-light.png
