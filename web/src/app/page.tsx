@@ -34,35 +34,59 @@ export default function DashboardPage() {
   const fetchData = async () => {
     setLoading(true)
     try {
-      const [statsRes, jobsRes, trendsRes] = await Promise.all([
+      const [statsRes, jobsRes, trendsRes] = await Promise.allSettled([
         api.GET('/api/stats'),
         api.GET('/api/jobs', {
           params: {
             query: {
-              limit: 5,
+              per_page: 5,
               sort: 'score',
               status: 'scored'
-            } as never
+            }
           }
         }),
         api.GET('/api/stats/trends', {
-          params: { query: { days: 7 } as never }
+          params: { query: { days: 7 } }
         })
       ])
 
-      if (!statsRes.error && statsRes.data) setStats(statsRes.data as DashboardStats)
-      if (!jobsRes.error && jobsRes.data) setRecentJobs(jobsRes.data.jobs)
-      if (!trendsRes.error && trendsRes.data) setFunnelData(trendsRes.data.pipeline_funnel)
+      if (statsRes.status === 'fulfilled') {
+        if (!statsRes.value.error && statsRes.value.data) {
+          setStats(statsRes.value.data as DashboardStats)
+        }
+      } else {
+        console.error('Failed to load dashboard stats', statsRes.reason)
+      }
+
+      if (jobsRes.status === 'fulfilled') {
+        if (!jobsRes.value.error && jobsRes.value.data) {
+          setRecentJobs(jobsRes.value.data.jobs)
+        }
+      } else {
+        console.error('Failed to load recent jobs', jobsRes.reason)
+      }
+
+      if (trendsRes.status === 'fulfilled') {
+        if (!trendsRes.value.error && trendsRes.value.data) {
+          setFunnelData(trendsRes.value.data.pipeline_funnel)
+        }
+      } else {
+        console.error('Failed to load trend data', trendsRes.reason)
+      }
+    } catch (error) {
+      console.error('Failed to load dashboard data', error)
     } finally {
       setLoading(false)
     }
   }
 
   useEffect(() => {
-    fetchData()
+    void fetchData()
     
     // Listen for pipeline completion to refresh dashboard data
-    const handleRefresh = () => fetchData()
+    const handleRefresh = () => {
+      void fetchData()
+    }
     window.addEventListener('pipeline-finished', handleRefresh)
     return () => window.removeEventListener('pipeline-finished', handleRefresh)
   }, [])
