@@ -9,7 +9,7 @@ import { ScoreRing } from '@/components/score/ScoreRing'
 import { ScoreBar } from '@/components/score/ScoreBar'
 import { PriorityBadge } from '@/components/score/PriorityBadge'
 import { FitCategoryBadge } from '@/components/score/FitCategoryBadge'
-import { timeAgo, formatDate } from '@/lib/utils/format'
+import { formatDate } from '@/lib/utils/format'
 import { getCompanyQualitySignalLabel } from '@/lib/company-quality'
 import { Badge } from '@/components/ui/badge'
 import { Button, buttonVariants } from '@/components/ui/button'
@@ -23,7 +23,6 @@ import {
   XCircle, 
   RotateCcw, 
   MapPin, 
-  Building2, 
   Calendar,
   AlertTriangle,
   Loader2,
@@ -120,28 +119,30 @@ function JobDetailContent() {
   const dimensions = job.score_breakdown?.dimensions || {}
   const fitCategory = job.score_breakdown?.fit_category as string | undefined
   const companySignals = Array.isArray(job.company_quality_signals) ? job.company_quality_signals : []
+  const matchQualityLabel = getMatchQualityLabel(job.score_breakdown?.apply_priority)
+  const scoreReasoning = job.score_reasoning || "No detailed reasoning provided."
 
   return (
-    <div className="max-w-7xl mx-auto px-6 py-10 space-y-10 animate-in fade-in duration-700">
+    <div className="mx-auto max-w-7xl animate-in space-y-8 px-4 py-6 fade-in duration-700 sm:space-y-10 sm:px-6 sm:py-10">
       {/* Header Navigation */}
-      <header className="flex justify-between items-center">
-        <Link href="/jobs" className={cn(buttonVariants({ variant: "ghost" }), "gap-2 -ml-2 text-muted-foreground hover:text-foreground")}>
+      <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <Link href="/jobs" className={cn(buttonVariants({ variant: "ghost" }), "gap-2 -ml-2 self-start px-2 text-muted-foreground hover:text-foreground")}>
           <ArrowLeft className="h-4 w-4" /> Back to Job Board
         </Link>
-        <div className="flex items-center gap-3">
-            <a 
-              href={job.url} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className={cn(buttonVariants({ variant: "outline" }), "gap-2")}
-            >
-              View Original <ExternalLink className="h-4 w-4" />
-            </a>
+        <div className="flex w-full items-center gap-3 sm:w-auto">
+          <a 
+            href={job.url} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className={cn(buttonVariants({ variant: "outline" }), "w-full justify-center gap-2 sm:w-auto")}
+          >
+            View Original <ExternalLink className="h-4 w-4" />
+          </a>
         </div>
       </header>
 
       {/* Hero Section */}
-      <section className="flex flex-col lg:flex-row gap-10 items-start">
+      <section className="flex flex-col items-start gap-6 lg:flex-row lg:gap-10">
         <div className="flex-1 space-y-6">
           <div className="space-y-4">
             <div className="flex flex-wrap items-center gap-3">
@@ -154,28 +155,57 @@ function JobDetailContent() {
                   Status: {job.status}
                 </Badge>
             </div>
-            <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl lg:text-6xl text-foreground">
+            <h1 className="text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl lg:text-5xl xl:text-6xl">
               {job.title}
             </h1>
-            <div className="flex flex-wrap gap-6 text-muted-foreground text-sm font-medium">
-              <div className="flex items-center gap-2 font-semibold text-green-600 dark:text-green-400 capitalize">
-                <Banknote className="h-4 w-4" /> {job.salary || "Salary Undisclosed"}
+            <div className="grid grid-cols-1 gap-3 text-sm font-medium text-muted-foreground sm:grid-cols-2 xl:grid-cols-3 xl:gap-6">
+              <div className="flex min-w-0 items-center gap-2 font-semibold text-green-600 dark:text-green-400">
+                <Banknote className="h-4 w-4 shrink-0" />
+                <span className="truncate">{job.salary || "Salary Undisclosed"}</span>
               </div>
-              <div className="flex items-center gap-2"><MapPin className="h-4 w-4 text-primary/70" /> {job.location}</div>
-              <div className="flex items-center gap-2"><Calendar className="h-4 w-4 text-primary/70" /> First seen {formatDate(job.first_seen_at)}</div>
+              <div className="flex min-w-0 items-center gap-2">
+                <MapPin className="h-4 w-4 shrink-0 text-primary/70" />
+                <span className="truncate">{job.location}</span>
+              </div>
+              <div className="flex min-w-0 items-center gap-2">
+                <Calendar className="h-4 w-4 shrink-0 text-primary/70" />
+                <span className="truncate">First seen {formatDate(job.first_seen_at)}</span>
+              </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-6 p-6 rounded-2xl bg-card border border-border/50 shadow-xl shadow-primary/5">
-            <div className="relative group cursor-help" title="Overall Fit Score">
-                <div className="absolute inset-0 bg-primary/20 blur-2xl rounded-full scale-75 opacity-0 group-hover:opacity-100 transition-opacity" />
-                <ScoreRing score={job.fit_score ?? null} size={110} strokeWidth={9} />
-            </div>
-            <div className="space-y-2">
-              <h2 className="text-2xl font-bold tracking-tight">Match Quality: <span className="text-primary capitalize">{getMatchQualityLabel(job.score_breakdown?.apply_priority)}</span></h2>
-              <p className="text-muted-foreground leading-relaxed max-w-xl italic border-l-2 border-primary/30 pl-4">
-                {job.score_reasoning || "No detailed reasoning provided."}
+          <div className="rounded-2xl border border-border/50 bg-card p-4 shadow-xl shadow-primary/5 sm:p-6">
+            <div className="space-y-4 lg:hidden">
+              <div className="flex items-start gap-4">
+                <div className="relative group mt-1 shrink-0 cursor-help" title="Overall Fit Score">
+                  <div className="absolute inset-0 rounded-full bg-primary/20 blur-2xl scale-75 opacity-0 transition-opacity group-hover:opacity-100" />
+                  <ScoreRing score={job.fit_score ?? null} size={72} strokeWidth={7} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h2 className="text-xl font-bold tracking-tight">
+                    Match Quality:
+                    <span className="block capitalize text-primary">{matchQualityLabel}</span>
+                  </h2>
+                </div>
+              </div>
+              <p className="max-w-none border-l-2 border-primary/30 pl-4 text-sm italic leading-relaxed text-muted-foreground">
+                {scoreReasoning}
               </p>
+            </div>
+
+            <div className="hidden items-center gap-6 lg:flex">
+              <div className="relative group cursor-help" title="Overall Fit Score">
+                <div className="absolute inset-0 rounded-full bg-primary/20 blur-2xl scale-75 opacity-0 transition-opacity group-hover:opacity-100" />
+                <ScoreRing score={job.fit_score ?? null} size={110} strokeWidth={9} />
+              </div>
+              <div className="space-y-2">
+                <h2 className="text-2xl font-bold tracking-tight">
+                  Match Quality: <span className="text-primary capitalize">{matchQualityLabel}</span>
+                </h2>
+                <p className="max-w-xl border-l-2 border-primary/30 pl-4 italic leading-relaxed text-muted-foreground">
+                  {scoreReasoning}
+                </p>
+              </div>
             </div>
           </div>
         </div>
@@ -230,11 +260,11 @@ function JobDetailContent() {
       </section>
 
       {/* Content Grid */}
-      <section className="grid grid-cols-1 lg:grid-cols-3 gap-10 pb-20">
+      <section className="grid grid-cols-1 gap-8 pb-16 lg:grid-cols-3 lg:gap-10 lg:pb-20">
         <div className="lg:col-span-2 space-y-8">
            <div className="space-y-4">
               <h2 className="text-2xl font-bold tracking-tight underline decoration-primary/30 underline-offset-8 decoration-4">Job Description</h2>
-              <div className="prose dark:prose-invert prose-slate max-w-none prose-sm leading-relaxed whitespace-pre-wrap bg-card/60 p-8 rounded-3xl border border-border/40">
+              <div className="prose prose-sm max-w-none whitespace-pre-wrap rounded-[1.5rem] border border-border/40 bg-card/60 p-5 leading-relaxed dark:prose-invert prose-slate sm:p-8">
                 {job.description || "The original description was empty or could not be loaded."}
               </div>
            </div>

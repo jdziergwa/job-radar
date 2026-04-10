@@ -10,7 +10,7 @@ import { ScoreBar } from '@/components/score/ScoreBar'
 import { PriorityBadge } from '@/components/score/PriorityBadge'
 import { FitCategoryBadge } from '@/components/score/FitCategoryBadge'
 import { MatchTierBadge } from '@/components/score/MatchTierBadge'
-import { timeAgo, formatDate, getPlatformName } from '@/lib/utils/format'
+import { formatDate, getPlatformName } from '@/lib/utils/format'
 import { getCompanyQualitySignalLabel } from '@/lib/company-quality'
 import { Badge } from '@/components/ui/badge'
 import { Button, buttonVariants } from '@/components/ui/button'
@@ -34,12 +34,7 @@ import {
   Sparkles
 } from 'lucide-react'
 import Link from 'next/link'
-import { 
-  Tooltip, 
-  TooltipContent, 
-  TooltipProvider, 
-  TooltipTrigger 
-} from '@/components/ui/tooltip'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 
@@ -178,28 +173,30 @@ function JobDetailContent() {
   const keyMatches = job.score_breakdown?.key_matches ?? []
   const redFlags = job.score_breakdown?.red_flags ?? []
   const companySignals = Array.isArray(job.company_quality_signals) ? job.company_quality_signals : []
+  const matchQualityLabel = job.is_sparse ? "Manual Review Required" : getMatchQualityLabel(job.score_breakdown?.apply_priority)
+  const scoreReasoning = job.score_reasoning || "No detailed reasoning provided."
 
   return (
-    <div className="max-w-7xl mx-auto px-6 py-10 space-y-10 animate-in fade-in duration-700">
+    <div className="mx-auto max-w-7xl animate-in space-y-8 px-4 py-6 fade-in duration-700 sm:space-y-10 sm:px-6 sm:py-10">
       {/* Header Navigation */}
-      <header className="flex justify-between items-center">
-        <Link href="/jobs" className={cn(buttonVariants({ variant: "ghost" }), "gap-2 -ml-2 text-muted-foreground hover:text-foreground")}>
+      <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <Link href="/jobs" className={cn(buttonVariants({ variant: "ghost" }), "gap-2 -ml-2 self-start px-2 text-muted-foreground hover:text-foreground")}>
           <ArrowLeft className="h-4 w-4" /> Back to Job Board
         </Link>
-        <div className="flex items-center gap-3">
-            <a
-              href={job.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={cn(buttonVariants({ variant: "outline" }), "gap-2")}
-            >
-              Open in ATS <ExternalLink className="h-4 w-4" />
-            </a>
+        <div className="flex w-full items-center gap-3 sm:w-auto">
+          <a
+            href={job.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={cn(buttonVariants({ variant: "outline" }), "w-full justify-center gap-2 sm:w-auto")}
+          >
+            Open in ATS <ExternalLink className="h-4 w-4" />
+          </a>
         </div>
       </header>
 
       {/* Hero Section */}
-      <section className="flex flex-col lg:flex-row gap-10 items-start">
+      <section className="flex flex-col items-start gap-6 lg:flex-row lg:gap-10">
         <div className="flex-1 space-y-6">
           <div className="space-y-4">
             <div className="flex flex-wrap items-center gap-3">
@@ -218,47 +215,61 @@ function JobDetailContent() {
                   </Badge>
                 )}
             </div>
-            <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl lg:text-6xl text-foreground">
+            <h1 className="text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl lg:text-5xl xl:text-6xl">
               {job.title}
             </h1>
-            <div className="flex flex-wrap gap-6 text-muted-foreground text-sm font-medium">
-              <div className="flex items-center gap-2"><Building2 className="h-4 w-4 text-primary/70" /> {job.company_name}</div>
-              <div className="flex items-center gap-2">
-                <Banknote className="h-4 w-4 text-green-600 dark:text-green-400 opacity-80" /> 
-                <span className="font-semibold text-foreground/80">{job.salary || "Salary Undisclosed"}</span>
+            <div className="grid grid-cols-1 gap-3 text-sm font-medium text-muted-foreground sm:grid-cols-2 xl:grid-cols-4 xl:gap-6">
+              <div className="flex min-w-0 items-center gap-2">
+                <Building2 className="h-4 w-4 shrink-0 text-primary/70" />
+                <span className="truncate">{job.company_name}</span>
               </div>
-              <div className="flex items-center gap-2"><MapPin className="h-4 w-4 text-primary/70" /> {job.location}</div>
-              <div className="flex items-center gap-2"><Calendar className="h-4 w-4 text-primary/70" /> First seen {formatDate(job.first_seen_at)}</div>
+              <div className="flex min-w-0 items-center gap-2">
+                <Banknote className="h-4 w-4 text-green-600 dark:text-green-400 opacity-80" /> 
+                <span className="truncate font-semibold text-foreground/80">{job.salary || "Salary Undisclosed"}</span>
+              </div>
+              <div className="flex min-w-0 items-center gap-2">
+                <MapPin className="h-4 w-4 shrink-0 text-primary/70" />
+                <span className="truncate">{job.location}</span>
+              </div>
+              <div className="flex min-w-0 items-center gap-2">
+                <Calendar className="h-4 w-4 shrink-0 text-primary/70" />
+                <span className="truncate">First seen {formatDate(job.first_seen_at)}</span>
+              </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-6 p-6 rounded-2xl bg-card border border-border/50 shadow-xl shadow-primary/5">
-            <div className="relative group cursor-help" title={job.is_sparse ? "Manual Review Required" : "Overall Fit Score"}>
-                <div className="absolute inset-0 bg-primary/20 blur-2xl rounded-full scale-75 opacity-0 group-hover:opacity-100 transition-opacity" />
-                {job.is_sparse ? (
-                  <div className="w-[110px] h-[110px] rounded-full bg-amber-500/10 border-2 border-amber-500/20 flex items-center justify-center text-amber-500 shadow-inner">
-                    <HelpCircle className="h-12 w-12 stroke-[2]" />
-                  </div>
-                ) : (
-                  <ScoreRing score={job.fit_score ?? null} size={110} strokeWidth={9} />
-                )}
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-center gap-3">
-                <h2 className="text-2xl font-bold tracking-tight">
-                  Match Quality: <span className="text-primary capitalize">{job.is_sparse ? "Manual Review Required" : getMatchQualityLabel(job.score_breakdown?.apply_priority)}</span>
-                </h2>
-                  <Tooltip>
-                    <TooltipTrigger 
-                       render={(triggerProps) => (
-                         <Button 
+          <div className="rounded-2xl border border-border/50 bg-card p-4 shadow-xl shadow-primary/5 sm:p-6">
+            <div className="space-y-4 lg:hidden">
+              <div className="flex items-start gap-4">
+                <div className="relative group mt-1 shrink-0 cursor-help" title={job.is_sparse ? "Manual Review Required" : "Overall Fit Score"}>
+                  <div className="absolute inset-0 rounded-full bg-primary/20 blur-2xl scale-75 opacity-0 transition-opacity group-hover:opacity-100" />
+                  {job.is_sparse ? (
+                    <div className="flex h-[72px] w-[72px] items-center justify-center rounded-full border-2 border-amber-500/20 bg-amber-500/10 text-amber-500 shadow-inner">
+                      <HelpCircle className="h-8 w-8 stroke-[2]" />
+                    </div>
+                  ) : (
+                    <ScoreRing score={job.fit_score ?? null} size={72} strokeWidth={7} />
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-col items-start gap-2">
+                    <h2 className="text-xl font-bold tracking-tight">
+                      Match Quality:
+                      <span className="block capitalize text-primary">
+                        {matchQualityLabel}
+                      </span>
+                    </h2>
+                    <Tooltip>
+                      <TooltipTrigger 
+                        render={(triggerProps) => (
+                          <Button 
                             {...triggerProps}
                             variant="outline" 
                             size="sm" 
                             disabled={!!rescoreRunId}
                             onClick={handleRescore}
-                            className="h-8 px-3 rounded-full border-primary/20 hover:border-primary/40 hover:bg-primary/5 text-muted-foreground hover:text-primary transition-all group gap-2 text-[10px] font-bold uppercase tracking-wider shadow-sm disabled:opacity-70"
-                         >
+                            className="h-8 shrink-0 self-start gap-2 rounded-full border-primary/20 px-3 text-[10px] font-bold uppercase tracking-wider text-muted-foreground shadow-sm transition-all hover:border-primary/40 hover:bg-primary/5 hover:text-primary disabled:opacity-70"
+                          >
                             {rescoreRunId ? (
                               <>
                                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -266,21 +277,75 @@ function JobDetailContent() {
                               </>
                             ) : (
                               <>
-                                <RotateCcw className="h-3.5 w-3.5 group-hover:rotate-180 transition-transform duration-500" />
+                                <RotateCcw className="h-3.5 w-3.5 transition-transform duration-500 group-hover:rotate-180" />
                                 Rescore
                               </>
                             )}
-                         </Button>
-                       )}
+                          </Button>
+                        )}
+                      />
+                      <TooltipContent className="border border-border/50 bg-popover/80 text-[10px] text-popover-foreground shadow-xl backdrop-blur-md">
+                        <p>Rerun AI intelligence pass for this job</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                </div>
+              </div>
+              <p className="max-w-none border-l-2 border-primary/30 pl-4 text-sm italic leading-relaxed text-muted-foreground">
+                {scoreReasoning}
+              </p>
+            </div>
+
+            <div className="hidden items-center gap-6 lg:flex">
+              <div className="relative group cursor-help" title={job.is_sparse ? "Manual Review Required" : "Overall Fit Score"}>
+                <div className="absolute inset-0 rounded-full bg-primary/20 blur-2xl scale-75 opacity-0 transition-opacity group-hover:opacity-100" />
+                {job.is_sparse ? (
+                  <div className="flex h-[110px] w-[110px] items-center justify-center rounded-full border-2 border-amber-500/20 bg-amber-500/10 text-amber-500 shadow-inner">
+                    <HelpCircle className="h-12 w-12 stroke-[2]" />
+                  </div>
+                ) : (
+                  <ScoreRing score={job.fit_score ?? null} size={110} strokeWidth={9} />
+                )}
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center gap-3">
+                  <h2 className="text-2xl font-bold tracking-tight">
+                    Match Quality: <span className="text-primary capitalize">{matchQualityLabel}</span>
+                  </h2>
+                  <Tooltip>
+                    <TooltipTrigger 
+                      render={(triggerProps) => (
+                        <Button 
+                          {...triggerProps}
+                          variant="outline" 
+                          size="sm" 
+                          disabled={!!rescoreRunId}
+                          onClick={handleRescore}
+                          className="h-8 gap-2 rounded-full border-primary/20 px-3 text-[10px] font-bold uppercase tracking-wider text-muted-foreground shadow-sm transition-all hover:border-primary/40 hover:bg-primary/5 hover:text-primary disabled:opacity-70"
+                        >
+                          {rescoreRunId ? (
+                            <>
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              Rescoring...
+                            </>
+                          ) : (
+                            <>
+                              <RotateCcw className="h-3.5 w-3.5 transition-transform duration-500 group-hover:rotate-180" />
+                              Rescore
+                            </>
+                          )}
+                        </Button>
+                      )}
                     />
-                    <TooltipContent className="text-[10px] bg-popover/80 backdrop-blur-md border border-border/50 text-popover-foreground shadow-xl">
+                    <TooltipContent className="border border-border/50 bg-popover/80 text-[10px] text-popover-foreground shadow-xl backdrop-blur-md">
                       <p>Rerun AI intelligence pass for this job</p>
                     </TooltipContent>
                   </Tooltip>
+                </div>
+                <p className="max-w-xl border-l-2 border-primary/30 pl-4 italic leading-relaxed text-muted-foreground">
+                  {scoreReasoning}
+                </p>
               </div>
-              <p className="text-muted-foreground leading-relaxed max-w-xl italic border-l-2 border-primary/30 pl-4">
-                {job.score_reasoning || "No detailed reasoning provided."}
-              </p>
             </div>
           </div>
         </div>
@@ -348,42 +413,42 @@ function JobDetailContent() {
       </section>
 
       {/* Content Grid */}
-      <section className="grid grid-cols-1 lg:grid-cols-3 gap-10 pb-20">
+      <section className="grid grid-cols-1 gap-8 pb-16 lg:grid-cols-3 lg:gap-10 lg:pb-20">
         <div className="lg:col-span-2 space-y-8">
-           <div className="space-y-4">
-              <h2 className="text-2xl font-bold tracking-tight underline decoration-primary/30 underline-offset-8 decoration-4">Job Description</h2>
-              <JobDescription content={job.description ?? undefined} isSparse={job.is_sparse} />
-              <div className="flex justify-center pt-4">
-                   <a
-                      href={job.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={cn(buttonVariants({ variant: "outline" }), "gap-2 rounded-2xl px-8 h-12 border-primary/20 hover:bg-primary/5 hover:border-primary/40 transition-all")}
-                    >
-                      View Original Posting on {getPlatformName(job.ats_platform)} <ExternalLink className="h-4 w-4" />
-                    </a>
-                    { job.ats_platform === 'remotive' && (
-                      <p className="text-[10px] text-muted-foreground mt-2 text-center opacity-60">
-                        Source: {getPlatformName(job.ats_platform)}
-                      </p>
-                    )}
-                    { job.ats_platform === 'remoteok' && (
-                      <div className="flex flex-col items-center gap-1 mt-4">
-                        <p className="text-[10px] text-muted-foreground opacity-60">
-                          Jobs provided by
-                        </p>
-                        <a 
-                          href="https://remoteok.com" 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="text-xs font-bold text-primary hover:underline flex items-center gap-1"
-                        >
-                          Remote OK <ExternalLink className="h-3 w-3" />
-                        </a>
-                      </div>
-                    )}
+          <div className="space-y-4">
+            <h2 className="text-2xl font-bold tracking-tight underline decoration-primary/30 decoration-4 underline-offset-8">Job Description</h2>
+            <JobDescription content={job.description ?? undefined} isSparse={job.is_sparse} />
+            <div className="flex flex-col items-stretch gap-2 pt-2 sm:items-center">
+              <a
+                href={job.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={cn(buttonVariants({ variant: "outline" }), "h-12 w-full justify-center gap-2 rounded-2xl border-primary/20 px-8 transition-all hover:border-primary/40 hover:bg-primary/5 sm:w-auto")}
+              >
+                View Original Posting on {getPlatformName(job.ats_platform)} <ExternalLink className="h-4 w-4" />
+              </a>
+              { job.ats_platform === 'remotive' && (
+                <p className="mt-2 text-center text-[10px] text-muted-foreground opacity-60">
+                  Source: {getPlatformName(job.ats_platform)}
+                </p>
+              )}
+              { job.ats_platform === 'remoteok' && (
+                <div className="mt-4 flex flex-col items-center gap-1">
+                  <p className="text-[10px] text-muted-foreground opacity-60">
+                    Jobs provided by
+                  </p>
+                  <a 
+                    href="https://remoteok.com" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1 text-xs font-bold text-primary hover:underline"
+                  >
+                    Remote OK <ExternalLink className="h-3 w-3" />
+                  </a>
                 </div>
-           </div>
+              )}
+            </div>
+          </div>
         </div>
 
         <div className="space-y-8">

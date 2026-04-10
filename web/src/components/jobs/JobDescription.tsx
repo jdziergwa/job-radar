@@ -154,7 +154,7 @@ export function JobDescription({ content, isSparse, className }: JobDescriptionP
 
   if (!content) {
     return (
-      <div className="italic text-muted-foreground p-12 text-center bg-muted/20 rounded-3xl border border-dashed border-border/60">
+      <div className="rounded-[1.5rem] border border-dashed border-border/60 bg-muted/20 p-8 text-center italic text-muted-foreground sm:rounded-3xl sm:p-12">
          <p>The original description was empty or could not be loaded.</p>
          <p className="text-xs mt-2 opacity-60">This can happen if the employer board uses heavy anti-bot protection.</p>
       </div>
@@ -164,10 +164,10 @@ export function JobDescription({ content, isSparse, className }: JobDescriptionP
   return (
     <div className={cn(
       "prose dark:prose-invert prose-slate max-w-none prose-sm sm:prose-base leading-relaxed selection:bg-primary/20",
-      "bg-card/60 backdrop-blur-xl p-8 sm:p-10 rounded-[2rem] border border-border/40 shadow-2xl shadow-black/5 relative overflow-visible",
+      "relative overflow-visible rounded-[1.5rem] border border-border/40 bg-card/60 p-5 shadow-2xl shadow-black/5 backdrop-blur-xl sm:rounded-[2rem] sm:p-8 lg:p-10",
       "prose-headings:text-foreground prose-headings:font-bold prose-p:text-muted-foreground/90 prose-li:text-muted-foreground/90",
       "prose-ul:list-disc prose-ul:pl-6 prose-ol:list-decimal prose-ol:pl-6",
-      "prose-li:my-1.5 prose-li:leading-relaxed",
+      "prose-li:my-1.5 prose-li:leading-relaxed prose-p:break-words prose-li:break-words prose-pre:overflow-x-auto",
       "prose-strong:text-foreground prose-strong:font-bold",
       "prose-a:text-primary prose-a:no-underline hover:prose-a:underline",
       "prose-img:rounded-2xl prose-hr:border-border/30",
