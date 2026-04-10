@@ -12,6 +12,7 @@ import logging
 import os
 import sys
 import webbrowser
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -234,6 +235,9 @@ async def run() -> None:
     store = Store(db_path)
 
     logger.info("Profile: %s | DB: %s", args.profile, db_path)
+
+    def mark_pipeline_completed() -> None:
+        store.set_metadata("last_pipeline_run_at", datetime.utcnow().isoformat())
 
     # ── Subcommands (no collection needed) ──────────────────────────
 
@@ -503,6 +507,7 @@ async def run() -> None:
     if args.dry_run:
         print_scan_summary(scan_stats)
         print_candidates(candidates, label="DRY RUN")
+        mark_pipeline_completed()
         if args.json_progress:
             emit_progress(scoring_step, "Skipped", "Scoring skipped (Dry Run)", duration=timer.get_stage_duration())
             emit_progress(done_step, "Done", stats=scan_stats, duration=timer.get_total_duration())
@@ -565,10 +570,12 @@ async def run() -> None:
             top_n = telegram_config.get("top_n", 5)
             await send_telegram(good_matches, top_n=top_n)
             
+        mark_pipeline_completed()
         if args.json_progress:
             emit_progress(done_step, "Done", stats=scan_stats, duration=timer.get_total_duration())
     else:
         print("\n  No new candidates today. Run --history to see past results.\n")
+        mark_pipeline_completed()
         if args.json_progress:
             scan_stats["scored"] = 0
             scan_stats["total_duration"] = format_duration(timer.get_total_duration())

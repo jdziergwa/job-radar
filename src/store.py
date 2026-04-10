@@ -474,6 +474,7 @@ class Store:
         """Get database statistics for the dashboard."""
         today = datetime.utcnow().date().isoformat()
         week_ago = (datetime.utcnow() - timedelta(days=7)).isoformat()
+        last_run = self.get_metadata("last_pipeline_run_at")
 
         with self._connect() as conn:
             total = conn.execute("SELECT COUNT(*) FROM jobs").fetchone()[0]
@@ -539,6 +540,7 @@ class Store:
             "new_today": new_today,
             "total_new_today": total_new_today,
             "new_this_week": new_this_week,
+            "last_pipeline_run_at": last_run,
             "scored": scored,
             "pending": pending,
             "applied": applied,

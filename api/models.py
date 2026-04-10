@@ -101,6 +101,7 @@ class StatsOverview(BaseModel):
     new_today: int = 0
     total_new_today: int = 0
     new_this_week: int = 0
+    last_pipeline_run_at: Optional[str] = None
     scored: int = 0
     pending: int = 0
     applied: int = 0
