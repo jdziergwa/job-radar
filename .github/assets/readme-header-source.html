@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Job Radar README Header</title>
+    <style>
+      @font-face {
+        font-family: "Inter";
+        font-style: normal;
+        font-weight: 100 900;
+        font-display: swap;
+        src: url("../../web/out/_next/static/media/1bffadaabf893a1e-s.16ipb6fqu393i.woff2") format("woff2");
+      }
+
+      :root {
+        --background: #0a0a0a;
+        --foreground: #fafafa;
+        --primary: #4166ff;
+        --muted-foreground: #a1a1a1;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        width: 960px;
+        height: 640px;
+        overflow: hidden;
+        background: var(--background);
+        color: var(--foreground);
+        font-family: "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      body {
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+        padding-top: 64px;
+      }
+
+      .shell {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 36px;
+        text-align: center;
+      }
+
+      .mark-box {
+        width: 168px;
+        height: 168px;
+        display: grid;
+        place-items: center;
+        background: rgba(65, 102, 255, 0.1);
+        border: 1px solid rgba(65, 102, 255, 0.2);
+        border-radius: 32px;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+      }
+
+      .mark-box svg {
+        width: 96px;
+        height: 96px;
+        stroke: var(--primary);
+      }
+
+      .title-wrap {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0;
+      }
+
+      .title {
+        margin: 0;
+        font-size: 108px;
+        line-height: 1;
+        font-weight: 700;
+        letter-spacing: -0.025em;
+        color: var(--foreground);
+      }
+
+      .title .accent {
+        color: var(--primary);
+      }
+
+      .subtitle {
+        margin: 28px 0 0;
+        font-size: 22px;
+        line-height: 1;
+        font-weight: 700;
+        letter-spacing: 0.25em;
+        text-transform: uppercase;
+        color: rgba(161, 161, 161, 0.28);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <div class="mark-box" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M19.07 4.93A10 10 0 0 0 6.99 3.34"></path>
+          <path d="M4 6h.01"></path>
+          <path d="M2.29 9.62A10 10 0 1 0 21.31 8.35"></path>
+          <path d="M16.24 7.76A6 6 0 1 0 8.23 16.67"></path>
+          <path d="M12 18h.01"></path>
+          <path d="M17.99 11.66A6 6 0 0 1 15.77 16.67"></path>
+          <circle cx="12" cy="12" r="2"></circle>
+          <path d="M13.41 10.59 19.07 4.93"></path>
+        </svg>
+      </div>
+
+      <div class="title-wrap">
+        <h1 class="title">Job <span class="accent">Radar</span></h1>
+        <p class="subtitle">AI-powered Job Search</p>
+      </div>
+    </div>
+  </body>
+</html>

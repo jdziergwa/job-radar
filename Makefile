@@ -1,4 +1,4 @@
-.PHONY: install dev types build start lint test clean-db clean-db-volume clean-web demo-snapshot demo-refresh
+.PHONY: install dev types build start lint test clean-db clean-db-volume clean-web demo-snapshot demo-refresh readme-header
 
 COMPOSE ?= docker compose
 PROJECT_NAME ?= $(notdir $(CURDIR))
@@ -55,3 +55,6 @@ demo-snapshot:
 	.venv/bin/python scripts/build_demo_snapshot.py --profile demo --out web/public/demo-data
 
 demo-refresh: demo-snapshot
+
+readme-header:
+	python3 scripts/render_readme_header.py

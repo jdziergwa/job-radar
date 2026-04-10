@@ -1,8 +1,15 @@
-# 📡 Job Radar
+<p align="center">
+  <img src=".github/assets/readme-header.png" alt="Job Radar" width="350" />
+</p>
 
 Job Radar monitors your job search across curated ATS boards, public remote-job APIs, hiring feeds, and an optional large remote-job aggregator. It collects, hydrates, filters, and scores job listings against your profile using Claude, then presents the results in a web dashboard.
 
 Try the live demo: [https://jdziergwa.github.io/job-radar/](https://jdziergwa.github.io/job-radar/)
+
+<p align="center">
+  <img src=".github/assets/dashboard.png" alt="Dashboard overview" width="48%" />
+  <img src=".github/assets/job-details.png" alt="Job details view" width="48%" />
+</p>
 
 ---
 
@@ -62,7 +69,7 @@ When running via Docker Compose, the API stores SQLite databases in a Docker nam
 ### 2. One-Minute Installation
 
 ```bash
-git clone <repo-url>
+git clone https://github.com/jdziergwa/job-radar.git
 cd job-radar
 
 # Install dependencies (Python venv + Node modules)
@@ -163,12 +170,13 @@ Job Radar uses a multi-stage pipeline to ensure efficiency and accuracy:
 ```mermaid
 graph TD
     A[Collect] -->|Poll APIs| B[Deduplicate]
-    B -->|Check SQLite| C[Pre-filter]
-    C -->|Regex Check| D[Score]
-    D -->|Claude AI| E[Report]
-    E -->|UI / Telegram| F[Opportunity]
+    B -->|Check SQLite| C[Hydrate]
+    C -->|Fetch fuller descriptions| D[Pre-filter]
+    D -->|Regex Check| E[Score]
+    E -->|Claude AI| F[Report]
+    F -->|UI / Telegram| G[Opportunity]
     
-    style D fill:#f96,stroke:#333,stroke-width:2px
+    style E fill:#f96,stroke:#333,stroke-width:2px
 ```
 
 1.  **Collect**: Fetches jobs from one or more providers such as `local`, `aggregator`, `remotive`, or `arbeitnow`.
@@ -186,10 +194,14 @@ graph TD
 |---------|--------|
 | `make install` | Setup Python venv and install all dependencies. |
 | `make dev` | Start the full stack (API + Web) with hot reload. |
-| `make start` | Start the production build of the application. |
+| `make lint` | Run the frontend linter and TypeScript typecheck. |
 | `make build` | Build the frontend for production. |
+| `make start` | Build the frontend, then start the FastAPI server. |
 | `make types` | Regenerate TypeScript types from the API spec. |
 | `make test` | Run the Python test suite. |
+| `make demo-snapshot` | Export the committed static demo snapshot into `web/public/demo-data`. |
+| `make demo-refresh` | Refresh the demo snapshot using the current demo profile. |
+| `make readme-header` | Regenerate the README header PNG from its HTML source. |
 | `make clean-web`| Remove the frontend node_modules and .next cache. |
 | `make clean-db`| Wipe local databases and, if Docker is running, remove `/app/data/*.db` inside the API container. |
 | `make clean-db-volume`| Remove the Docker named volume used for API SQLite databases. |
