@@ -231,4 +231,4 @@ Run `make install` again to ensure your Python virtual environment is correctly 
 
 ## 📄 License
 
-MIT. Go find your dream job! 🚀
+Licensed under AGPL-3.0. See `LICENSE`.
