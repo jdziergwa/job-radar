@@ -1,4 +1,5 @@
-from src.providers.utils import slugify, parse_salary_string
+from src.providers.utils import slugify
+from src.salary import parse_salary_string
 
 def test_slugify():
     assert slugify("Google") == "google"
@@ -12,6 +13,9 @@ def test_parse_salary():
     assert parse_salary_string("$100k - $120k") == (100000, 120000, "USD")
     assert parse_salary_string("€50,000") == (50000, 50000, "EUR")
     assert parse_salary_string("70000 GBP") == (70000, 70000, "GBP")
+    assert parse_salary_string("$5,000/month") == (60000, 60000, "USD")
+    assert parse_salary_string("€2,000 per week") == (104000, 104000, "EUR")
+    assert parse_salary_string("£400/day") == (104000, 104000, "GBP")
     assert parse_salary_string("Not specified") == (None, None, None)
     assert parse_salary_string("Competitive") == (None, None, None)
     assert parse_salary_string("100k") == (100000, 100000, None) # No currency indicator

@@ -751,8 +751,21 @@ export interface components {
             date: string;
             /** New Jobs */
             new_jobs: number;
+            /** In Funnel */
+            in_funnel: number;
             /** Scored */
             scored: number;
+        };
+        /** PipelineFunnelStats */
+        PipelineFunnelStats: {
+            /** Collected */
+            collected: number;
+            /** Passed Prefilter */
+            passed_prefilter: number;
+            /** High Priority */
+            high_priority: number;
+            /** Applied */
+            applied: number;
         };
         /** DismissalStats */
         DismissalStats: {
@@ -1119,6 +1132,8 @@ export interface components {
         };
         /** SalaryStat */
         SalaryStat: {
+            /** Currency */
+            currency?: string | null;
             /** Range */
             range: string;
             /** Count */
@@ -1268,6 +1283,16 @@ export interface components {
              * @default []
              */
             daily_counts: components["schemas"]["DailyCount"][];
+            /**
+             * Pipeline Funnel
+             * @default {
+             *       "collected": 0,
+             *       "passed_prefilter": 0,
+             *       "high_priority": 0,
+             *       "applied": 0
+             *     }
+             */
+            pipeline_funnel: components["schemas"]["PipelineFunnelStats"];
             /**
              * Top Skills
              * @default []

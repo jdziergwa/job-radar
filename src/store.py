@@ -16,11 +16,54 @@ from datetime import datetime, timedelta
 from typing import Callable, Generator
 
 from src.models import CandidateJob, RawJob, ScoredJob
+from src.salary import parse_salary_string
 from src.score_normalization import normalize_persisted_priority
 
 logger = logging.getLogger(__name__)
 UpsertProgressCallback = Callable[[str, int, int], None]
 UPSERT_WRITE_CHUNK_SIZE = 5000
+SALARY_BUCKET_ORDER = [
+    "Undisclosed",
+    "< 60k",
+    *[
+        f"{min_salary}k-{min_salary + 10}k"
+        for min_salary in range(60, 200, 10)
+    ],
+    "200k+",
+]
+
+
+def _representative_annual_salary(
+    salary_text: str | None,
+    salary_min: int | None,
+    salary_max: int | None,
+) -> int | None:
+    """Return an annualized representative salary for bucketing market data."""
+    parsed_min, parsed_max, _ = parse_salary_string(salary_text)
+
+    normalized_min = parsed_min if parsed_min is not None else salary_min
+    normalized_max = parsed_max if parsed_max is not None else salary_max
+
+    if normalized_min is None and normalized_max is None:
+        return None
+    if normalized_min is None:
+        return int(normalized_max)
+    if normalized_max is None or normalized_max < normalized_min:
+        return int(normalized_min)
+
+    return int(round((normalized_min + normalized_max) / 2))
+
+
+def _salary_bucket_sort_key(currency: str | None, salary_range: str) -> tuple[int, str, int]:
+    if salary_range == "Undisclosed":
+        return (0, "", 0)
+
+    try:
+        bucket_index = SALARY_BUCKET_ORDER.index(salary_range)
+    except ValueError:
+        bucket_index = len(SALARY_BUCKET_ORDER)
+
+    return (1, currency or "Unknown", bucket_index)
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS jobs (
@@ -677,22 +720,67 @@ class Store:
     def get_trends(self, days: int = 30) -> dict:
         """Get trend data for charts: daily counts, skills, company stats, score trends."""
         with self._connect() as conn:
-            # Daily new jobs + scored count
+            # Daily discovery + funnel entry + scored count
             daily_rows = conn.execute("""
+                WITH new_counts AS (
+                    SELECT
+                        date(first_seen_at) as day,
+                        COUNT(*) as new_jobs
+                    FROM jobs
+                    WHERE date(first_seen_at) >= date('now', ?)
+                    GROUP BY date(first_seen_at)
+                ),
+                funnel_counts AS (
+                    SELECT
+                        date(first_seen_at) as day,
+                        COUNT(*) as in_funnel
+                    FROM jobs
+                    WHERE date(first_seen_at) >= date('now', ?)
+                      AND match_tier IS NOT NULL
+                    GROUP BY date(first_seen_at)
+                ),
+                scored_counts AS (
+                    SELECT
+                        date(scored_at) as day,
+                        COUNT(*) as scored
+                    FROM jobs
+                    WHERE scored_at IS NOT NULL
+                      AND date(scored_at) >= date('now', ?)
+                    GROUP BY date(scored_at)
+                ),
+                all_days AS (
+                    SELECT day FROM new_counts
+                    UNION
+                    SELECT day FROM funnel_counts
+                    UNION
+                    SELECT day FROM scored_counts
+                )
                 SELECT
-                    date(first_seen_at) as day,
-                    COUNT(*) as new_jobs,
-                    SUM(CASE WHEN status IN ('scored', 'applied', 'dismissed') THEN 1 ELSE 0 END) as scored
-                FROM jobs
-                WHERE date(first_seen_at) >= date('now', ?)
-                GROUP BY date(first_seen_at)
-                ORDER BY day ASC
-            """, (f"-{days} days",)).fetchall()
+                    all_days.day as day,
+                    COALESCE(new_counts.new_jobs, 0) as new_jobs,
+                    COALESCE(funnel_counts.in_funnel, 0) as in_funnel,
+                    COALESCE(scored_counts.scored, 0) as scored
+                FROM all_days
+                LEFT JOIN new_counts ON new_counts.day = all_days.day
+                LEFT JOIN funnel_counts ON funnel_counts.day = all_days.day
+                LEFT JOIN scored_counts ON scored_counts.day = all_days.day
+                ORDER BY all_days.day ASC
+            """, (f"-{days} days", f"-{days} days", f"-{days} days")).fetchall()
 
             # Skill frequency from key_matches in score_breakdown
             breakdown_rows = conn.execute(
                 "SELECT score_breakdown FROM jobs WHERE score_breakdown IS NOT NULL AND fit_score IS NOT NULL"
             ).fetchall()
+
+            funnel_rows = conn.execute("""
+                SELECT
+                    status,
+                    fit_score,
+                    score_breakdown,
+                    match_tier
+                FROM jobs
+                WHERE date(first_seen_at) >= date('now', ?)
+            """, (f"-{days} days",)).fetchall()
 
             # Company stats
             company_rows = conn.execute("""
@@ -700,12 +788,14 @@ class Store:
                     company_name,
                     COUNT(*) as job_count,
                     AVG(CASE WHEN fit_score IS NOT NULL THEN fit_score END) as avg_score,
-                    MAX(date(last_seen_at)) as last_seen
+                    MAX(date(COALESCE(last_seen_at, first_seen_at))) as last_seen
                 FROM jobs
+                WHERE status IN ('new', 'scored', 'applied')
+                  AND date(COALESCE(last_seen_at, first_seen_at)) >= date('now', ?)
                 GROUP BY company_name
                 ORDER BY job_count DESC
                 LIMIT 30
-            """).fetchall()
+            """, (f"-{days} days",)).fetchall()
 
             # Score trend over time
             score_trend_rows = conn.execute("""
@@ -728,11 +818,39 @@ class Store:
             except (json.JSONDecodeError, Exception):
                 pass
 
+        funnel_counts = {
+            "collected": len(funnel_rows),
+            "passed_prefilter": 0,
+            "high_priority": 0,
+            "applied": 0,
+        }
+        for row in funnel_rows:
+            if row["match_tier"]:
+                funnel_counts["passed_prefilter"] += 1
+            if row["status"] == "applied":
+                funnel_counts["applied"] += 1
+            if row["score_breakdown"]:
+                breakdown, apply_priority, skip_reason, _ = self._parse_score_breakdown_payload(row["score_breakdown"])
+                normalized_priority, _ = normalize_persisted_priority(
+                    row["fit_score"],
+                    breakdown,
+                    apply_priority,
+                    skip_reason,
+                )
+                if normalized_priority == "high":
+                    funnel_counts["high_priority"] += 1
+
         return {
             "daily_counts": [
-                {"date": r["day"], "new_jobs": r["new_jobs"], "scored": r["scored"]}
+                {
+                    "date": r["day"],
+                    "new_jobs": r["new_jobs"],
+                    "in_funnel": r["in_funnel"],
+                    "scored": r["scored"],
+                }
                 for r in daily_rows
             ],
+            "pipeline_funnel": funnel_counts,
             "top_skills": [
                 {"skill": s, "count": c} for s, c in skill_counter.most_common(20)
             ],
@@ -775,19 +893,29 @@ class Store:
             if country:
                 country_counter[country] += 1
 
-            s_min = row["salary_min"]
-            if s_min is None or s_min <= 0:
+            representative_salary = _representative_annual_salary(
+                row["salary"],
+                row["salary_min"],
+                row["salary_max"],
+            )
+            _, _, parsed_currency = parse_salary_string(row["salary"])
+            normalized_currency = row["salary_currency"] or parsed_currency or "Unknown"
+            if representative_salary is None or representative_salary <= 0:
                 bucket = "Undisclosed"
-            elif s_min < 60000:
+                bucket_currency = None
+            elif representative_salary < 60000:
                 bucket = "< 60k"
-            elif s_min >= 200000:
+                bucket_currency = normalized_currency
+            elif representative_salary >= 200000:
                 bucket = "200k+"
+                bucket_currency = normalized_currency
             else:
                 # 10k buckets from 60k to 200k
-                base = (s_min // 10000) * 10
+                base = (representative_salary // 10000) * 10
                 bucket = f"{base}k-{base+10}k"
+                bucket_currency = normalized_currency
             
-            salary_counter[bucket] += 1
+            salary_counter[(bucket_currency, bucket)] += 1
 
             bd = row["score_breakdown"]
             if not bd:
@@ -822,8 +950,11 @@ class Store:
             "total_scored": total,
             "apply_priority_counts": dict(priority_counter),
             "salary_distribution": [
-                {"range": r, "count": n}
-                for r, n in salary_counter.items()
+                {"currency": currency, "range": salary_range, "count": count}
+                for (currency, salary_range), count in sorted(
+                    salary_counter.items(),
+                    key=lambda item: _salary_bucket_sort_key(item[0][0], item[0][1]),
+                )
             ],
         }
 

@@ -32,6 +32,10 @@ export function AIInsightsPanel() {
     }
   }
 
+  useEffect(() => {
+    fetchInsights(false)
+  }, [])
+
   // Format timestamp
   const formattedTime = generatedAt
     ? new Date(generatedAt.endsWith('Z') ? generatedAt : generatedAt + 'Z').toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })
@@ -124,4 +128,3 @@ export function AIInsightsPanel() {
     </Card>
   )
 }
-

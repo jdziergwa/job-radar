@@ -119,7 +119,15 @@ class DismissalStats(BaseModel):
 class DailyCount(BaseModel):
     date: str
     new_jobs: int
+    in_funnel: int = 0
     scored: int
+
+
+class PipelineFunnelStats(BaseModel):
+    collected: int = 0
+    passed_prefilter: int = 0
+    high_priority: int = 0
+    applied: int = 0
 
 
 class SkillCount(BaseModel):
@@ -145,6 +153,7 @@ class SkipReasonStat(BaseModel):
 
 
 class SalaryStat(BaseModel):
+    currency: Optional[str] = None
     range: str
     count: int
 
@@ -166,6 +175,7 @@ class InsightsResponse(BaseModel):
 
 class TrendsResponse(BaseModel):
     daily_counts: list[DailyCount] = []
+    pipeline_funnel: PipelineFunnelStats = PipelineFunnelStats()
     top_skills: list[SkillCount] = []
     company_stats: list[CompanyStat] = []
     score_trend: list[dict] = []

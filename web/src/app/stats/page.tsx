@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react'
 import { api } from '@/lib/api/client'
-import { ActivityChart, DistributionChart } from '@/components/stats/TrendCharts'
+import { FunnelCard, DistributionChart } from '@/components/stats/TrendCharts'
 import { SkipReasonsChart, CountryChart, MissingSkillsChart, SalaryChart } from '@/components/stats/MarketCharts'
 import { AIInsightsPanel } from '@/components/stats/AIInsightsPanel'
 import { CompanyTable } from '@/components/stats/CompanyTable'
@@ -114,17 +114,20 @@ export default function StatsPage() {
 
       {loading ? (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+          <Skeleton className="h-[340px] w-full rounded-xl bg-muted/20" />
+          <Skeleton className="h-[340px] w-full rounded-xl bg-muted/20" />
+          <Skeleton className="h-[340px] w-full rounded-xl bg-muted/20" />
+          <Skeleton className="h-[340px] w-full rounded-xl bg-muted/20" />
           <Skeleton className="h-[340px] w-full rounded-xl bg-muted/20 lg:col-span-2" />
-          <Skeleton className="h-[340px] w-full rounded-xl bg-muted/20" />
-          <Skeleton className="h-[340px] w-full rounded-xl bg-muted/20" />
-          <Skeleton className="h-[340px] w-full rounded-xl bg-muted/20" />
-          <Skeleton className="h-[400px] w-full rounded-xl bg-muted/20 lg:col-span-2" />
           <Skeleton className="h-[300px] w-full rounded-xl bg-muted/20 lg:col-span-2" />
         </div>
       ) : (
         <div className="space-y-8">
-          {/* Job Activity — full width */}
-          <ActivityChart data={trends?.daily_counts || []} />
+          {/* Funnel + Match Distribution */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <FunnelCard data={trends?.pipeline_funnel || {}} />
+            <DistributionChart data={stats?.score_distribution || {}} />
+          </div>
 
           {/* Market Signal Row — Skip Reasons, Countries, Missing Skills, Salaries */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -134,15 +137,8 @@ export default function StatsPage() {
             <SalaryChart data={market?.salary_distribution || []} />
           </div>
 
-          {/* Distribution + Company Table */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-1">
-              <DistributionChart data={stats?.score_distribution || {}} />
-            </div>
-            <div className="lg:col-span-2">
-              <CompanyTable data={trends?.company_stats || []} />
-            </div>
-          </div>
+          {/* Company Table */}
+          <CompanyTable data={trends?.company_stats || []} />
 
           {/* AI Narrative Insights */}
           <div className="pb-8">

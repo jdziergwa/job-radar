@@ -40,14 +40,14 @@ export function CompanyTable({ data }: { data: any[] }) {
             <Building2 className="h-4 w-4 text-primary" />
             Company Activity
           </CardTitle>
-          <CardDescription className="text-xs mt-1">Aggregated performance by hiring organization</CardDescription>
+          <CardDescription className="text-xs mt-1">Pre-filter survivors currently in your funnel</CardDescription>
         </div>
         <Badge variant="secondary" className="text-[10px] font-mono opacity-60">
           Showing Top {data.length}
         </Badge>
       </CardHeader>
       <CardContent>
-        <div className="rounded-md border border-border/30 overflow-hidden">
+        <div className="max-h-[420px] overflow-y-auto rounded-md border border-border/30">
           <Table>
             <TableHeader className="bg-muted/30">
               <TableRow className="hover:bg-transparent border-border/30">
@@ -57,7 +57,7 @@ export function CompanyTable({ data }: { data: any[] }) {
                   onClick={() => toggleSort('job_count')}
                 >
                   <div className="flex items-center justify-center gap-1">
-                    Postings <ArrowUpDown className="h-3 w-3" />
+                    In Funnel <ArrowUpDown className="h-3 w-3" />
                   </div>
                 </TableHead>
                 <TableHead 

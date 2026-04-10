@@ -1,4 +1,4 @@
-from src.providers.utils import parse_salary_string
+from src.salary import parse_salary_string
 import re
 
 def test_salary_parsing():

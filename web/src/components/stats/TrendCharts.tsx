@@ -1,20 +1,14 @@
 'use client'
 
 import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  XAxis,
-  YAxis,
-} from 'recharts'
-import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
   ChartConfig,
 } from '@/components/ui/chart'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { BarChart3, Zap, Star } from 'lucide-react'
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts'
+import { BarChart3, Filter, Star, Target, BriefcaseBusiness } from 'lucide-react'
 
 // --- Empty state ---
 
@@ -31,39 +25,95 @@ function EmptyChart({ icon: Icon, message }: { icon: typeof BarChart3; message: 
 
 // --- Jobs Activity Chart ---
 
-const activityConfig = {
-  new_jobs: { label: 'New Jobs', color: 'var(--chart-1)' },
-  scored:   { label: 'Scored',   color: 'var(--chart-2)' },
-} satisfies ChartConfig
+type FunnelData = {
+  collected: number
+  passed_prefilter: number
+  high_priority: number
+  applied: number
+}
 
-export function ActivityChart({ data }: { data: any[] }) {
-  const hasData = data.length > 0 && data.some(d => d.new_jobs > 0 || d.scored > 0)
+function funnelRate(value: number, total: number) {
+  if (total <= 0) {
+    return '0%'
+  }
+
+  const percent = (value / total) * 100
+
+  if (percent <= 0) {
+    return '0%'
+  }
+  if (percent < 0.01) {
+    return '<0.01%'
+  }
+  if (percent < 1) {
+    return `${percent.toFixed(2)}%`
+  }
+  if (percent < 10) {
+    return `${percent.toFixed(1)}%`
+  }
+
+  return `${Math.round(percent)}%`
+}
+
+export function FunnelCard({ data }: { data: FunnelData }) {
+  const total = data.collected || 0
+  const hasData = total > 0
+  const rows = [
+    {
+      label: 'Collected',
+      value: data.collected,
+      meta: 'Raw jobs fetched',
+      icon: BriefcaseBusiness,
+    },
+    {
+      label: 'Passed Pre-filter',
+      value: data.passed_prefilter,
+      meta: funnelRate(data.passed_prefilter, total),
+      icon: Filter,
+    },
+    {
+      label: 'High Priority',
+      value: data.high_priority,
+      meta: funnelRate(data.high_priority, total),
+      icon: Target,
+    },
+    {
+      label: 'Applied',
+      value: data.applied,
+      meta: funnelRate(data.applied, total),
+      icon: BarChart3,
+    },
+  ]
 
   return (
     <Card className="border-border/50 bg-background/30 backdrop-blur-md">
       <CardHeader>
-        <CardTitle className="text-sm font-semibold">Job Activity</CardTitle>
-        <CardDescription className="text-xs">Discovery vs. AI Scoring (Daily)</CardDescription>
+        <CardTitle className="text-sm font-semibold">Pipeline Funnel</CardTitle>
+        <CardDescription className="text-xs">30-day conversion snapshot across your search funnel</CardDescription>
       </CardHeader>
       <CardContent>
         {hasData ? (
-          <ChartContainer config={activityConfig} className="h-[240px] w-full">
-            <BarChart data={data}>
-              <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-muted/20" />
-              <XAxis
-                dataKey="date"
-                tickLine={false}
-                tickMargin={10}
-                axisLine={false}
-                tickFormatter={(value) => new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-              />
-              <ChartTooltip content={<ChartTooltipContent />} />
-              <Bar dataKey="new_jobs" fill="var(--color-new_jobs)" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="scored"   fill="var(--color-scored)"   radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ChartContainer>
+          <div className="space-y-3">
+            {rows.map(({ label, value, meta, icon: Icon }) => (
+              <div
+                key={label}
+                className="flex items-center justify-between rounded-lg border border-border/30 bg-muted/10 px-3 py-2"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="rounded-md bg-primary/10 p-2">
+                    <Icon className="h-3.5 w-3.5 text-primary" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-medium text-foreground">{label}</div>
+                    <div className="text-[11px] text-muted-foreground">{meta}</div>
+                  </div>
+                </div>
+                <div className="text-xl font-bold tabular-nums">{value}</div>
+              </div>
+            ))}
+          </div>
         ) : (
-          <EmptyChart icon={Zap} message="Run the pipeline to start tracking daily job discovery." />
+          <EmptyChart icon={BarChart3} message="Run the pipeline to populate funnel conversion counts." />
         )}
       </CardContent>
     </Card>

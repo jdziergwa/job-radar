@@ -7,7 +7,7 @@ import type { components } from '@/lib/api/types'
 import { MetricCard } from '@/components/stats/MetricCard'
 import { HighPriorityTable } from '@/components/dashboard/HighPriorityTable'
 import { PipelineFreshnessCard } from '@/components/dashboard/PipelineFreshnessCard'
-import { ActivityChart } from '@/components/stats/TrendCharts'
+import { FunnelCard } from '@/components/stats/TrendCharts'
 import {
   Zap,
   FileSearch,
@@ -23,12 +23,12 @@ type DashboardStats = components['schemas']['StatsOverview'] & {
   last_pipeline_run_at?: string | null
 }
 type DashboardJob = components['schemas']['JobResponse']
-type DailyCount = components['schemas']['DailyCount']
+type PipelineFunnelStats = components['schemas']['PipelineFunnelStats']
 
 export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [recentJobs, setRecentJobs] = useState<DashboardJob[]>([])
-  const [activityData, setActivityData] = useState<DailyCount[]>([])
+  const [funnelData, setFunnelData] = useState<PipelineFunnelStats | null>(null)
   const [loading, setLoading] = useState(true)
 
   const fetchData = async () => {
@@ -52,7 +52,7 @@ export default function DashboardPage() {
 
       if (!statsRes.error && statsRes.data) setStats(statsRes.data as DashboardStats)
       if (!jobsRes.error && jobsRes.data) setRecentJobs(jobsRes.data.jobs)
-      if (!trendsRes.error && trendsRes.data) setActivityData(trendsRes.data.daily_counts)
+      if (!trendsRes.error && trendsRes.data) setFunnelData(trendsRes.data.pipeline_funnel)
     } finally {
       setLoading(false)
     }
@@ -140,13 +140,13 @@ export default function DashboardPage() {
         {/* Main Content: High Priority Table + Activity Chart */}
         <div className="lg:col-span-2 space-y-6">
           <HighPriorityTable jobs={recentJobs} loading={loading} />
-          {activityData.length > 0 ? (
-            <ActivityChart data={activityData} />
+          {funnelData && funnelData.collected > 0 ? (
+            <FunnelCard data={funnelData} />
           ) : (
             <div className="rounded-xl border border-dashed border-border/50 p-8 flex flex-col items-center justify-center text-center bg-muted/5">
                <BarChart3 className="h-8 w-8 text-muted-foreground/30 mb-2" />
-               <h4 className="text-sm font-medium text-muted-foreground/60">No Activity Data Yet</h4>
-               <p className="text-xs text-muted-foreground/40 max-w-[240px]">Run the pipeline to start tracking daily job discovery trends.</p>
+               <h4 className="text-sm font-medium text-muted-foreground/60">No Funnel Data Yet</h4>
+               <p className="text-xs text-muted-foreground/40 max-w-[240px]">Run the pipeline to populate search funnel counts.</p>
             </div>
           )}
         </div>

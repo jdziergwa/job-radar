@@ -2,9 +2,29 @@ from fastapi import APIRouter, Query
 from api.deps import get_store
 from api.models import StatsOverview, TrendsResponse, DismissalStats, MarketIntelligenceResponse, InsightsResponse
 import json
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 router = APIRouter()
+INSIGHTS_CACHE_TTL = timedelta(days=3)
+
+
+def _parse_metadata_timestamp(value: str | None) -> datetime | None:
+    if not value:
+        return None
+
+    normalized = value.strip()
+    if normalized.endswith("Z"):
+        normalized = normalized[:-1] + "+00:00"
+
+    try:
+        parsed = datetime.fromisoformat(normalized)
+    except ValueError:
+        return None
+
+    if parsed.tzinfo is not None:
+        return parsed.astimezone(timezone.utc).replace(tzinfo=None)
+
+    return parsed
 
 
 @router.get("/stats", response_model=StatsOverview)
@@ -97,23 +117,28 @@ async def get_insights(
     days: int = Query(30, ge=1, le=365),
     force: bool = Query(False),
 ):
-    """Get LLM-generated market intelligence narrative report (cached 1h)."""
+    """Get LLM-generated market intelligence narrative report (cached for 3 days or until a newer pipeline run)."""
     store = get_store(profile)
     cache_key = f"insights_cache_{profile}_{days}"
+    last_pipeline_run = _parse_metadata_timestamp(store.get_metadata("last_pipeline_run_at"))
 
     if not force:
         cached_raw = store.get_metadata(cache_key)
         if cached_raw:
             try:
                 cached_data = json.loads(cached_raw)
-                generated_at = datetime.fromisoformat(cached_data["generated_at"])
-                if datetime.utcnow() - generated_at < timedelta(hours=1):
+                generated_at = _parse_metadata_timestamp(cached_data["generated_at"])
+                cache_is_fresh = generated_at is not None and (datetime.utcnow() - generated_at) < INSIGHTS_CACHE_TTL
+                pipeline_has_not_advanced = generated_at is not None and (
+                    last_pipeline_run is None or last_pipeline_run <= generated_at
+                )
+                if cache_is_fresh and pipeline_has_not_advanced:
                     return InsightsResponse(
                         report=cached_data["report"],
                         generated_at=cached_data["generated_at"],
                         cached=True,
                     )
-            except (json.JSONDecodeError, KeyError, ValueError):
+            except (json.JSONDecodeError, KeyError, ValueError, TypeError):
                 pass  # Stale or corrupt cache — regenerate
 
     market_data = store.get_market_intelligence(days=days)
