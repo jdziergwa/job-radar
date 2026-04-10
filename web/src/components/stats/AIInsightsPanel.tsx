@@ -74,35 +74,39 @@ export function AIInsightsPanel() {
             <Skeleton className="h-3 w-3/4 bg-muted/20" />
           </div>
         ) : error ? (
-          <div className="flex flex-col items-center gap-4 py-6 text-center">
-            <div className="bg-destructive/10 p-3 rounded-full">
-              <AlertCircle className="h-6 w-6 text-destructive" />
+          <div className="rounded-2xl border border-dashed border-destructive/30 bg-destructive/5 p-6 sm:p-7">
+            <div className="flex flex-col items-center gap-4 text-center">
+              <div className="rounded-2xl bg-destructive/10 p-3">
+                <AlertCircle className="h-6 w-6 text-destructive" />
+              </div>
+              <div className="space-y-1.5">
+                <p className="text-sm font-medium">Couldn&apos;t load AI insights</p>
+                <p className="max-w-md text-xs text-muted-foreground">{error}</p>
+              </div>
+              <Button size="sm" onClick={() => fetchInsights(false)} variant="outline">
+                Try Again
+              </Button>
             </div>
-            <div className="space-y-1">
-              <p className="text-sm font-medium">Generation Failed</p>
-              <p className="text-xs text-muted-foreground max-w-[240px]">{error}</p>
-            </div>
-            <Button size="sm" onClick={() => fetchInsights(false)} variant="outline">
-              Try Again
-            </Button>
           </div>
         ) : !report ? (
-          <div className="flex flex-col items-center gap-4 py-8 text-center">
-            <div className="bg-primary/10 p-3 rounded-full">
-              <Sparkles className="h-6 w-6 text-primary" />
+          <div className="rounded-2xl border border-dashed border-border/60 bg-muted/10 p-6 sm:p-7">
+            <div className="flex flex-col items-center gap-5 text-center">
+              <div className="rounded-2xl bg-primary/10 p-3">
+                <Sparkles className="h-6 w-6 text-primary" />
+              </div>
+              <div className="space-y-1.5">
+                <p className="text-sm font-medium">Generate Narrative Analysis</p>
+                <p className="max-w-[280px] text-xs leading-5 text-muted-foreground">
+                  Analyze your last 30 days of market data with AI to uncover blockers and opportunities.
+                </p>
+                <p className="text-[10px] italic text-muted-foreground/50">
+                  Requires one LLM API call (~$0.01).
+                </p>
+              </div>
+              <Button size="sm" onClick={() => fetchInsights(true)} className="gap-2 px-5">
+                Generate Analysis
+              </Button>
             </div>
-            <div className="space-y-1">
-              <p className="text-sm font-medium">Generate Narrative Analysis</p>
-              <p className="text-xs text-muted-foreground max-w-[280px]">
-                Analyze your last 30 days of market data with AI to uncover blockers and opportunities.
-              </p>
-              <p className="text-[10px] text-muted-foreground/40 italic mt-2">
-                Requires one LLM API call (~$0.01)
-              </p>
-            </div>
-            <Button size="sm" onClick={() => fetchInsights(false)} className="gap-2 px-6">
-              Generate Report
-            </Button>
           </div>
         ) : (
           <div
@@ -121,7 +125,7 @@ export function AIInsightsPanel() {
             className="gap-2 text-xs border-border/50 bg-background/50"
           >
             <RefreshCw className={`h-3 w-3 ${loading ? 'animate-spin' : ''}`} />
-            Regenerate
+            Regenerate With AI
           </Button>
         </CardFooter>
       )}

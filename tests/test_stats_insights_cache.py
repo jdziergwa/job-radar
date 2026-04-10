@@ -52,7 +52,7 @@ def test_get_insights_reuses_recent_cache_when_pipeline_has_not_advanced():
     generator.assert_not_awaited()
 
 
-def test_get_insights_regenerates_when_pipeline_run_is_newer_than_cache():
+def test_get_insights_returns_cached_report_without_regenerating_when_not_forced():
     generated_at = (datetime.utcnow() - timedelta(days=1)).isoformat()
     store = _FakeStore(
         metadata={
@@ -70,6 +70,45 @@ def test_get_insights_regenerates_when_pipeline_run_is_newer_than_cache():
         new=AsyncMock(return_value="fresh report"),
     ) as generator:
         response = asyncio.run(stats_router.get_insights(profile="default", days=30, force=False))
+
+    assert response.report == "cached report"
+    assert response.cached is True
+    generator.assert_not_awaited()
+
+
+def test_get_insights_returns_empty_response_when_not_forced_and_cache_missing():
+    store = _FakeStore()
+
+    with patch.object(stats_router, "get_store", return_value=store), patch.object(
+        stats_router,
+        "_generate_insights_report",
+        new=AsyncMock(return_value="fresh report"),
+    ) as generator:
+        response = asyncio.run(stats_router.get_insights(profile="default", days=30, force=False))
+
+    assert response.report == ""
+    assert response.generated_at == ""
+    assert response.cached is False
+    generator.assert_not_awaited()
+
+
+def test_get_insights_regenerates_when_forced():
+    generated_at = (datetime.utcnow() - timedelta(days=1)).isoformat()
+    store = _FakeStore(
+        metadata={
+            "insights_cache_default_30": json.dumps({
+                "report": "cached report",
+                "generated_at": generated_at,
+            }),
+        }
+    )
+
+    with patch.object(stats_router, "get_store", return_value=store), patch.object(
+        stats_router,
+        "_generate_insights_report",
+        new=AsyncMock(return_value="fresh report"),
+    ) as generator:
+        response = asyncio.run(stats_router.get_insights(profile="default", days=30, force=True))
 
     assert response.report == "fresh report"
     assert response.cached is False
