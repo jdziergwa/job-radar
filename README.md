@@ -111,6 +111,8 @@ Claude costs are reasonable enough to try with a small credit balance. One real 
 
 Your numbers will vary with provider mix and how many jobs survive filtering, but in that run Haiku scoring came out to about `$0.22` per `100` scored jobs. After the first run, later runs are usually much cheaper and faster because only new surviving jobs need scoring. A `$5` top-up is usually enough to try profile generation plus many incremental runs.
 
+If you want to try the pipeline cost-free first, use the web UI trigger with `Dry Run` to fetch and filter jobs without any Claude scoring, so you can see how many jobs would reach scoring. The CLI supports the same flow with `--dry-run`, for example: `.venv/bin/python -m src.main --source aggregator local --dry-run -v`.
+
 ---
 
 ## ⚙️ Configuration
@@ -122,8 +124,8 @@ Job Radar is highly configurable to match your specific career goals.
 | Variable | Required | Purpose |
 |----------|----------|---------|
 | `ANTHROPIC_API_KEY` | **Yes** | Used by Claude AI to score job descriptions. |
-| `ADZUNA_APP_ID` | No | Required only if you enable the Adzuna provider. |
-| `ADZUNA_APP_KEY` | No | Required only if you enable the Adzuna provider. |
+| `ADZUNA_APP_ID` | No | Required only if you enable the Adzuna provider. Create an account at [developer.adzuna.com](https://developer.adzuna.com/) to get it. Adzuna allows personal research use; see [their terms](https://developer.adzuna.com/docs/terms_of_service). |
+| `ADZUNA_APP_KEY` | No | Required only if you enable the Adzuna provider. Adzuna issues this alongside your app ID. |
 
 ### 📂 Profile Configuration (`profiles/{name}/`)
 
