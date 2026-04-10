@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react'
 import { api } from '@/lib/api/client'
+import { BASE_PATH, IS_DEMO } from '@/lib/demo-mode'
 import { QuickStartWizard } from '@/components/wizard/QuickStartWizard'
 import { WizardData } from '@/components/wizard/types'
 import { toast } from 'sonner'
@@ -51,7 +52,10 @@ export default function SettingsPage() {
   const openGuidedEdit = async () => {
     setWizardLoading(true)
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/wizard/state?profile=default`)
+      const stateUrl = IS_DEMO
+        ? `${BASE_PATH}/demo-data/wizard-state.json`
+        : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/wizard/state?profile=default`
+      const response = await fetch(stateUrl)
       if (!response.ok) {
         throw new Error('Failed to load saved wizard state')
       }

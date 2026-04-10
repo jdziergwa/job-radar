@@ -169,7 +169,7 @@ function JobDetailContent() {
           <div className="flex items-center gap-6 p-6 rounded-2xl bg-card border border-border/50 shadow-xl shadow-primary/5">
             <div className="relative group cursor-help" title="Overall Fit Score">
                 <div className="absolute inset-0 bg-primary/20 blur-2xl rounded-full scale-75 opacity-0 group-hover:opacity-100 transition-opacity" />
-                <ScoreRing score={job.fit_score} size={110} strokeWidth={9} />
+                <ScoreRing score={job.fit_score ?? null} size={110} strokeWidth={9} />
             </div>
             <div className="space-y-2">
               <h2 className="text-2xl font-bold tracking-tight">Match Quality: <span className="text-primary capitalize">{getMatchQualityLabel(job.score_breakdown?.apply_priority)}</span></h2>
@@ -221,7 +221,7 @@ function JobDetailContent() {
               <h4 className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">Dimension Breakdown</h4>
               <div className="space-y-5">
                 {Object.entries(dimensions).map(([key, val]: [string, any]) => (
-                  <ScoreBar key={key} label={key} score={val} />
+                  <ScoreBar key={key} label={key} score={typeof val === 'number' ? val : 0} />
                 ))}
               </div>
             </div>

@@ -1,7 +1,9 @@
 import createClient from 'openapi-fetch'
+import { IS_DEMO } from '@/lib/demo-mode'
+import { demoFetch } from './demo-fetch'
 import type { paths } from './types'
 
 export const api = createClient<paths>({
-  // Use direct backend URL in dev to avoid proxy-level socket hang ups during long AI analysis
-  baseUrl: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000',
+  baseUrl: IS_DEMO ? '' : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'),
+  ...(IS_DEMO ? { fetch: demoFetch } : {}),
 })

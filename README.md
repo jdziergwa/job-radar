@@ -2,6 +2,8 @@
 
 Job Radar monitors your job search across curated ATS boards, public remote-job APIs, hiring feeds, and an optional large remote-job aggregator. It collects, hydrates, filters, and scores job listings against your profile using Claude, then presents the results in a web dashboard.
 
+Try the live demo: [https://jdziergwa.github.io/job-radar/](https://jdziergwa.github.io/job-radar/)
+
 ---
 
 ## ⚡ Features
@@ -198,7 +200,7 @@ graph TD
 
 - **Never commit `.env`** — it contains your `ANTHROPIC_API_KEY`. The `.gitignore` already excludes it, but double-check before pushing. If you accidentally expose a key, revoke it immediately at [console.anthropic.com](https://console.anthropic.com).
 - **All data stays local** — job listings, scores, and your `profile_doc.md` are stored only on your machine. Native runs use `data/{profile}.db`; Docker Compose runs keep SQLite databases in the Docker API volume mounted at `/app/data`. Nothing is sent to third parties except job descriptions forwarded to the Claude API for scoring.
-- **Your profile is not tracked** — `profiles/` is gitignored except for the `example/` template. Your CV (`profile_doc.md`) and company list stay private.
+- **Your personal profile is not tracked** — `profiles/` is gitignored except for the `example/` template and the synthetic `demo/` profile used for the hosted showcase. Your real CV (`profile_doc.md`) and company list stay private unless you explicitly change that.
 
 ## 🙌 Acknowledgments
 
@@ -231,4 +233,4 @@ Run `make install` again to ensure your Python virtual environment is correctly 
 
 ## 📄 License
 
-Licensed under AGPL-3.0. See `LICENSE`.
+Licensed under [GNU AGPL v3.0](https://www.gnu.org/licenses/agpl-3.0.en.html). See [LICENSE](LICENSE).

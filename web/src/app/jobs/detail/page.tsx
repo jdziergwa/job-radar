@@ -175,6 +175,8 @@ function JobDetailContent() {
 
   const dimensions = job.score_breakdown?.dimensions || {}
   const fitCategory = job.score_breakdown?.fit_category as string | undefined
+  const keyMatches = job.score_breakdown?.key_matches ?? []
+  const redFlags = job.score_breakdown?.red_flags ?? []
   const companySignals = Array.isArray(job.company_quality_signals) ? job.company_quality_signals : []
 
   return (
@@ -238,7 +240,7 @@ function JobDetailContent() {
                     <HelpCircle className="h-12 w-12 stroke-[2]" />
                   </div>
                 ) : (
-                  <ScoreRing score={job.fit_score} size={110} strokeWidth={9} />
+                  <ScoreRing score={job.fit_score ?? null} size={110} strokeWidth={9} />
                 )}
             </div>
             <div className="space-y-2">
@@ -336,7 +338,7 @@ function JobDetailContent() {
                 <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Dimension Breakdown</p>
                 <div className="space-y-4">
                   {Object.entries(dimensions).map(([key, val]: [string, any]) => (
-                    <ScoreBar key={key} label={key} score={val} />
+                  <ScoreBar key={key} label={key} score={typeof val === 'number' ? val : 0} />
                   ))}
                 </div>
               </CardContent>
@@ -350,7 +352,7 @@ function JobDetailContent() {
         <div className="lg:col-span-2 space-y-8">
            <div className="space-y-4">
               <h2 className="text-2xl font-bold tracking-tight underline decoration-primary/30 underline-offset-8 decoration-4">Job Description</h2>
-              <JobDescription content={job.description} isSparse={job.is_sparse} />
+              <JobDescription content={job.description ?? undefined} isSparse={job.is_sparse} />
               <div className="flex justify-center pt-4">
                    <a
                       href={job.url}
@@ -417,8 +419,8 @@ function JobDetailContent() {
                Key Matches
             </h3>
             <div className="space-y-2">
-              {job.score_breakdown?.key_matches?.length > 0
-                ? job.score_breakdown.key_matches.map((match: string) => (
+              {keyMatches.length > 0
+                ? keyMatches.map((match: string) => (
                     <div key={match} className="flex gap-3 p-3 rounded-xl bg-green-500/5 border border-green-500/10 text-green-600 dark:text-green-400 text-sm">
                       <div className="flex-shrink-0 mt-0.5">
                         <CheckCircle2 className="h-4 w-4 text-green-500/70" />
@@ -437,8 +439,8 @@ function JobDetailContent() {
                Potential Red Flags
             </h3>
             <div className="space-y-2">
-              {job.score_breakdown?.red_flags?.length > 0
-                ? job.score_breakdown.red_flags.map((flag: string) => (
+              {redFlags.length > 0
+                ? redFlags.map((flag: string) => (
                     <div key={flag} className="flex gap-3 p-3 rounded-xl bg-destructive/5 border border-destructive/10 text-destructive text-sm">
                       <div className="flex-shrink-0 mt-0.5">•</div>
                       <span>{flag}</span>

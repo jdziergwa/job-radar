@@ -86,8 +86,15 @@ def _build_insights_response(store: Any, profile: str, days: int) -> InsightsRes
     )
 
 
+def _load_json_or_none(path: Path) -> Any:
+    if not path.exists():
+        return None
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
 def build_snapshot(profile: str, out_dir: Path, max_jobs: int, days: int) -> None:
     profile_dir = get_profile_dir(profile)
+    example_dir = get_profile_dir("example")
     db_path = Path("data") / f"{profile}.db"
 
     if not profile_dir.exists():
@@ -159,7 +166,23 @@ def build_snapshot(profile: str, out_dir: Path, max_jobs: int, days: int) -> Non
         encoding="utf-8",
     )
 
-    _write_json(out_dir / "profiles.json", [{"name": profile}])
+    _write_json(
+        out_dir / "wizard-state.json",
+        {
+            "profile_name": profile,
+            "cv_analysis": _load_json_or_none(profile_dir / "cv_analysis.json"),
+            "user_preferences": _load_json_or_none(profile_dir / "preferences.json"),
+        },
+    )
+    _write_json(
+        out_dir / "wizard-template.json",
+        {
+            "profile_yaml": (example_dir / "search_config.yaml").read_text(encoding="utf-8"),
+            "profile_doc": (example_dir / "profile_doc.md").read_text(encoding="utf-8"),
+        },
+    )
+
+    _write_json(out_dir / "profiles.json", [{"name": profile, "has_data": True}])
     _write_json(out_dir / "health.json", {"status": "ok", "version": "1.0.0", "demo": True})
     _write_json(
         out_dir / "snapshot.json",

@@ -21,6 +21,7 @@ const PRIORITY_BORDER: Record<string, string> = {
 export function JobListItem({ job }: { job: JobResponse }) {
   const priority = job.score_breakdown?.apply_priority as string | undefined
   const fitCategory = job.score_breakdown?.fit_category as string | undefined
+  const keyMatches = job.score_breakdown?.key_matches ?? []
   const leftBorder = PRIORITY_BORDER[priority ?? ''] ?? 'border-l-border/30'
   const companySignals = Array.isArray(job.company_quality_signals) ? job.company_quality_signals.slice(0, 2) : []
   const isStrategicException = fitCategory === 'strategic_exception'
@@ -35,7 +36,7 @@ export function JobListItem({ job }: { job: JobResponse }) {
               <HelpCircle className="h-6 w-6 stroke-[2.5]" />
             </div>
           ) : (
-            <ScoreRing score={job.fit_score} size={56} strokeWidth={5} />
+            <ScoreRing score={job.fit_score ?? null} size={56} strokeWidth={5} />
           )}
           {!job.is_sparse && <PriorityBadge priority={priority} />}
         </div>
@@ -108,7 +109,7 @@ export function JobListItem({ job }: { job: JobResponse }) {
           {/* Key Matches & Snippet */}
           <div className="hidden lg:flex flex-col gap-2 border-l border-border/40 pl-6">
             <div className="flex flex-wrap gap-1.5 overflow-hidden">
-              {job.score_breakdown?.key_matches?.slice(0, 3).map((match: string) => (
+              {keyMatches.slice(0, 3).map((match: string) => (
                 <Badge
                   key={match}
                   variant="outline"
@@ -117,9 +118,9 @@ export function JobListItem({ job }: { job: JobResponse }) {
                   {match}
                 </Badge>
               ))}
-              {(job.score_breakdown?.key_matches?.length ?? 0) > 3 && (
+              {keyMatches.length > 3 && (
                 <span className="text-[10px] text-muted-foreground self-center">
-                  +{job.score_breakdown.key_matches.length - 3} more
+                  +{keyMatches.length - 3} more
                 </span>
               )}
             </div>

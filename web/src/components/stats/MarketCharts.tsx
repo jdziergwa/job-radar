@@ -1,5 +1,7 @@
 'use client'
 
+import type { ComponentType } from 'react'
+import type { components } from '@/lib/api/types'
 import {
   Bar,
   BarChart,
@@ -15,8 +17,12 @@ import {
 } from '@/components/ui/chart'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { AlertCircle, Globe, Star, BarChart3, Banknote } from 'lucide-react'
-import { SkipReasonStat, CountryStat, SkillCount, SalaryStat } from '@/lib/api/types'
+import { AlertCircle, Globe, Star, Banknote } from 'lucide-react'
+
+type SkipReasonStat = components['schemas']['SkipReasonStat']
+type CountryStat = components['schemas']['CountryStat']
+type SkillCount = components['schemas']['SkillCount']
+type SalaryStat = components['schemas']['SalaryStat']
 
 // --- Empty state ---
 
@@ -37,7 +43,15 @@ function truncateLabel(value: string, maxLength: number) {
   return `${value.slice(0, maxLength - 1).trimEnd()}…`
 }
 
-function MissingSkillsTick({ x, y, payload }: any) {
+function MissingSkillsTick({
+  x,
+  y,
+  payload,
+}: {
+  x?: number
+  y?: number
+  payload?: { value?: string }
+}) {
   const fullLabel = typeof payload?.value === 'string' ? payload.value : ''
   const truncatedLabel = truncateLabel(fullLabel, MAX_MISSING_SKILL_LABEL_LENGTH)
 
@@ -57,7 +71,15 @@ function MissingSkillsTick({ x, y, payload }: any) {
   )
 }
 
-function SalaryTick({ x, y, payload }: any) {
+function SalaryTick({
+  x,
+  y,
+  payload,
+}: {
+  x?: number
+  y?: number
+  payload?: { value?: string }
+}) {
   const fullLabel = typeof payload?.value === 'string' ? payload.value : ''
   const truncatedLabel = truncateLabel(fullLabel, MAX_SALARY_LABEL_LENGTH)
 
@@ -104,7 +126,7 @@ function SalaryBars({ data, viewportHeight = 240 }: { data: SalaryBarDatum[]; vi
             content={
               <ChartTooltipContent
                 hideIndicator
-                labelFormatter={(_: unknown, payload: any[]) => payload?.[0]?.payload?.label ?? ''}
+                labelFormatter={(_: unknown, payload: readonly { payload?: { label?: string } }[]) => payload?.[0]?.payload?.label ?? ''}
               />
             }
           />
@@ -115,7 +137,13 @@ function SalaryBars({ data, viewportHeight = 240 }: { data: SalaryBarDatum[]; vi
   )
 }
 
-function EmptyChart({ icon: Icon, message }: { icon: any; message: string }) {
+function EmptyChart({
+  icon: Icon,
+  message,
+}: {
+  icon: ComponentType<{ className?: string }>
+  message: string
+}) {
   return (
     <div className="h-[240px] flex flex-col items-center justify-center gap-3 text-center">
       <div className="bg-muted/30 p-3 rounded-full">
@@ -263,7 +291,7 @@ export function MissingSkillsChart({ data }: { data: SkillCount[] }) {
                   content={
                     <ChartTooltipContent
                       hideIndicator
-                      labelFormatter={(_: unknown, payload: any[]) => payload?.[0]?.payload?.skill ?? ''}
+                      labelFormatter={(_: unknown, payload: readonly { payload?: { skill?: string } }[]) => payload?.[0]?.payload?.skill ?? ''}
                     />
                   }
                 />

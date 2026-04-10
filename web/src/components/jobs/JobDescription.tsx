@@ -2,7 +2,7 @@ import React, { useMemo } from 'react'
 import { cn } from '@/lib/utils'
 
 interface JobDescriptionProps {
-  content?: string
+  content?: string | null
   isSparse?: boolean
   className?: string
 }
@@ -10,15 +10,16 @@ interface JobDescriptionProps {
 /**
  * Recursive helper to find any field that looks like a description in a JSON object.
  */
-function findDescription(obj: any): string | null {
+function findDescription(obj: unknown): string | null {
   if (!obj || typeof obj !== 'object') return null
+  const record = obj as Record<string, unknown>
   
   // Check if this object is a JobPosting or similar
-  const isJobPosting = obj['@type'] === 'JobPosting' || obj.type === 'JobPosting' || 
-                       (typeof obj['@type'] === 'string' && obj['@type'].includes('JobPosting'))
+  const isJobPosting = record['@type'] === 'JobPosting' || record.type === 'JobPosting' || 
+                       (typeof record['@type'] === 'string' && record['@type'].includes('JobPosting'))
   
-  if (isJobPosting && (obj.description || obj.jobDescription || obj.descriptionHtml)) {
-     const d = obj.description || obj.jobDescription || obj.descriptionHtml
+  if (isJobPosting && (record.description || record.jobDescription || record.descriptionHtml)) {
+     const d = record.description || record.jobDescription || record.descriptionHtml
      if (typeof d === 'string') return d
   }
 
@@ -30,16 +31,16 @@ function findDescription(obj: any): string | null {
     }
   } else {
     // Check for direct keywords first
-    const keys = Object.keys(obj)
+    const keys = Object.keys(record)
     for (const key of keys) {
-      const val = obj[key]
+      const val = record[key]
       if (key.toLowerCase().includes('description') && typeof val === 'string' && val.length > 100) {
         return val
       }
     }
     // Deep search
     for (const key of keys) {
-      const res = findDescription(obj[key])
+      const res = findDescription(record[key])
       if (res) return res
     }
   }
@@ -63,7 +64,7 @@ function extractJobDescription(input: string): string | null {
        const parsed = JSON.parse(rawJson)
        const desc = findDescription(parsed)
        if (desc) return desc
-     } catch (e) {
+     } catch {
        continue
      }
   }
@@ -75,7 +76,7 @@ function extractJobDescription(input: string): string | null {
       const parsed = JSON.parse(trimmed)
       const desc = findDescription(parsed)
       if (desc) return desc
-    } catch (e) {
+    } catch {
       // If it fails, try to extract the first balanced { ... } block
       try {
         let depth = 0
@@ -103,7 +104,7 @@ function extractJobDescription(input: string): string | null {
           const desc = findDescription(parsed)
           if (desc) return desc
         }
-      } catch (innerE) {
+      } catch {
         // Fall through
       }
     }
