@@ -7,10 +7,12 @@ profile doc) is cached; user message (job posting) changes per call.
 from __future__ import annotations
 
 import asyncio
+import email.utils
 import json
 import logging
 import re
 from dataclasses import replace
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Protocol, runtime_checkable, Optional, Callable
 
@@ -26,6 +28,89 @@ logger = logging.getLogger(__name__)
 # Delay between API calls to be respectful
 CALL_DELAY = 0.5  # seconds
 MAX_RETRIES = 3
+
+
+class _ScoringRateLimiter:
+    """Coordinate request pacing and shared cooldowns across concurrent scorers."""
+
+    def __init__(self, min_interval_seconds: float = CALL_DELAY):
+        self.min_interval_seconds = max(0.0, float(min_interval_seconds))
+        self._next_request_at = 0.0
+        self._cooldown_until = 0.0
+        self._lock = asyncio.Lock()
+
+    async def wait_for_slot(self) -> None:
+        delay = 0.0
+        async with self._lock:
+            now = asyncio.get_running_loop().time()
+            ready_at = max(now, self._next_request_at, self._cooldown_until)
+            self._next_request_at = ready_at + self.min_interval_seconds if self.min_interval_seconds > 0 else ready_at
+            delay = ready_at - now
+
+        if delay > 0:
+            await asyncio.sleep(delay)
+
+    async def apply_cooldown(self, seconds: float) -> None:
+        if seconds <= 0:
+            return
+
+        async with self._lock:
+            now = asyncio.get_running_loop().time()
+            cooldown_until = now + seconds
+            if cooldown_until > self._cooldown_until:
+                self._cooldown_until = cooldown_until
+            if self._next_request_at < self._cooldown_until:
+                self._next_request_at = self._cooldown_until
+
+
+def _parse_retry_after_seconds(headers: Any) -> float | None:
+    """Best-effort parsing of retry-after headers from Anthropic responses."""
+    if headers is None:
+        return None
+
+    retry_after_ms = headers.get("retry-after-ms")
+    try:
+        if retry_after_ms is not None:
+            seconds = float(retry_after_ms) / 1000
+            if seconds > 0:
+                return seconds
+    except (TypeError, ValueError):
+        pass
+
+    retry_after = headers.get("retry-after")
+    try:
+        if retry_after is not None:
+            seconds = float(retry_after)
+            if seconds > 0:
+                return seconds
+    except (TypeError, ValueError):
+        pass
+
+    if retry_after:
+        try:
+            retry_dt = email.utils.parsedate_to_datetime(retry_after)
+            if retry_dt is None:
+                return None
+            if retry_dt.tzinfo is None:
+                retry_dt = retry_dt.replace(tzinfo=timezone.utc)
+            seconds = (retry_dt - datetime.now(timezone.utc)).total_seconds()
+            if seconds > 0:
+                return seconds
+        except (TypeError, ValueError, IndexError):
+            return None
+
+    return None
+
+
+def _rate_limit_wait_seconds(error: Exception, attempt: int, *, is_batch: bool) -> float:
+    """Prefer server-provided retry headers, otherwise back off conservatively."""
+    response = getattr(error, "response", None)
+    retry_after = _parse_retry_after_seconds(getattr(response, "headers", None))
+    if retry_after is not None:
+        return min(retry_after, 60.0)
+
+    base_wait = 10.0 if is_batch else 5.0
+    return min(base_wait * (2 ** (attempt - 1)), 60.0)
 
 
 def _log_normalization(raw: ScoredJob, normalized: ScoredJob) -> None:
@@ -579,6 +664,7 @@ async def score_job(
     profile_config: dict[str, Any] | None = None,
     model: str = "claude-haiku-4-5-20251001",
     max_desc_chars: int = 20000,
+    rate_limiter: _ScoringRateLimiter | None = None,
 ) -> ScoredJob:
     """Score a single job using Claude API (Async).
 
@@ -588,6 +674,9 @@ async def score_job(
 
     for attempt in range(1, MAX_RETRIES + 1):
         try:
+            if rate_limiter is not None:
+                await rate_limiter.wait_for_slot()
+
             response = await client.messages.create(
                 model=model,
                 max_tokens=1000,
@@ -646,10 +735,14 @@ async def score_job(
             # Return error score on final failure
             return _error_scored_job(job, "PARSE_ERROR")
 
-        except anthropic.RateLimitError:
-            wait = 2 ** attempt
-            logger.warning("Rate limited, waiting %ds (attempt %d/%d)", wait, attempt, MAX_RETRIES)
-            await asyncio.sleep(wait)
+        except anthropic.RateLimitError as error:
+            wait = _rate_limit_wait_seconds(error, attempt, is_batch=False)
+            if rate_limiter is not None:
+                await rate_limiter.apply_cooldown(wait)
+                logger.warning("Rate limited, delaying shared scorer for %.1fs (attempt %d/%d)", wait, attempt, MAX_RETRIES)
+            else:
+                logger.warning("Rate limited, waiting %.1fs (attempt %d/%d)", wait, attempt, MAX_RETRIES)
+                await asyncio.sleep(wait)
             continue
 
         except anthropic.APIError as e:
@@ -666,7 +759,7 @@ async def score_job(
             logger.error("Unexpected error scoring %s @ %s: %s", job.title, job.company_name, e)
             return _error_scored_job(job, f"ERROR: {e}")
 
-    return _error_scored_job(job, "MAX_RETRIES_EXCEEDED")
+    return _error_scored_job(job, "Temporary scoring failure: Anthropic rate limits persisted after retries.")
 
 
 async def score_batch(
@@ -676,6 +769,7 @@ async def score_batch(
     profile_config: dict[str, Any] | None = None,
     model: str = "claude-haiku-4-5-20251001",
     max_desc_chars: int = 20000,
+    rate_limiter: _ScoringRateLimiter | None = None,
 ) -> list[ScoredJob]:
     """Score multiple jobs at once (batching).
     
@@ -683,13 +777,16 @@ async def score_batch(
     """
     if len(jobs) == 1:
         # Optimization: delegate to score_job for single-item batches
-        return [await score_job(client, jobs[0], system_prompt, profile_config, model, max_desc_chars)]
+        return [await score_job(client, jobs[0], system_prompt, profile_config, model, max_desc_chars, rate_limiter)]
 
     user_message = _build_batch_user_message(jobs, max_desc_chars)
     max_tokens = min(800 * len(jobs), 4096)
 
     for attempt in range(1, MAX_RETRIES + 1):
         try:
+            if rate_limiter is not None:
+                await rate_limiter.wait_for_slot()
+
             response = await client.messages.create(
                 model=model,
                 max_tokens=max_tokens,
@@ -745,10 +842,14 @@ async def score_batch(
             logger.warning("Batch scoring fallback for %d jobs (parsing failed)", len(jobs))
             break # Exit retry loop and use fallback
 
-        except anthropic.RateLimitError:
-            wait = 2 ** attempt * 2  # Longer backoff for batch calls
-            logger.warning("Rate limited (batch), waiting %ds (attempt %d/%d)", wait, attempt, MAX_RETRIES)
-            await asyncio.sleep(wait)
+        except anthropic.RateLimitError as error:
+            wait = _rate_limit_wait_seconds(error, attempt, is_batch=True)
+            if rate_limiter is not None:
+                await rate_limiter.apply_cooldown(wait)
+                logger.warning("Rate limited (batch), delaying shared scorer for %.1fs (attempt %d/%d)", wait, attempt, MAX_RETRIES)
+            else:
+                logger.warning("Rate limited (batch), waiting %.1fs (attempt %d/%d)", wait, attempt, MAX_RETRIES)
+                await asyncio.sleep(wait)
             continue
 
         except (anthropic.APIError, json.JSONDecodeError) as e:
@@ -764,7 +865,7 @@ async def score_batch(
 
     # Final fallback for any terminal failure: score each individually
     logger.info("Falling back to individual scoring for %d jobs...", len(jobs))
-    tasks = [score_job(client, job, system_prompt, profile_config, model, max_desc_chars) for job in jobs]
+    tasks = [score_job(client, job, system_prompt, profile_config, model, max_desc_chars, rate_limiter) for job in jobs]
     return await asyncio.gather(*tasks)
 
 
@@ -800,7 +901,15 @@ class AnthropicScorer:
         # Note: This would need an Async client in the class as well if used,
         # but the main pipeline uses score_jobs below.
         async with AsyncAnthropic() as client:
-            return await score_job(client, job, system_prompt, None, self.model, self.max_desc_chars)
+            return await score_job(
+                client,
+                job,
+                system_prompt,
+                None,
+                self.model,
+                self.max_desc_chars,
+                _ScoringRateLimiter(),
+            )
 
 
 async def score_jobs(
@@ -831,7 +940,8 @@ async def score_jobs(
     """
     concurrency = scoring_config.get("concurrency", concurrency)
     batch_size = scoring_config.get("batch_size", batch_size)
-    
+    min_request_interval = scoring_config.get("min_request_interval_seconds", CALL_DELAY)
+
     model = scoring_config.get("model", "claude-haiku-4-5-20251001")
     max_desc_chars = scoring_config.get("max_description_chars", 20000)
 
@@ -847,18 +957,27 @@ async def score_jobs(
     num_batches = (total + batch_size - 1) // batch_size
     
     logger.info(
-        "Scoring %d candidates in %d batches (concurrency=%d, batch_size=%d) with %s...", 
-        total, num_batches, concurrency, batch_size, model
+        "Scoring %d candidates in %d batches (concurrency=%d, batch_size=%d, min_interval=%.2fs) with %s...",
+        total, num_batches, concurrency, batch_size, float(min_request_interval), model
     )
 
     batches = [candidates[i : i + batch_size] for i in range(0, total, batch_size)]
     semaphore = asyncio.Semaphore(concurrency)
+    rate_limiter = _ScoringRateLimiter(min_request_interval)
     completed_count = 0
 
     async def worker(batch: list[CandidateJob], client: AsyncAnthropic) -> list[ScoredJob]:
         nonlocal completed_count
         async with semaphore:
-            results = await score_batch(client, batch, system_prompt, profile_config, model, max_desc_chars)
+            results = await score_batch(
+                client,
+                batch,
+                system_prompt,
+                profile_config,
+                model,
+                max_desc_chars,
+                rate_limiter,
+            )
             
             for result in results:
                 # Persist score immediately

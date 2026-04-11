@@ -59,6 +59,7 @@ scoring:
   min_score_to_display: 50             # Hide jobs scoring below this threshold
   concurrency: 25
   batch_size: 5
+  min_request_interval_seconds: 0.5    # Increase or lower concurrency if you still see Anthropic rate limits
 
 # ── Output config ───────────────────────────────────────────────────
 output:

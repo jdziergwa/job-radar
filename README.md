@@ -141,7 +141,7 @@ Each profile is a directory containing four main editable files:
 2.  **`search_config.yaml`**:
     -   `keywords.title_patterns`: Split into `high_confidence` and `broad` tiers for precise filtering.
     -   `keywords.location_patterns` / `remote_patterns`: Primary location targets and a remote tier (governed by the `fallback_tier` field).
-    -   `scoring`: Choose your model (e.g., `claude-haiku-4-5-20251001`) and set thresholds.
+    -   `scoring`: Choose your model (e.g., `claude-haiku-4-5-20251001`), set thresholds, and tune rate-limit behavior with `concurrency` and `min_request_interval_seconds` if Anthropic starts rejecting bursts.
 3.  **`scoring_philosophy.md`**: The per-profile scoring rubric used by the LLM after pre-filtering. This is editable from **Settings**.
 4.  **`companies.yaml`**: Specific companies to monitor directly via their ATS boards, grouped by platform.
 
