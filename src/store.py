@@ -736,7 +736,11 @@ class Store:
                         COUNT(*) as in_funnel
                     FROM jobs
                     WHERE date(first_seen_at) >= date('now', ?)
-                      AND match_tier IS NOT NULL
+                      AND (
+                          match_tier IS NOT NULL
+                          OR scored_at IS NOT NULL
+                          OR status IN ('scored', 'applied')
+                      )
                     GROUP BY date(first_seen_at)
                 ),
                 scored_counts AS (

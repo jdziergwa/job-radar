@@ -1,0 +1,12 @@
+[run]
+branch = True
+source =
+    src
+    api
+omit =
+    tests/*
+
+[report]
+show_missing = True
+skip_covered = True
+precision = 1

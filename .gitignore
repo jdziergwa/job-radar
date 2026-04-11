@@ -10,6 +10,9 @@ default-wal
 __pycache__/
 *.pyc
 .DS_Store
+.coverage
+coverage.xml
+.pytest_cache/
 
 # Temporary/debug scripts
 tmp/

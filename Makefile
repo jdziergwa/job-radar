@@ -1,4 +1,4 @@
-.PHONY: install dev types build start lint test clean-db clean-db-volume clean-web demo-snapshot demo-refresh readme-header
+.PHONY: install dev types build start lint test test-cov clean-db clean-db-volume clean-web demo-snapshot demo-refresh readme-header
 
 COMPOSE ?= docker compose
 PROJECT_NAME ?= $(notdir $(CURDIR))
@@ -29,6 +29,9 @@ lint:
 
 test:
 	.venv/bin/python -m pytest
+
+test-cov:
+	.venv/bin/python -m pytest --cov --cov-report=term-missing --cov-report=xml --cov-fail-under=57
 
 clean-db:
 	rm -f data/*.db

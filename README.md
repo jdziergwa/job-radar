@@ -219,6 +219,7 @@ graph TD
 | `make start` | Build the frontend, then start the FastAPI server. |
 | `make types` | Regenerate TypeScript types from the API spec. |
 | `make test` | Run the Python test suite. |
+| `make test-cov` | Run the Python test suite with coverage for `src/` and `api/`. |
 | `make demo-snapshot` | Export the committed static demo snapshot into `web/public/demo-data`. |
 | `make demo-refresh` | Refresh the demo snapshot using the current demo profile. |
 | `make readme-header` | Regenerate the README header PNG from its HTML source. |

@@ -146,6 +146,7 @@ make start
 
 Useful companion commands:
 - `make test` to run the Python test suite
+- `make test-cov` to run the Python test suite with coverage output
 - `make types` to regenerate `web/src/lib/api/types.ts`
 
 Interactive API docs:

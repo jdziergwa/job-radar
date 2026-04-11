@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  backend-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+
+      - name: Install Python dependencies
+        run: |
+          python -m venv .venv
+          .venv/bin/pip install -r requirements.txt
+
+      - name: Run backend tests with coverage
+        run: make test-cov
+
+  frontend-checks:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: web
+        run: npm ci
+
+      - name: Run frontend checks
+        working-directory: web
+        run: |
+          npm run lint
+          npx tsc --noEmit
+          npm run build

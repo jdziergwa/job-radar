@@ -23,7 +23,7 @@ def extract_id(url: str) -> str:
     # 1. Check for common query parameters
     # Greenhouse often uses gh_jid on custom domains
     for param in ["gh_jid", "lever-via", "jobId", "id"]:
-        match = re.search(f"[?&]{param}=([a-zA-Z0-9\-_]+)", url)
+        match = re.search(rf"[?&]{param}=([a-zA-Z0-9\-_]+)", url)
         if match:
             return match.group(1)
             

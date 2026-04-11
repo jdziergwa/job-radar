@@ -1,14 +1,27 @@
 import tempfile
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from src.models import RawJob
 from src.store import Store
 
 
+def _recent_day(days_offset: int) -> str:
+    base = datetime.now(timezone.utc).replace(hour=12, minute=0, second=0, microsecond=0)
+    return (base + timedelta(days=days_offset)).date().isoformat()
+
+
+def _recent_timestamp(days_offset: int, hour: int = 12, minute: int = 0) -> str:
+    base = datetime.now(timezone.utc).replace(hour=hour, minute=minute, second=0, microsecond=0)
+    return (base + timedelta(days=days_offset)).strftime("%Y-%m-%dT%H:%M:%S")
+
+
 def test_daily_counts_use_scored_at_instead_of_first_seen_date():
     with tempfile.TemporaryDirectory() as tmpdir:
         db_path = Path(tmpdir) / "jobs.db"
         store = Store(str(db_path))
+        first_seen_day = _recent_day(-2)
+        scored_day = _recent_day(-1)
 
         store.upsert_jobs([
             RawJob(
@@ -54,28 +67,29 @@ def test_daily_counts_use_scored_at_instead_of_first_seen_date():
         with store._connect() as conn:
             conn.execute(
                 "UPDATE jobs SET first_seen_at = ?, scored_at = ? WHERE job_id = ?",
-                ("2026-04-09T08:00:00", "2026-04-10T09:30:00", "job-1"),
+                (_recent_timestamp(-2, 8, 0), _recent_timestamp(-1, 9, 30), "job-1"),
             )
             conn.execute(
                 "UPDATE jobs SET first_seen_at = ?, scored_at = ? WHERE job_id = ?",
-                ("2026-04-09T12:00:00", "2026-04-10T11:45:00", "job-2"),
+                (_recent_timestamp(-2, 12, 0), _recent_timestamp(-1, 11, 45), "job-2"),
             )
 
         trends = store.get_trends(days=30)
         daily_counts = {item["date"]: item for item in trends["daily_counts"]}
 
-        assert daily_counts["2026-04-09"]["new_jobs"] == 2
-        assert daily_counts["2026-04-09"]["in_funnel"] == 2
-        assert daily_counts["2026-04-09"]["scored"] == 0
-        assert daily_counts["2026-04-10"]["new_jobs"] == 0
-        assert daily_counts["2026-04-10"]["in_funnel"] == 0
-        assert daily_counts["2026-04-10"]["scored"] == 2
+        assert daily_counts[first_seen_day]["new_jobs"] == 2
+        assert daily_counts[first_seen_day]["in_funnel"] == 2
+        assert daily_counts[first_seen_day]["scored"] == 0
+        assert daily_counts[scored_day]["new_jobs"] == 0
+        assert daily_counts[scored_day]["in_funnel"] == 0
+        assert daily_counts[scored_day]["scored"] == 2
 
 
 def test_daily_counts_only_count_prefilter_survivors_as_in_funnel():
     with tempfile.TemporaryDirectory() as tmpdir:
         db_path = Path(tmpdir) / "jobs.db"
         store = Store(str(db_path))
+        first_seen_day = _recent_day(-2)
 
         store.upsert_jobs([
             RawJob(
@@ -110,14 +124,14 @@ def test_daily_counts_only_count_prefilter_survivors_as_in_funnel():
         with store._connect() as conn:
             conn.execute(
                 "UPDATE jobs SET first_seen_at = ?",
-                ("2026-04-09T10:00:00",),
+                (_recent_timestamp(-2, 10, 0),),
             )
 
         trends = store.get_trends(days=30)
         daily_counts = {item["date"]: item for item in trends["daily_counts"]}
 
-        assert daily_counts["2026-04-09"]["new_jobs"] == 2
-        assert daily_counts["2026-04-09"]["in_funnel"] == 1
+        assert daily_counts[first_seen_day]["new_jobs"] == 2
+        assert daily_counts[first_seen_day]["in_funnel"] == 1
 
 
 def test_pipeline_funnel_counts_collected_prefilter_high_priority_and_applied():

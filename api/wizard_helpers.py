@@ -1016,11 +1016,12 @@ def merge_refined_search_config_keywords(original_yaml: str, refined_keywords: D
             if isinstance(refined_broad, list):
                 final_broad = _merge_list_preserve_existing(final_broad, refined_broad)
 
-            demoted_existing_high = [
-                pattern for pattern in existing_high
-                if pattern.lower() not in protected_high_keys and pattern.lower() not in final_high_keys
-            ]
-            final_broad = _merge_list_preserve_existing(final_broad, demoted_existing_high)
+            if protected_high_keys:
+                demoted_existing_high = [
+                    pattern for pattern in existing_high
+                    if pattern.lower() not in protected_high_keys and pattern.lower() not in final_high_keys
+                ]
+                final_broad = _merge_list_preserve_existing(final_broad, demoted_existing_high)
 
             existing_title_patterns["high_confidence"] = final_high
             existing_title_patterns["broad"] = final_broad

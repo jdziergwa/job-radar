@@ -1,8 +1,14 @@
 import tempfile
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from src.models import RawJob
 from src.store import Store
+
+
+def _recent_timestamp(days_offset: int, hour: int = 12, minute: int = 0) -> str:
+    base = datetime.now(timezone.utc).replace(hour=hour, minute=minute, second=0, microsecond=0)
+    return (base + timedelta(days=days_offset)).strftime("%Y-%m-%dT%H:%M:%S")
 
 
 def test_company_stats_only_include_recent_in_funnel_jobs():
@@ -86,11 +92,11 @@ def test_company_stats_only_include_recent_in_funnel_jobs():
         with store._connect() as conn:
             conn.execute(
                 "UPDATE jobs SET status = 'closed', last_seen_at = ? WHERE job_id = ?",
-                ("2026-04-10T00:00:00", "closed-role"),
+                (_recent_timestamp(-1, 9, 0), "closed-role"),
             )
             conn.execute(
                 "UPDATE jobs SET first_seen_at = ?, last_seen_at = ? WHERE job_id = ?",
-                ("2026-02-01T00:00:00", "2026-02-05T00:00:00", "old-role"),
+                (_recent_timestamp(-60, 8, 0), _recent_timestamp(-56, 8, 0), "old-role"),
             )
 
         trends = store.get_trends(days=30)
