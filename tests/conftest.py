@@ -1,3 +1,4 @@
+import importlib.util
 import sys
 import types
 
@@ -40,7 +41,7 @@ if "anthropic" not in sys.modules:
     sys.modules["anthropic"] = anthropic
 
 
-if "httpx" not in sys.modules:
+if "httpx" not in sys.modules and importlib.util.find_spec("httpx") is None:
     httpx = types.ModuleType("httpx")
 
     class AsyncClient:  # pragma: no cover - import-only stub
@@ -60,7 +61,7 @@ if "httpx" not in sys.modules:
     sys.modules["httpx"] = httpx
 
 
-if "aiohttp" not in sys.modules:
+if "aiohttp" not in sys.modules and importlib.util.find_spec("aiohttp") is None:
     aiohttp = types.ModuleType("aiohttp")
 
     class ClientSession:  # pragma: no cover - import-only stub
