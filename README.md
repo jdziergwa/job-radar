@@ -15,12 +15,6 @@ Try the live demo: [https://jdziergwa.github.io/job-radar/](https://jdziergwa.gi
   <img src=".github/assets/job-details.png" alt="Job details view" width="48%" />
 </p>
 
-<p align="center">
-  <a href="https://github.com/jdziergwa/job-radar/actions/workflows/ci.yml">
-    <img src="https://github.com/jdziergwa/job-radar/actions/workflows/ci.yml/badge.svg" alt="CI" />
-  </a>
-</p>
-
 ---
 
 ## ⚡ Features
@@ -242,14 +236,14 @@ graph TD
 
 ## 🙌 Acknowledgments
 
-Aggregator data derived from [job-board-aggregator](https://github.com/Feashliaa/job-board-aggregator), licensed under [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/).
-Remotive source data provided by [Remotive](https://remotive.com).
-Remote OK source data provided by [Remote OK](https://remoteok.com).
-Hacker News source data provided by [Hacker News](https://news.ycombinator.com) via [Algolia](https://hn.algolia.com).
-Arbeitnow source data provided by [Arbeitnow](https://www.arbeitnow.com).
-We Work Remotely source data provided by [We Work Remotely](https://weworkremotely.com).
-Adzuna source data provided by [Adzuna](https://www.adzuna.com).
-Company discovery imports may include normalized ATS company data derived from [Remotebear](https://github.com/remotebear-io/remotebear) and [Awesome Easy Apply](https://github.com/sample-resume/awesome-easy-apply).
+- Aggregator data derived from [job-board-aggregator](https://github.com/Feashliaa/job-board-aggregator), licensed under [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/).
+- Remotive source data provided by [Remotive](https://remotive.com).
+- Remote OK source data provided by [Remote OK](https://remoteok.com).
+- Hacker News source data provided by [Hacker News](https://news.ycombinator.com) via [Algolia](https://hn.algolia.com).
+- Arbeitnow source data provided by [Arbeitnow](https://www.arbeitnow.com).
+- We Work Remotely source data provided by [We Work Remotely](https://weworkremotely.com).
+- Adzuna source data provided by [Adzuna](https://www.adzuna.com).
+- Company discovery imports may include normalized ATS company data derived from [Remotebear](https://github.com/remotebear-io/remotebear) and [Awesome Easy Apply](https://github.com/sample-resume/awesome-easy-apply).
 
 ---
 
