@@ -15,6 +15,12 @@ Try the live demo: [https://jdziergwa.github.io/job-radar/](https://jdziergwa.gi
   <img src=".github/assets/job-details.png" alt="Job details view" width="48%" />
 </p>
 
+<p align="center">
+  <a href="https://github.com/jdziergwa/job-radar/actions/workflows/ci.yml">
+    <img src="https://github.com/jdziergwa/job-radar/actions/workflows/ci.yml/badge.svg" alt="CI" />
+  </a>
+</p>
+
 ---
 
 ## ⚡ Features
