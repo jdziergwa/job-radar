@@ -1,18 +1,27 @@
 'use client'
 
-import { useEffect, useState, useRef, useCallback } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useState, useRef } from 'react'
 import { api } from '@/lib/api/client'
 import { JobListItem } from '@/components/jobs/JobListItem'
 import { DismissalSummary } from '@/components/jobs/DismissalSummary'
 import { RescoreAllButton } from '@/components/jobs/RescoreAllButton'
 import { Button } from '@/components/ui/button'
-import { ChevronLeft, ChevronRight, ChevronDown, Loader2, Search, SearchX, SlidersHorizontal, X, HelpCircle, ArrowUpDown, Filter, Clock } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ChevronDown, Loader2, Search, SearchX, SlidersHorizontal, X, HelpCircle, Clock } from 'lucide-react'
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import {
+  buildJobBoardHref,
+  clearSavedJobBoardScroll,
+  DEFAULT_JOB_BOARD_STATE,
+  getAppScrollContainer,
+  getSavedJobBoardScroll,
+  parseJobBoardState,
+  type JobBoardState,
+} from '@/lib/jobs/navigation'
 
 const STATUS_OPTIONS = [
   { value: 'new,scored,applied', label: 'Active' },
@@ -42,18 +51,20 @@ const SCORE_FILTER_OPTIONS = [
 export default function JobsPage() {
   const [jobs, setJobs] = useState<any[]>([])
   const [total, setTotal] = useState(0)
-  const [page, setPage] = useState(1)
+  const [page, setPage] = useState(DEFAULT_JOB_BOARD_STATE.page)
   const [pages, setPages] = useState(1)
   const [loading, setLoading] = useState(true)
-  const [status, setStatus] = useState('new,scored,applied')
-  const [sort, setSort] = useState('score')
-  const [minScore, setMinScore] = useState('')
-  const [searchTerm, setSearchTerm] = useState('')
-  const [search, setSearch] = useState('')
-  const [isSparse, setIsSparse] = useState<boolean | null>(null)
-  const [todayOnly, setTodayOnly] = useState(false)
+  const [status, setStatus] = useState(DEFAULT_JOB_BOARD_STATE.status)
+  const [sort, setSort] = useState(DEFAULT_JOB_BOARD_STATE.sort)
+  const [minScore, setMinScore] = useState(DEFAULT_JOB_BOARD_STATE.minScore)
+  const [searchTerm, setSearchTerm] = useState(DEFAULT_JOB_BOARD_STATE.search)
+  const [search, setSearch] = useState(DEFAULT_JOB_BOARD_STATE.search)
+  const [isSparse, setIsSparse] = useState<boolean | null>(DEFAULT_JOB_BOARD_STATE.isSparse)
+  const [todayOnly, setTodayOnly] = useState(DEFAULT_JOB_BOARD_STATE.todayOnly)
   const [statusOpen, setStatusOpen] = useState(false)
   const statusRef = useRef<HTMLDivElement>(null)
+  const boardStateRef = useRef<JobBoardState>(DEFAULT_JOB_BOARD_STATE)
+  const restoredScrollRef = useRef(false)
 
   // Close status dropdown on outside click
   useEffect(() => {
@@ -66,25 +77,69 @@ export default function JobsPage() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  const fetchJobs = async (pageNum: number, opts?: { status?: string; sort?: string; minScore?: string; search?: string; is_sparse?: boolean | null; today_only?: boolean }) => {
+  const syncBoardUrl = useCallback((nextState: JobBoardState) => {
+    const nextHref = buildJobBoardHref(nextState)
+    const currentHref = `${window.location.pathname}${window.location.search}`
+
+    if (nextHref !== currentHref) {
+      window.history.replaceState(null, '', nextHref)
+    }
+  }, [])
+
+  const buildNextState = useCallback((
+    pageNum: number,
+    overrides: Partial<JobBoardState> = {}
+  ): JobBoardState => {
+    const currentState = boardStateRef.current
+
+    return {
+      page: pageNum,
+      status: overrides.status ?? currentState.status,
+      sort: overrides.sort ?? currentState.sort,
+      minScore: Object.prototype.hasOwnProperty.call(overrides, 'minScore')
+        ? overrides.minScore ?? ''
+        : currentState.minScore,
+      search: Object.prototype.hasOwnProperty.call(overrides, 'search')
+        ? overrides.search ?? ''
+        : currentState.search,
+      todayOnly: Object.prototype.hasOwnProperty.call(overrides, 'todayOnly')
+        ? overrides.todayOnly ?? false
+        : currentState.todayOnly,
+      isSparse: Object.prototype.hasOwnProperty.call(overrides, 'isSparse')
+        ? overrides.isSparse ?? null
+        : currentState.isSparse,
+    }
+  }, [])
+
+  const applyBoardState = useCallback((nextState: JobBoardState) => {
+    boardStateRef.current = nextState
+    setPage(nextState.page)
+    setStatus(nextState.status)
+    setSort(nextState.sort)
+    setMinScore(nextState.minScore)
+    setSearch(nextState.search)
+    setIsSparse(nextState.isSparse)
+    setTodayOnly(nextState.todayOnly)
+    syncBoardUrl(nextState)
+  }, [syncBoardUrl])
+
+  const fetchJobs = useCallback(async (nextState: JobBoardState) => {
+    applyBoardState(nextState)
     setLoading(true)
-    const s = opts?.status ?? status
-    const so = opts?.sort ?? sort
-    const ms = opts?.minScore ?? minScore
-    const sea = opts?.hasOwnProperty('search') ? opts.search : search
-    const isp = opts?.hasOwnProperty('is_sparse') ? opts.is_sparse : isSparse
-    const tdo = opts?.hasOwnProperty('today_only') ? opts.today_only : todayOnly
     
     try {
-      const query: Record<string, any> = { page: pageNum, per_page: 15, sort: so }
-      if (s) query.status = s
-      if (ms) query.min_score = parseInt(ms)
-      if (sea) query.search = sea
-      if (isp !== null) query.is_sparse = isp
-      if (tdo) query.today_only = true
+      const query: Record<string, any> = { page: nextState.page, per_page: 15, sort: nextState.sort }
+      if (nextState.status) query.status = nextState.status
+      if (nextState.minScore) query.min_score = parseInt(nextState.minScore, 10)
+      if (nextState.search) query.search = nextState.search
+      if (nextState.isSparse !== null) query.is_sparse = nextState.isSparse
+      if (nextState.todayOnly) query.today_only = true
 
       const { data } = await api.GET('/api/jobs', { params: { query } })
       if (data) {
+        if (data.page !== nextState.page) {
+          applyBoardState({ ...nextState, page: data.page })
+        }
         setJobs(data.jobs)
         setTotal(data.total)
         setPage(data.page)
@@ -93,88 +148,77 @@ export default function JobsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [applyBoardState])
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
-    const initialStatus = params.get('status') || 'new,scored,applied'
-    const initialSort = params.get('sort') || 'score'
-    const initialMinScore = params.get('min_score') || ''
-    const initialSearch = params.get('search') || ''
-    const initialTodayOnly = params.get('today_only') === 'true'
-    const initialSparse = initialMinScore === 'sparse'
+    const initialState = parseJobBoardState(new URLSearchParams(window.location.search))
 
-    setStatus(initialStatus)
-    setSort(initialSort)
-    setTodayOnly(initialTodayOnly)
-    setSearchTerm(initialSearch)
-    setSearch(initialSearch)
-
-    if (initialSparse) {
-      setMinScore('')
-      setIsSparse(true)
-    } else {
-      setMinScore(initialMinScore)
-      setIsSparse(null)
-    }
-
-    fetchJobs(1, {
-      status: initialStatus,
-      sort: initialSort,
-      minScore: initialSparse ? '' : initialMinScore,
-      search: initialSearch,
-      today_only: initialTodayOnly,
-      is_sparse: initialSparse ? true : null,
-    })
+    boardStateRef.current = initialState
+    setSearchTerm(initialState.search)
+    fetchJobs(initialState)
 
     // Listen for pipeline completion to refresh job data
-    const handleRefresh = () => fetchJobs(1, { status: 'new,scored,applied' })
+    const handleRefresh = () => fetchJobs(boardStateRef.current)
     window.addEventListener('pipeline-finished', handleRefresh)
     return () => window.removeEventListener('pipeline-finished', handleRefresh)
-  }, [])
+  }, [fetchJobs])
 
   // Debounced search
   useEffect(() => {
     if (searchTerm === search) return
     
     const timer = setTimeout(() => {
-      setSearch(searchTerm)
-      setPage(1)
-      fetchJobs(1, { search: searchTerm })
+      fetchJobs(buildNextState(1, { search: searchTerm }))
     }, 400)
     
     return () => clearTimeout(timer)
-  }, [searchTerm])
+  }, [buildNextState, fetchJobs, search, searchTerm])
+
+  const boardHref = buildJobBoardHref({
+    page,
+    status,
+    sort,
+    minScore,
+    search,
+    todayOnly,
+    isSparse,
+  })
+
+  useLayoutEffect(() => {
+    if (loading || restoredScrollRef.current) return
+
+    const savedScrollTop = getSavedJobBoardScroll(boardHref)
+    if (savedScrollTop === null) return
+
+    const scrollContainer = getAppScrollContainer()
+    if (!scrollContainer) return
+
+    const previousBehavior = scrollContainer.style.scrollBehavior
+    scrollContainer.style.scrollBehavior = 'auto'
+    scrollContainer.scrollTop = savedScrollTop
+    scrollContainer.style.scrollBehavior = previousBehavior
+
+    restoredScrollRef.current = true
+    clearSavedJobBoardScroll()
+  }, [boardHref, loading])
 
   const applyStatus = (val: string) => {
-    setStatus(val)
-    setPage(1)
-    fetchJobs(1, { status: val })
+    fetchJobs(buildNextState(1, { status: val }))
   }
 
   const applyTodayOnly = (val: boolean) => {
-    setTodayOnly(val)
-    setPage(1)
-    fetchJobs(1, { today_only: val })
+    fetchJobs(buildNextState(1, { todayOnly: val }))
   }
 
   const applySort = (val: string) => {
-    setSort(val)
-    setPage(1)
-    fetchJobs(1, { sort: val })
+    fetchJobs(buildNextState(1, { sort: val }))
   }
 
   const applyMinScore = (val: string) => {
     if (val === 'sparse') {
-      setIsSparse(true)
-      setMinScore('')
-      setPage(1)
-      fetchJobs(1, { is_sparse: true, minScore: '' })
+      fetchJobs(buildNextState(1, { isSparse: true, minScore: '' }))
     } else {
-      setMinScore(val)
-      setIsSparse(null)
-      setPage(1)
-      fetchJobs(1, { minScore: val, is_sparse: null })
+      fetchJobs(buildNextState(1, { minScore: val, isSparse: null }))
     }
   }
 
@@ -367,7 +411,7 @@ export default function JobsPage() {
           <div className="space-y-8">
             <div className="space-y-2">
               {jobs.map((job) => (
-                <JobListItem key={job.id} job={job} />
+                <JobListItem key={job.id} job={job} boardHref={boardHref} />
               ))}
             </div>
 
@@ -376,7 +420,7 @@ export default function JobsPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => { setPage(p => p - 1); fetchJobs(page - 1) }}
+                  onClick={() => fetchJobs(buildNextState(page - 1))}
                   disabled={page === 1 || loading}
                   className="gap-2"
                 >
@@ -386,7 +430,7 @@ export default function JobsPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => { setPage(p => p + 1); fetchJobs(page + 1) }}
+                  onClick={() => fetchJobs(buildNextState(page + 1))}
                   disabled={page === pages || loading}
                   className="gap-2"
                 >

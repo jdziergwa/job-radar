@@ -7,6 +7,7 @@ import { DemoBanner } from '@/components/layout/DemoBanner'
 import { ProfileGuard } from '@/components/layout/ProfileGuard'
 import { Toaster } from 'sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
+import { APP_SCROLL_CONTAINER_ID } from '@/lib/jobs/navigation'
 import './globals.css'
 
 const inter = Inter({
@@ -38,7 +39,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <main className="flex-1 flex flex-col min-w-0 bg-background overflow-hidden">
                   <DemoBanner />
                   <MobileHeader />
-                  <div className="flex-1 overflow-y-auto scroll-smooth">
+                  <div id={APP_SCROLL_CONTAINER_ID} className="flex-1 overflow-y-auto scroll-smooth">
                     {children}
                   </div>
                 </main>

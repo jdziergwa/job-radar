@@ -8,6 +8,7 @@ import { timeAgo, getPlatformName } from '@/lib/utils/format'
 import { Badge } from '@/components/ui/badge'
 import { MapPin, Building2, ChevronRight, Banknote, HelpCircle } from 'lucide-react'
 import { getCompanyQualitySignalLabel } from '@/lib/company-quality'
+import { saveJobBoardScroll } from '@/lib/jobs/navigation'
 
 type JobResponse = components["schemas"]["JobResponse"]
 
@@ -18,16 +19,22 @@ const PRIORITY_BORDER: Record<string, string> = {
   skip:   'border-l-red-500/40',
 }
 
-export function JobListItem({ job }: { job: JobResponse }) {
+export function JobListItem({ job, boardHref }: { job: JobResponse; boardHref: string }) {
   const priority = job.score_breakdown?.apply_priority as string | undefined
   const fitCategory = job.score_breakdown?.fit_category as string | undefined
   const keyMatches = job.score_breakdown?.key_matches ?? []
   const leftBorder = PRIORITY_BORDER[priority ?? ''] ?? 'border-l-border/30'
   const companySignals = Array.isArray(job.company_quality_signals) ? job.company_quality_signals.slice(0, 2) : []
   const isStrategicException = fitCategory === 'strategic_exception'
+  const detailHref = `/jobs/detail?id=${job.id}&from=${encodeURIComponent(boardHref)}`
 
   return (
-    <Link href={`/jobs/detail?id=${job.id}`}>
+    <Link
+      href={detailHref}
+      onClick={() => saveJobBoardScroll(boardHref)}
+      aria-label={`Open ${job.title} at ${job.company_name}`}
+      className="block w-full text-left"
+    >
       <div className={`group relative flex items-center gap-6 p-4 rounded-xl border border-border/40 border-l-4 ${leftBorder} bg-card/30 hover:bg-card/60 hover:border-primary/30 transition-all duration-300 cursor-pointer shadow-sm backdrop-blur-sm`}>
         {/* Score Section */}
         <div className="flex-shrink-0 flex flex-col items-center gap-1 transition-transform group-hover:scale-105 duration-300">
