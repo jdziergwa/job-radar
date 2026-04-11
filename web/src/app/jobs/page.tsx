@@ -6,7 +6,7 @@ import { JobListItem } from '@/components/jobs/JobListItem'
 import { DismissalSummary } from '@/components/jobs/DismissalSummary'
 import { RescoreAllButton } from '@/components/jobs/RescoreAllButton'
 import { Button } from '@/components/ui/button'
-import { ChevronLeft, ChevronRight, ChevronDown, Loader2, Search, SearchX, SlidersHorizontal, X, HelpCircle, Clock } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ChevronDown, ChevronsLeft, ChevronsRight, Loader2, Search, SearchX, SlidersHorizontal, X, HelpCircle, Clock } from 'lucide-react'
 import {
   Tooltip,
   TooltipContent,
@@ -416,26 +416,50 @@ export default function JobsPage() {
             </div>
 
             {pages > 1 && (
-              <div className="flex items-center justify-center gap-6 py-6 border-t border-border/50">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => fetchJobs(buildNextState(page - 1))}
-                  disabled={page === 1 || loading}
-                  className="gap-2"
-                >
-                  <ChevronLeft className="h-4 w-4" /> Previous
-                </Button>
-                <span className="text-sm font-medium">Page {page} of {pages}</span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => fetchJobs(buildNextState(page + 1))}
-                  disabled={page === pages || loading}
-                  className="gap-2"
-                >
-                  Next <ChevronRight className="h-4 w-4" />
-                </Button>
+              <div className="flex flex-col items-center gap-3 border-t border-border/50 py-6">
+                <div className="flex flex-wrap items-center justify-center gap-3">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => fetchJobs(buildNextState(1))}
+                    disabled={page === 1 || loading}
+                    className="px-2.5"
+                    aria-label="Go to first page"
+                  >
+                    <ChevronsLeft className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => fetchJobs(buildNextState(page - 1))}
+                    disabled={page === 1 || loading}
+                    className="gap-2"
+                  >
+                    <ChevronLeft className="h-4 w-4" /> Previous
+                  </Button>
+                  <span className="min-w-28 text-center text-sm font-medium text-muted-foreground">
+                    Page {page} of {pages}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => fetchJobs(buildNextState(page + 1))}
+                    disabled={page === pages || loading}
+                    className="gap-2"
+                  >
+                    Next <ChevronRight className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => fetchJobs(buildNextState(pages))}
+                    disabled={page === pages || loading}
+                    className="px-2.5"
+                    aria-label="Go to last page"
+                  >
+                    <ChevronsRight className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             )}
           </div>
