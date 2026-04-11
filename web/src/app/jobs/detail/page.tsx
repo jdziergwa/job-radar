@@ -117,7 +117,7 @@ function JobDetailContent() {
   useEffect(() => {
     if (!rescoreRunId) return
 
-    let interval = setInterval(async () => {
+    const interval = setInterval(async () => {
       try {
         const { data, error: statusError } = await api.GET('/api/pipeline/status/{run_id}', {
           params: { path: { run_id: rescoreRunId } }

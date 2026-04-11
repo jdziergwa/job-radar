@@ -514,7 +514,7 @@ export default function CompaniesPage() {
                   <div className="flex flex-col items-center justify-center p-20 border-2 border-dashed border-border/30 rounded-2xl bg-muted/5">
                     <Building2 className="h-10 w-10 text-muted-foreground/30 mb-2" />
                     <p className="text-sm text-muted-foreground font-medium">No {p.name} companies tracked yet.</p>
-                    <p className="text-xs text-muted-foreground/60">Click 'Add Company Board' to start monitoring boards.</p>
+                    <p className="text-xs text-muted-foreground/60">Click &apos;Add Company Board&apos; to start monitoring boards.</p>
                   </div>
                 ) : (
                   <div className="space-y-2 max-w-7xl mx-auto">

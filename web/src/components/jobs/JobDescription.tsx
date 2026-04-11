@@ -181,7 +181,7 @@ export function JobDescription({ content, isSparse, className }: JobDescriptionP
           <div>
             <h4 className="text-amber-600 dark:text-amber-400 font-bold text-sm mb-1">Sparse Posting detected</h4>
             <p className="text-xs text-muted-foreground leading-relaxed italic">
-              The AI identified this description as a brief summary or "teaser". 
+              The AI identified this description as a brief summary or &quot;teaser&quot;.
               Vital details like specific technical requirements or day-to-day responsibilities may be missing from this text.
               Check the original link for the full context before making a decision.
             </p>

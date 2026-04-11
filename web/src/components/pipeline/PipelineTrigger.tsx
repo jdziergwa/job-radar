@@ -91,26 +91,23 @@ export function PipelineTrigger({ collapsed = false }: { collapsed?: boolean }) 
     }
     setIsStarting(true)
     try {
-      let data, error;
-      const res = await api.POST('/api/pipeline/run', {
+      const { data, error } = await api.POST('/api/pipeline/run', {
         body: {
           profile: 'default',
           sources: selectedSources,
           dry_run: dryRun
         }
       })
-      data = res.data
-      error = res.error
 
       if (error) throw new Error(typeof error === 'string' ? error : 'Failed to start pipeline')
       if (data) {
-        const runId = (data as any).run_id;
+        const runId = data.run_id
         setActiveRun({ running: true, run_id: runId })
         setShowProgress(true)
         setOpen(false)
       }
-    } catch (err: any) {
-      toast.error(err.message)
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Failed to start pipeline')
     } finally {
       setIsStarting(false)
     }

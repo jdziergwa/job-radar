@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
+import { marked } from 'marked'
 import { api } from '@/lib/api/client'
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -25,8 +26,8 @@ export function AIInsightsPanel() {
       setReport(res.data.report)
       setGeneratedAt(res.data.generated_at)
       setCached(res.data.cached)
-    } catch (e: any) {
-      setError(e.message || 'Failed to generate insights')
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Failed to generate insights')
     } finally {
       setLoading(false)
     }
@@ -42,7 +43,7 @@ export function AIInsightsPanel() {
     : null
 
   // Parse markdown to HTML
-  const htmlContent = report ? (typeof window !== 'undefined' ? require('marked').marked.parse(report) : report) : ''
+  const htmlContent = report ? (typeof window !== 'undefined' ? marked.parse(report) : report) : ''
 
   return (
     <Card className="border-border/50 bg-background/30 backdrop-blur-md">

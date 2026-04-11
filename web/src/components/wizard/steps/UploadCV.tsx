@@ -62,7 +62,7 @@ export function UploadCV({ onNext, onBack, onUpdate, data }: StepProps) {
     <div className="flex flex-col gap-4 py-2 animate-in fade-in slide-in-from-bottom-4 duration-500 w-full">
       <div className="text-center space-y-1 bg-background/50 py-4 -mt-4 border-b border-border/10 mb-2 w-full">
         <h2 className="text-xl font-bold tracking-tight">Upload CV (PDF)</h2>
-        <p className="text-muted-foreground text-xs max-w-sm mx-auto">We'll use AI to extract your skills and expertise from your PDF.</p>
+        <p className="text-muted-foreground text-xs max-w-sm mx-auto">We&apos;ll use AI to extract your skills and expertise from your PDF.</p>
       </div>
 
       <div className="space-y-4">

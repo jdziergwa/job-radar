@@ -126,7 +126,7 @@ export function JobListItem({ job }: { job: JobResponse }) {
             </div>
             {job.score_reasoning && (
               <p className="text-xs text-muted-foreground/60 line-clamp-1 italic">
-                "{job.score_reasoning}"
+                &quot;{job.score_reasoning}&quot;
               </p>
             )}
           </div>

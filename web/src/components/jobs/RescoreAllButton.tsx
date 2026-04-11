@@ -51,7 +51,6 @@ export function RescoreAllButton({
     setConfirmOpen(false)
     setLoading(true)
     try {
-      // @ts-ignore - fixing argument count lint
       const { data, error } = await api.POST('/api/jobs/rescore/all', { 
         params: { query: { profile: 'default' } } 
       })
@@ -60,7 +59,7 @@ export function RescoreAllButton({
         toast.error('Failed to start bulk rescore')
         console.error('Rescore all error:', error)
       } else {
-        const id = (data as any)?.run_id
+        const id = data?.run_id
         if (!id) {
           toast.error('Bulk rescore did not return a run ID')
           return

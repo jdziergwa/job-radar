@@ -171,7 +171,7 @@ export function ReviewProfile({ onNext, onBack, onUpdate, data }: StepProps) {
       {!isEditFlow && (
         <div className="text-center space-y-1 bg-background/50 py-6 -mt-4 border-b border-border/20 mb-4">
           <h2 className="text-2xl font-bold tracking-tight">Review your profile</h2>
-          <p className="text-muted-foreground text-sm max-w-sm mx-auto">We've extracted this from your CV. Make sure everything looks right.</p>
+          <p className="text-muted-foreground text-sm max-w-sm mx-auto">We&apos;ve extracted this from your CV. Make sure everything looks right.</p>
         </div>
       )}
 
