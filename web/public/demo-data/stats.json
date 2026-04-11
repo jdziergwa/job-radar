@@ -1,27 +1,27 @@
 {
-  "total_jobs": 27331,
-  "new_today": 292,
-  "total_new_today": 27331,
+  "total_jobs": 28630,
+  "new_today": 16,
+  "total_new_today": 1299,
   "high_priority_today": 0,
-  "new_this_week": 292,
-  "last_pipeline_run_at": "2026-04-10T13:59:49.425686",
-  "scored": 292,
+  "new_this_week": 308,
+  "last_pipeline_run_at": "2026-04-11T18:48:22.312253",
+  "scored": 308,
   "pending": 0,
   "applied": 0,
-  "dismissed": 27039,
+  "dismissed": 28322,
   "closed": 0,
   "score_distribution": {
     "90-100": 0,
     "80-89": 6,
-    "70-79": 9,
+    "70-79": 11,
     "60-69": 21,
-    "50-59": 17,
-    "below-50": 239
+    "50-59": 21,
+    "below-50": 249
   },
   "apply_priority_counts": {
     "high": 6,
-    "medium": 30,
-    "low": 30,
-    "skip": 226
+    "medium": 32,
+    "low": 35,
+    "skip": 235
   }
 }

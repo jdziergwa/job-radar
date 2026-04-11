@@ -8,7 +8,7 @@
   "url": "https://www.asana.com/jobs/apply/6169243?gh_jid=6169243",
   "posted_at": "2026-04-09T16:50:00-04:00",
   "first_seen_at": "2026-04-10T13:15:58.489074",
-  "last_seen_at": "2026-04-10T13:15:58.489074",
+  "last_seen_at": "2026-04-11T18:47:55.082347",
   "fit_score": 56,
   "score_reasoning": "Your 7 years of backend experience and Python/Go skills directly address this role's core technical needs. However, the posting lists 4+ years as the target level, placing you at a senior-mid seniority mismatch. While your scope is demonstrably stronger (multi-tenant microservices, billing engines, migration leadership), the role emphasizes TypeScript and Scala experience with 'large, well-maintained codebases'—neither your primary languages, and TypeScript is not evidenced in your CV. The Warsaw hybrid location (Mon/Tue/Thu in-office) introduces the same cross-border friction as job #2, conflicting with your Berlin-anchored hybrid preference. The product-focused backend work (user-facing features) is a slight sideways move from your infrastructure and systems specialization, though still within backend domain.",
   "score_breakdown": {

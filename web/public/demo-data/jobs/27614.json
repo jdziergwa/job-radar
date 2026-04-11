@@ -1,0 +1,46 @@
+{
+  "id": 27614,
+  "ats_platform": "lever",
+  "company_slug": "aircall",
+  "company_name": "Aircall",
+  "title": "Infrastructure Engineer - Database",
+  "location": "London Office",
+  "url": "https://jobs.lever.co/aircall/0dc8f11a-4c81-4502-9f34-821cc56bdb2e",
+  "posted_at": null,
+  "first_seen_at": "2026-04-11T18:47:55.082347",
+  "last_seen_at": "2026-04-11T18:47:55.082347",
+  "fit_score": 42,
+  "score_reasoning": "Your production experience with PostgreSQL and MySQL, combined with observability work (OpenTelemetry, Prometheus) and AWS infrastructure, creates solid technical overlap with database platform engineering. However, the role emphasizes building platform abstractions and tools for other engineers—a platform/infrastructure specialization rather than backend services—which diverges from your core career direction of deepening expertise in distributed systems and business-critical features. London is remote-compatible from Berlin (±1h timezone overlap), improving location fit, but the role's platform engineering focus and lack of evidence of your interest in database infrastructure management work suggests this is a lateral move rather than career progression.",
+  "score_breakdown": {
+    "dimensions": {
+      "tech_stack_match": 60,
+      "seniority_match": 50,
+      "remote_location_fit": 55,
+      "growth_potential": 30
+    },
+    "key_matches": [
+      "PostgreSQL/MySQL expertise",
+      "AWS infrastructure",
+      "Observability systems"
+    ],
+    "red_flags": [
+      "Platform/infrastructure specialization, not backend engineering",
+      "Emphasis on tool-building rather than feature development",
+      "Does not align with stated goal of deepening distributed systems expertise",
+      "Limited growth potential toward senior backend roles"
+    ],
+    "fit_category": "",
+    "apply_priority": "low"
+  },
+  "scored_at": "2026-04-11T18:48:16.507780",
+  "status": "scored",
+  "dismissal_reason": null,
+  "match_tier": "signal_match",
+  "salary": null,
+  "salary_min": null,
+  "salary_max": null,
+  "salary_currency": null,
+  "is_sparse": false,
+  "company_quality_signals": [],
+  "description": "<div><span style=\"font-size: 16px;\">Aircall is a unicorn, AI-powered customer communications platform used by 22,000+ companies worldwide to drive revenue, resolve issues faster, and scale customer-facing teams. We’re redefining customer communications by bringing voice, SMS, WhatsApp, and AI together into one seamless workspace.</span></div><div><br></div><div><span style=\"font-size: 16px;\">Our momentum comes from a simple idea: help teams work smarter, not harder. Aircall’s AI Voice Agent automates routine calls, AI Assist streamlines post-call work, and AI Assist Pro delivers real-time guidance so people can do their best work. The result is higher revenue, faster resolutions, and teams that scale with confidence.</span></div><div><br></div><div><span style=\"font-size: 16px;\">Aircall is headquartered in Paris, our European HQ, with a strong North American presence anchored in Seattle, our North American HQ, and teams across Madrid, London, Berlin, San Francisco, New York City, Sydney, and Mexico City. We’ve built a product customers love and a business that’s scaling quickly, backed by world-class investors and driven by rapid AI innovation across multiple product lines.</span></div><div><span style=\"font-size: 16px;\">At Aircall, you’ll join a company in motion. We’re ambitious, product-driven, and execution-focused, with visible impact, fast decisions, and real growth.</span></div><div><br></div><div><span style=\"font-size: 16px;\"><b>How we work at Aircall: </b>We’re customer-obsessed, data-driven, and focused on delivering meaningful outcomes. We value ownership, continuous learning, and thoughtful speed. If you thrive in a collaborative, fast-moving environment where trust and impact matter, you’ll feel at home here.</span></div><div><br></div><div><strong style=\"font-size: 11pt;\">About the Role: </strong><span style=\"font-size: 11pt;\">We are looking for a </span><strong style=\"font-size: 11pt;\">Database Engineer</strong><span style=\"font-size: 11pt;\"> with a platform mindset to join our Infrastructure department.In this role, you will not simply \"manage tickets\" or manually tune SQL queries. Instead, you will be a </span><strong style=\"font-size: 11pt;\">force multiplier</strong><span style=\"font-size: 11pt;\"> and an </span><strong style=\"font-size: 11pt;\">enabler</strong><span style=\"font-size: 11pt;\">, constantly mindful of </span><strong style=\"font-size: 11pt;\">reliability</strong><span style=\"font-size: 11pt;\"> and </span><strong style=\"font-size: 11pt;\">scalability</strong><span style=\"font-size: 11pt;\">. </span></div>\n<div><span style=\"font-size: 11pt;\">Your mission is to codify your deep database expertise into tools, modules, and platforms that make database management and observability </span><strong style=\"font-size: 11pt;\">effortless</strong><span style=\"font-size: 11pt;\"> for our product engineers. You will build the \"Golden Paths\" that allow developers to spin up, scale, and monitor databases autonomously, ensuring that safety, security, and best practices are baked in by default. </span></div>\n<div><strong style=\"font-size: 11pt;\">The Mission: Make \"The Right Way\" the \"Easy Way\"</strong><span style=\"font-size: 11pt;\"> You will abstract the complexity of our data layer. When a developer needs a database, they shouldn't need to be an expert in AWS parameter groups or replication lag—your tools should handle that complexity for them.</span></div>"
+}

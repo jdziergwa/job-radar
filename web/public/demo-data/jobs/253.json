@@ -8,7 +8,7 @@
   "url": "https://job-boards.greenhouse.io/remotecom/jobs/7696175003",
   "posted_at": "2026-04-10T07:04:08-04:00",
   "first_seen_at": "2026-04-10T13:15:58.489074",
-  "last_seen_at": "2026-04-10T13:15:58.489074",
+  "last_seen_at": "2026-04-11T18:47:55.082347",
   "fit_score": 46,
   "score_reasoning": "Your backend engineering depth with Python, Go, PostgreSQL, AWS, and CI/CD is strong, but Elixir and Phoenix are the primary languages and frameworks for this role—neither of which you have production experience with. While the Senior-level responsibilities around system design, mentorship, and scaling align well with your trajectory at Velox, the tech gap is critical. The role is fully remote; UK&I is in your target regions (UK is explicitly listed), but you're in CET and UK operates on GMT, creating roughly a 1h offset that's manageable. However, the tech mismatch dominates your fit.",
   "score_breakdown": {

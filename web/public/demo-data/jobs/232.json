@@ -8,7 +8,7 @@
   "url": "https://job-boards.greenhouse.io/canonical/jobs/3029798",
   "posted_at": "2026-04-01T07:13:58-04:00",
   "first_seen_at": "2026-04-10T13:15:58.489074",
-  "last_seen_at": "2026-04-10T13:15:58.489074",
+  "last_seen_at": "2026-04-11T18:47:55.082347",
   "fit_score": 68,
   "score_reasoning": "Your Python expertise, containerization, and infrastructure experience (Docker, AWS, Terraform) provide a solid foundation for this SRE role, and the globally remote setup with travel aligns with your preferences. However, this is fundamentally a different specialization than your stated backend engineering focus: the role is operations/infrastructure-focused rather than microservices architecture and application development. Your CV shows backend application engineering with some infrastructure tooling, not deep SRE/platform operations experience. While the Python proficiency and Linux familiarity are transferable strengths, the role's emphasis on bare-metal networking, kernel work, OpenStack, and Kubernetes (which you lack) represents a meaningful shift away from your core distributed systems architect path. This reads more as a 'sideways' move than a growth trajectory toward senior backend leadership in high-scale microservices.",
   "score_breakdown": {

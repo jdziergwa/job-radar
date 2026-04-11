@@ -8,7 +8,7 @@
   "url": "https://job-boards.greenhouse.io/remotecom/jobs/7696170003",
   "posted_at": "2026-04-10T07:00:28-04:00",
   "first_seen_at": "2026-04-10T13:15:58.489074",
-  "last_seen_at": "2026-04-10T13:15:58.489074",
+  "last_seen_at": "2026-04-11T18:47:55.082347",
   "fit_score": 57,
   "score_reasoning": "Your seniority and backend fundamentals fit this Senior role well, and your experience with PostgreSQL, AWS, Docker, and GitLab CI/CD are directly transferable. However, Elixir is the explicit primary requirement, and you have no production experience with functional programming languages—a major gap. Remote-Southern Europe introduces a timezone mismatch of 1–2 hours ahead of Berlin, which is manageable but less ideal than EMEA-wide or truly global flexibility. Your distributed systems thinking and testing practices are valuable, but the lack of Elixir expertise would make ramp-up challenging. The async culture and scale-up growth opportunity are positive signals, but the core technology mismatch limits fit substantially.",
   "score_breakdown": {

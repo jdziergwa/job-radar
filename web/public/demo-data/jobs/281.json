@@ -8,7 +8,7 @@
   "url": "https://jobs.lever.co/palantir/72e51928-07f0-4be0-aae5-0ae6956a4846",
   "posted_at": null,
   "first_seen_at": "2026-04-10T13:15:58.489074",
-  "last_seen_at": "2026-04-10T13:15:58.489074",
+  "last_seen_at": "2026-04-11T18:47:55.082347",
   "fit_score": 52,
   "score_reasoning": "Your backend experience with Docker, AWS (ECS, S3, SQS), and observability tools (OpenTelemetry, Prometheus) provides partial overlap with infrastructure engineering work, but the role emphasizes scalable operations and forward-deployment support rather than backend service design—your core strength. The location is London, which creates a timezone challenge from Berlin (1h offset, technically acceptable, but the posting does not explicitly state remote flexibility, creating meaningful uncertainty). Palantir's government focus and infrastructure-heavy scope are adjacent to your distributed systems background, but without clear evidence of large-scale IaC, Kubernetes, or systems-wide architectural ownership in your CV, the tech match remains moderate. This is a viable but not ideal fit given the infrastructure-heavy emphasis and geographic ambiguity.",
   "score_breakdown": {

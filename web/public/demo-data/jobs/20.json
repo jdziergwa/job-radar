@@ -8,7 +8,7 @@
   "url": "https://boards.greenhouse.io/cloudflare/jobs/7340474?gh_jid=7340474",
   "posted_at": "2026-03-04T05:04:23-05:00",
   "first_seen_at": "2026-04-10T13:15:58.489074",
-  "last_seen_at": "2026-04-10T13:15:58.489074",
+  "last_seen_at": "2026-04-11T18:47:55.082347",
   "fit_score": 78,
   "score_reasoning": "Your 7 years of backend experience with Python and Go align well with this role's core requirements—Go is explicitly preferred for distributed systems and observability work, and your production expertise with Prometheus/Grafana matches the job's observability focus directly. The Analytics and Alerts team's work on GraphQL APIs and real-time systems maps closely to your microservices and system optimization background. However, this role sits slightly below strict 'senior' territory (posting emphasizes 3+ years and scalable APIs rather than leadership/architecture scope), and your experience with distributed systems, zero-downtime migrations, and multi-team impact suggests you may be overqualified for mid-level positioning. London and Lisbon are both Europe-based, meeting your timezone and geographic preferences well, though neither is Berlin—this creates a minor remote/location ambiguity. The role's strong company signal (Cloudflare: notable brand, strong product company, strong CV value) and alignment with your core tech stack and high-scale systems goals support growth potential, but the seniority positioning and lack of explicit senior-level architecture scope moderately cap that upside.",
   "score_breakdown": {

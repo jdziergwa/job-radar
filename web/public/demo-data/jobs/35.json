@@ -8,7 +8,7 @@
   "url": "https://job-boards.greenhouse.io/gitlab/jobs/8443325002",
   "posted_at": "2026-04-03T15:02:45-04:00",
   "first_seen_at": "2026-04-10T13:15:58.489074",
-  "last_seen_at": "2026-04-10T13:15:58.489074",
+  "last_seen_at": "2026-04-11T18:47:55.082347",
   "fit_score": 52,
   "score_reasoning": "This role is fully remote and located in a compatible global timezone band, removing location barriers. However, it presents a notable seniority mismatch: the title is 'Intermediate' despite stating a 5+ year minimum, while you have 7 years and are actively seeking senior-level roles. GitLab does acknowledge that candidates don't need every qualification, and your distributed systems + Python background provides some foundation for Ruby on Rails backend work with PostgreSQL. However, the tech stack is a meaningful gap: you have no Rails production experience, limited NoSQL/Elasticsearch exposure, and the role emphasizes GraphQL/REST API design at scale with security-specific domain knowledge. Your microservices and high-scale system expertise transfer partially, but Rails is a framework you'd need to learn on the job. The company (GitLab) carries strong product and brand signals, which your preferences allow as a tie-breaker for lower-seniority roles, but this intermediate position is below your trajectory and the tech stack gap is material. This is conditionally viable given GitLab's signal, but not a strong match for a senior-track engineer.",
   "score_breakdown": {

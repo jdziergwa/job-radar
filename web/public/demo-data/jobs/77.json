@@ -8,7 +8,7 @@
   "url": "https://job-boards.greenhouse.io/tripadvisor/jobs/5917973",
   "posted_at": "2026-03-19T07:59:41-04:00",
   "first_seen_at": "2026-04-10T13:15:58.489074",
-  "last_seen_at": "2026-04-10T13:15:58.489074",
+  "last_seen_at": "2026-04-11T18:47:55.082347",
   "fit_score": 61,
   "score_reasoning": "Your backend expertise in Python and Go aligns well with Tripadvisor's microservices and distributed systems focus, but the role's primary requirement for a statically typed language (Java, C#, or C++) is a notable gap—you have no commercial experience in these languages. The Software Engineer II title matches your mid-to-senior trajectory, though the hybrid Lisbon location with mandatory 2-hour commute distance creates significant friction against your remote-first preference and Berlin base (timezone overlap is reasonable at ~1h, but on-site frequency is not clearly defined and the location is outside your acceptable regions). The role offers solid growth in a high-scale travel platform with AWS infrastructure and modern practices (Kubernetes, daily releases), but the language requirement and location constraints combine to lower overall fit. This is a medium-priority role that merits exploration only if you're willing to relocate or commit to regular Lisbon office time.",
   "score_breakdown": {

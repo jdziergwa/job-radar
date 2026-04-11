@@ -8,7 +8,7 @@
   "url": "https://job-boards.greenhouse.io/remotecom/jobs/7696212003",
   "posted_at": "2026-04-10T07:28:22-04:00",
   "first_seen_at": "2026-04-10T13:15:58.489074",
-  "last_seen_at": "2026-04-10T13:15:58.489074",
+  "last_seen_at": "2026-04-11T18:47:55.082347",
   "fit_score": 58,
   "score_reasoning": "Your seniority and backend fundamentals are a strong match for this Senior role. The company values async work and technical leadership, which aligns well with your distributed systems background. However, your core expertise is in Python and Go, while this role's primary backend is Elixir/Phoenix—a significant technology gap. Although you have strong PostgreSQL, AWS, CI/CD, and Docker experience that transfer well, your lack of functional programming language production experience means you'd need to learn Elixir on the job. The remote-Western Europe designation provides good timezone overlap with Berlin. Growth potential is solid given the scale-up nature and focus on automation/AI capabilities, but the tech stack mismatch creates notable friction.",
   "score_breakdown": {

@@ -1,0 +1,47 @@
+{
+  "id": 27458,
+  "ats_platform": "lever",
+  "company_slug": "spotify",
+  "company_name": "Spotify",
+  "title": "Senior Backend Engineer - CI Experience",
+  "location": "Stockholm",
+  "url": "https://jobs.lever.co/spotify/e4e76b28-3347-4749-91f9-0bcd61144de3",
+  "posted_at": null,
+  "first_seen_at": "2026-04-11T18:47:55.082347",
+  "last_seen_at": "2026-04-11T18:47:55.082347",
+  "fit_score": 52,
+  "score_reasoning": "Your seniority and backend infrastructure experience align well with the role, but the posting explicitly emphasizes migrating Python services to Java—a language gap since your expertise is Python and Go. The Stockholm location presents a significant timezone challenge (±2h from Berlin is tight, but feasible); however, the posting does not explicitly state remote-first arrangements, creating uncertainty about flexibility. Your observability and reliability expertise match the CI focus, but the lack of mention of distributed systems or high-scale work limits growth alignment. The Java migration requirement and location ambiguity are the primary constraints.",
+  "score_breakdown": {
+    "dimensions": {
+      "tech_stack_match": 55,
+      "seniority_match": 85,
+      "remote_location_fit": 35,
+      "growth_potential": 50
+    },
+    "key_matches": [
+      "Backend infrastructure",
+      "Python experience",
+      "Observability",
+      "Reliability focus",
+      "Senior-level scope"
+    ],
+    "red_flags": [
+      "Java migration as core responsibility—not your primary language",
+      "Location ambiguity—Stockholm without explicit remote confirmation",
+      "Developer tooling focus—narrower than high-scale systems expertise"
+    ],
+    "fit_category": "",
+    "apply_priority": "low"
+  },
+  "scored_at": "2026-04-11T18:48:14.417194",
+  "status": "scored",
+  "dismissal_reason": null,
+  "match_tier": "high_confidence",
+  "salary": null,
+  "salary_min": null,
+  "salary_max": null,
+  "salary_currency": null,
+  "is_sparse": false,
+  "company_quality_signals": [],
+  "description": "<div><span style=\"font-size: 16px;\">The CI Experience squad owns the client continuous integration (CI) infrastructure at Spotify. Our mission is to ensure smooth, reliable, and fast integration of code changes across all client repositories. We provide the tooling, documentation, and support that empower client engineers to build, test, and ship confidently.</span></div><div><br></div><div><span style=\"font-size: 16px;\">We are looking for a Backend Infrastructure Engineer with strong experience in building and maintaining backend services that power developer infrastructure. While our current systems handle relatively low traffic, the focus is on reliability, testability, observability, and migration readiness.</span></div><div><br></div><div><span style=\"font-size: 16px;\">A key part of this role is to help migrate existing Python-based services to Java, ensuring better alignment with Spotify’s monorepo and future automation strategies.</span></div>"
+}

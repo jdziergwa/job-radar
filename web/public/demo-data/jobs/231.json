@@ -8,7 +8,7 @@
   "url": "https://job-boards.greenhouse.io/canonical/jobs/4581200",
   "posted_at": "2026-04-01T07:19:53-04:00",
   "first_seen_at": "2026-04-10T13:15:58.489074",
-  "last_seen_at": "2026-04-10T13:15:58.489074",
+  "last_seen_at": "2026-04-11T18:47:55.082347",
   "fit_score": 82,
   "score_reasoning": "Your 7 years of distributed systems and microservices experience in Python and Go aligns very well with this role's core requirement to design and architect scalable backend services and data pipelines. Your observability work (OpenTelemetry, Prometheus) and Kafka consumer experience directly match the stated tech stack, though the role emphasizes data streaming design patterns where your production experience is solid but somewhat narrower than ideal. The EMEA-remote setup matches your location perfectly, and Canonical's scale and open-source focus align with your growth goals in high-scale distributed systems. Seniority-wise, this reads as senior-level with mentoring expectations, matching your current trajectory. Minor gap: the role emphasizes IoT/industrial data governance and MQTT/OPC-UA expertise which are outside your stated background, but your core architecture and streaming foundation is strong enough to make this a viable stretch.",
   "score_breakdown": {

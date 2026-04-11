@@ -1,0 +1,47 @@
+{
+  "id": 27456,
+  "ats_platform": "lever",
+  "company_slug": "spotify",
+  "company_name": "Spotify",
+  "title": "Senior Backend Engineer - Audiobooks",
+  "location": "London",
+  "url": "https://jobs.lever.co/spotify/6b0128ab-edeb-494b-b747-25cb35af4b6a",
+  "posted_at": null,
+  "first_seen_at": "2026-04-11T18:47:55.082347",
+  "last_seen_at": "2026-04-11T18:47:55.082347",
+  "fit_score": 72,
+  "score_reasoning": "Your distributed systems, microservices, and high-scale backend expertise (Python, Go, AWS, observability) align well with ingesting, processing, and transforming content at scale. The 'Senior' title matches your current level, and the responsibilities — owning critical pipeline infrastructure and cross-stack problem-solving — mirror your proven scope at Velox (multi-tenant architecture, zero-downtime migrations, observability leadership). London is geographically closer than New York (roughly 1-2 hour overlap with Berlin) and the role is distributed across Europe, suggesting flexibility. The full-stack-capable, ambiguous-problem-solving scope aligns with your systems-thinking track record. The audiobook domain and emerging AI infrastructure offer legitimate growth opportunities. However, the posting does not explicitly state remote eligibility — while distributed teams often support remote work, London-based positioning without clarity creates moderate uncertainty. Also note: data engineering is a growth area for you, and this role emphasizes data-focused development, which is favorable but not a core strength.",
+  "score_breakdown": {
+    "dimensions": {
+      "tech_stack_match": 75,
+      "seniority_match": 85,
+      "remote_location_fit": 75,
+      "growth_potential": 78
+    },
+    "key_matches": [
+      "Senior backend engineer",
+      "Distributed systems",
+      "Content pipelines",
+      "Data processing",
+      "High-scale infrastructure"
+    ],
+    "red_flags": [
+      "Location listed as London (not explicitly remote); distributed team suggests flexibility but is not confirmed",
+      "Data engineering emphasis (not a core strength, though listed as secondary in role scope)",
+      "Audiobook domain unfamiliar (minor, as domain knowledge is secondary to backend skills)"
+    ],
+    "fit_category": "core_fit",
+    "apply_priority": "medium"
+  },
+  "scored_at": "2026-04-11T18:48:22.294197",
+  "status": "scored",
+  "dismissal_reason": null,
+  "match_tier": "signal_match",
+  "salary": null,
+  "salary_min": null,
+  "salary_max": null,
+  "salary_currency": null,
+  "is_sparse": false,
+  "company_quality_signals": [],
+  "description": "<div><span style=\"font-size: 10.5pt;\">Spotify’s Audiobooks Mission is transforming how creators and listeners experience long-form storytelling. We’re building the foundation that enables audiobook content to flow seamlessly from publishers to listeners — including the systems that power ingestion, processing, and delivery across a rapidly growing global catalog.</span></div>\n<div>&nbsp;</div>\n<div><span style=\"font-size: 10.5pt;\">We’re looking for a Senior Backend Engineer to join a small, high-impact team within the Audiobooks Pipeline area. This team is responsible for building and scaling systems that ingest, process, and transform audiobook and eBook content, metadata, and royalties — ensuring the right content reaches listeners efficiently and with the highest quality.</span></div>\n<div>&nbsp;</div>\n<div><span style=\"font-size: 10.5pt;\">While this role is full stack in scope, the majority of work will lean toward backend and data-focused development. We’re looking for someone who thrives in ambiguity, loves to learn, and is eager to stretch beyond their comfort zone to solve challenging problems across the stack.</span></div>"
+}

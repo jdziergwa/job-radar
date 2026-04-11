@@ -8,7 +8,7 @@
   "url": "https://jobs.lever.co/swordhealth/25e34748-71cb-4770-ab86-6a38f012d4dd",
   "posted_at": null,
   "first_seen_at": "2026-04-10T13:15:58.489074",
-  "last_seen_at": "2026-04-10T13:15:58.489074",
+  "last_seen_at": "2026-04-11T18:47:55.082347",
   "fit_score": 72,
   "score_reasoning": "Your Python/Go backend expertise and proven experience with high-scale distributed systems (4M+ events/day, €2M/month billing engine) align well with Sword's AI-driven infrastructure backend role. The healthcare vertical (fintech-adjacent industry) is in your target sectors. Porto is in Portugal with a minimal timezone offset from Berlin (±1h), and the posting explicitly mentions remote/hybrid flexibility, making location fit strong. However, the role emphasizes AI/ML infrastructure and data-driven clinical features, areas not explicitly highlighted in your CV—your strength is transactional reliability and microservices, not ML systems. The seniority framing is slightly below your current senior level (Backend Engineer vs. Senior), but the AI scale-up context and Sword's strong growth trajectory support career development. This is a solid medium fit with good growth potential, though the AI specialization introduces moderate uncertainty.",
   "score_breakdown": {

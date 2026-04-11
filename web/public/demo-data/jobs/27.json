@@ -8,7 +8,7 @@
   "url": "https://www.asana.com/jobs/apply/7160487?gh_jid=7160487",
   "posted_at": "2026-04-09T16:50:05-04:00",
   "first_seen_at": "2026-04-10T13:15:58.489074",
-  "last_seen_at": "2026-04-10T13:15:58.489074",
+  "last_seen_at": "2026-04-11T18:47:55.082347",
   "fit_score": 67,
   "score_reasoning": "Your backend and distributed systems expertise align well with the infrastructure engineering focus, and the tech stack (AWS, Kubernetes, Python, Go, Terraform) matches your core strengths. However, the role explicitly requires Kubernetes proficiency, which you lack beyond basic Docker experience—a meaningful gap for a senior infrastructure position that designs and operates stateful systems. The Warsaw office with office-centric hybrid (Mon/Tue/Thu in-office) creates a notable geographic friction; while you accept hybrid with local-Berlin anchoring, Warsaw requires relocation or cross-border commuting, which your preferences score materially lower. The role's emphasis on SRE principles and operational excellence does align with your observability and system reliability focus.",
   "score_breakdown": {

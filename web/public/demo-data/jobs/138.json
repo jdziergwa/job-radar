@@ -8,7 +8,7 @@
   "url": "https://job-boards.greenhouse.io/grafanalabs/jobs/5693690004",
   "posted_at": "2026-03-12T06:28:43-04:00",
   "first_seen_at": "2026-04-10T13:15:58.489074",
-  "last_seen_at": "2026-04-10T13:15:58.489074",
+  "last_seen_at": "2026-04-11T18:47:55.082347",
   "fit_score": 82,
   "score_reasoning": "Your 7 years of backend experience and proven track record with microservices, observability (OpenTelemetry, Prometheus), and cloud infrastructure (AWS/Docker) align very well with Grafana's senior backend role. The synthetic monitoring team's Go-based, Kubernetes-heavy distributed system is a strong match for your distributed systems expertise, though your lack of Kubernetes production experience (a primary requirement) creates a modest gap. Your Python/Go foundation and observability focus directly support the role's needs. The remote-first setup from Spain fits your location preferences and timezone (CET aligns with Spain), and Grafana Labs is explicitly a notable brand with strong CV value, supporting career growth in observability. The main constraint is Kubernetes experience, which is stated as 'demonstrated experience working with and monitoring Kubernetes in a production environment'—this is a core requirement that you don't yet possess, but your Docker and infrastructure background provide a credible bridge.",
   "score_breakdown": {

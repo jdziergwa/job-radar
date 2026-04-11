@@ -8,7 +8,7 @@
   "url": "https://stripe.com/jobs/search?gh_jid=4921361",
   "posted_at": "2026-04-01T11:46:05-04:00",
   "first_seen_at": "2026-04-10T13:15:58.489074",
-  "last_seen_at": "2026-04-10T13:15:58.489074",
+  "last_seen_at": "2026-04-11T18:47:55.082347",
   "fit_score": 77,
   "score_reasoning": "Your 7 years of distributed systems and backend engineering experience align strongly with Stripe's payments infrastructure focus. Your billing engine work at Stackflo (€2M/month processing, Go, Postgres-backed job queues) is directly transferable to this payments and risk role. The tech stack (APIs, large-scale systems, cloud services, Docker/Kubernetes) matches your core strengths, though Kubernetes remains a gap. The 2–12+ years range positions you solidly as a strong mid-to-senior candidate. Dublin is within your acceptable European regions and timezone (+0 to +1h from Berlin), making this role remote-compatible if not explicitly restricted. The role's emphasis on building ergonomic APIs and managing money at scale aligns with your career direction toward high-scale distributed systems.",
   "score_breakdown": {

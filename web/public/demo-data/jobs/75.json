@@ -8,7 +8,7 @@
   "url": "https://jobs.elastic.co/jobs?gh_jid=7565188&gh_jid=7565188",
   "posted_at": "2026-03-31T10:44:14-04:00",
   "first_seen_at": "2026-04-10T13:15:58.489074",
-  "last_seen_at": "2026-04-10T13:15:58.489074",
+  "last_seen_at": "2026-04-11T18:47:55.082347",
   "fit_score": 68,
   "score_reasoning": "You are a solid candidate for this Senior SRE Platform role at Elastic in Spain. Your 7 years building distributed services, AWS infrastructure expertise (ECS, S3, SQS), Terraform IaC experience, Docker containerization, and proven incident management & reliability focus (40% MTTR improvement via observability) align well with the platform engineering and operational excellence mandate. The Senior title matches your level, and Spain's timezone (±1h from Berlin) plus the implicit remote flexibility suit your location preferences. The bonus points on Kubernetes-at-scale and multi-cloud operations are gaps—you lack Kubernetes hands-on experience and multi-cloud diversity—but the role emphasizes SRE perspective and platform reliability over Kubernetes expertise. Your experience with infrastructure automation, distributed team collaboration, and cost/reliability tradeoffs is relevant to FinOps framing. Growth potential is moderate to good: platform engineering aligns with your systems thinking, though the FinOps angle (cost optimization, cloud spend) is not explicitly highlighted in your background. Overall, a viable fit with minor tech gaps.",
   "score_breakdown": {

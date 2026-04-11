@@ -8,7 +8,7 @@
   "url": "https://job-boards.greenhouse.io/leaflink/jobs/8466891002",
   "posted_at": "2026-03-23T14:10:42-04:00",
   "first_seen_at": "2026-04-10T13:15:58.489074",
-  "last_seen_at": "2026-04-10T13:15:58.489074",
+  "last_seen_at": "2026-04-11T18:47:55.082347",
   "fit_score": 52,
   "score_reasoning": "Your backend experience and distributed systems foundation are strong, and the Senior Backend Engineer II title matches your career trajectory. However, the role's primary tech stack is Java/JVM, which is a significant gap—your production expertise is Python and Go. While your payment processing and transaction experience at Stackflo (€2M/month billing engine) maps well to LeafLink's financial workflows, and the regulated fintech environment aligns with your preferred industries, the Java requirement creates a meaningful friction point. The remote role is fully compatible with your Berlin base and Europe-first preferences. Growth potential is moderate because this is a lateral senior role rather than a stretch into technical leadership or systems architecture, and the Java migration would require ramp-up time.",
   "score_breakdown": {

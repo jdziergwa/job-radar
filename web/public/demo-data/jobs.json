@@ -10,7 +10,7 @@
       "url": "https://job-boards.greenhouse.io/canonical/jobs/3142044",
       "posted_at": "2026-04-01T07:19:21-04:00",
       "first_seen_at": "2026-04-10T13:15:58.489074",
-      "last_seen_at": "2026-04-10T13:15:58.489074",
+      "last_seen_at": "2026-04-11T18:47:55.082347",
       "fit_score": 85,
       "score_reasoning": "This is an exceptionally strong match for your profile. Your 7 years of Python backend engineering, microservices architecture, and PostgreSQL expertise directly align with Launchpad's mature Python-driven system. The role explicitly values API-first design, comprehensive testing (your 85% test coverage aligns perfectly), and mentoring—all evident strengths in your CV. The EMEA-remote setup, senior-level responsibilities with architecture influence, and focus on maintaining and improving large-scale web applications are precisely aligned with your stated career direction. Canonical's open-source culture and scale-up environment fit your industry preferences. The role's emphasis on system reliability and continuous improvement resonates with your OpenTelemetry and migration work at Velox. Minor note: the Debian/Ubuntu packaging knowledge is nice-to-have rather than core, and you'll learn it in context. This represents your core backend architect trajectory at the right seniority level.",
       "score_breakdown": {
@@ -103,7 +103,7 @@
       "url": "https://job-boards.greenhouse.io/canonical/jobs/4581200",
       "posted_at": "2026-04-01T07:19:53-04:00",
       "first_seen_at": "2026-04-10T13:15:58.489074",
-      "last_seen_at": "2026-04-10T13:15:58.489074",
+      "last_seen_at": "2026-04-11T18:47:55.082347",
       "fit_score": 82,
       "score_reasoning": "Your 7 years of distributed systems and microservices experience in Python and Go aligns very well with this role's core requirement to design and architect scalable backend services and data pipelines. Your observability work (OpenTelemetry, Prometheus) and Kafka consumer experience directly match the stated tech stack, though the role emphasizes data streaming design patterns where your production experience is solid but somewhat narrower than ideal. The EMEA-remote setup matches your location perfectly, and Canonical's scale and open-source focus align with your growth goals in high-scale distributed systems. Seniority-wise, this reads as senior-level with mentoring expectations, matching your current trajectory. Minor gap: the role emphasizes IoT/industrial data governance and MQTT/OPC-UA expertise which are outside your stated background, but your core architecture and streaming foundation is strong enough to make this a viable stretch.",
       "score_breakdown": {
@@ -151,7 +151,7 @@
       "url": "https://job-boards.greenhouse.io/grafanalabs/jobs/5693690004",
       "posted_at": "2026-03-12T06:28:43-04:00",
       "first_seen_at": "2026-04-10T13:15:58.489074",
-      "last_seen_at": "2026-04-10T13:15:58.489074",
+      "last_seen_at": "2026-04-11T18:47:55.082347",
       "fit_score": 82,
       "score_reasoning": "Your 7 years of backend experience and proven track record with microservices, observability (OpenTelemetry, Prometheus), and cloud infrastructure (AWS/Docker) align very well with Grafana's senior backend role. The synthetic monitoring team's Go-based, Kubernetes-heavy distributed system is a strong match for your distributed systems expertise, though your lack of Kubernetes production experience (a primary requirement) creates a modest gap. Your Python/Go foundation and observability focus directly support the role's needs. The remote-first setup from Spain fits your location preferences and timezone (CET aligns with Spain), and Grafana Labs is explicitly a notable brand with strong CV value, supporting career growth in observability. The main constraint is Kubernetes experience, which is stated as 'demonstrated experience working with and monitoring Kubernetes in a production environment'—this is a core requirement that you don't yet possess, but your Docker and infrastructure background provide a credible bridge.",
       "score_breakdown": {
@@ -199,7 +199,7 @@
       "url": "https://stripe.com/jobs/search?gh_jid=7217048",
       "posted_at": "2026-04-01T11:46:05-04:00",
       "first_seen_at": "2026-04-10T13:15:58.489074",
-      "last_seen_at": "2026-04-10T13:15:58.489074",
+      "last_seen_at": "2026-04-11T18:47:55.082347",
       "fit_score": 82,
       "score_reasoning": "This role is an exceptional match for your profile. Your 7 years of backend experience and proven expertise building billing systems at Stackflo (€2M/month SaaS billing engine in Go, payment flows, Postgres-backed reliability) directly align with the Billing/Tax team's focus on subscription management and financial automation. The 2–12+ years range confirms senior-level positioning, and the role emphasizes Go and large-scale distributed systems—your core specialization. The location is listed as 'N/A', indicating global or remote-first flexibility, removing geographic friction. Event-driven architecture is listed as a preferred qualification; while you lack formal event-driven patterns beyond pub/sub, your microservices and job-queue background provide a strong bridge into this domain. This role supports your stated career direction: deepening technical leadership in high-scale financial systems.",
       "score_breakdown": {
@@ -245,7 +245,7 @@
       "url": "https://boards.greenhouse.io/cloudflare/jobs/7267602?gh_jid=7267602",
       "posted_at": "2026-03-04T05:04:24-05:00",
       "first_seen_at": "2026-04-10T13:15:58.489074",
-      "last_seen_at": "2026-04-10T13:15:58.489074",
+      "last_seen_at": "2026-04-11T18:47:55.082347",
       "fit_score": 80,
       "score_reasoning": "This role offers an excellent fit across all dimensions. You're based in Berlin and the posting explicitly lists London and Lisbon as hybrid locations—both within your acceptable European timezone (0–2 hours from CET), directly aligning with your location flexibility preferences. Your Go, SQL, distributed systems, and observability experience (Prometheus, Grafana) map cleanly to the core technical requirements for data delivery, analytical database platform (ClickHouse), or data retrieval teams. The role's focus on high-scale systems handling 1B+ events/second, microservices architecture, and zero-downtime deployments matches your proven track record and career goals. Your 7 years of backend experience and recent work on multi-tenant notification microservices and zero-downtime migrations position you well for this senior-level distributed systems challenge.",
       "score_breakdown": {
@@ -293,7 +293,7 @@
       "url": "https://boards.greenhouse.io/cloudflare/jobs/7340469?gh_jid=7340469",
       "posted_at": "2026-03-04T05:04:25-05:00",
       "first_seen_at": "2026-04-10T13:15:58.489074",
-      "last_seen_at": "2026-04-10T13:15:58.489074",
+      "last_seen_at": "2026-04-11T18:47:55.082347",
       "fit_score": 78,
       "score_reasoning": "This role delivers strong fit with London and Lisbon as hybrid options—both well within your Europe-based timezone preference (0–2 hours from Berlin). Your Go, SQL, distributed systems, and observability expertise (Prometheus, Grafana) align closely with the core technical requirements. The focus on building high-throughput, reliable data delivery and logging platform infrastructure matches your background in microservices, zero-downtime migrations, and observability implementation. Your demonstrated systems thinking and multi-team impact from the zero-downtime migration framework at Velox positions you well for the architectural ownership this role implies. The only notable gap is lack of production Kafka/Flink experience, though you have consumer experience and the posting lists this as 'strong plus', not core requirement.",
       "score_breakdown": {
@@ -341,7 +341,7 @@
       "url": "https://boards.greenhouse.io/cloudflare/jobs/7340474?gh_jid=7340474",
       "posted_at": "2026-03-04T05:04:23-05:00",
       "first_seen_at": "2026-04-10T13:15:58.489074",
-      "last_seen_at": "2026-04-10T13:15:58.489074",
+      "last_seen_at": "2026-04-11T18:47:55.082347",
       "fit_score": 78,
       "score_reasoning": "Your 7 years of backend experience with Python and Go align well with this role's core requirements—Go is explicitly preferred for distributed systems and observability work, and your production expertise with Prometheus/Grafana matches the job's observability focus directly. The Analytics and Alerts team's work on GraphQL APIs and real-time systems maps closely to your microservices and system optimization background. However, this role sits slightly below strict 'senior' territory (posting emphasizes 3+ years and scalable APIs rather than leadership/architecture scope), and your experience with distributed systems, zero-downtime migrations, and multi-team impact suggests you may be overqualified for mid-level positioning. London and Lisbon are both Europe-based, meeting your timezone and geographic preferences well, though neither is Berlin—this creates a minor remote/location ambiguity. The role's strong company signal (Cloudflare: notable brand, strong product company, strong CV value) and alignment with your core tech stack and high-scale systems goals support growth potential, but the seniority positioning and lack of explicit senior-level architecture scope moderately cap that upside.",
       "score_breakdown": {
@@ -392,7 +392,7 @@
       "url": "https://stripe.com/jobs/search?gh_jid=4921361",
       "posted_at": "2026-04-01T11:46:05-04:00",
       "first_seen_at": "2026-04-10T13:15:58.489074",
-      "last_seen_at": "2026-04-10T13:15:58.489074",
+      "last_seen_at": "2026-04-11T18:47:55.082347",
       "fit_score": 77,
       "score_reasoning": "Your 7 years of distributed systems and backend engineering experience align strongly with Stripe's payments infrastructure focus. Your billing engine work at Stackflo (€2M/month processing, Go, Postgres-backed job queues) is directly transferable to this payments and risk role. The tech stack (APIs, large-scale systems, cloud services, Docker/Kubernetes) matches your core strengths, though Kubernetes remains a gap. The 2–12+ years range positions you solidly as a strong mid-to-senior candidate. Dublin is within your acceptable European regions and timezone (+0 to +1h from Berlin), making this role remote-compatible if not explicitly restricted. The role's emphasis on building ergonomic APIs and managing money at scale aligns with your career direction toward high-scale distributed systems.",
       "score_breakdown": {
@@ -430,6 +430,51 @@
       "company_quality_signals": []
     },
     {
+      "id": 27616,
+      "ats_platform": "lever",
+      "company_slug": "aircall",
+      "company_name": "Aircall",
+      "title": "Senior Backend Engineer",
+      "location": "London Office",
+      "url": "https://jobs.lever.co/aircall/a915ee05-f546-4787-81f9-1b8579dd0c09",
+      "posted_at": null,
+      "first_seen_at": "2026-04-11T18:47:55.082347",
+      "last_seen_at": "2026-04-11T18:47:55.082347",
+      "fit_score": 76,
+      "score_reasoning": "Your 7 years of distributed systems experience, Python/Go expertise, and proven ability to design and operate business-critical features at scale directly align with this Senior Backend Engineer role. Aircall's unicorn status and AI-driven product offering provide strong strategic CV value and growth opportunity to deepen technical leadership in a high-impact environment. London's timezone (same as Berlin, ±0h) and location create good compatibility for remote or hybrid work, though the posting does not explicitly state remote flexibility. The role's focus on AWS-hosted resilient services and best practices evangelization matches your career trajectory well.",
+      "score_breakdown": {
+        "dimensions": {
+          "tech_stack_match": 78,
+          "seniority_match": 85,
+          "remote_location_fit": 70,
+          "growth_potential": 78
+        },
+        "key_matches": [
+          "Senior backend engineering",
+          "AWS infrastructure",
+          "Distributed systems design",
+          "Python/Go stack",
+          "Business-critical features"
+        ],
+        "red_flags": [
+          "Posting does not explicitly state remote option; London office may imply on-site or hybrid with London base",
+          "Limited technical detail on specific backend stacks or architecture patterns"
+        ],
+        "fit_category": "core_fit",
+        "apply_priority": "medium"
+      },
+      "scored_at": "2026-04-11T18:48:16.511185",
+      "status": "scored",
+      "dismissal_reason": null,
+      "match_tier": "signal_match",
+      "salary": null,
+      "salary_min": null,
+      "salary_max": null,
+      "salary_currency": null,
+      "is_sparse": false,
+      "company_quality_signals": []
+    },
+    {
       "id": 130,
       "ats_platform": "greenhouse",
       "company_slug": "godaddy",
@@ -439,7 +484,7 @@
       "url": "https://careers.godaddy/jobs?gh_jid=7529372003",
       "posted_at": "2026-04-03T13:13:36-04:00",
       "first_seen_at": "2026-04-10T13:15:58.489074",
-      "last_seen_at": "2026-04-10T13:15:58.489074",
+      "last_seen_at": "2026-04-11T18:47:55.082347",
       "fit_score": 73,
       "score_reasoning": "This role aligns strongly with your backend and database infrastructure expertise. You have proven Go/Python skills, PostgreSQL/MySQL production experience, and microservices architecture knowledge—all core requirements. The UK location with explicit remote setup fits your European preference and maintains reasonable timezone overlap (±1h from Berlin). Your observability background (OpenTelemetry, Prometheus, Grafana) directly matches their monitoring requirements. Growth potential is solid—deepening database infrastructure ownership at scale is adjacent to your senior backend trajectory.",
       "score_breakdown": {
@@ -477,6 +522,52 @@
       "company_quality_signals": []
     },
     {
+      "id": 27456,
+      "ats_platform": "lever",
+      "company_slug": "spotify",
+      "company_name": "Spotify",
+      "title": "Senior Backend Engineer - Audiobooks",
+      "location": "London",
+      "url": "https://jobs.lever.co/spotify/6b0128ab-edeb-494b-b747-25cb35af4b6a",
+      "posted_at": null,
+      "first_seen_at": "2026-04-11T18:47:55.082347",
+      "last_seen_at": "2026-04-11T18:47:55.082347",
+      "fit_score": 72,
+      "score_reasoning": "Your distributed systems, microservices, and high-scale backend expertise (Python, Go, AWS, observability) align well with ingesting, processing, and transforming content at scale. The 'Senior' title matches your current level, and the responsibilities — owning critical pipeline infrastructure and cross-stack problem-solving — mirror your proven scope at Velox (multi-tenant architecture, zero-downtime migrations, observability leadership). London is geographically closer than New York (roughly 1-2 hour overlap with Berlin) and the role is distributed across Europe, suggesting flexibility. The full-stack-capable, ambiguous-problem-solving scope aligns with your systems-thinking track record. The audiobook domain and emerging AI infrastructure offer legitimate growth opportunities. However, the posting does not explicitly state remote eligibility — while distributed teams often support remote work, London-based positioning without clarity creates moderate uncertainty. Also note: data engineering is a growth area for you, and this role emphasizes data-focused development, which is favorable but not a core strength.",
+      "score_breakdown": {
+        "dimensions": {
+          "tech_stack_match": 75,
+          "seniority_match": 85,
+          "remote_location_fit": 75,
+          "growth_potential": 78
+        },
+        "key_matches": [
+          "Senior backend engineer",
+          "Distributed systems",
+          "Content pipelines",
+          "Data processing",
+          "High-scale infrastructure"
+        ],
+        "red_flags": [
+          "Location listed as London (not explicitly remote); distributed team suggests flexibility but is not confirmed",
+          "Data engineering emphasis (not a core strength, though listed as secondary in role scope)",
+          "Audiobook domain unfamiliar (minor, as domain knowledge is secondary to backend skills)"
+        ],
+        "fit_category": "core_fit",
+        "apply_priority": "medium"
+      },
+      "scored_at": "2026-04-11T18:48:22.294197",
+      "status": "scored",
+      "dismissal_reason": null,
+      "match_tier": "signal_match",
+      "salary": null,
+      "salary_min": null,
+      "salary_max": null,
+      "salary_currency": null,
+      "is_sparse": false,
+      "company_quality_signals": []
+    },
+    {
       "id": 289,
       "ats_platform": "lever",
       "company_slug": "swordhealth",
@@ -486,7 +577,7 @@
       "url": "https://jobs.lever.co/swordhealth/c39bf077-76c4-4483-9942-b734f6745a74",
       "posted_at": null,
       "first_seen_at": "2026-04-10T13:15:58.489074",
-      "last_seen_at": "2026-04-10T13:15:58.489074",
+      "last_seen_at": "2026-04-11T18:47:55.082347",
       "fit_score": 72,
       "score_reasoning": "Your Senior Backend Engineer title and 7 years of distributed systems experience align well with Sword Health's seniority expectations and scale requirements. The role emphasizes building infrastructure for AI/ML features, which matches your microservices and high-scale systems background (4M+ events/day, €2M/month billing engine). However, the job description lacks specific technical stack details (no mention of Python, Go, AWS, or other core tools you target), making it harder to confirm a strong tech match beyond general backend infrastructure skills. Porto is in Portugal—while remote/hybrid is mentioned, the location is geographically different from your Berlin base and sits outside your preferred ±2h timezone overlap (Portugal is 1h behind CET, which is actually favorable), but the posting does not explicitly state whether remote work fully accommodates your geographic location or if there are in-office expectations. The healthcare domain and AI/ML focus represent a growth vector into a new industry vertical, which is positive for career development but represents a mild industry shift from your scale-up/fintech preference. This is a strong medium fit with moderate geographic ambiguity as the primary constraint.",
       "score_breakdown": {
@@ -534,7 +625,7 @@
       "url": "https://jobs.lever.co/swordhealth/25e34748-71cb-4770-ab86-6a38f012d4dd",
       "posted_at": null,
       "first_seen_at": "2026-04-10T13:15:58.489074",
-      "last_seen_at": "2026-04-10T13:15:58.489074",
+      "last_seen_at": "2026-04-11T18:47:55.082347",
       "fit_score": 72,
       "score_reasoning": "Your Python/Go backend expertise and proven experience with high-scale distributed systems (4M+ events/day, €2M/month billing engine) align well with Sword's AI-driven infrastructure backend role. The healthcare vertical (fintech-adjacent industry) is in your target sectors. Porto is in Portugal with a minimal timezone offset from Berlin (±1h), and the posting explicitly mentions remote/hybrid flexibility, making location fit strong. However, the role emphasizes AI/ML infrastructure and data-driven clinical features, areas not explicitly highlighted in your CV—your strength is transactional reliability and microservices, not ML systems. The seniority framing is slightly below your current senior level (Backend Engineer vs. Senior), but the AI scale-up context and Sword's strong growth trajectory support career development. This is a solid medium fit with good growth potential, though the AI specialization introduces moderate uncertainty.",
       "score_breakdown": {
@@ -580,7 +671,7 @@
       "url": "https://job-boards.greenhouse.io/monzo/jobs/6635837",
       "posted_at": "2026-04-07T06:26:53-04:00",
       "first_seen_at": "2026-04-10T13:15:58.489074",
-      "last_seen_at": "2026-04-10T13:15:58.489074",
+      "last_seen_at": "2026-04-11T18:47:55.082347",
       "fit_score": 72,
       "score_reasoning": "Your Go and Python experience aligns well with Monzo's backend-focused Go stack, and your distributed systems, microservices, and observability expertise directly match their high-scale banking platform needs. The Senior Engineer (L50) level and scope of work across Core Banking, Payments, and Platform collectives fit your seniority trajectory and career goals in complex distributed systems. However, the role's geographic anchor is problematic: while Monzo offers UK remote flexibility, you are based in Berlin with a strong preference for Europe-aligned timezone overlap (±2h). The London tech hub and 'distributed working within the UK' language, combined with the expectation of occasional in-person meetings, creates significant friction against your location constraints. Your Kubernetes gap (a core listed technology) is partially offset by your Docker containerization experience, but is a notable gap for a senior platform engineering role.",
       "score_breakdown": {
@@ -628,7 +719,7 @@
       "url": "https://careers.toasttab.com/jobs?gh_jid=7773178",
       "posted_at": "2026-04-07T11:51:16-04:00",
       "first_seen_at": "2026-04-10T13:15:58.489074",
-      "last_seen_at": "2026-04-10T13:15:58.489074",
+      "last_seen_at": "2026-04-11T18:47:55.082347",
       "fit_score": 72,
       "score_reasoning": "You are a strong candidate for this Senior Backend role on Toast's Payments team. Your 7 years building distributed services, microservices architecture expertise, and proven track record with payment systems (€2M/month billing engine at Stackflo) directly align with the payment processing and API scalability focus. Your Python/Go and PostgreSQL experience match the core tech stack. Dublin is within Europe, providing reasonable timezone overlap with Berlin (±1h), and the hybrid model is compatible with your preferences. However, the role's 'nice-to-have' Kotlin/Java requirement is a gap (you are Python/Go-focused), and event-driven architecture expertise would strengthen your fit further. Growth potential is strong given fintech complexity and payment processing criticality, though the role is not purely backend infrastructure—some cross-functional work with PM/UX is expected. Overall, a solid medium-to-high fit.",
       "score_breakdown": {
@@ -676,7 +767,7 @@
       "url": "https://job-boards.greenhouse.io/affirm/jobs/6642236003",
       "posted_at": "2026-03-20T03:02:54-04:00",
       "first_seen_at": "2026-04-10T13:15:58.489074",
-      "last_seen_at": "2026-04-10T13:15:58.489074",
+      "last_seen_at": "2026-04-11T18:47:55.082347",
       "fit_score": 71,
       "score_reasoning": "This is a strong technical and seniority match for your profile. The role requires 5+ years of backend systems design in Python (you have 7+ years with proven Python in microservices, payment systems, and migrations), distributed systems with AWS and MySQL (direct experience), and high-availability architecture (demonstrated at Velox with 4M+ events/day microservice). Your OpenTelemetry, observability, and zero-downtime migration expertise directly support the 'always on' and high-availability mandates. The Senior title aligns well with your experience level and career goal of deepening technical leadership. Kubernetes is mentioned as required, but your Docker and containerization experience, combined with the backend focus rather than pure SRE/platform, makes this a partial gap rather than a blocker. Poland is within your acceptable regions and remote setup is fully compatible. The comms platform domain (transactional email, SMS, push) is slightly adjacent to payments but shares high-scale, reliability, and fintech characteristics. Growth_potential is moderate because it's a solid senior IC role but not explicitly positioned as a platform modernization leadership opportunity.",
       "score_breakdown": {
@@ -722,7 +813,7 @@
       "url": "https://jobs.lever.co/swordhealth/4158ee11-c8c8-4470-90e2-1d897d304539",
       "posted_at": null,
       "first_seen_at": "2026-04-10T13:15:58.489074",
-      "last_seen_at": "2026-04-10T13:15:58.489074",
+      "last_seen_at": "2026-04-11T18:47:55.082347",
       "fit_score": 68,
       "score_reasoning": "Your 7 years of backend leadership experience, proven mentorship (zero-downtime migration framework at Velox), and Python/Go expertise directly support a Tech Lead role at Sword Health. Porto's timezone (±1h from Berlin) and the posting's explicit remote/hybrid mention create strong location fit. The healthcare scale-up (Sword) and Bloom's AI-native platform align with your target industries and growth trajectory toward technical leadership. Seniority match is solid—Tech Lead roles match your current level and career direction. However, like Job 4, the role emphasizes AI-driven care and clinical infrastructure rather than your core transactional/billing systems background. The posting mentions \"AI-driven infrastructure\" and \"real-time clinical care,\" areas where your CV shows limited depth. The team leadership and architectural scope are strong matches, but the specialized AI/clinical domain introduces moderate uncertainty. This is a viable medium-high fit with meaningful growth potential, tempered by the AI specialization gap.",
       "score_breakdown": {
@@ -768,7 +859,7 @@
       "url": "https://job-boards.greenhouse.io/canonical/jobs/3029798",
       "posted_at": "2026-04-01T07:13:58-04:00",
       "first_seen_at": "2026-04-10T13:15:58.489074",
-      "last_seen_at": "2026-04-10T13:15:58.489074",
+      "last_seen_at": "2026-04-11T18:47:55.082347",
       "fit_score": 68,
       "score_reasoning": "Your Python expertise, containerization, and infrastructure experience (Docker, AWS, Terraform) provide a solid foundation for this SRE role, and the globally remote setup with travel aligns with your preferences. However, this is fundamentally a different specialization than your stated backend engineering focus: the role is operations/infrastructure-focused rather than microservices architecture and application development. Your CV shows backend application engineering with some infrastructure tooling, not deep SRE/platform operations experience. While the Python proficiency and Linux familiarity are transferable strengths, the role's emphasis on bare-metal networking, kernel work, OpenStack, and Kubernetes (which you lack) represents a meaningful shift away from your core distributed systems architect path. This reads more as a 'sideways' move than a growth trajectory toward senior backend leadership in high-scale microservices.",
       "score_breakdown": {
@@ -816,7 +907,7 @@
       "url": "https://job-boards.greenhouse.io/zora/jobs/5811801004",
       "posted_at": "2026-02-26T21:23:32-05:00",
       "first_seen_at": "2026-04-10T13:15:58.489074",
-      "last_seen_at": "2026-04-10T13:15:58.489074",
+      "last_seen_at": "2026-04-11T18:47:55.082347",
       "fit_score": 68,
       "score_reasoning": "Your experience with Python, Go, Docker, AWS, and observability tools aligns well with Zora's core infrastructure needs, and the remote-first setup from Berlin is excellent. However, this role emphasizes Kubernetes (a critical gap for you), distributed storage systems like Ceph, and blockchain/crypto domain expertise—none of which appear in your CV. While your 7 years of backend experience and proven infrastructure work at Velox (migration frameworks, microservices, monitoring) demonstrate relevant systems thinking, the blockchain focus and specialized infrastructure tooling (RPC proxies, L2 architectures, Ethereum) represent a significant domain shift from your distributed services background. The seniority level is appropriate, but the growth trajectory leans into crypto/blockchain and specialized infrastructure rather than deepening your current backend-systems expertise.",
       "score_breakdown": {
@@ -866,7 +957,7 @@
       "url": "https://careers.godaddy/jobs?gh_jid=7623136003",
       "posted_at": "2026-04-03T13:13:36-04:00",
       "first_seen_at": "2026-04-10T13:15:58.489074",
-      "last_seen_at": "2026-04-10T13:15:58.489074",
+      "last_seen_at": "2026-04-11T18:47:55.082347",
       "fit_score": 68,
       "score_reasoning": "Your Python and observability experience (OpenTelemetry, Prometheus, Grafana) align well with this SRE role's core focus on monitoring platforms and incident response. However, this is a Site Reliability Engineer position rather than a backend engineer role, representing a shift from your primary career direction of deepening backend systems expertise. The role emphasizes Linux/Unix systems tuning and configuration management (Ansible, Puppet) more heavily than distributed service architecture—areas where you have less demonstrated depth. While remote from Bulgaria is geographically feasible within Europe, there's no explicit timezone clarity; Bulgaria (EET/EEST, +2h from Berlin) falls within acceptable overlap but introduces some coordination overhead. The seniority framing feels mid-level focused (3+ years repeated) rather than senior, and GoDaddy, while a notable brand, doesn't appear to offer the complex distributed systems or technical leadership depth your profile seeks. This is a viable adjacent role if you're open to platform/infrastructure specialization, but it pulls away from your stated goal of deepening backend technical leadership in high-scale architectures.",
       "score_breakdown": {
@@ -916,7 +1007,7 @@
       "url": "https://abnormal.ai/careers/jobs/7551263003?gh_jid=7551263003",
       "posted_at": "2026-04-03T11:31:53-04:00",
       "first_seen_at": "2026-04-10T13:15:58.489074",
-      "last_seen_at": "2026-04-10T13:15:58.489074",
+      "last_seen_at": "2026-04-11T18:47:55.082347",
       "fit_score": 68,
       "score_reasoning": "Your experience is a strong technical match for this senior role: 7 years of production Python backend systems, proven expertise with distributed systems, AWS infrastructure (S3, RDS), Docker, Kubernetes, PostgreSQL, Redis, gRPC, and comprehensive testing align very well with the must-haves. The senior level and expectations around design ownership, system reliability, and mentorship fit your profile well. Location is acceptable: remote-UK is compatible with your Berlin timezone (±1h overlap), and UK is explicitly in your target regions. However, the role focuses on ATO (Account Takeover) security products and ML-driven behavioral systems—a pivot away from your stated goal of 'deepening technical leadership in high-scale distributed microservices architectures.' This is a solid mid-size tech company role but does not advance your core trajectory in infrastructure and scale.",
       "score_breakdown": {
@@ -962,7 +1053,7 @@
       "url": "https://jobs.elastic.co/jobs?gh_jid=7565188&gh_jid=7565188",
       "posted_at": "2026-03-31T10:44:14-04:00",
       "first_seen_at": "2026-04-10T13:15:58.489074",
-      "last_seen_at": "2026-04-10T13:15:58.489074",
+      "last_seen_at": "2026-04-11T18:47:55.082347",
       "fit_score": 68,
       "score_reasoning": "You are a solid candidate for this Senior SRE Platform role at Elastic in Spain. Your 7 years building distributed services, AWS infrastructure expertise (ECS, S3, SQS), Terraform IaC experience, Docker containerization, and proven incident management & reliability focus (40% MTTR improvement via observability) align well with the platform engineering and operational excellence mandate. The Senior title matches your level, and Spain's timezone (±1h from Berlin) plus the implicit remote flexibility suit your location preferences. The bonus points on Kubernetes-at-scale and multi-cloud operations are gaps—you lack Kubernetes hands-on experience and multi-cloud diversity—but the role emphasizes SRE perspective and platform reliability over Kubernetes expertise. Your experience with infrastructure automation, distributed team collaboration, and cost/reliability tradeoffs is relevant to FinOps framing. Growth potential is moderate to good: platform engineering aligns with your systems thinking, though the FinOps angle (cost optimization, cloud spend) is not explicitly highlighted in your background. Overall, a viable fit with minor tech gaps.",
       "score_breakdown": {
@@ -1012,7 +1103,7 @@
       "url": "https://stripe.com/jobs/search?gh_jid=7249744",
       "posted_at": "2026-04-01T11:46:05-04:00",
       "first_seen_at": "2026-04-10T13:15:58.489074",
-      "last_seen_at": "2026-04-10T13:15:58.489074",
+      "last_seen_at": "2026-04-11T18:47:55.082347",
       "fit_score": 68,
       "score_reasoning": "Your backend systems expertise and distributed systems background are strong assets for this forward-deployed role; the ~20% travel requirement (Toronto, SF, Seattle) aligns with your EU base within acceptable scope. The role's emphasis on user engagement, product thinking, and cross-team collaboration resonates with your multi-team impact at Velox. However, this is a lateral move for a senior engineer rather than a traditional senior promotion—it trades pure technical leadership depth for breadth in user-facing problem-solving and AI-augmented engineering. Your CV shows no evidence of customer-facing engineering, AI tooling experience, or the 'early-stage startup PM' mindset the role explicitly seeks. While viable as an adjacent opportunity and fully remote-compatible, it doesn't strongly advance your stated goal of deepening technical leadership in high-scale distributed systems.",
       "score_breakdown": {
@@ -1060,7 +1151,7 @@
       "url": "https://stripe.com/jobs/search?gh_jid=7182617",
       "posted_at": "2026-04-09T11:49:52-04:00",
       "first_seen_at": "2026-04-10T13:15:58.489074",
-      "last_seen_at": "2026-04-10T13:15:58.489074",
+      "last_seen_at": "2026-04-11T18:47:55.082347",
       "fit_score": 68,
       "score_reasoning": "Your 7 years of distributed systems experience and strong Python/Go background align well with Stripe's infrastructure team focus on microservices, scale, and reliability. The core responsibilities—building high-scale systems, debugging production issues, and optimizing performance—match your proven track record with 4M+ events/day and zero-downtime migrations. However, Dublin is on-site only without explicit remote flexibility, creating a significant location mismatch from your Berlin base; while same-timezone Europe mitigates some penalty, the implicit on-site requirement substantially lowers remote_location_fit. The role sits at the intersection of your senior backend goals and Stripe's scale, but geography prevents this from being a strong match.",
       "score_breakdown": {
@@ -1106,7 +1197,7 @@
       "url": "https://www.asana.com/jobs/apply/7160487?gh_jid=7160487",
       "posted_at": "2026-04-09T16:50:05-04:00",
       "first_seen_at": "2026-04-10T13:15:58.489074",
-      "last_seen_at": "2026-04-10T13:15:58.489074",
+      "last_seen_at": "2026-04-11T18:47:55.082347",
       "fit_score": 67,
       "score_reasoning": "Your backend and distributed systems expertise align well with the infrastructure engineering focus, and the tech stack (AWS, Kubernetes, Python, Go, Terraform) matches your core strengths. However, the role explicitly requires Kubernetes proficiency, which you lack beyond basic Docker experience—a meaningful gap for a senior infrastructure position that designs and operates stateful systems. The Warsaw office with office-centric hybrid (Mon/Tue/Thu in-office) creates a notable geographic friction; while you accept hybrid with local-Berlin anchoring, Warsaw requires relocation or cross-border commuting, which your preferences score materially lower. The role's emphasis on SRE principles and operational excellence does align with your observability and system reliability focus.",
       "score_breakdown": {
@@ -1153,7 +1244,7 @@
       "url": "https://jobs.lever.co/anchorage/428b5826-6000-47ce-991e-cc4732ea4198",
       "posted_at": null,
       "first_seen_at": "2026-04-10T13:15:58.489074",
-      "last_seen_at": "2026-04-10T13:15:58.489074",
+      "last_seen_at": "2026-04-11T18:47:55.082347",
       "fit_score": 66,
       "score_reasoning": "Your backend experience with distributed systems, Python/Go, and observability aligns well with Core Experience's foundational platform work, and the role emphasizes technical leadership and architecture—matching your senior trajectory. However, the posting is sparse on technical details, making it hard to assess specific tech stack overlap beyond the crypto domain. More critically, the role is listed as Porto-based with no explicit remote option stated; while Portugal is in your acceptable region and timezone, the lack of clarity on work arrangement creates meaningful uncertainty. The crypto/Web3 industry is on your target list, which supports growth_potential, but the sparse description and location ambiguity prevent a higher score.",
       "score_breakdown": {
@@ -1200,7 +1291,7 @@
       "url": "https://careers.hellofresh.com/global/en/job/7618910?gh_jid=7618910",
       "posted_at": "2026-04-08T14:03:43-04:00",
       "first_seen_at": "2026-04-10T13:15:58.489074",
-      "last_seen_at": "2026-04-10T13:15:58.489074",
+      "last_seen_at": "2026-04-11T18:47:55.082347",
       "fit_score": 66,
       "score_reasoning": "Your seniority and growth trajectory align well with this Staff Backend Engineer role at a high-scale company, and the microservices, event-driven architecture, and observability focus directly match your 7 years of distributed systems work. However, you have a critical gap in Kubernetes—a core requirement explicitly mentioned multiple times—which the role lists as essential for 'production operations at scale,' and your event-driven architecture experience is limited to basic Kafka consumption, not the deep message-bus expertise the job requires. Additionally, the role is based in Warsaw with no explicit remote option mentioned, creating a substantial location mismatch from your Berlin base; the timezone is roughly +1h from Berlin, which is manageable, but the on-site or unclear hybrid setup anchored to Poland rather than your target regions (Europe/UK/Switzerland with Berlin as anchor) materially reduces fit. The company quality (HelloFresh—notable brand, strong product) and scale (6M+ customers) are strategic positives that make this viable as a stretch, but the Kubernetes gap and location ambiguity prevent a higher score.",
       "score_breakdown": {
@@ -1250,7 +1341,7 @@
       "url": "https://jobs.elastic.co/jobs?gh_jid=7721575&gh_jid=7721575",
       "posted_at": "2026-04-05T10:28:00-04:00",
       "first_seen_at": "2026-04-10T13:15:58.489074",
-      "last_seen_at": "2026-04-10T13:15:58.489074",
+      "last_seen_at": "2026-04-11T18:47:55.082347",
       "fit_score": 65,
       "score_reasoning": "This Principal SRE role at Elastic aligns well with your observability expertise (OpenTelemetry, Prometheus, Grafana) and distributed systems background. You meet the core practitioner requirement: production infrastructure experience, Kubernetes and CSP familiarity (AWS ECS), and observability tool proficiency. Spain's timezone (±1h from Berlin) and the implicit remote flexibility suit your preferences. However, the role requires Kubernetes mastery at scale and AI coding agent proficiency—you lack hands-on Kubernetes experience (a notable gap for Principal-level SRE work), and there is no evidence of AI coding agent workflows in your profile. The Principal title is also a step above your current Senior level; while your 7 years and impact at Velox (zero-downtime migration framework, multi-team scope) demonstrate systems thinking, the Principal scope assumes you lead infrastructure strategy and guide other engineers at an organizational level. This is a stretch upward in seniority. Growth potential is moderate—strong observability alignment but leadership expectations may exceed your current trajectory.",
       "score_breakdown": {
@@ -1299,7 +1390,7 @@
       "url": "https://jobs.lever.co/swordhealth/a0ce46f3-6366-40e8-91ed-39e3b6e6d5f2",
       "posted_at": null,
       "first_seen_at": "2026-04-10T13:15:58.489074",
-      "last_seen_at": "2026-04-10T13:15:58.489074",
+      "last_seen_at": "2026-04-11T18:47:55.082347",
       "fit_score": 64,
       "score_reasoning": "Your 7 years of backend engineering with microservices, APIs, and observability experience aligns well with the core data platform API and resilient workflow requirements. The Senior title and platform ownership scope match your current level, and the regulated healthcare environment builds on your systems-thinking approach. However, the role is located in Porto with no explicit remote option stated, creating a significant geographic gap from your Berlin base—beyond your preferred ±2h timezone and hybrid anchor point. Additionally, the posting lacks technical specificity on required languages and frameworks; if it's not Python/Go-primary, your tech fit may be lower once clarified.",
       "score_breakdown": {
@@ -1346,7 +1437,7 @@
       "url": "https://job-boards.greenhouse.io/wikimedia/jobs/7732949",
       "posted_at": "2026-03-21T08:16:52-04:00",
       "first_seen_at": "2026-04-10T13:15:58.489074",
-      "last_seen_at": "2026-04-10T13:15:58.489074",
+      "last_seen_at": "2026-04-11T18:47:55.082347",
       "fit_score": 62,
       "score_reasoning": "Your backend microservices and infrastructure experience with Python, Go, and AWS align well with Wikimedia's SRE needs—Python scripting, Linux troubleshooting, and observability tools like Prometheus are direct matches. However, this is an SRE/DevOps-focused role centered on operational reliability and on-call rotations, which represents a meaningful pivot from your core backend engineering career direction targeting senior backend architect roles at scale-ups. While the 6+ years SRE requirement and senior title fit your seniority, the role emphasizes infrastructure operations and Puppet/Kubernetes configuration over backend system design and distributed services architecture—your key areas of depth. The remote-first setup with Europe-compatible scheduling is a strong positive, and Wikimedia's notable brand and mission carry CV value, but growth_potential is lower because advancing in this SRE track would move you further from your stated goal of deepening technical leadership in high-scale backend systems. This is a solid adjacent opportunity if you value operational leadership and reliability culture, but not a primary core-fit match.",
       "score_breakdown": {
@@ -1398,7 +1489,7 @@
       "url": "https://gradle.com/careers/open-roles/7538180/?gh_jid=7538180",
       "posted_at": "2026-04-01T14:14:56-04:00",
       "first_seen_at": "2026-04-10T13:15:58.489074",
-      "last_seen_at": "2026-04-10T13:15:58.489074",
+      "last_seen_at": "2026-04-11T18:47:55.082347",
       "fit_score": 62,
       "score_reasoning": "Your AWS infrastructure experience (ECS, Docker, Terraform basics) provides a solid foundation, but this role centers on Kubernetes and advanced infrastructure-as-code—areas where your experience is limited to basic Docker usage and entry-level Terraform. The Senior title aligns well with your 7 years of backend experience and current responsibilities, and the remote Europe-based setup matches your Berlin location perfectly. However, the platform engineering focus and Kubernetes-heavy requirements represent a significant shift from your core distributed systems and backend microservices strength. While you've built observability and infrastructure components, this role asks for deeper IaC and Kubernetes platform expertise that would require meaningful ramp-up. The growth potential is moderate—platform engineering is an adjacent adjacent track, not your stated senior backend target, and the role emphasizes foundational platforms rather than the high-scale distributed systems challenges you're seeking.",
       "score_breakdown": {
@@ -1447,7 +1538,7 @@
       "url": "https://careers.godaddy/jobs?gh_jid=6608844003",
       "posted_at": "2026-04-08T04:46:34-04:00",
       "first_seen_at": "2026-04-10T13:15:58.489074",
-      "last_seen_at": "2026-04-10T13:15:58.489074",
+      "last_seen_at": "2026-04-11T18:47:55.082347",
       "fit_score": 62,
       "score_reasoning": "Your backend systems and infrastructure experience transfer well to SRE responsibilities, and the role values Python/Go and CI/CD expertise you possess. However, it explicitly requires 4+ years of Kubernetes—a known critical gap for you. The location is listed as Ontario, Canada with remote option, creating timezone ambiguity. Canada spans 4+ time zones with 5-7 hour differences from Berlin, exceeding your strict ±2h preference significantly. The moderate location uncertainty plus substantial Kubernetes gap pull the fit down.",
       "score_breakdown": {
@@ -1494,7 +1585,7 @@
       "url": "https://databricks.com/company/careers/open-positions/job?gh_jid=7642799002",
       "posted_at": "2026-04-09T16:51:11-04:00",
       "first_seen_at": "2026-04-10T13:15:58.489074",
-      "last_seen_at": "2026-04-10T13:15:58.489074",
+      "last_seen_at": "2026-04-11T18:47:55.082347",
       "fit_score": 62,
       "score_reasoning": "This role is significantly more aligned than the Belgrade and London postings. Your 7 years of distributed systems, microservices, and infrastructure work directly match the emphasis on large-scale critical systems, and Go is explicitly listed as a preferred backend language alongside Java and Scala. The role's focus on infrastructure, cloud-agnostic abstractions, and developer experience aligns with your systems-thinking demonstrated in your zero-downtime migration work at Velox. Your staff-level responsibilities and proven leadership fit well. However, Aarhus is in Scandinavia (~1h ahead of Berlin), within your acceptable timezone band, but the posting does not explicitly state remote work; this creates moderate ambiguity. Additionally, you lack Kubernetes experience, which is mentioned as a preference, and the role emphasizes mentorship and cross-team influence — important for staff level, though not a gap. The strong overlap on Go and distributed systems keeps this viable.",
       "score_breakdown": {
@@ -1540,7 +1631,7 @@
       "url": "https://job-boards.greenhouse.io/affirm/jobs/6642238003",
       "posted_at": "2026-03-20T03:02:54-04:00",
       "first_seen_at": "2026-04-10T13:15:58.489074",
-      "last_seen_at": "2026-04-10T13:15:58.489074",
+      "last_seen_at": "2026-04-11T18:47:55.082347",
       "fit_score": 62,
       "score_reasoning": "Your experience with Python, distributed systems, and AWS directly aligns with Affirm's core technical requirements for this Senior Backend role in communications infrastructure. The scale (4M+ events/day) and observability focus at Velox map well to their transactional email/SMS/push platform. However, this role carries a significant geographic constraint: it explicitly requires Spain-based residency for visa sponsorship, which conflicts with your Berlin base. While the role is labeled \"remote,\" the mandatory Spain location requirement and visa sponsorship language create a material location mismatch. Your Kubernetes gap (not mentioned as core here) is less of a blocker than typical platform roles, and your seniority trajectory aligns well with the Senior Backend Engineer level. Growth potential is solid on distributed systems and high-availability architecture, though the comms platform focus is slightly narrower than your preferred high-scale, multi-domain systems work.",
       "score_breakdown": {
@@ -1588,7 +1679,7 @@
       "url": "https://jobs.lever.co/swordhealth/424984c0-a455-4e92-84bc-378ebc379eb6",
       "posted_at": null,
       "first_seen_at": "2026-04-10T13:15:58.489074",
-      "last_seen_at": "2026-04-10T13:15:58.489074",
+      "last_seen_at": "2026-04-11T18:47:55.082347",
       "fit_score": 61,
       "score_reasoning": "Your Senior Backend Engineer profile aligns well with the title and seniority level, and your distributed systems experience in Python/Go matches typical consumer growth backend work. However, the job posting is critically sparse—it provides only company context and mission without any technical details, frameworks, or concrete responsibilities. More importantly, the location is listed as Porto, Portugal, which creates a material geographic challenge: you are based in Berlin and prefer remote work with ±2h timezone overlap. Porto is roughly 1h ahead of Berlin (acceptable timezone-wise), but without explicit confirmation that this role is fully remote, it appears to be Porto-based or requires hybrid work there. This geographic uncertainty combined with the sparse technical description significantly lowers fit. The healthcare/AI domain is not among your stated target industries, though it aligns with your scale-up/enterprise growth preferences.",
       "score_breakdown": {
@@ -1634,7 +1725,7 @@
       "url": "https://job-boards.greenhouse.io/remotecom/jobs/7696168003",
       "posted_at": "2026-04-10T06:57:19-04:00",
       "first_seen_at": "2026-04-10T13:15:58.489074",
-      "last_seen_at": "2026-04-10T13:15:58.489074",
+      "last_seen_at": "2026-04-11T18:47:55.082347",
       "fit_score": 61,
       "score_reasoning": "This Senior role explicitly targets Elixir, which remains your critical gap—you have no production experience in functional programming languages despite strong Python and Go background. Your seniority, systems thinking, and hands-on experience with PostgreSQL, AWS, Docker, and GitLab CI/CD are direct matches. Remote-EMEA is well-aligned with your Berlin location and timezone preferences (typically ±3h overlap), offering more geographic flexibility than Northern Europe-specific postings. The async culture and focus on complex problem-solving suit your career trajectory. However, the Elixir requirement is a fundamental mismatch that would require significant ramp-up time and carries risk of underperformance during the critical first months.",
       "score_breakdown": {
@@ -1681,7 +1772,7 @@
       "url": "https://job-boards.greenhouse.io/tripadvisor/jobs/5917973",
       "posted_at": "2026-03-19T07:59:41-04:00",
       "first_seen_at": "2026-04-10T13:15:58.489074",
-      "last_seen_at": "2026-04-10T13:15:58.489074",
+      "last_seen_at": "2026-04-11T18:47:55.082347",
       "fit_score": 61,
       "score_reasoning": "Your backend expertise in Python and Go aligns well with Tripadvisor's microservices and distributed systems focus, but the role's primary requirement for a statically typed language (Java, C#, or C++) is a notable gap—you have no commercial experience in these languages. The Software Engineer II title matches your mid-to-senior trajectory, though the hybrid Lisbon location with mandatory 2-hour commute distance creates significant friction against your remote-first preference and Berlin base (timezone overlap is reasonable at ~1h, but on-site frequency is not clearly defined and the location is outside your acceptable regions). The role offers solid growth in a high-scale travel platform with AWS infrastructure and modern practices (Kubernetes, daily releases), but the language requirement and location constraints combine to lower overall fit. This is a medium-priority role that merits exploration only if you're willing to relocate or commit to regular Lisbon office time.",
       "score_breakdown": {
@@ -1722,6 +1813,98 @@
       "company_quality_signals": []
     },
     {
+      "id": 27460,
+      "ats_platform": "lever",
+      "company_slug": "spotify",
+      "company_name": "Spotify",
+      "title": "Senior Backend Engineer - Subscriptions",
+      "location": "London",
+      "url": "https://jobs.lever.co/spotify/c857c37d-9fdc-4103-82cc-f1d252c120c3",
+      "posted_at": null,
+      "first_seen_at": "2026-04-11T18:47:55.082347",
+      "last_seen_at": "2026-04-11T18:47:55.082347",
+      "fit_score": 58,
+      "score_reasoning": "Your senior-level experience and background in high-scale payment/subscription systems (€2M/month billing engine at Stackflo) directly align with the Subscriptions mission. Python/Go expertise and observability practices match well for scaling commerce and personalization systems at global scale. However, London as the stated location without explicit remote confirmation creates a >2h timezone offset from Berlin; your profile prioritizes remote work with strict ±2h overlap preference. The posting focuses on business outcomes and user journey but lacks specific technical stack details, making it hard to validate Python/Go or architecture patterns. The growth potential is strong given the domain and scale, but location ambiguity and vague technical requirements prevent a higher score.",
+      "score_breakdown": {
+        "dimensions": {
+          "tech_stack_match": 65,
+          "seniority_match": 85,
+          "remote_location_fit": 40,
+          "growth_potential": 65
+        },
+        "key_matches": [
+          "Payment systems",
+          "High-scale backends",
+          "Subscription experience",
+          "Senior backend",
+          "Personalization and retention"
+        ],
+        "red_flags": [
+          "Location stated as London—unclear if remote or on-site required",
+          "Sparse technical requirements—no mention of tech stack or architecture",
+          "Timezone drift >2h from your preference without explicit remote-first language"
+        ],
+        "fit_category": "",
+        "apply_priority": "low"
+      },
+      "scored_at": "2026-04-11T18:48:14.421838",
+      "status": "scored",
+      "dismissal_reason": null,
+      "match_tier": "signal_match",
+      "salary": null,
+      "salary_min": null,
+      "salary_max": null,
+      "salary_currency": null,
+      "is_sparse": true,
+      "company_quality_signals": []
+    },
+    {
+      "id": 27459,
+      "ats_platform": "lever",
+      "company_slug": "spotify",
+      "company_name": "Spotify",
+      "title": "Senior Backend Engineer - Subscriptions",
+      "location": "London",
+      "url": "https://jobs.lever.co/spotify/2cd04b53-ecfc-4de1-8e12-eab125720520",
+      "posted_at": null,
+      "first_seen_at": "2026-04-11T18:47:55.082347",
+      "last_seen_at": "2026-04-11T18:47:55.082347",
+      "fit_score": 58,
+      "score_reasoning": "Your senior-level experience and background in high-scale payment/subscription systems (€2M/month billing engine at Stackflo) directly align with the Subscriptions mission. Python/Go expertise and observability practices match well for scaling commerce and personalization systems. However, London as the stated location without explicit remote confirmation creates a >2h timezone offset from Berlin; your profile prioritizes remote work with strict ±2h overlap preference. The posting lacks detail on specific technical requirements, making it difficult to assess whether microservices, distributed systems, or monolith approaches dominate. The growth potential is strong given the domain alignment, but location ambiguity and sparse technical detail prevent a higher score.",
+      "score_breakdown": {
+        "dimensions": {
+          "tech_stack_match": 65,
+          "seniority_match": 85,
+          "remote_location_fit": 40,
+          "growth_potential": 65
+        },
+        "key_matches": [
+          "Payment systems",
+          "High-scale backends",
+          "Subscription experience",
+          "Senior backend",
+          "Personalization systems"
+        ],
+        "red_flags": [
+          "Location stated as London—unclear if remote or on-site required",
+          "Sparse technical requirements—no mention of tech stack or architecture patterns",
+          "Timezone drift >2h from your preference without explicit remote-first language"
+        ],
+        "fit_category": "",
+        "apply_priority": "low"
+      },
+      "scored_at": "2026-04-11T18:48:14.419259",
+      "status": "scored",
+      "dismissal_reason": null,
+      "match_tier": "signal_match",
+      "salary": null,
+      "salary_min": null,
+      "salary_max": null,
+      "salary_currency": null,
+      "is_sparse": true,
+      "company_quality_signals": []
+    },
+    {
       "id": 247,
       "ats_platform": "greenhouse",
       "company_slug": "remotecom",
@@ -1731,7 +1914,7 @@
       "url": "https://job-boards.greenhouse.io/remotecom/jobs/7696210003",
       "posted_at": "2026-04-10T07:28:22-04:00",
       "first_seen_at": "2026-04-10T13:15:58.489074",
-      "last_seen_at": "2026-04-10T13:15:58.489074",
+      "last_seen_at": "2026-04-11T18:47:55.082347",
       "fit_score": 58,
       "score_reasoning": "This role is essentially identical to the Western Europe variant but with a truly global remote scope, which is ideal for your Berlin base and preference for fully remote work. Your seniority and systems-thinking background fit the Senior level and cross-team responsibilities well. The significant gap remains the Elixir/Phoenix primary technology stack—your Python and Go expertise do not directly transfer to functional programming in production. You have solid transferable skills in PostgreSQL, AWS, Docker, and CI/CD practices, plus the async culture aligns perfectly with your preferences. Growth potential is strong given the scale-up nature and focus on shipping with automation/AI, but the core backend language mismatch is a material friction point.",
       "score_breakdown": {
@@ -1778,7 +1961,7 @@
       "url": "https://job-boards.greenhouse.io/remotecom/jobs/7696212003",
       "posted_at": "2026-04-10T07:28:22-04:00",
       "first_seen_at": "2026-04-10T13:15:58.489074",
-      "last_seen_at": "2026-04-10T13:15:58.489074",
+      "last_seen_at": "2026-04-11T18:47:55.082347",
       "fit_score": 58,
       "score_reasoning": "Your seniority and backend fundamentals are a strong match for this Senior role. The company values async work and technical leadership, which aligns well with your distributed systems background. However, your core expertise is in Python and Go, while this role's primary backend is Elixir/Phoenix—a significant technology gap. Although you have strong PostgreSQL, AWS, CI/CD, and Docker experience that transfer well, your lack of functional programming language production experience means you'd need to learn Elixir on the job. The remote-Western Europe designation provides good timezone overlap with Berlin. Growth potential is solid given the scale-up nature and focus on automation/AI capabilities, but the tech stack mismatch creates notable friction.",
       "score_breakdown": {
@@ -1825,7 +2008,7 @@
       "url": "https://job-boards.greenhouse.io/commercetools/jobs/7617548003",
       "posted_at": "2026-03-31T11:14:13-04:00",
       "first_seen_at": "2026-04-10T13:15:58.489074",
-      "last_seen_at": "2026-04-10T13:15:58.489074",
+      "last_seen_at": "2026-04-11T18:47:55.082347",
       "fit_score": 58,
       "score_reasoning": "Your senior-level distributed systems expertise and payment platform experience (€2M/month billing engine) align well with commercetools' payment systems focus. The Berlin hybrid setup is ideal—your preferred work location with 3 days/week on-site matches your hybrid-acceptable-in-Berlin preference. However, the role's primary requirement is TypeScript backend production experience, and your core stack is Python/Go. While your distributed systems fundamentals are strong, the language gap is meaningful. This role is a conditional fit: strong on seniority, location, and growth trajectory, but the TypeScript requirement is a core blocker unless framed as an upskilling opportunity you're willing to pursue.",
       "score_breakdown": {
@@ -1872,7 +2055,7 @@
       "url": "https://databricks.com/company/careers/open-positions/job?gh_jid=8029671002",
       "posted_at": "2026-04-09T16:51:10-04:00",
       "first_seen_at": "2026-04-10T13:15:58.489074",
-      "last_seen_at": "2026-04-10T13:15:58.489074",
+      "last_seen_at": "2026-04-11T18:47:55.082347",
       "fit_score": 58,
       "score_reasoning": "Your senior-level title and 7 years of distributed systems expertise match well with Databricks' backend infrastructure needs, and Amsterdam is within your acceptable European region with reasonable geographic proximity to Berlin. However, this role explicitly requires Java/Scala/C++ as core production languages (3+ years minimum), and your professional background is Python and Go—a significant gap for a role centered on Scala/Kubernetes/Spark infrastructure. Databricks is a notable brand company with strong CV value, and the high-scale systems work (pricing infrastructure serving millions of cluster-hours) aligns with your growth ambitions. The location and seniority fit improve the score, but the missing primary tech stack remains a material blocker that prevents this from being a strong match.",
       "score_breakdown": {
@@ -1919,7 +2102,7 @@
       "url": "https://job-boards.greenhouse.io/remotecom/jobs/7696170003",
       "posted_at": "2026-04-10T07:00:28-04:00",
       "first_seen_at": "2026-04-10T13:15:58.489074",
-      "last_seen_at": "2026-04-10T13:15:58.489074",
+      "last_seen_at": "2026-04-11T18:47:55.082347",
       "fit_score": 57,
       "score_reasoning": "Your seniority and backend fundamentals fit this Senior role well, and your experience with PostgreSQL, AWS, Docker, and GitLab CI/CD are directly transferable. However, Elixir is the explicit primary requirement, and you have no production experience with functional programming languages—a major gap. Remote-Southern Europe introduces a timezone mismatch of 1–2 hours ahead of Berlin, which is manageable but less ideal than EMEA-wide or truly global flexibility. Your distributed systems thinking and testing practices are valuable, but the lack of Elixir expertise would make ramp-up challenging. The async culture and scale-up growth opportunity are positive signals, but the core technology mismatch limits fit substantially.",
       "score_breakdown": {
@@ -1966,7 +2149,7 @@
       "url": "https://job-boards.greenhouse.io/remotecom/jobs/7696172003",
       "posted_at": "2026-04-10T07:00:29-04:00",
       "first_seen_at": "2026-04-10T13:15:58.489074",
-      "last_seen_at": "2026-04-10T13:15:58.489074",
+      "last_seen_at": "2026-04-11T18:47:55.082347",
       "fit_score": 56,
       "score_reasoning": "Your seniority and backend fundamentals align well with this Senior role; the title explicitly calls for Elixir, and your 7 years of distributed systems experience is valuable. However, you have zero production experience with Elixir or functional programming languages—a core required skill. The 'Nice to have' section (Kubernetes, Docker, AWS) plays to your strengths, but the primary technology gap is insurmountable for immediate contribution. Remote-Northern Europe restricts timezone to roughly ±2h from CET, which is acceptable from Berlin but less flexible than a truly global posting. The scale-up nature and focus on complex system design offer growth potential, but learning Elixir in production would be a significant on-boarding burden.",
       "score_breakdown": {
@@ -2013,7 +2196,7 @@
       "url": "https://databricks.com/company/careers/open-positions/job?gh_jid=8029666002",
       "posted_at": "2026-04-09T16:51:10-04:00",
       "first_seen_at": "2026-04-10T13:15:58.489074",
-      "last_seen_at": "2026-04-10T13:15:58.489074",
+      "last_seen_at": "2026-04-11T18:47:55.082347",
       "fit_score": 56,
       "score_reasoning": "Your 7 years of backend experience far exceed the 2+ years requirement, and your Go expertise matches the stated preference for Java, Scala, C++, or Go. Your distributed systems background aligns with the role's SaaS and infrastructure focus. Amsterdam is within your acceptable European regions with reasonable proximity to Berlin. However, this is a mid-level Software Engineer position emphasizing foundational work and learning, representing a notable step down from your current senior-level role with multi-team impact and system design ownership at Velox. The posting does not explicitly state remote eligibility; Amsterdam location creates geographic ambiguity about hybrid/on-site expectations. Databricks is a strong brand company, and the high-scale systems work (pricing infrastructure, millions of cluster-hours) appeals to your growth direction, but the seniority mismatch is a material concern for a candidate at your level.",
       "score_breakdown": {
@@ -2060,7 +2243,7 @@
       "url": "https://databricks.com/company/careers/open-positions/job?gh_jid=7737233002",
       "posted_at": "2026-04-09T16:51:11-04:00",
       "first_seen_at": "2026-04-10T13:15:58.489074",
-      "last_seen_at": "2026-04-10T13:15:58.489074",
+      "last_seen_at": "2026-04-11T18:47:55.082347",
       "fit_score": 56,
       "score_reasoning": "You comfortably exceed the 2+ years experience requirement with 7 years of backend development, and your Go proficiency directly matches the role's stated preference for Java, Scala, or Go. Your hands-on distributed systems experience aligns well with the infrastructure and platform engineering focus. Aarhus is in Denmark, within your acceptable European region (~±2-3h timezone overlap with Berlin). However, this role is entry-to-mid-level and emphasizes foundational platform work with \"guidance from senior team members,\" representing a material step down from your current senior-level responsibilities and leadership scope at Velox. The posting does not explicitly state whether work is remote or on-site; Aarhus proximity creates geographic ambiguity. Databricks' strong brand and infrastructure-focused work support growth potential, but the seniority misalignment is notable.",
       "score_breakdown": {
@@ -2107,7 +2290,7 @@
       "url": "https://www.asana.com/jobs/apply/6169243?gh_jid=6169243",
       "posted_at": "2026-04-09T16:50:00-04:00",
       "first_seen_at": "2026-04-10T13:15:58.489074",
-      "last_seen_at": "2026-04-10T13:15:58.489074",
+      "last_seen_at": "2026-04-11T18:47:55.082347",
       "fit_score": 56,
       "score_reasoning": "Your 7 years of backend experience and Python/Go skills directly address this role's core technical needs. However, the posting lists 4+ years as the target level, placing you at a senior-mid seniority mismatch. While your scope is demonstrably stronger (multi-tenant microservices, billing engines, migration leadership), the role emphasizes TypeScript and Scala experience with 'large, well-maintained codebases'—neither your primary languages, and TypeScript is not evidenced in your CV. The Warsaw hybrid location (Mon/Tue/Thu in-office) introduces the same cross-border friction as job #2, conflicting with your Berlin-anchored hybrid preference. The product-focused backend work (user-facing features) is a slight sideways move from your infrastructure and systems specialization, though still within backend domain.",
       "score_breakdown": {
@@ -2145,6 +2328,98 @@
       "company_quality_signals": []
     },
     {
+      "id": 27458,
+      "ats_platform": "lever",
+      "company_slug": "spotify",
+      "company_name": "Spotify",
+      "title": "Senior Backend Engineer - CI Experience",
+      "location": "Stockholm",
+      "url": "https://jobs.lever.co/spotify/e4e76b28-3347-4749-91f9-0bcd61144de3",
+      "posted_at": null,
+      "first_seen_at": "2026-04-11T18:47:55.082347",
+      "last_seen_at": "2026-04-11T18:47:55.082347",
+      "fit_score": 52,
+      "score_reasoning": "Your seniority and backend infrastructure experience align well with the role, but the posting explicitly emphasizes migrating Python services to Java—a language gap since your expertise is Python and Go. The Stockholm location presents a significant timezone challenge (±2h from Berlin is tight, but feasible); however, the posting does not explicitly state remote-first arrangements, creating uncertainty about flexibility. Your observability and reliability expertise match the CI focus, but the lack of mention of distributed systems or high-scale work limits growth alignment. The Java migration requirement and location ambiguity are the primary constraints.",
+      "score_breakdown": {
+        "dimensions": {
+          "tech_stack_match": 55,
+          "seniority_match": 85,
+          "remote_location_fit": 35,
+          "growth_potential": 50
+        },
+        "key_matches": [
+          "Backend infrastructure",
+          "Python experience",
+          "Observability",
+          "Reliability focus",
+          "Senior-level scope"
+        ],
+        "red_flags": [
+          "Java migration as core responsibility—not your primary language",
+          "Location ambiguity—Stockholm without explicit remote confirmation",
+          "Developer tooling focus—narrower than high-scale systems expertise"
+        ],
+        "fit_category": "",
+        "apply_priority": "low"
+      },
+      "scored_at": "2026-04-11T18:48:14.417194",
+      "status": "scored",
+      "dismissal_reason": null,
+      "match_tier": "high_confidence",
+      "salary": null,
+      "salary_min": null,
+      "salary_max": null,
+      "salary_currency": null,
+      "is_sparse": false,
+      "company_quality_signals": []
+    },
+    {
+      "id": 27457,
+      "ats_platform": "lever",
+      "company_slug": "spotify",
+      "company_name": "Spotify",
+      "title": "Senior Backend Engineer - CI Experience",
+      "location": "Stockholm",
+      "url": "https://jobs.lever.co/spotify/cf2ab23e-8bb8-455c-9a49-a43cca51fb97",
+      "posted_at": null,
+      "first_seen_at": "2026-04-11T18:47:55.082347",
+      "last_seen_at": "2026-04-11T18:47:55.082347",
+      "fit_score": 52,
+      "score_reasoning": "Your seniority and backend infrastructure experience align well with the role, but the posting explicitly emphasizes migrating Python services to Java—a language gap since your expertise is Python and Go. The Stockholm location presents a significant timezone challenge (±2h from Berlin is tight, but feasible); however, the posting does not explicitly state remote-first arrangements, creating uncertainty about flexibility. Your observability and reliability expertise match the CI focus, but the lack of mention of distributed systems or high-scale work limits growth alignment. The Java migration requirement and location ambiguity are the primary constraints.",
+      "score_breakdown": {
+        "dimensions": {
+          "tech_stack_match": 55,
+          "seniority_match": 85,
+          "remote_location_fit": 35,
+          "growth_potential": 50
+        },
+        "key_matches": [
+          "Backend infrastructure",
+          "Python experience",
+          "Observability",
+          "Reliability focus",
+          "Senior-level scope"
+        ],
+        "red_flags": [
+          "Java migration as core responsibility—not your primary language",
+          "Location ambiguity—Stockholm without explicit remote confirmation",
+          "Developer tooling focus—narrower than high-scale systems expertise"
+        ],
+        "fit_category": "",
+        "apply_priority": "low"
+      },
+      "scored_at": "2026-04-11T18:48:14.414762",
+      "status": "scored",
+      "dismissal_reason": null,
+      "match_tier": "high_confidence",
+      "salary": null,
+      "salary_min": null,
+      "salary_max": null,
+      "salary_currency": null,
+      "is_sparse": false,
+      "company_quality_signals": []
+    },
+    {
       "id": 281,
       "ats_platform": "lever",
       "company_slug": "palantir",
@@ -2154,7 +2429,7 @@
       "url": "https://jobs.lever.co/palantir/72e51928-07f0-4be0-aae5-0ae6956a4846",
       "posted_at": null,
       "first_seen_at": "2026-04-10T13:15:58.489074",
-      "last_seen_at": "2026-04-10T13:15:58.489074",
+      "last_seen_at": "2026-04-11T18:47:55.082347",
       "fit_score": 52,
       "score_reasoning": "Your backend experience with Docker, AWS (ECS, S3, SQS), and observability tools (OpenTelemetry, Prometheus) provides partial overlap with infrastructure engineering work, but the role emphasizes scalable operations and forward-deployment support rather than backend service design—your core strength. The location is London, which creates a timezone challenge from Berlin (1h offset, technically acceptable, but the posting does not explicitly state remote flexibility, creating meaningful uncertainty). Palantir's government focus and infrastructure-heavy scope are adjacent to your distributed systems background, but without clear evidence of large-scale IaC, Kubernetes, or systems-wide architectural ownership in your CV, the tech match remains moderate. This is a viable but not ideal fit given the infrastructure-heavy emphasis and geographic ambiguity.",
       "score_breakdown": {
@@ -2201,7 +2476,7 @@
       "url": "https://jobs.lever.co/outreach/2f10ff11-7494-48a6-a37a-caed7129c286",
       "posted_at": null,
       "first_seen_at": "2026-04-10T13:15:58.489074",
-      "last_seen_at": "2026-04-10T13:15:58.489074",
+      "last_seen_at": "2026-04-11T18:47:55.082347",
       "fit_score": 52,
       "score_reasoning": "Your seniority and project ownership experience align well with a Senior Staff SRE level, and the COR team's Kubernetes platform work directly addresses your infrastructure interests. However, you lack Kubernetes orchestration experience—a primary requirement for this role—which significantly limits your day-to-day capability despite your strong Docker and AWS foundation. More critically, the role is anchored to Prague with monthly team meetups and local encouragement, placing it outside your preferred remote-first setup and Berlin-based location. While remote-within-Czech-Republic is mentioned, this creates a >2h timezone boundary and implicit geographic anchor that conflicts with your strong preference for Berlin hybrid or fully remote work. The infrastructure focus is a meaningful pivot from your core backend distributed-systems trajectory, which would slow your senior backend specialization goals.",
       "score_breakdown": {
@@ -2250,7 +2525,7 @@
       "url": "https://jobs.lever.co/anchorage/f6cd35e5-e4f7-420f-bdae-5ca91531c0e0",
       "posted_at": null,
       "first_seen_at": "2026-04-10T13:15:58.489074",
-      "last_seen_at": "2026-04-10T13:15:58.489074",
+      "last_seen_at": "2026-04-11T18:47:55.082347",
       "fit_score": 52,
       "score_reasoning": "Your backend experience with distributed systems, payment processing (€2M/month billing engine at Stackflo), and Python/Go aligns reasonably with a billing and revenue platform role at an institutional crypto company. However, the job description is incomplete—it lacks technical stack details, framework specifics, and concrete responsibilities beyond the mission statement. More critically, the location is listed as Portugal with no explicit remote flexibility stated, creating a material timezone mismatch from your Berlin base (±1-2h is acceptable, but the posting does not clarify whether this is on-site, hybrid, or remote). The role's title 'Member of Technical Staff' suggests senior-level scope, but without fuller context on autonomy and architectural ownership, seniority alignment is uncertain. Anchorage Digital carries strong institutional backing and crypto/fintech credentials that align with your industry preferences, which moderately supports growth_potential, but the sparse description and location ambiguity prevent a stronger fit assessment.",
       "score_breakdown": {
@@ -2299,7 +2574,7 @@
       "url": "https://job-boards.greenhouse.io/leaflink/jobs/8466891002",
       "posted_at": "2026-03-23T14:10:42-04:00",
       "first_seen_at": "2026-04-10T13:15:58.489074",
-      "last_seen_at": "2026-04-10T13:15:58.489074",
+      "last_seen_at": "2026-04-11T18:47:55.082347",
       "fit_score": 52,
       "score_reasoning": "Your backend experience and distributed systems foundation are strong, and the Senior Backend Engineer II title matches your career trajectory. However, the role's primary tech stack is Java/JVM, which is a significant gap—your production expertise is Python and Go. While your payment processing and transaction experience at Stackflo (€2M/month billing engine) maps well to LeafLink's financial workflows, and the regulated fintech environment aligns with your preferred industries, the Java requirement creates a meaningful friction point. The remote role is fully compatible with your Berlin base and Europe-first preferences. Growth potential is moderate because this is a lateral senior role rather than a stretch into technical leadership or systems architecture, and the Java migration would require ramp-up time.",
       "score_breakdown": {
@@ -2349,7 +2624,7 @@
       "url": "https://job-boards.greenhouse.io/commercetools/jobs/7581738003",
       "posted_at": "2026-03-31T11:14:13-04:00",
       "first_seen_at": "2026-04-10T13:15:58.489074",
-      "last_seen_at": "2026-04-10T13:15:58.489074",
+      "last_seen_at": "2026-04-11T18:47:55.082347",
       "fit_score": 52,
       "score_reasoning": "Your senior-level distributed systems and payment-focused experience (€2M/month billing engine at Stackflo) translates well to commercetools' payment systems role, and the seniority match is strong. However, the role requires deep TypeScript backend expertise, and your production experience is Python/Go—TypeScript appears only as a portfolio skill or secondary exposure, not commercial production work. London hybrid (3 days/week on-site) is also suboptimal: while London is in Europe, requiring cross-country travel from Berlin for regular office days adds friction beyond your hybrid preference anchored to Berlin. The tech gap on the primary language is material enough to lower fit meaningfully.",
       "score_breakdown": {
@@ -2395,7 +2670,7 @@
       "url": "https://job-boards.greenhouse.io/gitlab/jobs/8443325002",
       "posted_at": "2026-04-03T15:02:45-04:00",
       "first_seen_at": "2026-04-10T13:15:58.489074",
-      "last_seen_at": "2026-04-10T13:15:58.489074",
+      "last_seen_at": "2026-04-11T18:47:55.082347",
       "fit_score": 52,
       "score_reasoning": "This role is fully remote and located in a compatible global timezone band, removing location barriers. However, it presents a notable seniority mismatch: the title is 'Intermediate' despite stating a 5+ year minimum, while you have 7 years and are actively seeking senior-level roles. GitLab does acknowledge that candidates don't need every qualification, and your distributed systems + Python background provides some foundation for Ruby on Rails backend work with PostgreSQL. However, the tech stack is a meaningful gap: you have no Rails production experience, limited NoSQL/Elasticsearch exposure, and the role emphasizes GraphQL/REST API design at scale with security-specific domain knowledge. Your microservices and high-scale system expertise transfer partially, but Rails is a framework you'd need to learn on the job. The company (GitLab) carries strong product and brand signals, which your preferences allow as a tie-breaker for lower-seniority roles, but this intermediate position is below your trajectory and the tech stack gap is material. This is conditionally viable given GitLab's signal, but not a strong match for a senior-track engineer.",
       "score_breakdown": {
@@ -2443,7 +2718,7 @@
       "url": "https://job-boards.greenhouse.io/affirm/jobs/6681466003",
       "posted_at": "2026-03-09T06:40:32-04:00",
       "first_seen_at": "2026-04-10T13:15:58.489074",
-      "last_seen_at": "2026-04-10T13:15:58.489074",
+      "last_seen_at": "2026-04-11T18:47:55.082347",
       "fit_score": 52,
       "score_reasoning": "Your backend expertise with Python, AWS infrastructure (ECS, S3, SQS), observability tools (OpenTelemetry, Prometheus, Grafana), and 7 years building distributed systems provide a solid foundation for SRE work. However, the role explicitly requires 4+ years as an SRE or Production Engineering team member, which is not present in your profile—you are a backend engineer with observability experience, not a dedicated SRE. The critical gap is Kubernetes, which is a core required technology for 'highly available distributed systems' but you have only basic Docker experience. Poland is within your acceptable regions and remote setup is compatible. The role's focus on incident lifecycle and operational excellence is adjacent to but distinct from your core backend engineering trajectory, pulling growth_potential lower. The Kubernetes gap, combined with lack of formal SRE experience, creates a meaningful tech mismatch despite your strong observability and systems foundation.",
       "score_breakdown": {
@@ -2489,7 +2764,7 @@
       "url": "https://job-boards.greenhouse.io/remotecom/jobs/7696179003",
       "posted_at": "2026-04-10T07:05:33-04:00",
       "first_seen_at": "2026-04-10T13:15:58.489074",
-      "last_seen_at": "2026-04-10T13:15:58.489074",
+      "last_seen_at": "2026-04-11T18:47:55.082347",
       "fit_score": 50,
       "score_reasoning": "Your PostgreSQL, AWS, Docker, and CI/CD expertise are directly relevant, and the Senior-level responsibilities around system design, cross-team initiatives, and mentorship align with your current scope at Velox. The role is fully remote and Iberia (Spain/Portugal) is within your target European region with manageable timezone overlap (CET ±1h). However, the role's primary technical stack is Elixir and Phoenix—neither of which you have production experience with. This core tech gap is the dominant blocker, making the otherwise strong location and seniority fit insufficient.",
       "score_breakdown": {
@@ -2535,7 +2810,7 @@
       "url": "https://jobs.lever.co/uncountable/503ed581-d189-437a-a8ba-7e0b3e9677c6",
       "posted_at": null,
       "first_seen_at": "2026-04-10T13:15:58.489074",
-      "last_seen_at": "2026-04-10T13:15:58.489074",
+      "last_seen_at": "2026-04-11T18:47:55.082347",
       "fit_score": 48,
       "score_reasoning": "Your backend and distributed systems expertise translates partially to this role's infrastructure needs (API integration, observability, caching), but the position is heavily weighted toward Generative AI deployment, LLM optimization, and multimodal UI work—areas with no evidence in your CV. The role explicitly requires full-stack development including frontend work, which sits outside your stated focus. While Munich offers some timezone alignment (±0h), the posting lists multiple cities without clarifying remote eligibility; this ambiguity, combined with the strong US presence (NYC, SF), introduces meaningful location risk. The seniority level and title ('Platform Engineer') are roughly aligned with your current scope, but the domain shift away from distributed systems and toward AI-first product development misaligns with your stated career direction to deepen backend systems expertise at scale-ups with complex distributed architectures.",
       "score_breakdown": {
@@ -2583,7 +2858,7 @@
       "url": "https://jobs.lever.co/palantir/666d13c7-c6f0-43fb-a0ab-091c338085dc",
       "posted_at": null,
       "first_seen_at": "2026-04-10T13:15:58.489074",
-      "last_seen_at": "2026-04-10T13:15:58.489074",
+      "last_seen_at": "2026-04-11T18:47:55.082347",
       "fit_score": 48,
       "score_reasoning": "Your Python/Go backend experience, AWS infrastructure knowledge, and strong observability background provide a foundation for platform engineering, but IAM and identity-focused infrastructure is a specialized domain not evident in your CV. The role requires designing secure-by-design identity platforms and web services—a shift from distributed transaction systems and microservices reliability, your proven expertise. Additionally, the London location creates geographic and timezone uncertainty without explicit remote-work confirmation. Palantir's scale and the platform engineering label are aligned with your career direction, but the IAM specialization, lack of clarity on work setup, and absence of security/identity background make this a stretch fit rather than a strong match.",
       "score_breakdown": {
@@ -2630,7 +2905,7 @@
       "url": "https://job-boards.greenhouse.io/remotecom/jobs/7696191003",
       "posted_at": "2026-04-10T07:12:09-04:00",
       "first_seen_at": "2026-04-10T13:15:58.489074",
-      "last_seen_at": "2026-04-10T13:15:58.489074",
+      "last_seen_at": "2026-04-11T18:47:55.082347",
       "fit_score": 48,
       "score_reasoning": "This is the strongest location match—fully remote within Germany (your base country) with excellent timezone overlap—and the senior-level responsibilities align with your career trajectory. Remote.com's brand and product company strength are clear positives. However, the role's core technical requirement remains Elixir and Phoenix, languages you have no production experience with. For a senior position where you'd be expected to lead projects and mentor others, this is a critical gap. While the location fit is nearly perfect and growth potential is strong, the missing core language/framework prevents this from reaching a medium fit band.",
       "score_breakdown": {
@@ -2678,7 +2953,7 @@
       "url": "https://job-boards.greenhouse.io/remotecom/jobs/7696174003",
       "posted_at": "2026-04-10T07:02:12-04:00",
       "first_seen_at": "2026-04-10T13:15:58.489074",
-      "last_seen_at": "2026-04-10T13:15:58.489074",
+      "last_seen_at": "2026-04-11T18:47:55.082347",
       "fit_score": 48,
       "score_reasoning": "Your experience with PostgreSQL, AWS, Docker, and CI/CD (GitHub Actions/GitLab) is strong, but the role's primary tech stack is Elixir and Phoenix—neither of which appear in your CV. While Elixir's functional paradigm could complement your distributed systems thinking, the lack of production experience with the core language is a significant barrier that caps your technical fit. Location-wise, France is in your acceptable European region and the role is explicitly fully remote, scoring well on remote_location_fit. The seniority and growth trajectory align, but the tech gap is too substantial for a medium or higher score.",
       "score_breakdown": {
@@ -2724,7 +2999,7 @@
       "url": "https://www.five9.com/about/careers/job-detail?gh_jid=5480076004",
       "posted_at": "2026-03-31T01:02:40-04:00",
       "first_seen_at": "2026-04-10T13:15:58.489074",
-      "last_seen_at": "2026-04-10T13:15:58.489074",
+      "last_seen_at": "2026-04-11T18:47:55.082347",
       "fit_score": 48,
       "score_reasoning": "Your seniority and distributed systems background align well with the senior-level scope and cloud platform responsibilities. Porto (Portugal) is within your acceptable European region, and hybrid setup is viable. However, the role heavily emphasizes Java and Spring Framework (4+ years required)—your experience is Python/Go focused with no Java background mentioned. This is a core technical gap that defines the day-to-day work. The event-driven architecture requirement also exceeds your current expertise.",
       "score_breakdown": {
@@ -2771,7 +3046,7 @@
       "url": "https://job-boards.greenhouse.io/remotecom/jobs/7696189003",
       "posted_at": "2026-04-10T07:11:10-04:00",
       "first_seen_at": "2026-04-10T13:15:58.489074",
-      "last_seen_at": "2026-04-10T13:15:58.489074",
+      "last_seen_at": "2026-04-11T18:47:55.082347",
       "fit_score": 47,
       "score_reasoning": "The Netherlands location offers strong timezone alignment (CET ±0-1h) and the senior scope aligns with your career goals; Remote.com is also a notable brand with strong product company signals. However, the role's primary technical requirement is Elixir and Phoenix—you have zero production experience with either, which is a critical gap for a senior position where you'd be expected to lead architecture and mentor others. The agentic workflows focus is also outside your core expertise. While location and seniority fit well, the language/framework mismatch is too significant to overcome.",
       "score_breakdown": {
@@ -2818,7 +3093,7 @@
       "url": "https://job-boards.greenhouse.io/remotecom/jobs/7696175003",
       "posted_at": "2026-04-10T07:04:08-04:00",
       "first_seen_at": "2026-04-10T13:15:58.489074",
-      "last_seen_at": "2026-04-10T13:15:58.489074",
+      "last_seen_at": "2026-04-11T18:47:55.082347",
       "fit_score": 46,
       "score_reasoning": "Your backend engineering depth with Python, Go, PostgreSQL, AWS, and CI/CD is strong, but Elixir and Phoenix are the primary languages and frameworks for this role—neither of which you have production experience with. While the Senior-level responsibilities around system design, mentorship, and scaling align well with your trajectory at Velox, the tech gap is critical. The role is fully remote; UK&I is in your target regions (UK is explicitly listed), but you're in CET and UK operates on GMT, creating roughly a 1h offset that's manageable. However, the tech mismatch dominates your fit.",
       "score_breakdown": {
@@ -2864,7 +3139,7 @@
       "url": "https://job-boards.greenhouse.io/remotecom/jobs/7696188003",
       "posted_at": "2026-04-10T07:10:06-04:00",
       "first_seen_at": "2026-04-10T13:15:58.489074",
-      "last_seen_at": "2026-04-10T13:15:58.489074",
+      "last_seen_at": "2026-04-11T18:47:55.082347",
       "fit_score": 45,
       "score_reasoning": "The Nordics location offers excellent timezone alignment (CET±0-2h) with your Berlin base, and the senior-level scope and remote setup match your preferences well. Remote.com's brand strength and product company profile are also strong positives. However, the role's core technical requirement—Elixir and Phoenix—is a critical gap; you have no production experience with these languages, and the job expects senior-level expertise here from day one. The agentic workflow design responsibility is also outside your current skill set. The location fit alone is insufficient to overcome the major language/framework gap for a senior role.",
       "score_breakdown": {
@@ -2902,6 +3177,51 @@
       "company_quality_signals": []
     },
     {
+      "id": 27614,
+      "ats_platform": "lever",
+      "company_slug": "aircall",
+      "company_name": "Aircall",
+      "title": "Infrastructure Engineer - Database",
+      "location": "London Office",
+      "url": "https://jobs.lever.co/aircall/0dc8f11a-4c81-4502-9f34-821cc56bdb2e",
+      "posted_at": null,
+      "first_seen_at": "2026-04-11T18:47:55.082347",
+      "last_seen_at": "2026-04-11T18:47:55.082347",
+      "fit_score": 42,
+      "score_reasoning": "Your production experience with PostgreSQL and MySQL, combined with observability work (OpenTelemetry, Prometheus) and AWS infrastructure, creates solid technical overlap with database platform engineering. However, the role emphasizes building platform abstractions and tools for other engineers—a platform/infrastructure specialization rather than backend services—which diverges from your core career direction of deepening expertise in distributed systems and business-critical features. London is remote-compatible from Berlin (±1h timezone overlap), improving location fit, but the role's platform engineering focus and lack of evidence of your interest in database infrastructure management work suggests this is a lateral move rather than career progression.",
+      "score_breakdown": {
+        "dimensions": {
+          "tech_stack_match": 60,
+          "seniority_match": 50,
+          "remote_location_fit": 55,
+          "growth_potential": 30
+        },
+        "key_matches": [
+          "PostgreSQL/MySQL expertise",
+          "AWS infrastructure",
+          "Observability systems"
+        ],
+        "red_flags": [
+          "Platform/infrastructure specialization, not backend engineering",
+          "Emphasis on tool-building rather than feature development",
+          "Does not align with stated goal of deepening distributed systems expertise",
+          "Limited growth potential toward senior backend roles"
+        ],
+        "fit_category": "",
+        "apply_priority": "low"
+      },
+      "scored_at": "2026-04-11T18:48:16.507780",
+      "status": "scored",
+      "dismissal_reason": null,
+      "match_tier": "signal_match",
+      "salary": null,
+      "salary_min": null,
+      "salary_max": null,
+      "salary_currency": null,
+      "is_sparse": false,
+      "company_quality_signals": []
+    },
+    {
       "id": 254,
       "ats_platform": "greenhouse",
       "company_slug": "remotecom",
@@ -2911,7 +3231,7 @@
       "url": "https://job-boards.greenhouse.io/remotecom/jobs/7696176003",
       "posted_at": "2026-04-10T07:04:09-04:00",
       "first_seen_at": "2026-04-10T13:15:58.489074",
-      "last_seen_at": "2026-04-10T13:15:58.489074",
+      "last_seen_at": "2026-04-11T18:47:55.082347",
       "fit_score": 42,
       "score_reasoning": "This fully remote, globally distributed role aligns perfectly with your location preferences and work setup (remote-first, Europe-based). Your PostgreSQL, AWS, Docker, GitHub Actions, and systems thinking are relevant to the platform, and the Senior-level mentorship and architecture responsibilities match your seniority. However, the core technical requirement—Elixir and Phoenix—are not in your professional background, creating a substantial gap that outweighs the otherwise favorable seniority and location fit. The agentic workflows requirement is also unproven in your profile.",
       "score_breakdown": {
@@ -2958,7 +3278,7 @@
       "url": "https://job-boards.greenhouse.io/canonical/jobs/4283003",
       "posted_at": "2026-04-01T07:19:53-04:00",
       "first_seen_at": "2026-04-10T13:15:58.489074",
-      "last_seen_at": "2026-04-10T13:15:58.489074",
+      "last_seen_at": "2026-04-11T18:47:55.082347",
       "fit_score": 42,
       "score_reasoning": "This is a management role at a respected open-source company with a familiar tech stack (Python, PostgreSQL, RabbitMQ), but it represents a significant career pivot away from your core strength and stated goal. You're a backend engineer seeking to deepen technical leadership in distributed systems at scale; this role prioritizes people management and team building over hands-on technical depth. Your 7 years of backend engineering experience and current senior backend responsibilities position you well technically, but the role is functionally a mid-level manager track (building and leading a team from scratch) rather than a senior backend IC track. The remote-first setup and Europe-compatible travel schedule align well, though the 'Home Based - Americas' location mentions create ambiguity about timezone expectations—if day-to-day overlap with Americas is required, that introduces a meaningful 5+ hour offset from Berlin. Unless you're explicitly seeking a management career transition with strong company-quality signals (Canonical is well-known but not explicitly flagged in your strategic preferences), this role pulls you away from your stated direction.",
       "score_breakdown": {
@@ -3005,7 +3325,7 @@
       "url": "https://job-boards.greenhouse.io/canonical/jobs/4706463",
       "posted_at": "2026-03-31T13:09:00-04:00",
       "first_seen_at": "2026-04-10T13:15:58.489074",
-      "last_seen_at": "2026-04-10T13:15:58.489074",
+      "last_seen_at": "2026-04-11T18:47:55.082347",
       "fit_score": 42,
       "score_reasoning": "While the EMEA-remote setup and seniority level align well with your profile, this role has a fundamental domain mismatch with your core strength and stated career direction. The position emphasizes Linux kernel, bootloader development (u-boot), system firmware, ARM/non-x86 platform engineering, and low-level debugging—specialized embedded systems work. Your 7 years of experience is in application-level backend services, distributed microservices architecture, and Python/Go platform engineering. Though you have Python and Linux familiarity, your expertise is not in kernel-level, bootloader, or hardware bring-up domains. This would require a substantial pivot away from your stated goal of deepening technical leadership in high-scale distributed systems at the application layer. The role sits awkwardly between viable location/seniority and a significant skills/career direction gap, placing it in the 'low fit' category rather than outright skip.",
       "score_breakdown": {
@@ -3051,7 +3371,7 @@
       "url": "https://abnormal.ai/careers/jobs/6593836003?gh_jid=6593836003",
       "posted_at": "2026-04-03T11:31:53-04:00",
       "first_seen_at": "2026-04-10T13:15:58.489074",
-      "last_seen_at": "2026-04-10T13:15:58.489074",
+      "last_seen_at": "2026-04-11T18:47:55.082347",
       "fit_score": 42,
       "score_reasoning": "Location is good—remote UK is compatible with your Berlin timezone and explicitly in your target regions. You have strong technical overlap with the required skills: Kafka/streaming data systems (Spark, MapReduce), distributed systems at scale, Python backend experience, and working with external APIs. However, this role is significantly below your level. The posting targets 3–5 years of experience and explicitly positions you as a builder learning from senior engineers; you have 7 years and current senior-level ownership. The profile acknowledges 'scrappy startup uncertainty' and asks you to 'occasionally do non-backend work'—a step down from the technical leadership and architecture focus you're seeking. Additionally, the role is heavy on streaming data ingestion and ATO platform infrastructure rather than the high-scale microservices architecture and systems leadership you're targeting. This is a viable backend role but represents backward career progression.",
       "score_breakdown": {
@@ -3097,7 +3417,7 @@
       "url": "https://databricks.com/company/careers/open-positions/job?gh_jid=8374611002",
       "posted_at": "2026-04-09T16:51:24-04:00",
       "first_seen_at": "2026-04-10T13:15:58.489074",
-      "last_seen_at": "2026-04-10T13:15:58.489074",
+      "last_seen_at": "2026-04-11T18:47:55.082347",
       "fit_score": 42,
       "score_reasoning": "Your distributed systems and high-scale systems experience aligns with the role's focus on reliability and large-scale infrastructure, and the seniority level matches your staff-level aspirations. However, the role requires 8+ years of production experience in Java, Scala, or C++ — a core tech mismatch, as your primary languages are Python and Go. London is in a compatible timezone (CET/CEST ±0h overlap) and in your target region (UK), but the posting does not explicitly state remote work eligibility, creating ambiguity around whether this is on-site, hybrid, or fully remote. Your remote-first preference and past hybrid experience anchored to Berlin add uncertainty.",
       "score_breakdown": {
@@ -3133,6 +3453,281 @@
       "company_quality_signals": []
     },
     {
+      "id": 27620,
+      "ats_platform": "lever",
+      "company_slug": "cprime",
+      "company_name": "Cprime",
+      "title": "Senior Cloud Engineer",
+      "location": "Chennai, Tamil Nadu",
+      "url": "https://jobs.lever.co/cprime/444e60d7-32ff-42ff-9746-63958d25bbf6",
+      "posted_at": null,
+      "first_seen_at": "2026-04-11T18:47:55.082347",
+      "last_seen_at": "2026-04-11T18:47:55.082347",
+      "fit_score": 39,
+      "score_reasoning": "Your AWS and Docker experience, combined with your CI/CD and infrastructure background, align well with the core technical requirements for this Senior Cloud Engineer role at Cprime. However, the position is based in Chennai, India, which creates a severe timezone mismatch (approximately +4.5 hours ahead of Berlin) and is on-site only with no explicit remote work option mentioned. This geographic constraint is a critical blocker—your stated preference is fully remote with European timezone overlap, making this role incompatible with your location and work-setup requirements. While the company's consulting credentials and scale-up focus carry positive signals for your career trajectory, the location incompatibility overrides technical and seniority fit.",
+      "score_breakdown": {
+        "dimensions": {
+          "tech_stack_match": 72,
+          "seniority_match": 75,
+          "remote_location_fit": 15,
+          "growth_potential": 65
+        },
+        "key_matches": [
+          "AWS infrastructure",
+          "CI/CD automation",
+          "DevOps/cloud operations",
+          "Scalability & reliability",
+          "Infrastructure as Code"
+        ],
+        "red_flags": [
+          "On-site role in Chennai, India—no remote flexibility mentioned",
+          "Severe timezone mismatch (±4.5h from Berlin, exceeds your >5h reject threshold)",
+          "Role emphasizes DevOps/platform operations over backend distributed systems (secondary fit to core career direction)",
+          "Limited evidence the role involves Python/Go microservices architecture—primary focus appears infrastructure/cloud operations"
+        ],
+        "fit_category": "",
+        "apply_priority": "skip"
+      },
+      "scored_at": "2026-04-11T18:48:05.657628",
+      "status": "scored",
+      "dismissal_reason": null,
+      "match_tier": "signal_match",
+      "salary": null,
+      "salary_min": null,
+      "salary_max": null,
+      "salary_currency": null,
+      "is_sparse": false,
+      "company_quality_signals": []
+    },
+    {
+      "id": 27615,
+      "ats_platform": "lever",
+      "company_slug": "aircall",
+      "company_name": "Aircall",
+      "title": "Senior Backend Engineer",
+      "location": "Madrid Office",
+      "url": "https://jobs.lever.co/aircall/9f292a2f-2079-4fa9-a90b-299875879140",
+      "posted_at": null,
+      "first_seen_at": "2026-04-11T18:47:55.082347",
+      "last_seen_at": "2026-04-11T18:47:55.082347",
+      "fit_score": 39,
+      "score_reasoning": "Your 7 years of distributed systems experience, Python/Go expertise, and proven track record at scale-ups (Velox, Stackflo) align directly with the Senior Backend Engineer title and responsibilities for designing business-critical features. Aircall's unicorn status and AI-driven product architecture provide strong growth potential and CV value. However, the Madrid office location without explicit remote work flexibility creates a critical geographic barrier—you are based in Berlin with a preference for remote work and location-flexible hybrid options. The 1,400+ km distance and relocation requirement make this role impractical despite strong technical and seniority fit.",
+      "score_breakdown": {
+        "dimensions": {
+          "tech_stack_match": 78,
+          "seniority_match": 85,
+          "remote_location_fit": 25,
+          "growth_potential": 78
+        },
+        "key_matches": [
+          "Backend services architecture",
+          "AWS infrastructure",
+          "Distributed systems design",
+          "Python/Go production experience"
+        ],
+        "red_flags": [
+          "On-site Madrid role, no remote option stated, significant relocation barrier",
+          "Despite unicorn brand and strong technical fit, geographic constraint is disqualifying"
+        ],
+        "fit_category": "",
+        "apply_priority": "skip"
+      },
+      "scored_at": "2026-04-11T18:48:16.509836",
+      "status": "scored",
+      "dismissal_reason": null,
+      "match_tier": "high_confidence",
+      "salary": null,
+      "salary_min": null,
+      "salary_max": null,
+      "salary_currency": null,
+      "is_sparse": false,
+      "company_quality_signals": []
+    },
+    {
+      "id": 27612,
+      "ats_platform": "lever",
+      "company_slug": "aircall",
+      "company_name": "Aircall",
+      "title": "Infrastructure Engineer",
+      "location": "London Office",
+      "url": "https://jobs.lever.co/aircall/8c3375f6-3a90-4c43-84ea-e345d857e90e",
+      "posted_at": null,
+      "first_seen_at": "2026-04-11T18:47:55.082347",
+      "last_seen_at": "2026-04-11T18:47:55.082347",
+      "fit_score": 39,
+      "score_reasoning": "Your AWS and infrastructure experience aligns with the core AWS requirement, and your Docker/ECS background is relevant to cloud operations. However, the title is 'Infrastructure Engineer' rather than 'Senior Backend Engineer,' suggesting a mid-level focus on cloud operations and maintenance rather than the architectural ownership you're targeting. The London office location without explicit remote confirmation creates a timezone issue (±2h offset from Berlin) and contradicts your remote-first preference; while Aircall has distributed teams, the posting specifies 'London Office,' implying on-site or hybrid anchor. Your background emphasizes building distributed systems and microservices, not pure infrastructure operations, creating a potential role-fit gap. The growth potential is modest for a backend-focused engineer seeking high-scale system design leadership.",
+      "score_breakdown": {
+        "dimensions": {
+          "tech_stack_match": 70,
+          "seniority_match": 65,
+          "remote_location_fit": 25,
+          "growth_potential": 45
+        },
+        "key_matches": [
+          "AWS infrastructure",
+          "Cloud operations",
+          "Docker experience",
+          "Scalable platform"
+        ],
+        "red_flags": [
+          "Infrastructure Engineer title—lower seniority than target Senior Backend Engineer",
+          "London office location without remote clarity—conflicts with your remote-first preference",
+          "Operations-focused role—less alignment with your distributed systems and architecture expertise",
+          "No mention of Python, Go, or backend framework experience"
+        ],
+        "fit_category": "",
+        "apply_priority": "skip"
+      },
+      "scored_at": "2026-04-11T18:48:14.424141",
+      "status": "scored",
+      "dismissal_reason": null,
+      "match_tier": "signal_match",
+      "salary": null,
+      "salary_min": null,
+      "salary_max": null,
+      "salary_currency": null,
+      "is_sparse": false,
+      "company_quality_signals": []
+    },
+    {
+      "id": 27455,
+      "ats_platform": "lever",
+      "company_slug": "spotify",
+      "company_name": "Spotify",
+      "title": "Backend Engineer, Podcast",
+      "location": "New York, NY",
+      "url": "https://jobs.lever.co/spotify/454e6013-78ca-4009-9ad4-7597f2045d0a",
+      "posted_at": null,
+      "first_seen_at": "2026-04-11T18:47:55.082347",
+      "last_seen_at": "2026-04-11T18:47:55.082347",
+      "fit_score": 39,
+      "score_reasoning": "Your core expertise in distributed systems, microservices architecture, and high-scale platform design directly aligns with Mission Control's work on the Distribution API and content processing pipelines. Your Python/Go stack, AWS infrastructure knowledge, and proven ability to scale systems (4M+ events/day microservice) match the role's infrastructure and platform demands. The focus on creator-facing APIs and emerging AI-driven infrastructure also supports your growth trajectory in backend leadership. However, the New York location with no remote flexibility stated creates a critical blocker — you're Berlin-based with a 6-hour timezone gap that exceeds your rejection threshold. Seniority is unmarked in the title, suggesting mid-level positioning.",
+      "score_breakdown": {
+        "dimensions": {
+          "tech_stack_match": 70,
+          "seniority_match": 60,
+          "remote_location_fit": 15,
+          "growth_potential": 68
+        },
+        "key_matches": [
+          "Microservices architecture",
+          "Content distribution platform",
+          "High-scale APIs",
+          "Data pipelines",
+          "Backend infrastructure"
+        ],
+        "red_flags": [
+          "On-site position in New York (6+ hour timezone mismatch)",
+          "No remote flexibility mentioned",
+          "Seniority level ambiguous; title lacks 'Senior' designation"
+        ],
+        "fit_category": "",
+        "apply_priority": "skip"
+      },
+      "scored_at": "2026-04-11T18:48:22.292497",
+      "status": "scored",
+      "dismissal_reason": null,
+      "match_tier": "signal_match",
+      "salary": null,
+      "salary_min": null,
+      "salary_max": null,
+      "salary_currency": null,
+      "is_sparse": false,
+      "company_quality_signals": []
+    },
+    {
+      "id": 27454,
+      "ats_platform": "lever",
+      "company_slug": "spotify",
+      "company_name": "Spotify",
+      "title": "Backend Engineer, Music",
+      "location": "New York, NY",
+      "url": "https://jobs.lever.co/spotify/52fe2b49-3c85-4479-b1db-2c5ab74cbcfc",
+      "posted_at": null,
+      "first_seen_at": "2026-04-11T18:47:55.082347",
+      "last_seen_at": "2026-04-11T18:47:55.082347",
+      "fit_score": 39,
+      "score_reasoning": "Your distributed systems, microservices, and optimization expertise (Python, Go, high-scale systems, AWS) maps onto OASIS's promotion delivery platform and infrastructure challenges. The work on balancing competing objectives at scale and collaborating with data teams aligns with your proven systems-thinking demonstrated through zero-downtime migrations at Velox. However, the role is based in New York with no remote flexibility mentioned, creating a critical 6-hour timezone mismatch that exceeds your stated threshold and conflicts with your Berlin-based, remote-first preference. Seniority is ambiguous from the title alone, though 'Backend Engineer' without senior prefix may signal mid-level rather than senior scope.",
+      "score_breakdown": {
+        "dimensions": {
+          "tech_stack_match": 68,
+          "seniority_match": 60,
+          "remote_location_fit": 15,
+          "growth_potential": 65
+        },
+        "key_matches": [
+          "High-scale systems",
+          "Microservices infrastructure",
+          "Distributed platform",
+          "Backend optimization",
+          "Cross-team collaboration"
+        ],
+        "red_flags": [
+          "On-site position in New York (6+ hour timezone mismatch)",
+          "No remote work indicated",
+          "Seniority level unclear; title suggests mid-level without 'Senior' prefix"
+        ],
+        "fit_category": "",
+        "apply_priority": "skip"
+      },
+      "scored_at": "2026-04-11T18:48:22.290793",
+      "status": "scored",
+      "dismissal_reason": null,
+      "match_tier": "signal_match",
+      "salary": null,
+      "salary_min": null,
+      "salary_max": null,
+      "salary_currency": null,
+      "is_sparse": false,
+      "company_quality_signals": []
+    },
+    {
+      "id": 27452,
+      "ats_platform": "lever",
+      "company_slug": "spotify",
+      "company_name": "Spotify",
+      "title": "Backend Engineer - Advertising",
+      "location": "New York, NY",
+      "url": "https://jobs.lever.co/spotify/1689082c-9265-431f-9e55-ef7666e41283",
+      "posted_at": null,
+      "first_seen_at": "2026-04-11T18:47:55.082347",
+      "last_seen_at": "2026-04-11T18:47:55.082347",
+      "fit_score": 39,
+      "score_reasoning": "You have strong backend and distributed systems expertise that aligns well with Spotify's advertising platform challenges (Python, Go, microservices, scale). However, this role is based in New York with no indication of remote eligibility, creating a critical location mismatch — you're Berlin-based and prefer remote or local hybrid work, and the 6-hour timezone difference exceeds your stated rejection threshold. The seniority level is unclear from the title alone, though responsibilities suggest mid-to-senior scope. While the high-scale distributed systems and data pipeline work align with your career direction, the geographic constraint is a hard blocker.",
+      "score_breakdown": {
+        "dimensions": {
+          "tech_stack_match": 70,
+          "seniority_match": 65,
+          "remote_location_fit": 15,
+          "growth_potential": 60
+        },
+        "key_matches": [
+          "Distributed systems",
+          "Scalable backend services",
+          "High-scale platforms",
+          "Microservices",
+          "Data pipelines"
+        ],
+        "red_flags": [
+          "On-site position in New York (6+ hour timezone mismatch from Berlin)",
+          "No remote work mentioned",
+          "Seniority level unclear from posting"
+        ],
+        "fit_category": "",
+        "apply_priority": "skip"
+      },
+      "scored_at": "2026-04-11T18:48:22.287208",
+      "status": "scored",
+      "dismissal_reason": null,
+      "match_tier": "signal_match",
+      "salary": null,
+      "salary_min": null,
+      "salary_max": null,
+      "salary_currency": null,
+      "is_sparse": false,
+      "company_quality_signals": []
+    },
+    {
       "id": 279,
       "ats_platform": "lever",
       "company_slug": "outreach",
@@ -3142,7 +3737,7 @@
       "url": "https://jobs.lever.co/outreach/3501f656-3523-4ecf-9de7-150a2c0f341f",
       "posted_at": null,
       "first_seen_at": "2026-04-10T13:15:58.489074",
-      "last_seen_at": "2026-04-10T13:15:58.489074",
+      "last_seen_at": "2026-04-11T18:47:55.082347",
       "fit_score": 39,
       "score_reasoning": "Your distributed systems and microservices background align well with Outreach's cloud-native, service-oriented platform—the tech stack (Python/Go, AWS, Docker, observability) maps directly to the backend challenges described. However, the role is anchored to Hyderabad with in-office collaboration requirements, which is a hard location mismatch: you're based in Berlin, remote-first, and explicitly not open to on-site work outside your location. Even with 'remote-friendly' language, planned in-office time in Hyderabad makes this impractical for your setup. The seniority is also above your current level: Staff-level roles typically require 12+ years and broader organizational/systems architecture scope; you have 7 years of strong senior engineer experience, which is a real step below Staff. The growth opportunity is strong (high-scale systems, forecasting architecture), but the location barrier dominates.",
       "score_breakdown": {
@@ -3178,631 +3773,10 @@
       "salary_currency": null,
       "is_sparse": false,
       "company_quality_signals": []
-    },
-    {
-      "id": 277,
-      "ats_platform": "lever",
-      "company_slug": "hive",
-      "company_name": "Hive",
-      "title": "Senior Site Reliability Engineer",
-      "location": "San Francisco",
-      "url": "https://jobs.lever.co/hive/df14cc7c-4ff1-4d5e-8574-db1d180b5eb2",
-      "posted_at": null,
-      "first_seen_at": "2026-04-10T13:15:58.489074",
-      "last_seen_at": "2026-04-10T13:15:58.489074",
-      "fit_score": 39,
-      "score_reasoning": "Your experience as a backend engineer building distributed microservices in Python and Go is a strong foundation, but this role is a Senior Site Reliability Engineer focused on DevOps, infrastructure automation, and on-premise data center management—a significant domain shift from your core backend development trajectory. While you have relevant infrastructure exposure (Docker, AWS ECS, Terraform basics, GitHub Actions), the role emphasizes SRE practices, distributed high-performance computing with GPUs, and on-premise data center operations, areas where you lack specific production experience. Most critically, the position is on-site only in San Francisco, which directly conflicts with your remote-first preference and Berlin base; a >5 hour timezone mismatch and mandatory US presence make this unworkable for your location constraints.",
-      "score_breakdown": {
-        "dimensions": {
-          "tech_stack_match": 55,
-          "seniority_match": 75,
-          "remote_location_fit": 15,
-          "growth_potential": 50
-        },
-        "key_matches": [
-          "Distributed systems thinking",
-          "Infrastructure automation",
-          "Cloud/hybrid infrastructure",
-          "Observability and monitoring",
-          "Scale operations"
-        ],
-        "red_flags": [
-          "On-site only in San Francisco—conflicts with remote-first preference and Berlin base",
-          ">5 hour timezone mismatch (PST vs CET)",
-          "SRE/DevOps domain shift from core backend engineering",
-          "GPU/HPC infrastructure focus not in your background",
-          "On-premise data center emphasis vs. your AWS-cloud experience",
-          "No explicit mention of backend development or microservices ownership"
-        ],
-        "fit_category": "",
-        "apply_priority": "skip"
-      },
-      "scored_at": "2026-04-10T13:59:49.417638",
-      "status": "scored",
-      "dismissal_reason": null,
-      "match_tier": "signal_match",
-      "salary": null,
-      "salary_min": null,
-      "salary_max": null,
-      "salary_currency": null,
-      "is_sparse": false,
-      "company_quality_signals": []
-    },
-    {
-      "id": 276,
-      "ats_platform": "lever",
-      "company_slug": "hive",
-      "company_name": "Hive",
-      "title": "Senior Site Reliability Engineer",
-      "location": "Seattle",
-      "url": "https://jobs.lever.co/hive/cf634738-c7db-471d-8b81-e55809980b89",
-      "posted_at": null,
-      "first_seen_at": "2026-04-10T13:15:58.489074",
-      "last_seen_at": "2026-04-10T13:15:58.489074",
-      "fit_score": 39,
-      "score_reasoning": "You have strong foundational infrastructure and observability skills (Docker, GitHub Actions, AWS, Terraform, OpenTelemetry) that partially align with SRE work, but this role emphasizes data center operations, GPU infrastructure, and large-scale distributed systems that go beyond your current backend-focused experience. More critically, the role is based in Seattle with no explicit remote option stated, creating a severe location mismatch from your Berlin base with a ~9h timezone gap — well above your 5h rejection threshold. While your seniority and systems thinking are appropriate for a Senior SRE title, the location and the adjacent-domain shift (SRE vs. Backend Engineer) combine to make this role a poor fit despite the company's strong brand and scale.",
-      "score_breakdown": {
-        "dimensions": {
-          "tech_stack_match": 55,
-          "seniority_match": 75,
-          "remote_location_fit": 15,
-          "growth_potential": 48
-        },
-        "key_matches": [
-          "Docker containerization",
-          "AWS infrastructure",
-          "Observability (OpenTelemetry, Prometheus)",
-          "GitHub Actions CI/CD",
-          "Terraform IaC",
-          "Distributed systems"
-        ],
-        "red_flags": [
-          "On-site or unclear remote status in Seattle — 9h timezone mismatch from Berlin base exceeds your 5h hard threshold",
-          "SRE/DevOps focus differs from core backend engineer trajectory; role emphasizes data center operations and GPU infrastructure rather than application architecture",
-          "No Kubernetes experience mentioned, which is typically central to modern SRE roles",
-          "Limited evidence of production infrastructure-as-code work beyond basic Terraform; role may require deeper IaC expertise",
-          "Data center and GPU optimization are outside your demonstrated domain; growth potential is limited if you are targeting backend/distributed systems depth"
-        ],
-        "fit_category": "",
-        "apply_priority": "skip"
-      },
-      "scored_at": "2026-04-10T13:59:49.415882",
-      "status": "scored",
-      "dismissal_reason": null,
-      "match_tier": "signal_match",
-      "salary": null,
-      "salary_min": null,
-      "salary_max": null,
-      "salary_currency": null,
-      "is_sparse": false,
-      "company_quality_signals": []
-    },
-    {
-      "id": 270,
-      "ats_platform": "greenhouse",
-      "company_slug": "via",
-      "company_name": "Via",
-      "title": "Senior Platform Engineer",
-      "location": "Tel Aviv",
-      "url": "https://job-boards.greenhouse.io/via/jobs/8171972002",
-      "posted_at": "2025-09-17T11:43:24-04:00",
-      "first_seen_at": "2026-04-10T13:15:58.489074",
-      "last_seen_at": "2026-04-10T13:15:58.489074",
-      "fit_score": 39,
-      "score_reasoning": "Your backend foundation in Python, Go, Docker, and AWS aligns well with the infrastructure and platform aspects of this role. However, the job heavily emphasizes Kubernetes (2+ years required), which is a confirmed critical gap in your CV—you have only basic Docker experience. The Tel Aviv location with hybrid setup centered on-site creates a major location mismatch: you are Berlin-based, remote-first, and the role specifies hybrid work in Tel Aviv (5+ hour timezone difference, cross-border, and requires physical office presence). This falls well below your stated location and work setup constraints. While the Platform Engineer title is adjacent to your backend track record and the company (Via) carries meaningful brand value in transportation tech, the location constraint alone makes this role impractical for your current setup.",
-      "score_breakdown": {
-        "dimensions": {
-          "tech_stack_match": 65,
-          "seniority_match": 70,
-          "remote_location_fit": 15,
-          "growth_potential": 55
-        },
-        "key_matches": [
-          "AWS infrastructure",
-          "CI/CD automation",
-          "Microservices architecture",
-          "Docker containerization",
-          "Distributed systems"
-        ],
-        "red_flags": [
-          "Kubernetes is a primary requirement (2+ years) but you have only basic Docker experience—significant tech gap",
-          "On-site hybrid role based in Tel Aviv; you are Berlin-based with remote-first preference",
-          "5+ hour timezone mismatch (Tel Aviv UTC+2/+3 vs Berlin UTC+1/+2)",
-          "Platform engineering is adjacent to your core backend focus; lower seniority than senior backend engineer"
-        ],
-        "fit_category": "",
-        "apply_priority": "skip"
-      },
-      "scored_at": "2026-04-10T13:58:58.424085",
-      "status": "scored",
-      "dismissal_reason": null,
-      "match_tier": "signal_match",
-      "salary": null,
-      "salary_min": null,
-      "salary_max": null,
-      "salary_currency": null,
-      "is_sparse": false,
-      "company_quality_signals": []
-    },
-    {
-      "id": 269,
-      "ats_platform": "greenhouse",
-      "company_slug": "via",
-      "company_name": "Via",
-      "title": "Senior Backend Engineer ",
-      "location": "Tel Aviv",
-      "url": "https://job-boards.greenhouse.io/via/jobs/7992214002",
-      "posted_at": "2025-09-17T11:41:24-04:00",
-      "first_seen_at": "2026-04-10T13:15:58.489074",
-      "last_seen_at": "2026-04-10T13:15:58.489074",
-      "fit_score": 39,
-      "score_reasoning": "Your technical profile is a strong match for the Senior Backend Engineer role—7 years of Python/Go production experience, proven microservices architecture expertise, and scaling distributed systems directly align with Via's requirements. The seniority level and emphasis on system design, mentorship, and end-to-end ownership fit your career trajectory well. However, the role is based in Tel Aviv with hybrid work anchored there, which creates a significant geographic and timezone mismatch. The job does not explicitly state remote flexibility, and Tel Aviv is 7+ hours ahead of Berlin—well beyond your strict ±2h timezone preference and your remote-first setup requirement. Unless you are open to on-site or hybrid work in Israel, this role is not viable despite strong technical and seniority alignment.",
-      "score_breakdown": {
-        "dimensions": {
-          "tech_stack_match": 78,
-          "seniority_match": 85,
-          "remote_location_fit": 25,
-          "growth_potential": 75
-        },
-        "key_matches": [
-          "Python/Go microservices",
-          "Distributed systems",
-          "System design leadership",
-          "Production scaling",
-          "Mentorship & technical leadership"
-        ],
-        "red_flags": [
-          "Location is Tel Aviv, not Europe—7+ hour timezone mismatch from Berlin",
-          "Hybrid role anchored to Tel Aviv office; no explicit remote flexibility stated",
-          "Conflicts with your stated preference for remote-first setup and Europe/UK/Switzerland regions",
-          "Would require relocation or frequent on-site presence in Israel"
-        ],
-        "fit_category": "",
-        "apply_priority": "skip"
-      },
-      "scored_at": "2026-04-10T13:58:58.422065",
-      "status": "scored",
-      "dismissal_reason": null,
-      "match_tier": "signal_match",
-      "salary": null,
-      "salary_min": null,
-      "salary_max": null,
-      "salary_currency": null,
-      "is_sparse": false,
-      "company_quality_signals": []
-    },
-    {
-      "id": 268,
-      "ats_platform": "greenhouse",
-      "company_slug": "via",
-      "company_name": "Via",
-      "title": "Senior Backend Engineer",
-      "location": "New York City, New York",
-      "url": "https://job-boards.greenhouse.io/via/jobs/8321613002",
-      "posted_at": "2026-03-10T15:51:08-04:00",
-      "first_seen_at": "2026-04-10T13:15:58.489074",
-      "last_seen_at": "2026-04-10T13:15:58.489074",
-      "fit_score": 39,
-      "score_reasoning": "Your backend expertise in Python, Go, and distributed systems aligns well with Via's Platform Group focus on scalable infrastructure and microservices. The Senior title and responsibilities (architecture, infrastructure standards, system design) match your current level and career trajectory toward technical leadership. However, the role requires on-site presence 2-3 days/week in NYC, which conflicts significantly with your strong remote-first preference and Berlin base — a >5h timezone mismatch from your ideal overlap window. While the transportation/scale-up domain and AWS/Kubernetes infrastructure work are attractive growth signals, the location constraint is a material blocker for your work setup priorities.",
-      "score_breakdown": {
-        "dimensions": {
-          "tech_stack_match": 72,
-          "seniority_match": 85,
-          "remote_location_fit": 28,
-          "growth_potential": 75
-        },
-        "key_matches": [
-          "Backend systems design",
-          "Distributed systems",
-          "Cloud infrastructure (AWS)",
-          "Kubernetes & Docker",
-          "CI/CD pipelines",
-          "API development",
-          "System reliability"
-        ],
-        "red_flags": [
-          "Hybrid on-site 2-3 days/week in NYC (>5h timezone offset from Berlin base)",
-          "Kubernetes required; your experience limited to Docker",
-          "US-based role conflicts with Europe-first location preference"
-        ],
-        "fit_category": "",
-        "apply_priority": "skip"
-      },
-      "scored_at": "2026-04-10T13:58:58.420344",
-      "status": "scored",
-      "dismissal_reason": null,
-      "match_tier": "signal_match",
-      "salary": "$180,000 - $220,000 per year",
-      "salary_min": 100,
-      "salary_max": 100,
-      "salary_currency": "USD",
-      "is_sparse": false,
-      "company_quality_signals": []
-    },
-    {
-      "id": 267,
-      "ats_platform": "greenhouse",
-      "company_slug": "via",
-      "company_name": "Via",
-      "title": "Backend Engineer ",
-      "location": "Tel Aviv",
-      "url": "https://job-boards.greenhouse.io/via/jobs/7986188002",
-      "posted_at": "2025-09-17T11:32:55-04:00",
-      "first_seen_at": "2026-04-10T13:15:58.489074",
-      "last_seen_at": "2026-04-10T13:15:58.489074",
-      "fit_score": 39,
-      "score_reasoning": "Your Python and Go experience align well with Via's backend stack, and their microservices-heavy architecture directly matches your distributed systems expertise. However, the role is based in Tel Aviv with hybrid work anchored there—a significant geographic mismatch for your Berlin base and remote-first preference. While the company (transportation/scale-up) fits your target industries, the location constraint and slightly below-target seniority (3+ years vs. your senior-level trajectory) lower the overall fit. The work is meaningful and scalable, but the timezone and commute barriers make this a poor practical match despite the technical alignment.",
-      "score_breakdown": {
-        "dimensions": {
-          "tech_stack_match": 75,
-          "seniority_match": 55,
-          "remote_location_fit": 15,
-          "growth_potential": 65
-        },
-        "key_matches": [
-          "Microservices Architecture",
-          "Python/Go Stack",
-          "Distributed Systems",
-          "End-to-End Ownership",
-          "High-Scale Systems"
-        ],
-        "red_flags": [
-          "On-site hybrid anchored to Tel Aviv, not remote-compatible with Berlin base",
-          ">5h timezone mismatch (Israel UTC+2/+3 vs. Germany UTC+1/+2)",
-          "Seniority titled 'Backend Engineer' (mid-level) vs. your senior-level current role",
-          "No explicit mention of AWS or modern cloud infrastructure in job description"
-        ],
-        "fit_category": "",
-        "apply_priority": "skip"
-      },
-      "scored_at": "2026-04-10T13:58:58.418321",
-      "status": "scored",
-      "dismissal_reason": null,
-      "match_tier": "signal_match",
-      "salary": null,
-      "salary_min": null,
-      "salary_max": null,
-      "salary_currency": null,
-      "is_sparse": false,
-      "company_quality_signals": []
-    },
-    {
-      "id": 223,
-      "ats_platform": "greenhouse",
-      "company_slug": "taboola",
-      "company_name": "Taboola",
-      "title": "Senior Backend Engineer",
-      "location": "Tel Aviv, Israel",
-      "url": "https://www.taboola.com/careers/job/5791961?gh_jid=5791961",
-      "posted_at": "2026-03-24T13:07:40-04:00",
-      "first_seen_at": "2026-04-10T13:15:58.489074",
-      "last_seen_at": "2026-04-10T13:15:58.489074",
-      "fit_score": 39,
-      "score_reasoning": "Your background in Python and Go distributed systems is strong, but this role's primary stack is Java/Spring—a significant gap not present in your CV. While you have relevant experience with Kafka, Docker, and high-scale systems (40TB/day, hundreds of thousands RPS align with your 4M+ events/day work), the on-site requirement in Tel Aviv creates a hard location blocker that disqualifies the role regardless of technical fit. The hybrid schedule mentions 3 days in-office, which is incompatible with your Berlin base and remote-first preference, placing you >3 hours from the company's timezone and requiring physical presence you cannot commute to.",
-      "score_breakdown": {
-        "dimensions": {
-          "tech_stack_match": 35,
-          "seniority_match": 70,
-          "remote_location_fit": 15,
-          "growth_potential": 60
-        },
-        "key_matches": [
-          "Distributed systems at scale",
-          "Kafka experience",
-          "Docker",
-          "High-throughput infrastructure",
-          "NoSQL databases (Cassandra)"
-        ],
-        "red_flags": [
-          "Primary language is Java; your experience is Python/Go",
-          "On-site hybrid in Tel Aviv (3 days/week required)",
-          "Location far outside acceptable regions (Israel vs. Europe/UK/Switzerland)",
-          ">5h timezone mismatch from Berlin",
-          "Spring/Java ecosystem is not in your core stack"
-        ],
-        "fit_category": "",
-        "apply_priority": "skip"
-      },
-      "scored_at": "2026-04-10T13:57:17.024809",
-      "status": "scored",
-      "dismissal_reason": null,
-      "match_tier": "signal_match",
-      "salary": null,
-      "salary_min": null,
-      "salary_max": null,
-      "salary_currency": null,
-      "is_sparse": false,
-      "company_quality_signals": []
-    },
-    {
-      "id": 222,
-      "ats_platform": "greenhouse",
-      "company_slug": "taboola",
-      "company_name": "Taboola",
-      "title": "Experienced Backend Engineer",
-      "location": "Tel Aviv, Israel",
-      "url": "https://www.taboola.com/careers/job/7116045?gh_jid=7116045",
-      "posted_at": "2026-03-24T13:07:40-04:00",
-      "first_seen_at": "2026-04-10T13:15:58.489074",
-      "last_seen_at": "2026-04-10T13:15:58.489074",
-      "fit_score": 39,
-      "score_reasoning": "Your experience with Python and Go distributed systems is a strong foundation, but Taboola's primary stack centers on Java and Spring, which you don't have commercial experience with—this represents a significant core tech gap and limits your ability to hit the ground running. The role itself (titled 'Experienced') aligns with your current mid-to-senior level, but the on-site requirement in Tel Aviv, Israel (9+ hours ahead of Berlin) creates a hard location barrier that conflicts with your remote-first preference and ±2h timezone overlap requirement. While the high-scale distributed systems work (140TB/day, real-time big data) matches your career goals, the location mismatch and Java/Spring requirement together disqualify this role from serious consideration.",
-      "score_breakdown": {
-        "dimensions": {
-          "tech_stack_match": 35,
-          "seniority_match": 60,
-          "remote_location_fit": 15,
-          "growth_potential": 50
-        },
-        "key_matches": [
-          "Distributed systems",
-          "High-scale infrastructure",
-          "Real-time data processing"
-        ],
-        "red_flags": [
-          "Primary language is Java/Spring; you have no commercial Java experience",
-          "On-site only in Tel Aviv, Israel—9+ hour timezone difference from Berlin",
-          "No explicit remote option despite hybrid being mentioned in benefits",
-          "Hybrid is anchored to Tel Aviv office, not Berlin"
-        ],
-        "fit_category": "",
-        "apply_priority": "skip"
-      },
-      "scored_at": "2026-04-10T13:57:17.023261",
-      "status": "scored",
-      "dismissal_reason": null,
-      "match_tier": "signal_match",
-      "salary": null,
-      "salary_min": null,
-      "salary_max": null,
-      "salary_currency": null,
-      "is_sparse": false,
-      "company_quality_signals": []
-    },
-    {
-      "id": 213,
-      "ats_platform": "greenhouse",
-      "company_slug": "sigmacomputing",
-      "company_name": "Sigma Computing",
-      "title": "Senior Software Engineer - Backend",
-      "location": "New York City, NY",
-      "url": "https://job-boards.greenhouse.io/sigmacomputing/jobs/7690390003",
-      "posted_at": "2026-04-06T01:27:04-04:00",
-      "first_seen_at": "2026-04-10T13:15:58.489074",
-      "last_seen_at": "2026-04-10T13:15:58.489074",
-      "fit_score": 39,
-      "score_reasoning": "Your 7 years of distributed systems experience in Python and Go is strong, and Sigma's backend focus on microservices, APIs, and cloud infrastructure aligns well with your core strengths. However, this role has two critical blockers: (1) it explicitly requires on-site presence in New York City with no remote flexibility ('in-office work environment'), which directly conflicts with your remote-first location preference anchored to Berlin; (2) Rust and Kubernetes are listed as primary build languages/tools, and while Kubernetes is a known gap for you, the on-site NYC requirement is the dominant disqualifier. The senior title matches your trajectory, and the scale (high-growth, Series D company) aligns with your target industries, but the location constraint makes this role unworkable.",
-      "score_breakdown": {
-        "dimensions": {
-          "tech_stack_match": 55,
-          "seniority_match": 75,
-          "remote_location_fit": 15,
-          "growth_potential": 65
-        },
-        "key_matches": [
-          "Distributed systems",
-          "Backend microservices",
-          "API design",
-          "Cloud infrastructure",
-          "Data systems"
-        ],
-        "red_flags": [
-          "On-site only in NYC — explicitly states 'in-office work environment in all our offices in SF, NYC, and London'",
-          "Kubernetes required — confirmed gap in your profile; no production K8s experience",
-          "Rust as primary language — not in your core stack (Python/Go focus); would require learning curve",
-          "US-based timezone (EST) — >5h mismatch from Berlin; no indication of async/global work culture"
-        ],
-        "fit_category": "",
-        "apply_priority": "skip"
-      },
-      "scored_at": "2026-04-10T13:58:47.638668",
-      "status": "scored",
-      "dismissal_reason": null,
-      "match_tier": "signal_match",
-      "salary": "$170k - $240k annually",
-      "salary_min": 100,
-      "salary_max": 100,
-      "salary_currency": "USD",
-      "is_sparse": false,
-      "company_quality_signals": []
-    },
-    {
-      "id": 126,
-      "ats_platform": "greenhouse",
-      "company_slug": "fireblocks",
-      "company_name": "Fireblocks",
-      "title": "Senior Backend Engineer, Platform",
-      "location": "Tel Aviv-Yafo, Tel Aviv District, Israel",
-      "url": "https://job-boards.greenhouse.io/fireblocks/jobs/4601906006",
-      "posted_at": "2026-04-07T05:42:14-04:00",
-      "first_seen_at": "2026-04-10T13:15:58.489074",
-      "last_seen_at": "2026-04-10T13:15:58.489074",
-      "fit_score": 39,
-      "score_reasoning": "You have strong backend systems experience and your microservices expertise aligns well with Fireblocks' mobile platform needs. However, the role requires Node.js/TypeScript as primary languages—you work primarily in Python/Go. More critically, the position is on-site only in Tel Aviv, Israel, which is incompatible with your Berlin-based preference and strict European timezone requirement (>7h mismatch). This location constraint is a hard blocker.",
-      "score_breakdown": {
-        "dimensions": {
-          "tech_stack_match": 55,
-          "seniority_match": 85,
-          "remote_location_fit": 15,
-          "growth_potential": 70
-        },
-        "key_matches": [
-          "Microservices architecture",
-          "High-scale systems",
-          "Distributed systems",
-          "API design",
-          "AWS infrastructure"
-        ],
-        "red_flags": [
-          "On-site only in Tel Aviv (non-negotiable location mismatch)",
-          "Node.js/TypeScript required (you are Python/Go specialist)",
-          "No Kubernetes mentioned despite distributed systems focus",
-          ">7 hour timezone difference from Berlin"
-        ],
-        "fit_category": "",
-        "apply_priority": "skip"
-      },
-      "scored_at": "2026-04-10T13:54:03.656477",
-      "status": "scored",
-      "dismissal_reason": null,
-      "match_tier": "signal_match",
-      "salary": null,
-      "salary_min": null,
-      "salary_max": null,
-      "salary_currency": null,
-      "is_sparse": false,
-      "company_quality_signals": []
-    },
-    {
-      "id": 125,
-      "ats_platform": "greenhouse",
-      "company_slug": "fireblocks",
-      "company_name": "Fireblocks",
-      "title": "Senior Backend Engineer, Key Management",
-      "location": "Tel Aviv-Yafo, Tel Aviv District, Israel",
-      "url": "https://job-boards.greenhouse.io/fireblocks/jobs/4666674006",
-      "posted_at": "2026-04-07T05:42:14-04:00",
-      "first_seen_at": "2026-04-10T13:15:58.489074",
-      "last_seen_at": "2026-04-10T13:15:58.489074",
-      "fit_score": 39,
-      "score_reasoning": "Your senior backend experience and distributed systems expertise align well with the role's core requirements—7+ years, high-scale systems, and mission-critical platforms are direct matches. Your production experience with Python, Go, Docker, AWS, and observability (OpenTelemetry, Prometheus) covers the primary tech stack. However, the role heavily emphasizes C++ systems programming, cryptography, and MPC/threshold signatures where you lack production evidence; these are presented as core to the team's work, creating a meaningful tech gap (−12 points). The critical blocker is location: the role is based in Tel Aviv, Israel with no explicit remote option stated, and your strong preference is remote or Berlin-hybrid within Europe/UK/Switzerland. This geography mismatch and timezone difference (>3h from Berlin) place remote_location_fit at 20, forcing a mandatory skip unless the company later clarifies remote flexibility. Even with company prestige (Fireblocks is a strong fintech brand), the combination of location hard stop and core crypto/C++ skill gap makes this role not viable for your current setup.",
-      "score_breakdown": {
-        "dimensions": {
-          "tech_stack_match": 68,
-          "seniority_match": 85,
-          "remote_location_fit": 20,
-          "growth_potential": 75
-        },
-        "key_matches": [
-          "Backend systems architecture",
-          "Distributed systems",
-          "High-scale platforms",
-          "Docker & AWS",
-          "Mission-critical engineering",
-          "Security mindset"
-        ],
-        "red_flags": [
-          "C++ as primary language (your background is Python/Go only)",
-          "Cryptography and MPC expertise required; no production evidence in CV",
-          "On-site/Israel-based location with no remote option explicitly stated",
-          "Timezone >3h from Berlin (significant mismatch with your ±2h preference)",
-          "Requires distributed SQL experience; your focus is PostgreSQL/MySQL (relational, strong match) but 'distributed SQL' may imply specialized systems (CockroachDB, Spanner) with limited evidence in CV"
-        ],
-        "fit_category": "",
-        "apply_priority": "skip"
-      },
-      "scored_at": "2026-04-10T13:55:05.394119",
-      "status": "scored",
-      "dismissal_reason": null,
-      "match_tier": "signal_match",
-      "salary": null,
-      "salary_min": null,
-      "salary_max": null,
-      "salary_currency": null,
-      "is_sparse": false,
-      "company_quality_signals": []
-    },
-    {
-      "id": 113,
-      "ats_platform": "greenhouse",
-      "company_slug": "calendly",
-      "company_name": "Calendly",
-      "title": "Senior Site Reliability Engineer",
-      "location": "Remote",
-      "url": "https://job-boards.greenhouse.io/calendly/jobs/8495235002",
-      "posted_at": "2026-04-09T12:25:34-04:00",
-      "first_seen_at": "2026-04-10T13:15:58.489074",
-      "last_seen_at": "2026-04-10T13:15:58.489074",
-      "fit_score": 39,
-      "score_reasoning": "This role is remote but explicitly restricted to candidates 'authorized to work lawfully in the United States'—your Berlin-based, EU-citizen profile does not meet this requirement, creating a hard geographic blocker. Beyond that, while you have Python and Go experience matching some of the development requirements, the role heavily emphasizes GCP, Kubernetes, Datadog, and cloud infrastructure patterns that go beyond your current AWS/Docker-focused background. SRE work also represents a meaningful shift from backend systems engineering toward infrastructure platform ownership, which is adjacent to but not aligned with your stated career goal of deepening technical leadership in high-scale distributed systems and backend architecture. The seniority level is appropriate, but the geographic restriction and tech-infrastructure focus make this a poor fit.",
-      "score_breakdown": {
-        "dimensions": {
-          "tech_stack_match": 55,
-          "seniority_match": 75,
-          "remote_location_fit": 15,
-          "growth_potential": 35
-        },
-        "key_matches": [
-          "Python, Go",
-          "Cloud Infrastructure",
-          "Observability",
-          "CI/CD Practices"
-        ],
-        "red_flags": [
-          "US work authorization required (you are EU citizen; visa sponsorship not available)",
-          "GCP primary (your experience is AWS-focused)",
-          "Kubernetes expertise (you have only basic Docker experience)",
-          "Datadog expertise required (you have Prometheus/Grafana background)",
-          "SRE role (platform infrastructure focus vs. backend systems goal)"
-        ],
-        "fit_category": "",
-        "apply_priority": "skip"
-      },
-      "scored_at": "2026-04-10T13:52:10.799210",
-      "status": "scored",
-      "dismissal_reason": null,
-      "match_tier": "signal_match",
-      "salary": "Tier 1: $237,630–$287,952 USD; Tier 2: $217,828–$263,956 USD; Tier 3: $198,025–$239,960 USD",
-      "salary_min": 100,
-      "salary_max": 100,
-      "salary_currency": "USD",
-      "is_sparse": false,
-      "company_quality_signals": []
-    },
-    {
-      "id": 99,
-      "ats_platform": "greenhouse",
-      "company_slug": "anaplan",
-      "company_name": "Anaplan",
-      "title": "Site Reliability Engineer",
-      "location": "Manchester, United Kingdom",
-      "url": "https://job-boards.greenhouse.io/anaplan/jobs/8161584002",
-      "posted_at": "2026-02-27T14:56:09-05:00",
-      "first_seen_at": "2026-04-10T13:15:58.489074",
-      "last_seen_at": "2026-04-10T13:15:58.489074",
-      "fit_score": 39,
-      "score_reasoning": "This SRE role mirrors the previous Anaplan posting in technical scope and location. Your observability expertise (OpenTelemetry, Prometheus, Grafana), Python/Go scripting, AWS experience, Docker containerization, Terraform knowledge, and proven incident response and reliability improvements at Velox align well with the core SRE responsibilities of automation, production platform support, and troubleshooting. However, the same material gaps apply: Linux administration as a required day-one skill is not prominently evidenced, and production Kubernetes cluster administration—beyond microservices interaction—is not confirmed in your profile. The role's seniority level appears mid-range without explicit Senior designation, placing it below your current senior-level responsibilities. The location constraint remains the dominant blocker: Manchester hybrid role with no stated remote option creates a >2h timezone mismatch and on-site requirement that directly conflicts with your remote-first preference and Berlin-anchored location flexibility. Anaplan's brand strength does not override the location constraint given your explicit preferences.",
-      "score_breakdown": {
-        "dimensions": {
-          "tech_stack_match": 68,
-          "seniority_match": 65,
-          "remote_location_fit": 20,
-          "growth_potential": 60
-        },
-        "key_matches": [
-          "Observability tooling (Prometheus, Grafana, OpenTelemetry)",
-          "Python/Go scripting",
-          "AWS infrastructure",
-          "Docker containerization",
-          "Terraform/IaC",
-          "Incident response and root-cause analysis",
-          "Production system reliability"
-        ],
-        "red_flags": [
-          "Hybrid role at Manchester; no remote option stated (conflicts with remote-first preference)",
-          "Location >2h timezone mismatch from Berlin; on-site hybrid required",
-          "Linux administration as day-one skill not prominently evidenced in CV",
-          "Production Kubernetes cluster administration required; limited confirmed ops experience",
-          "Role appears mid-level without explicit Senior title; scope below current Velox level",
-          "Event streaming technologies (Apache Pulsar, Flink) listed as desirable; no evidence"
-        ],
-        "fit_category": "",
-        "apply_priority": "skip"
-      },
-      "scored_at": "2026-04-10T13:52:16.804989",
-      "status": "scored",
-      "dismissal_reason": null,
-      "match_tier": "broad_match",
-      "salary": null,
-      "salary_min": null,
-      "salary_max": null,
-      "salary_currency": null,
-      "is_sparse": false,
-      "company_quality_signals": []
     }
   ],
-  "total": 27331,
+  "total": 28630,
   "page": 1,
-  "pages": 342,
+  "pages": 358,
   "per_page": 80
 }

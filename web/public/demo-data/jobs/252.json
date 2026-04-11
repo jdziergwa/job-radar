@@ -8,7 +8,7 @@
   "url": "https://job-boards.greenhouse.io/remotecom/jobs/7696174003",
   "posted_at": "2026-04-10T07:02:12-04:00",
   "first_seen_at": "2026-04-10T13:15:58.489074",
-  "last_seen_at": "2026-04-10T13:15:58.489074",
+  "last_seen_at": "2026-04-11T18:47:55.082347",
   "fit_score": 48,
   "score_reasoning": "Your experience with PostgreSQL, AWS, Docker, and CI/CD (GitHub Actions/GitLab) is strong, but the role's primary tech stack is Elixir and Phoenix—neither of which appear in your CV. While Elixir's functional paradigm could complement your distributed systems thinking, the lack of production experience with the core language is a significant barrier that caps your technical fit. Location-wise, France is in your acceptable European region and the role is explicitly fully remote, scoring well on remote_location_fit. The seniority and growth trajectory align, but the tech gap is too substantial for a medium or higher score.",
   "score_breakdown": {

@@ -220,8 +220,7 @@ graph TD
 | `make types` | Regenerate TypeScript types from the API spec. |
 | `make test` | Run the Python test suite. |
 | `make test-cov` | Run the Python test suite with coverage for `src/` and `api/`. |
-| `make demo-snapshot` | Export the committed static demo snapshot into `web/public/demo-data`. |
-| `make demo-refresh` | Refresh the demo snapshot using the current demo profile. |
+| `make demo-snapshot` | Export static demo files from the current contents of `data/demo.db` into `web/public/demo-data`. Run `.venv/bin/python -m src.main --profile demo --source local` first if you want fresh demo data. |
 | `make readme-header` | Regenerate the README header PNG from its HTML source. |
 | `make clean-web`| Remove the frontend node_modules and .next cache. |
 | `make clean-db`| Wipe local databases and, if Docker is running, remove `/app/data/*.db` inside the API container. |

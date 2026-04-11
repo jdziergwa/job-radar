@@ -8,7 +8,7 @@
   "url": "https://jobs.lever.co/uncountable/503ed581-d189-437a-a8ba-7e0b3e9677c6",
   "posted_at": null,
   "first_seen_at": "2026-04-10T13:15:58.489074",
-  "last_seen_at": "2026-04-10T13:15:58.489074",
+  "last_seen_at": "2026-04-11T18:47:55.082347",
   "fit_score": 48,
   "score_reasoning": "Your backend and distributed systems expertise translates partially to this role's infrastructure needs (API integration, observability, caching), but the position is heavily weighted toward Generative AI deployment, LLM optimization, and multimodal UI work—areas with no evidence in your CV. The role explicitly requires full-stack development including frontend work, which sits outside your stated focus. While Munich offers some timezone alignment (±0h), the posting lists multiple cities without clarifying remote eligibility; this ambiguity, combined with the strong US presence (NYC, SF), introduces meaningful location risk. The seniority level and title ('Platform Engineer') are roughly aligned with your current scope, but the domain shift away from distributed systems and toward AI-first product development misaligns with your stated career direction to deepen backend systems expertise at scale-ups with complex distributed architectures.",
   "score_breakdown": {

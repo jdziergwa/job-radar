@@ -1,0 +1,47 @@
+{
+  "id": 27459,
+  "ats_platform": "lever",
+  "company_slug": "spotify",
+  "company_name": "Spotify",
+  "title": "Senior Backend Engineer - Subscriptions",
+  "location": "London",
+  "url": "https://jobs.lever.co/spotify/2cd04b53-ecfc-4de1-8e12-eab125720520",
+  "posted_at": null,
+  "first_seen_at": "2026-04-11T18:47:55.082347",
+  "last_seen_at": "2026-04-11T18:47:55.082347",
+  "fit_score": 58,
+  "score_reasoning": "Your senior-level experience and background in high-scale payment/subscription systems (€2M/month billing engine at Stackflo) directly align with the Subscriptions mission. Python/Go expertise and observability practices match well for scaling commerce and personalization systems. However, London as the stated location without explicit remote confirmation creates a >2h timezone offset from Berlin; your profile prioritizes remote work with strict ±2h overlap preference. The posting lacks detail on specific technical requirements, making it difficult to assess whether microservices, distributed systems, or monolith approaches dominate. The growth potential is strong given the domain alignment, but location ambiguity and sparse technical detail prevent a higher score.",
+  "score_breakdown": {
+    "dimensions": {
+      "tech_stack_match": 65,
+      "seniority_match": 85,
+      "remote_location_fit": 40,
+      "growth_potential": 65
+    },
+    "key_matches": [
+      "Payment systems",
+      "High-scale backends",
+      "Subscription experience",
+      "Senior backend",
+      "Personalization systems"
+    ],
+    "red_flags": [
+      "Location stated as London—unclear if remote or on-site required",
+      "Sparse technical requirements—no mention of tech stack or architecture patterns",
+      "Timezone drift >2h from your preference without explicit remote-first language"
+    ],
+    "fit_category": "",
+    "apply_priority": "low"
+  },
+  "scored_at": "2026-04-11T18:48:14.419259",
+  "status": "scored",
+  "dismissal_reason": null,
+  "match_tier": "signal_match",
+  "salary": null,
+  "salary_min": null,
+  "salary_max": null,
+  "salary_currency": null,
+  "is_sparse": true,
+  "company_quality_signals": [],
+  "description": "<div>The Subscriptions Mission team builds and evolves the systems that help listeners discover, try, and subscribe to Spotify. From awareness to activation, retention, and conversion, we create seamless experiences that connect users with the value of Spotify at every step of their journey.</div>\n<div>&nbsp;</div>\n<div>You’ll join a team within the Subscriptions R&amp;D organization, focused on shaping the full user journey at Spotify. We work on how people discover Spotify, understand its value, and ultimately become long-term listeners. By bringing together engineering, product, design, research, and marketing, we move quickly to build meaningful, scalable experiences that reach millions of users worldwide.</div>"
+}

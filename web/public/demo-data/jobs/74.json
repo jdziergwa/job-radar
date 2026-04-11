@@ -8,7 +8,7 @@
   "url": "https://jobs.elastic.co/jobs?gh_jid=7721575&gh_jid=7721575",
   "posted_at": "2026-04-05T10:28:00-04:00",
   "first_seen_at": "2026-04-10T13:15:58.489074",
-  "last_seen_at": "2026-04-10T13:15:58.489074",
+  "last_seen_at": "2026-04-11T18:47:55.082347",
   "fit_score": 65,
   "score_reasoning": "This Principal SRE role at Elastic aligns well with your observability expertise (OpenTelemetry, Prometheus, Grafana) and distributed systems background. You meet the core practitioner requirement: production infrastructure experience, Kubernetes and CSP familiarity (AWS ECS), and observability tool proficiency. Spain's timezone (±1h from Berlin) and the implicit remote flexibility suit your preferences. However, the role requires Kubernetes mastery at scale and AI coding agent proficiency—you lack hands-on Kubernetes experience (a notable gap for Principal-level SRE work), and there is no evidence of AI coding agent workflows in your profile. The Principal title is also a step above your current Senior level; while your 7 years and impact at Velox (zero-downtime migration framework, multi-team scope) demonstrate systems thinking, the Principal scope assumes you lead infrastructure strategy and guide other engineers at an organizational level. This is a stretch upward in seniority. Growth potential is moderate—strong observability alignment but leadership expectations may exceed your current trajectory.",
   "score_breakdown": {

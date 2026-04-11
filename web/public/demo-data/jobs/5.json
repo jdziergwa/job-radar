@@ -8,7 +8,7 @@
   "url": "https://job-boards.greenhouse.io/affirm/jobs/6642236003",
   "posted_at": "2026-03-20T03:02:54-04:00",
   "first_seen_at": "2026-04-10T13:15:58.489074",
-  "last_seen_at": "2026-04-10T13:15:58.489074",
+  "last_seen_at": "2026-04-11T18:47:55.082347",
   "fit_score": 71,
   "score_reasoning": "This is a strong technical and seniority match for your profile. The role requires 5+ years of backend systems design in Python (you have 7+ years with proven Python in microservices, payment systems, and migrations), distributed systems with AWS and MySQL (direct experience), and high-availability architecture (demonstrated at Velox with 4M+ events/day microservice). Your OpenTelemetry, observability, and zero-downtime migration expertise directly support the 'always on' and high-availability mandates. The Senior title aligns well with your experience level and career goal of deepening technical leadership. Kubernetes is mentioned as required, but your Docker and containerization experience, combined with the backend focus rather than pure SRE/platform, makes this a partial gap rather than a blocker. Poland is within your acceptable regions and remote setup is fully compatible. The comms platform domain (transactional email, SMS, push) is slightly adjacent to payments but shares high-scale, reliability, and fintech characteristics. Growth_potential is moderate because it's a solid senior IC role but not explicitly positioned as a platform modernization leadership opportunity.",
   "score_breakdown": {

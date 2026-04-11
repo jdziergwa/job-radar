@@ -1,0 +1,47 @@
+{
+  "id": 27454,
+  "ats_platform": "lever",
+  "company_slug": "spotify",
+  "company_name": "Spotify",
+  "title": "Backend Engineer, Music",
+  "location": "New York, NY",
+  "url": "https://jobs.lever.co/spotify/52fe2b49-3c85-4479-b1db-2c5ab74cbcfc",
+  "posted_at": null,
+  "first_seen_at": "2026-04-11T18:47:55.082347",
+  "last_seen_at": "2026-04-11T18:47:55.082347",
+  "fit_score": 39,
+  "score_reasoning": "Your distributed systems, microservices, and optimization expertise (Python, Go, high-scale systems, AWS) maps onto OASIS's promotion delivery platform and infrastructure challenges. The work on balancing competing objectives at scale and collaborating with data teams aligns with your proven systems-thinking demonstrated through zero-downtime migrations at Velox. However, the role is based in New York with no remote flexibility mentioned, creating a critical 6-hour timezone mismatch that exceeds your stated threshold and conflicts with your Berlin-based, remote-first preference. Seniority is ambiguous from the title alone, though 'Backend Engineer' without senior prefix may signal mid-level rather than senior scope.",
+  "score_breakdown": {
+    "dimensions": {
+      "tech_stack_match": 68,
+      "seniority_match": 60,
+      "remote_location_fit": 15,
+      "growth_potential": 65
+    },
+    "key_matches": [
+      "High-scale systems",
+      "Microservices infrastructure",
+      "Distributed platform",
+      "Backend optimization",
+      "Cross-team collaboration"
+    ],
+    "red_flags": [
+      "On-site position in New York (6+ hour timezone mismatch)",
+      "No remote work indicated",
+      "Seniority level unclear; title suggests mid-level without 'Senior' prefix"
+    ],
+    "fit_category": "",
+    "apply_priority": "skip"
+  },
+  "scored_at": "2026-04-11T18:48:22.290793",
+  "status": "scored",
+  "dismissal_reason": null,
+  "match_tier": "signal_match",
+  "salary": null,
+  "salary_min": null,
+  "salary_max": null,
+  "salary_currency": null,
+  "is_sparse": false,
+  "company_quality_signals": [],
+  "description": "<div>In the Music Mission, we build the tools and services that enable creators to express themselves, promote their work, and connect with fans.&nbsp; Discovery Mode is a key promotional tool that helps artists, labels, and licensors grow their audience while maintaining a high-quality listener experience.</div>\n<div>&nbsp;</div>\n<div>\n<p>We are looking for a Backend focused engineer to join the OASIS team.&nbsp; OASIS builds and operates the systems that power promotion delivery and optimization within Discovery Mode.&nbsp; Our work ensures that promotional content isn’t just \"surfaced\", but is intelligently allocated by balancing complex, competing objectives across our entire ecosystem.</p>\n<p>The team is distributed and highly collaborative, working closely with Personalization (PZN) to serve high-quality promotion signals. You’ll be part of a small, impactful group of engineers across data and machine learning, owning a core piece of infrastructure that enables promotion delivery at scale.</p>\n</div>"
+}

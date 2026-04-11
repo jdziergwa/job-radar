@@ -8,7 +8,7 @@
   "url": "https://jobs.lever.co/palantir/666d13c7-c6f0-43fb-a0ab-091c338085dc",
   "posted_at": null,
   "first_seen_at": "2026-04-10T13:15:58.489074",
-  "last_seen_at": "2026-04-10T13:15:58.489074",
+  "last_seen_at": "2026-04-11T18:47:55.082347",
   "fit_score": 48,
   "score_reasoning": "Your Python/Go backend experience, AWS infrastructure knowledge, and strong observability background provide a foundation for platform engineering, but IAM and identity-focused infrastructure is a specialized domain not evident in your CV. The role requires designing secure-by-design identity platforms and web services—a shift from distributed transaction systems and microservices reliability, your proven expertise. Additionally, the London location creates geographic and timezone uncertainty without explicit remote-work confirmation. Palantir's scale and the platform engineering label are aligned with your career direction, but the IAM specialization, lack of clarity on work setup, and absence of security/identity background make this a stretch fit rather than a strong match.",
   "score_breakdown": {

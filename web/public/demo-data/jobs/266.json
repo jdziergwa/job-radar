@@ -8,7 +8,7 @@
   "url": "https://job-boards.greenhouse.io/wikimedia/jobs/7732949",
   "posted_at": "2026-03-21T08:16:52-04:00",
   "first_seen_at": "2026-04-10T13:15:58.489074",
-  "last_seen_at": "2026-04-10T13:15:58.489074",
+  "last_seen_at": "2026-04-11T18:47:55.082347",
   "fit_score": 62,
   "score_reasoning": "Your backend microservices and infrastructure experience with Python, Go, and AWS align well with Wikimedia's SRE needs—Python scripting, Linux troubleshooting, and observability tools like Prometheus are direct matches. However, this is an SRE/DevOps-focused role centered on operational reliability and on-call rotations, which represents a meaningful pivot from your core backend engineering career direction targeting senior backend architect roles at scale-ups. While the 6+ years SRE requirement and senior title fit your seniority, the role emphasizes infrastructure operations and Puppet/Kubernetes configuration over backend system design and distributed services architecture—your key areas of depth. The remote-first setup with Europe-compatible scheduling is a strong positive, and Wikimedia's notable brand and mission carry CV value, but growth_potential is lower because advancing in this SRE track would move you further from your stated goal of deepening technical leadership in high-scale backend systems. This is a solid adjacent opportunity if you value operational leadership and reliability culture, but not a primary core-fit match.",
   "score_breakdown": {

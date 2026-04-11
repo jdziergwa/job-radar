@@ -8,7 +8,7 @@
   "url": "https://jobs.lever.co/swordhealth/c39bf077-76c4-4483-9942-b734f6745a74",
   "posted_at": null,
   "first_seen_at": "2026-04-10T13:15:58.489074",
-  "last_seen_at": "2026-04-10T13:15:58.489074",
+  "last_seen_at": "2026-04-11T18:47:55.082347",
   "fit_score": 72,
   "score_reasoning": "Your Senior Backend Engineer title and 7 years of distributed systems experience align well with Sword Health's seniority expectations and scale requirements. The role emphasizes building infrastructure for AI/ML features, which matches your microservices and high-scale systems background (4M+ events/day, €2M/month billing engine). However, the job description lacks specific technical stack details (no mention of Python, Go, AWS, or other core tools you target), making it harder to confirm a strong tech match beyond general backend infrastructure skills. Porto is in Portugal—while remote/hybrid is mentioned, the location is geographically different from your Berlin base and sits outside your preferred ±2h timezone overlap (Portugal is 1h behind CET, which is actually favorable), but the posting does not explicitly state whether remote work fully accommodates your geographic location or if there are in-office expectations. The healthcare domain and AI/ML focus represent a growth vector into a new industry vertical, which is positive for career development but represents a mild industry shift from your scale-up/fintech preference. This is a strong medium fit with moderate geographic ambiguity as the primary constraint.",
   "score_breakdown": {

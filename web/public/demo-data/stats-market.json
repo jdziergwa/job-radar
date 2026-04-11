@@ -2,27 +2,27 @@
   "skip_reason_distribution": [
     {
       "reason": "location_onsite",
-      "count": 32
+      "count": 35
     },
     {
       "reason": "seniority_mismatch",
-      "count": 7
+      "count": 8
     },
     {
       "reason": "tech_gap",
-      "count": 22
+      "count": 24
     },
     {
       "reason": "none",
-      "count": 36
+      "count": 38
     },
     {
       "reason": "location_timezone",
-      "count": 193
+      "count": 200
     },
     {
       "reason": "growth_mismatch",
-      "count": 2
+      "count": 3
     }
   ],
   "country_distribution": [
@@ -31,12 +31,12 @@
       "count": 20
     },
     {
-      "country": "Poland",
-      "count": 14
+      "country": "United States",
+      "count": 16
     },
     {
-      "country": "United States",
-      "count": 13
+      "country": "Poland",
+      "count": 14
     },
     {
       "country": "United Kingdom",
@@ -74,7 +74,7 @@
     },
     {
       "skill": "Java",
-      "count": 11
+      "count": 13
     },
     {
       "skill": "Phoenix framework",
@@ -109,15 +109,15 @@
       "count": 3
     }
   ],
-  "total_scored": 292,
+  "total_scored": 308,
   "apply_priority_counts": {
-    "skip": 292
+    "skip": 308
   },
   "salary_distribution": [
     {
       "currency": null,
       "range": "Undisclosed",
-      "count": 239
+      "count": 255
     },
     {
       "currency": "BRL",

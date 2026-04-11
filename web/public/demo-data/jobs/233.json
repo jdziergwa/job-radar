@@ -8,7 +8,7 @@
   "url": "https://job-boards.greenhouse.io/canonical/jobs/3142044",
   "posted_at": "2026-04-01T07:19:21-04:00",
   "first_seen_at": "2026-04-10T13:15:58.489074",
-  "last_seen_at": "2026-04-10T13:15:58.489074",
+  "last_seen_at": "2026-04-11T18:47:55.082347",
   "fit_score": 85,
   "score_reasoning": "This is an exceptionally strong match for your profile. Your 7 years of Python backend engineering, microservices architecture, and PostgreSQL expertise directly align with Launchpad's mature Python-driven system. The role explicitly values API-first design, comprehensive testing (your 85% test coverage aligns perfectly), and mentoring—all evident strengths in your CV. The EMEA-remote setup, senior-level responsibilities with architecture influence, and focus on maintaining and improving large-scale web applications are precisely aligned with your stated career direction. Canonical's open-source culture and scale-up environment fit your industry preferences. The role's emphasis on system reliability and continuous improvement resonates with your OpenTelemetry and migration work at Velox. Minor note: the Debian/Ubuntu packaging knowledge is nice-to-have rather than core, and you'll learn it in context. This represents your core backend architect trajectory at the right seniority level.",
   "score_breakdown": {

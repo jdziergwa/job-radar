@@ -8,7 +8,7 @@
   "url": "https://careers.godaddy/jobs?gh_jid=7623136003",
   "posted_at": "2026-04-03T13:13:36-04:00",
   "first_seen_at": "2026-04-10T13:15:58.489074",
-  "last_seen_at": "2026-04-10T13:15:58.489074",
+  "last_seen_at": "2026-04-11T18:47:55.082347",
   "fit_score": 68,
   "score_reasoning": "Your Python and observability experience (OpenTelemetry, Prometheus, Grafana) align well with this SRE role's core focus on monitoring platforms and incident response. However, this is a Site Reliability Engineer position rather than a backend engineer role, representing a shift from your primary career direction of deepening backend systems expertise. The role emphasizes Linux/Unix systems tuning and configuration management (Ansible, Puppet) more heavily than distributed service architecture—areas where you have less demonstrated depth. While remote from Bulgaria is geographically feasible within Europe, there's no explicit timezone clarity; Bulgaria (EET/EEST, +2h from Berlin) falls within acceptable overlap but introduces some coordination overhead. The seniority framing feels mid-level focused (3+ years repeated) rather than senior, and GoDaddy, while a notable brand, doesn't appear to offer the complex distributed systems or technical leadership depth your profile seeks. This is a viable adjacent role if you're open to platform/infrastructure specialization, but it pulls away from your stated goal of deepening backend technical leadership in high-scale architectures.",
   "score_breakdown": {

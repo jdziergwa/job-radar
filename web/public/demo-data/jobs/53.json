@@ -8,7 +8,7 @@
   "url": "https://databricks.com/company/careers/open-positions/job?gh_jid=7642799002",
   "posted_at": "2026-04-09T16:51:11-04:00",
   "first_seen_at": "2026-04-10T13:15:58.489074",
-  "last_seen_at": "2026-04-10T13:15:58.489074",
+  "last_seen_at": "2026-04-11T18:47:55.082347",
   "fit_score": 62,
   "score_reasoning": "This role is significantly more aligned than the Belgrade and London postings. Your 7 years of distributed systems, microservices, and infrastructure work directly match the emphasis on large-scale critical systems, and Go is explicitly listed as a preferred backend language alongside Java and Scala. The role's focus on infrastructure, cloud-agnostic abstractions, and developer experience aligns with your systems-thinking demonstrated in your zero-downtime migration work at Velox. Your staff-level responsibilities and proven leadership fit well. However, Aarhus is in Scandinavia (~1h ahead of Berlin), within your acceptable timezone band, but the posting does not explicitly state remote work; this creates moderate ambiguity. Additionally, you lack Kubernetes experience, which is mentioned as a preference, and the role emphasizes mentorship and cross-team influence — important for staff level, though not a gap. The strong overlap on Go and distributed systems keeps this viable.",
   "score_breakdown": {

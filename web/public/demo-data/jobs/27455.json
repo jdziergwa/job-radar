@@ -1,0 +1,47 @@
+{
+  "id": 27455,
+  "ats_platform": "lever",
+  "company_slug": "spotify",
+  "company_name": "Spotify",
+  "title": "Backend Engineer, Podcast",
+  "location": "New York, NY",
+  "url": "https://jobs.lever.co/spotify/454e6013-78ca-4009-9ad4-7597f2045d0a",
+  "posted_at": null,
+  "first_seen_at": "2026-04-11T18:47:55.082347",
+  "last_seen_at": "2026-04-11T18:47:55.082347",
+  "fit_score": 39,
+  "score_reasoning": "Your core expertise in distributed systems, microservices architecture, and high-scale platform design directly aligns with Mission Control's work on the Distribution API and content processing pipelines. Your Python/Go stack, AWS infrastructure knowledge, and proven ability to scale systems (4M+ events/day microservice) match the role's infrastructure and platform demands. The focus on creator-facing APIs and emerging AI-driven infrastructure also supports your growth trajectory in backend leadership. However, the New York location with no remote flexibility stated creates a critical blocker — you're Berlin-based with a 6-hour timezone gap that exceeds your rejection threshold. Seniority is unmarked in the title, suggesting mid-level positioning.",
+  "score_breakdown": {
+    "dimensions": {
+      "tech_stack_match": 70,
+      "seniority_match": 60,
+      "remote_location_fit": 15,
+      "growth_potential": 68
+    },
+    "key_matches": [
+      "Microservices architecture",
+      "Content distribution platform",
+      "High-scale APIs",
+      "Data pipelines",
+      "Backend infrastructure"
+    ],
+    "red_flags": [
+      "On-site position in New York (6+ hour timezone mismatch)",
+      "No remote flexibility mentioned",
+      "Seniority level ambiguous; title lacks 'Senior' designation"
+    ],
+    "fit_category": "",
+    "apply_priority": "skip"
+  },
+  "scored_at": "2026-04-11T18:48:22.292497",
+  "status": "scored",
+  "dismissal_reason": null,
+  "match_tier": "signal_match",
+  "salary": null,
+  "salary_min": null,
+  "salary_max": null,
+  "salary_currency": null,
+  "is_sparse": false,
+  "company_quality_signals": [],
+  "description": "<div>\n<p data-start=\"249\" data-end=\"759\">The Podcast Mission develops strategies and builds products that serve creators and listeners interested in podcast and video content. As the #1 podcast platform in the world, we look to continue improving and scaling the experience of podcasts on Spotify. We build and maintain products like Spotify for Podcasters, Megaphone, and Chartable, and are always eager to provide creators with easy ways to increase their audiences on Spotify and give them new innovative means for monetization.</p>\n<p data-start=\"249\" data-end=\"759\">Mission Control is a team within Spotify’s Podcast Platform product area, building the core infrastructure that powers how podcasts and other creator content are processed, uploaded, transformed, and distributed across Spotify. As the creator ecosystem evolves, we are expanding the systems that enable new content formats and experiences, helping creators and partners reach audiences in new ways.</p>\n<p data-start=\"1178\" data-end=\"1646\">At the center of this work is our Distribution API — a platform that allows creators and partners to manage, distribute, and monetize content on Spotify regardless of where it is hosted. This API is becoming a key integration point for some of the world’s largest creator platforms. The team is also exploring how advances in AI can shape the next generation of creator and listener experiences, building the APIs and infrastructure that make those possibilities real.</p>\n</div>"
+}

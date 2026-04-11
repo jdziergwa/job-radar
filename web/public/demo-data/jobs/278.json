@@ -8,7 +8,7 @@
   "url": "https://jobs.lever.co/outreach/2f10ff11-7494-48a6-a37a-caed7129c286",
   "posted_at": null,
   "first_seen_at": "2026-04-10T13:15:58.489074",
-  "last_seen_at": "2026-04-10T13:15:58.489074",
+  "last_seen_at": "2026-04-11T18:47:55.082347",
   "fit_score": 52,
   "score_reasoning": "Your seniority and project ownership experience align well with a Senior Staff SRE level, and the COR team's Kubernetes platform work directly addresses your infrastructure interests. However, you lack Kubernetes orchestration experience—a primary requirement for this role—which significantly limits your day-to-day capability despite your strong Docker and AWS foundation. More critically, the role is anchored to Prague with monthly team meetups and local encouragement, placing it outside your preferred remote-first setup and Berlin-based location. While remote-within-Czech-Republic is mentioned, this creates a >2h timezone boundary and implicit geographic anchor that conflicts with your strong preference for Berlin hybrid or fully remote work. The infrastructure focus is a meaningful pivot from your core backend distributed-systems trajectory, which would slow your senior backend specialization goals.",
   "score_breakdown": {

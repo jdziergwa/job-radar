@@ -1,0 +1,48 @@
+{
+  "id": 27620,
+  "ats_platform": "lever",
+  "company_slug": "cprime",
+  "company_name": "Cprime",
+  "title": "Senior Cloud Engineer",
+  "location": "Chennai, Tamil Nadu",
+  "url": "https://jobs.lever.co/cprime/444e60d7-32ff-42ff-9746-63958d25bbf6",
+  "posted_at": null,
+  "first_seen_at": "2026-04-11T18:47:55.082347",
+  "last_seen_at": "2026-04-11T18:47:55.082347",
+  "fit_score": 39,
+  "score_reasoning": "Your AWS and Docker experience, combined with your CI/CD and infrastructure background, align well with the core technical requirements for this Senior Cloud Engineer role at Cprime. However, the position is based in Chennai, India, which creates a severe timezone mismatch (approximately +4.5 hours ahead of Berlin) and is on-site only with no explicit remote work option mentioned. This geographic constraint is a critical blocker—your stated preference is fully remote with European timezone overlap, making this role incompatible with your location and work-setup requirements. While the company's consulting credentials and scale-up focus carry positive signals for your career trajectory, the location incompatibility overrides technical and seniority fit.",
+  "score_breakdown": {
+    "dimensions": {
+      "tech_stack_match": 72,
+      "seniority_match": 75,
+      "remote_location_fit": 15,
+      "growth_potential": 65
+    },
+    "key_matches": [
+      "AWS infrastructure",
+      "CI/CD automation",
+      "DevOps/cloud operations",
+      "Scalability & reliability",
+      "Infrastructure as Code"
+    ],
+    "red_flags": [
+      "On-site role in Chennai, India—no remote flexibility mentioned",
+      "Severe timezone mismatch (±4.5h from Berlin, exceeds your >5h reject threshold)",
+      "Role emphasizes DevOps/platform operations over backend distributed systems (secondary fit to core career direction)",
+      "Limited evidence the role involves Python/Go microservices architecture—primary focus appears infrastructure/cloud operations"
+    ],
+    "fit_category": "",
+    "apply_priority": "skip"
+  },
+  "scored_at": "2026-04-11T18:48:05.657628",
+  "status": "scored",
+  "dismissal_reason": null,
+  "match_tier": "signal_match",
+  "salary": null,
+  "salary_min": null,
+  "salary_max": null,
+  "salary_currency": null,
+  "is_sparse": false,
+  "company_quality_signals": [],
+  "description": "<div>Cprime brings business into a new light—illuminating possibilities that once seemed hidden. For more than two decades, we’ve partnered with 2,500+ organizations worldwide, including over 300 of the Fortune 500, to help leaders see complexity with new clarity and rewire it into intelligent flow. With 800+ experts across 30 countries, we shine a brighter path toward platform modernization, AI-first operating models, and enterprise transformation that scales with confidence. We help organizations adapt and grow by orchestrating systems, teams, and decisions into harmony. Guided by experience, energized by innovation, and backed by Goldman Sachs and Everstone Capital, Cprime is trusted globally to make transformation clearer, faster, and more human.&nbsp;</div><div><br></div><div><strong>Role Summary:</strong></div>\n<div>&nbsp;</div>\n<div>\n<p style=\"line-height: normal; margin: 0cm 0cm 8pt; font-size: 12pt; font-family: Aptos, sans-serif;\"><span style=\"font-size: 10.0pt; font-family: Arial, sans-serif;\">We are looking for a <strong>Senior Cloud/DevOps Engineer</strong> to design, build, and operate secure, scalable, and highly available platforms on <strong>Amazon Web Services (AWS).</strong></span></p>\n<p style=\"line-height: normal; margin: 0cm 0cm 8pt; font-size: 12pt; font-family: Aptos, sans-serif;\"><span style=\"font-size: 10.0pt; font-family: Arial, sans-serif;\">This role combines <strong>cloud architecture, DevOps engineering, and production operations</strong>, with a strong focus on automation, reliability, and scalable delivery of enterprise applications.</span></p>\n<p style=\"line-height: normal; margin: 0cm 0cm 8pt; font-size: 12pt; font-family: Aptos, sans-serif;\"><span style=\"font-size: 10.0pt; font-family: Arial, sans-serif;\">The ideal candidate brings deep hands-on expertise in <strong>AWS, Infrastructure as Code, CI/CD, and cloud operations</strong>, and collaborates effectively with engineering, security, and business teams to deliver <strong>resilient and cost-efficient solutions.</strong></span></p>\n</div>"
+}

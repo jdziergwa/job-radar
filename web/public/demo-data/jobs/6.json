@@ -8,7 +8,7 @@
   "url": "https://job-boards.greenhouse.io/affirm/jobs/6642238003",
   "posted_at": "2026-03-20T03:02:54-04:00",
   "first_seen_at": "2026-04-10T13:15:58.489074",
-  "last_seen_at": "2026-04-10T13:15:58.489074",
+  "last_seen_at": "2026-04-11T18:47:55.082347",
   "fit_score": 62,
   "score_reasoning": "Your experience with Python, distributed systems, and AWS directly aligns with Affirm's core technical requirements for this Senior Backend role in communications infrastructure. The scale (4M+ events/day) and observability focus at Velox map well to their transactional email/SMS/push platform. However, this role carries a significant geographic constraint: it explicitly requires Spain-based residency for visa sponsorship, which conflicts with your Berlin base. While the role is labeled \"remote,\" the mandatory Spain location requirement and visa sponsorship language create a material location mismatch. Your Kubernetes gap (not mentioned as core here) is less of a blocker than typical platform roles, and your seniority trajectory aligns well with the Senior Backend Engineer level. Growth potential is solid on distributed systems and high-availability architecture, though the comms platform focus is slightly narrower than your preferred high-scale, multi-domain systems work.",
   "score_breakdown": {

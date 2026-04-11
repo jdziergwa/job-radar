@@ -8,7 +8,7 @@
   "url": "https://job-boards.greenhouse.io/canonical/jobs/4706463",
   "posted_at": "2026-03-31T13:09:00-04:00",
   "first_seen_at": "2026-04-10T13:15:58.489074",
-  "last_seen_at": "2026-04-10T13:15:58.489074",
+  "last_seen_at": "2026-04-11T18:47:55.082347",
   "fit_score": 42,
   "score_reasoning": "While the EMEA-remote setup and seniority level align well with your profile, this role has a fundamental domain mismatch with your core strength and stated career direction. The position emphasizes Linux kernel, bootloader development (u-boot), system firmware, ARM/non-x86 platform engineering, and low-level debugging—specialized embedded systems work. Your 7 years of experience is in application-level backend services, distributed microservices architecture, and Python/Go platform engineering. Though you have Python and Linux familiarity, your expertise is not in kernel-level, bootloader, or hardware bring-up domains. This would require a substantial pivot away from your stated goal of deepening technical leadership in high-scale distributed systems at the application layer. The role sits awkwardly between viable location/seniority and a significant skills/career direction gap, placing it in the 'low fit' category rather than outright skip.",
   "score_breakdown": {

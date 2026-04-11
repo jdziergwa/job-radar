@@ -8,7 +8,7 @@
   "url": "https://jobs.lever.co/swordhealth/424984c0-a455-4e92-84bc-378ebc379eb6",
   "posted_at": null,
   "first_seen_at": "2026-04-10T13:15:58.489074",
-  "last_seen_at": "2026-04-10T13:15:58.489074",
+  "last_seen_at": "2026-04-11T18:47:55.082347",
   "fit_score": 61,
   "score_reasoning": "Your Senior Backend Engineer profile aligns well with the title and seniority level, and your distributed systems experience in Python/Go matches typical consumer growth backend work. However, the job posting is critically sparse—it provides only company context and mission without any technical details, frameworks, or concrete responsibilities. More importantly, the location is listed as Porto, Portugal, which creates a material geographic challenge: you are based in Berlin and prefer remote work with ±2h timezone overlap. Porto is roughly 1h ahead of Berlin (acceptable timezone-wise), but without explicit confirmation that this role is fully remote, it appears to be Porto-based or requires hybrid work there. This geographic uncertainty combined with the sparse technical description significantly lowers fit. The healthcare/AI domain is not among your stated target industries, though it aligns with your scale-up/enterprise growth preferences.",
   "score_breakdown": {

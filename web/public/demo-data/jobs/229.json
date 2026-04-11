@@ -8,7 +8,7 @@
   "url": "https://job-boards.greenhouse.io/zora/jobs/5811801004",
   "posted_at": "2026-02-26T21:23:32-05:00",
   "first_seen_at": "2026-04-10T13:15:58.489074",
-  "last_seen_at": "2026-04-10T13:15:58.489074",
+  "last_seen_at": "2026-04-11T18:47:55.082347",
   "fit_score": 68,
   "score_reasoning": "Your experience with Python, Go, Docker, AWS, and observability tools aligns well with Zora's core infrastructure needs, and the remote-first setup from Berlin is excellent. However, this role emphasizes Kubernetes (a critical gap for you), distributed storage systems like Ceph, and blockchain/crypto domain expertise—none of which appear in your CV. While your 7 years of backend experience and proven infrastructure work at Velox (migration frameworks, microservices, monitoring) demonstrate relevant systems thinking, the blockchain focus and specialized infrastructure tooling (RPC proxies, L2 architectures, Ethereum) represent a significant domain shift from your distributed services background. The seniority level is appropriate, but the growth trajectory leans into crypto/blockchain and specialized infrastructure rather than deepening your current backend-systems expertise.",
   "score_breakdown": {

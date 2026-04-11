@@ -8,7 +8,7 @@
   "url": "https://boards.greenhouse.io/cloudflare/jobs/7267602?gh_jid=7267602",
   "posted_at": "2026-03-04T05:04:24-05:00",
   "first_seen_at": "2026-04-10T13:15:58.489074",
-  "last_seen_at": "2026-04-10T13:15:58.489074",
+  "last_seen_at": "2026-04-11T18:47:55.082347",
   "fit_score": 80,
   "score_reasoning": "This role offers an excellent fit across all dimensions. You're based in Berlin and the posting explicitly lists London and Lisbon as hybrid locations—both within your acceptable European timezone (0–2 hours from CET), directly aligning with your location flexibility preferences. Your Go, SQL, distributed systems, and observability experience (Prometheus, Grafana) map cleanly to the core technical requirements for data delivery, analytical database platform (ClickHouse), or data retrieval teams. The role's focus on high-scale systems handling 1B+ events/second, microservices architecture, and zero-downtime deployments matches your proven track record and career goals. Your 7 years of backend experience and recent work on multi-tenant notification microservices and zero-downtime migrations position you well for this senior-level distributed systems challenge.",
   "score_breakdown": {

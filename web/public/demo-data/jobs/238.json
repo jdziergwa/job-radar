@@ -8,7 +8,7 @@
   "url": "https://gradle.com/careers/open-roles/7538180/?gh_jid=7538180",
   "posted_at": "2026-04-01T14:14:56-04:00",
   "first_seen_at": "2026-04-10T13:15:58.489074",
-  "last_seen_at": "2026-04-10T13:15:58.489074",
+  "last_seen_at": "2026-04-11T18:47:55.082347",
   "fit_score": 62,
   "score_reasoning": "Your AWS infrastructure experience (ECS, Docker, Terraform basics) provides a solid foundation, but this role centers on Kubernetes and advanced infrastructure-as-code—areas where your experience is limited to basic Docker usage and entry-level Terraform. The Senior title aligns well with your 7 years of backend experience and current responsibilities, and the remote Europe-based setup matches your Berlin location perfectly. However, the platform engineering focus and Kubernetes-heavy requirements represent a significant shift from your core distributed systems and backend microservices strength. While you've built observability and infrastructure components, this role asks for deeper IaC and Kubernetes platform expertise that would require meaningful ramp-up. The growth potential is moderate—platform engineering is an adjacent adjacent track, not your stated senior backend target, and the role emphasizes foundational platforms rather than the high-scale distributed systems challenges you're seeking.",
   "score_breakdown": {

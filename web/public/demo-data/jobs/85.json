@@ -8,7 +8,7 @@
   "url": "https://abnormal.ai/careers/jobs/6593836003?gh_jid=6593836003",
   "posted_at": "2026-04-03T11:31:53-04:00",
   "first_seen_at": "2026-04-10T13:15:58.489074",
-  "last_seen_at": "2026-04-10T13:15:58.489074",
+  "last_seen_at": "2026-04-11T18:47:55.082347",
   "fit_score": 42,
   "score_reasoning": "Location is good—remote UK is compatible with your Berlin timezone and explicitly in your target regions. You have strong technical overlap with the required skills: Kafka/streaming data systems (Spark, MapReduce), distributed systems at scale, Python backend experience, and working with external APIs. However, this role is significantly below your level. The posting targets 3–5 years of experience and explicitly positions you as a builder learning from senior engineers; you have 7 years and current senior-level ownership. The profile acknowledges 'scrappy startup uncertainty' and asks you to 'occasionally do non-backend work'—a step down from the technical leadership and architecture focus you're seeking. Additionally, the role is heavy on streaming data ingestion and ATO platform infrastructure rather than the high-scale microservices architecture and systems leadership you're targeting. This is a viable backend role but represents backward career progression.",
   "score_breakdown": {

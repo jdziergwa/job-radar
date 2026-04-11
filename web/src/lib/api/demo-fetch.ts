@@ -3,6 +3,22 @@ import type { components } from './types'
 
 type JobListResponse = components['schemas']['JobListResponse']
 type JobDetailResponse = components['schemas']['JobDetailResponse']
+type JobResponse = components['schemas']['JobResponse']
+type StatsOverviewResponse = components['schemas']['StatsOverview'] & {
+  last_pipeline_run_at?: string | null
+}
+type TrendsResponse = components['schemas']['TrendsResponse']
+type InsightsResponse = components['schemas']['InsightsResponse']
+type SnapshotResponse = {
+  generated_at: string
+  job_count: number
+}
+type AggregatorStatusResponse = {
+  live_updated_at: string | null
+  local_updated_at: string | null
+  is_up_to_date: boolean
+  total_jobs: number
+}
 type DemoProfileTemplateResponse = {
   profile_yaml: string
   profile_doc: string
@@ -15,6 +31,100 @@ type DemoWizardStateResponse = {
 
 const jsonCache = new Map<string, Promise<unknown>>()
 const textCache = new Map<string, Promise<string>>()
+
+function isDateOnly(value: string): boolean {
+  return /^\d{4}-\d{2}-\d{2}$/.test(value)
+}
+
+function shiftDateValue(value: string | null | undefined, deltaMs: number): string | null | undefined {
+  if (!value) {
+    return value
+  }
+
+  if (isDateOnly(value)) {
+    const timestamp = Date.parse(`${value}T00:00:00.000Z`)
+    if (Number.isNaN(timestamp)) {
+      return value
+    }
+    return new Date(timestamp + deltaMs).toISOString().slice(0, 10)
+  }
+
+  const timestamp = Date.parse(value)
+  if (Number.isNaN(timestamp)) {
+    return value
+  }
+
+  return new Date(timestamp + deltaMs).toISOString()
+}
+
+function rebaseJob<T extends JobResponse | JobDetailResponse>(job: T, deltaMs: number): T {
+  return {
+    ...job,
+    posted_at: shiftDateValue(job.posted_at, deltaMs),
+    first_seen_at: shiftDateValue(job.first_seen_at, deltaMs) ?? job.first_seen_at,
+    last_seen_at: shiftDateValue(job.last_seen_at, deltaMs),
+    scored_at: shiftDateValue(job.scored_at, deltaMs),
+  }
+}
+
+function rebaseJobListResponse(data: JobListResponse, deltaMs: number): JobListResponse {
+  return {
+    ...data,
+    jobs: data.jobs.map((job) => rebaseJob(job, deltaMs)),
+  }
+}
+
+function rebaseStatsResponse(data: StatsOverviewResponse, deltaMs: number): StatsOverviewResponse {
+  return {
+    ...data,
+    last_pipeline_run_at: shiftDateValue(data.last_pipeline_run_at, deltaMs),
+  }
+}
+
+function rebaseTrendsResponse(data: TrendsResponse, deltaMs: number): TrendsResponse {
+  return {
+    ...data,
+    daily_counts: data.daily_counts.map((entry) => ({
+      ...entry,
+      date: shiftDateValue(entry.date, deltaMs) ?? entry.date,
+    })),
+    company_stats: data.company_stats.map((entry) => ({
+      ...entry,
+      last_seen: shiftDateValue(entry.last_seen, deltaMs) ?? entry.last_seen,
+    })),
+    score_trend: data.score_trend.map((entry) => {
+      if (!entry || typeof entry !== 'object' || !('date' in entry)) {
+        return entry
+      }
+
+      const nextDate =
+        typeof entry.date === 'string' ? shiftDateValue(entry.date, deltaMs) ?? entry.date : entry.date
+
+      return {
+        ...entry,
+        date: nextDate,
+      }
+    }),
+  }
+}
+
+function rebaseInsightsResponse(data: InsightsResponse, deltaMs: number): InsightsResponse {
+  return {
+    ...data,
+    generated_at: shiftDateValue(data.generated_at, deltaMs) ?? data.generated_at,
+  }
+}
+
+function rebaseAggregatorStatusResponse(
+  data: AggregatorStatusResponse,
+  deltaMs: number,
+): AggregatorStatusResponse {
+  return {
+    ...data,
+    live_updated_at: shiftDateValue(data.live_updated_at, deltaMs) ?? null,
+    local_updated_at: shiftDateValue(data.local_updated_at, deltaMs) ?? null,
+  }
+}
 
 function json(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), {
@@ -61,6 +171,15 @@ async function loadText(path: string): Promise<string> {
 
 async function loadProfileContent(path: string): Promise<Response> {
   return json({ content: await loadText(path) })
+}
+
+async function getDemoSnapshotDeltaMs(): Promise<number> {
+  const snapshot = await loadJson<SnapshotResponse>('snapshot.json')
+  const generatedAt = Date.parse(snapshot.generated_at)
+  if (Number.isNaN(generatedAt)) {
+    return 0
+  }
+  return Date.now() - generatedAt
 }
 
 function getUrl(input: RequestInfo | URL): URL {
@@ -261,16 +380,27 @@ async function handleRead(url: URL): Promise<Response | null> {
 
   const jobDetailMatch = url.pathname.match(/^\/api\/jobs\/(\d+)$/)
   if (jobDetailMatch) {
-    return json(await loadJson<JobDetailResponse>(`jobs/${jobDetailMatch[1]}.json`))
+    const [job, deltaMs] = await Promise.all([
+      loadJson<JobDetailResponse>(`jobs/${jobDetailMatch[1]}.json`),
+      getDemoSnapshotDeltaMs(),
+    ])
+    return json(rebaseJob(job, deltaMs))
   }
 
   if (url.pathname === '/api/jobs') {
-    const dataset = await loadJson<JobListResponse>('jobs.json')
-    return json(await applyJobFilters(dataset, url.searchParams))
+    const [dataset, deltaMs] = await Promise.all([
+      loadJson<JobListResponse>('jobs.json'),
+      getDemoSnapshotDeltaMs(),
+    ])
+    return json(await applyJobFilters(rebaseJobListResponse(dataset, deltaMs), url.searchParams))
   }
 
   if (url.pathname === '/api/stats/trends') {
-    return json(await loadJson('stats-trends.json'))
+    const [trends, deltaMs] = await Promise.all([
+      loadJson<TrendsResponse>('stats-trends.json'),
+      getDemoSnapshotDeltaMs(),
+    ])
+    return json(rebaseTrendsResponse(trends, deltaMs))
   }
 
   if (url.pathname === '/api/stats/market') {
@@ -282,11 +412,19 @@ async function handleRead(url: URL): Promise<Response | null> {
   }
 
   if (url.pathname === '/api/stats/insights') {
-    return json(await loadJson('stats-insights.json'))
+    const [insights, deltaMs] = await Promise.all([
+      loadJson<InsightsResponse>('stats-insights.json'),
+      getDemoSnapshotDeltaMs(),
+    ])
+    return json(rebaseInsightsResponse(insights, deltaMs))
   }
 
   if (url.pathname === '/api/stats') {
-    return json(await loadJson('stats.json'))
+    const [stats, deltaMs] = await Promise.all([
+      loadJson<StatsOverviewResponse>('stats.json'),
+      getDemoSnapshotDeltaMs(),
+    ])
+    return json(rebaseStatsResponse(stats, deltaMs))
   }
 
   if (url.pathname === '/api/pipeline/providers') {
@@ -311,13 +449,16 @@ async function handleRead(url: URL): Promise<Response | null> {
   }
 
   if (url.pathname === '/api/pipeline/aggregator/status') {
-    const snapshot = await loadJson<{ generated_at: string; job_count: number }>('snapshot.json')
-    return json({
+    const [snapshot, deltaMs] = await Promise.all([
+      loadJson<SnapshotResponse>('snapshot.json'),
+      getDemoSnapshotDeltaMs(),
+    ])
+    return json(rebaseAggregatorStatusResponse({
       live_updated_at: snapshot.generated_at,
       local_updated_at: snapshot.generated_at,
       is_up_to_date: true,
       total_jobs: snapshot.job_count,
-    })
+    }, deltaMs))
   }
 
   if (url.pathname.startsWith('/api/companies/')) {

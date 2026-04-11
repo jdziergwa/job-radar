@@ -8,7 +8,7 @@
   "url": "https://job-boards.greenhouse.io/affirm/jobs/6681466003",
   "posted_at": "2026-03-09T06:40:32-04:00",
   "first_seen_at": "2026-04-10T13:15:58.489074",
-  "last_seen_at": "2026-04-10T13:15:58.489074",
+  "last_seen_at": "2026-04-11T18:47:55.082347",
   "fit_score": 52,
   "score_reasoning": "Your backend expertise with Python, AWS infrastructure (ECS, S3, SQS), observability tools (OpenTelemetry, Prometheus, Grafana), and 7 years building distributed systems provide a solid foundation for SRE work. However, the role explicitly requires 4+ years as an SRE or Production Engineering team member, which is not present in your profile—you are a backend engineer with observability experience, not a dedicated SRE. The critical gap is Kubernetes, which is a core required technology for 'highly available distributed systems' but you have only basic Docker experience. Poland is within your acceptable regions and remote setup is compatible. The role's focus on incident lifecycle and operational excellence is adjacent to but distinct from your core backend engineering trajectory, pulling growth_potential lower. The Kubernetes gap, combined with lack of formal SRE experience, creates a meaningful tech mismatch despite your strong observability and systems foundation.",
   "score_breakdown": {

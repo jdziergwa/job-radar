@@ -8,7 +8,7 @@
   "url": "https://job-boards.greenhouse.io/remotecom/jobs/7696172003",
   "posted_at": "2026-04-10T07:00:29-04:00",
   "first_seen_at": "2026-04-10T13:15:58.489074",
-  "last_seen_at": "2026-04-10T13:15:58.489074",
+  "last_seen_at": "2026-04-11T18:47:55.082347",
   "fit_score": 56,
   "score_reasoning": "Your seniority and backend fundamentals align well with this Senior role; the title explicitly calls for Elixir, and your 7 years of distributed systems experience is valuable. However, you have zero production experience with Elixir or functional programming languages—a core required skill. The 'Nice to have' section (Kubernetes, Docker, AWS) plays to your strengths, but the primary technology gap is insurmountable for immediate contribution. Remote-Northern Europe restricts timezone to roughly ±2h from CET, which is acceptable from Berlin but less flexible than a truly global posting. The scale-up nature and focus on complex system design offer growth potential, but learning Elixir in production would be a significant on-boarding burden.",
   "score_breakdown": {

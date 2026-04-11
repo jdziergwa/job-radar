@@ -8,7 +8,7 @@
   "url": "https://databricks.com/company/careers/open-positions/job?gh_jid=8029671002",
   "posted_at": "2026-04-09T16:51:10-04:00",
   "first_seen_at": "2026-04-10T13:15:58.489074",
-  "last_seen_at": "2026-04-10T13:15:58.489074",
+  "last_seen_at": "2026-04-11T18:47:55.082347",
   "fit_score": 58,
   "score_reasoning": "Your senior-level title and 7 years of distributed systems expertise match well with Databricks' backend infrastructure needs, and Amsterdam is within your acceptable European region with reasonable geographic proximity to Berlin. However, this role explicitly requires Java/Scala/C++ as core production languages (3+ years minimum), and your professional background is Python and Go—a significant gap for a role centered on Scala/Kubernetes/Spark infrastructure. Databricks is a notable brand company with strong CV value, and the high-scale systems work (pricing infrastructure serving millions of cluster-hours) aligns with your growth ambitions. The location and seniority fit improve the score, but the missing primary tech stack remains a material blocker that prevents this from being a strong match.",
   "score_breakdown": {

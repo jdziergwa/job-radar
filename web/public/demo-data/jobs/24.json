@@ -8,7 +8,7 @@
   "url": "https://boards.greenhouse.io/cloudflare/jobs/7340469?gh_jid=7340469",
   "posted_at": "2026-03-04T05:04:25-05:00",
   "first_seen_at": "2026-04-10T13:15:58.489074",
-  "last_seen_at": "2026-04-10T13:15:58.489074",
+  "last_seen_at": "2026-04-11T18:47:55.082347",
   "fit_score": 78,
   "score_reasoning": "This role delivers strong fit with London and Lisbon as hybrid options—both well within your Europe-based timezone preference (0–2 hours from Berlin). Your Go, SQL, distributed systems, and observability expertise (Prometheus, Grafana) align closely with the core technical requirements. The focus on building high-throughput, reliable data delivery and logging platform infrastructure matches your background in microservices, zero-downtime migrations, and observability implementation. Your demonstrated systems thinking and multi-team impact from the zero-downtime migration framework at Velox positions you well for the architectural ownership this role implies. The only notable gap is lack of production Kafka/Flink experience, though you have consumer experience and the posting lists this as 'strong plus', not core requirement.",
   "score_breakdown": {

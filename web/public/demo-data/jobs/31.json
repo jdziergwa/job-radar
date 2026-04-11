@@ -8,7 +8,7 @@
   "url": "https://stripe.com/jobs/search?gh_jid=7182617",
   "posted_at": "2026-04-09T11:49:52-04:00",
   "first_seen_at": "2026-04-10T13:15:58.489074",
-  "last_seen_at": "2026-04-10T13:15:58.489074",
+  "last_seen_at": "2026-04-11T18:47:55.082347",
   "fit_score": 68,
   "score_reasoning": "Your 7 years of distributed systems experience and strong Python/Go background align well with Stripe's infrastructure team focus on microservices, scale, and reliability. The core responsibilities—building high-scale systems, debugging production issues, and optimizing performance—match your proven track record with 4M+ events/day and zero-downtime migrations. However, Dublin is on-site only without explicit remote flexibility, creating a significant location mismatch from your Berlin base; while same-timezone Europe mitigates some penalty, the implicit on-site requirement substantially lowers remote_location_fit. The role sits at the intersection of your senior backend goals and Stripe's scale, but geography prevents this from being a strong match.",
   "score_breakdown": {

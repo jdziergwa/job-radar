@@ -1,0 +1,47 @@
+{
+  "id": 27452,
+  "ats_platform": "lever",
+  "company_slug": "spotify",
+  "company_name": "Spotify",
+  "title": "Backend Engineer - Advertising",
+  "location": "New York, NY",
+  "url": "https://jobs.lever.co/spotify/1689082c-9265-431f-9e55-ef7666e41283",
+  "posted_at": null,
+  "first_seen_at": "2026-04-11T18:47:55.082347",
+  "last_seen_at": "2026-04-11T18:47:55.082347",
+  "fit_score": 39,
+  "score_reasoning": "You have strong backend and distributed systems expertise that aligns well with Spotify's advertising platform challenges (Python, Go, microservices, scale). However, this role is based in New York with no indication of remote eligibility, creating a critical location mismatch — you're Berlin-based and prefer remote or local hybrid work, and the 6-hour timezone difference exceeds your stated rejection threshold. The seniority level is unclear from the title alone, though responsibilities suggest mid-to-senior scope. While the high-scale distributed systems and data pipeline work align with your career direction, the geographic constraint is a hard blocker.",
+  "score_breakdown": {
+    "dimensions": {
+      "tech_stack_match": 70,
+      "seniority_match": 65,
+      "remote_location_fit": 15,
+      "growth_potential": 60
+    },
+    "key_matches": [
+      "Distributed systems",
+      "Scalable backend services",
+      "High-scale platforms",
+      "Microservices",
+      "Data pipelines"
+    ],
+    "red_flags": [
+      "On-site position in New York (6+ hour timezone mismatch from Berlin)",
+      "No remote work mentioned",
+      "Seniority level unclear from posting"
+    ],
+    "fit_category": "",
+    "apply_priority": "skip"
+  },
+  "scored_at": "2026-04-11T18:48:22.287208",
+  "status": "scored",
+  "dismissal_reason": null,
+  "match_tier": "signal_match",
+  "salary": null,
+  "salary_min": null,
+  "salary_max": null,
+  "salary_currency": null,
+  "is_sparse": false,
+  "company_quality_signals": [],
+  "description": "<div>Our mission on the Advertising Product &amp; Technology team is to build a next generation advertising platform that aligns with our unique value proposition for audio and video. We work to scale the user experience for hundreds of millions of fans and hundreds of thousands of advertisers. This scale brings unique challenges as well as tremendous opportunities for our artists and creators.</div><div><br></div><div>We're seeking a talented Backend engineer (with some data engineering experience as a bonus) to join our team at Spotify, where you'll collaborate with internal customers to design scalable backend services, data pipelines, and APIs&nbsp; that meet their needs. You'll contribute to high-impact projects powering our ad services, scaling distributed systems, and continuously improving our engineering practices. As someone who shares our passion for building innovative ad experiences, you'll have a direct impact on how the world uses Spotify.</div>"
+}

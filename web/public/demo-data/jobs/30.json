@@ -8,7 +8,7 @@
   "url": "https://stripe.com/jobs/search?gh_jid=7217048",
   "posted_at": "2026-04-01T11:46:05-04:00",
   "first_seen_at": "2026-04-10T13:15:58.489074",
-  "last_seen_at": "2026-04-10T13:15:58.489074",
+  "last_seen_at": "2026-04-11T18:47:55.082347",
   "fit_score": 82,
   "score_reasoning": "This role is an exceptional match for your profile. Your 7 years of backend experience and proven expertise building billing systems at Stackflo (€2M/month SaaS billing engine in Go, payment flows, Postgres-backed reliability) directly align with the Billing/Tax team's focus on subscription management and financial automation. The 2–12+ years range confirms senior-level positioning, and the role emphasizes Go and large-scale distributed systems—your core specialization. The location is listed as 'N/A', indicating global or remote-first flexibility, removing geographic friction. Event-driven architecture is listed as a preferred qualification; while you lack formal event-driven patterns beyond pub/sub, your microservices and job-queue background provide a strong bridge into this domain. This role supports your stated career direction: deepening technical leadership in high-scale financial systems.",
   "score_breakdown": {

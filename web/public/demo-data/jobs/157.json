@@ -8,7 +8,7 @@
   "url": "https://careers.hellofresh.com/global/en/job/7618910?gh_jid=7618910",
   "posted_at": "2026-04-08T14:03:43-04:00",
   "first_seen_at": "2026-04-10T13:15:58.489074",
-  "last_seen_at": "2026-04-10T13:15:58.489074",
+  "last_seen_at": "2026-04-11T18:47:55.082347",
   "fit_score": 66,
   "score_reasoning": "Your seniority and growth trajectory align well with this Staff Backend Engineer role at a high-scale company, and the microservices, event-driven architecture, and observability focus directly match your 7 years of distributed systems work. However, you have a critical gap in Kubernetes—a core requirement explicitly mentioned multiple times—which the role lists as essential for 'production operations at scale,' and your event-driven architecture experience is limited to basic Kafka consumption, not the deep message-bus expertise the job requires. Additionally, the role is based in Warsaw with no explicit remote option mentioned, creating a substantial location mismatch from your Berlin base; the timezone is roughly +1h from Berlin, which is manageable, but the on-site or unclear hybrid setup anchored to Poland rather than your target regions (Europe/UK/Switzerland with Berlin as anchor) materially reduces fit. The company quality (HelloFresh—notable brand, strong product) and scale (6M+ customers) are strategic positives that make this viable as a stretch, but the Kubernetes gap and location ambiguity prevent a higher score.",
   "score_breakdown": {

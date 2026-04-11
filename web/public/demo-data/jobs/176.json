@@ -8,7 +8,7 @@
   "url": "https://job-boards.greenhouse.io/monzo/jobs/6635837",
   "posted_at": "2026-04-07T06:26:53-04:00",
   "first_seen_at": "2026-04-10T13:15:58.489074",
-  "last_seen_at": "2026-04-10T13:15:58.489074",
+  "last_seen_at": "2026-04-11T18:47:55.082347",
   "fit_score": 72,
   "score_reasoning": "Your Go and Python experience aligns well with Monzo's backend-focused Go stack, and your distributed systems, microservices, and observability expertise directly match their high-scale banking platform needs. The Senior Engineer (L50) level and scope of work across Core Banking, Payments, and Platform collectives fit your seniority trajectory and career goals in complex distributed systems. However, the role's geographic anchor is problematic: while Monzo offers UK remote flexibility, you are based in Berlin with a strong preference for Europe-aligned timezone overlap (±2h). The London tech hub and 'distributed working within the UK' language, combined with the expectation of occasional in-person meetings, creates significant friction against your location constraints. Your Kubernetes gap (a core listed technology) is partially offset by your Docker containerization experience, but is a notable gap for a senior platform engineering role.",
   "score_breakdown": {
