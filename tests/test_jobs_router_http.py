@@ -96,6 +96,7 @@ def test_jobs_endpoints_list_detail_and_status_update(monkeypatch):
         assert patch_response.status_code == 200
         assert patch_response.json() == {"ok": True, "id": scored_id, "status": "applied"}
         assert store.get_job_detail(scored_id)["status"] == "applied"
+        assert store.get_metadata("last_job_status_change_at") is not None
 
 
 def test_jobs_rescore_endpoints_use_mocked_pipeline_launcher(monkeypatch):

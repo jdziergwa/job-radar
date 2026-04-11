@@ -429,6 +429,7 @@ class Store:
                 (status, reason, db_id)
             )
         if cursor.rowcount > 0:
+            self.set_metadata("last_job_status_change_at", datetime.utcnow().isoformat())
             logger.debug("Job %d status → %s", db_id, status)
             return True
         logger.warning("Job %d not found", db_id)
@@ -462,6 +463,7 @@ class Store:
                 )
                 total_updated += cursor.rowcount
         if total_updated:
+            self.set_metadata("last_job_status_change_at", datetime.utcnow().isoformat())
             logger.info("Bulk updated %d jobs status → %s", total_updated, status)
         return total_updated
 
@@ -476,6 +478,7 @@ class Store:
             )
             count = cursor.rowcount
         if count:
+            self.set_metadata("last_job_status_change_at", datetime.utcnow().isoformat())
             logger.info("Bulk updated %d dismissal reasons", count)
         return count
 

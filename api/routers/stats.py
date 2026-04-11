@@ -1,18 +1,81 @@
+from collections.abc import Callable
 from fastapi import APIRouter, Query
 from api.deps import get_store
 from api.models import StatsOverview, TrendsResponse, DismissalStats, MarketIntelligenceResponse, InsightsResponse
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
+from typing import Any
 
 router = APIRouter()
+ANALYTICS_CACHE_TTL = timedelta(minutes=2)
+
+
+def _analytics_cache_fingerprint(store: Any) -> str:
+    return "|".join([
+        store.get_metadata("last_pipeline_run_at", "") or "",
+        store.get_metadata("last_job_status_change_at", "") or "",
+        datetime.utcnow().date().isoformat(),
+    ])
+
+
+def _get_cached_analytics_payload(
+    store: Any,
+    cache_key: str,
+    fingerprint: str,
+) -> dict[str, Any] | None:
+    cached_raw = store.get_metadata(cache_key)
+    if not cached_raw:
+        return None
+
+    try:
+        cached_data = json.loads(cached_raw)
+        if not isinstance(cached_data, dict):
+            return None
+        cached_fingerprint = str(cached_data["fingerprint"])
+        created_at = datetime.fromisoformat(str(cached_data["created_at"]))
+        payload = cached_data["payload"]
+        if not isinstance(payload, dict):
+            return None
+    except (json.JSONDecodeError, KeyError, TypeError, ValueError):
+        return None
+
+    if cached_fingerprint != fingerprint:
+        return None
+
+    if datetime.utcnow() - created_at > ANALYTICS_CACHE_TTL:
+        return None
+
+    return payload
+
+
+def _get_or_build_analytics_payload(
+    store: Any,
+    cache_key: str,
+    builder: Callable[[], dict[str, Any]],
+) -> dict[str, Any]:
+    fingerprint = _analytics_cache_fingerprint(store)
+    cached_payload = _get_cached_analytics_payload(store, cache_key, fingerprint)
+    if cached_payload is not None:
+        return cached_payload
+
+    payload = builder()
+    store.set_metadata(cache_key, json.dumps({
+        "fingerprint": fingerprint,
+        "created_at": datetime.utcnow().isoformat(),
+        "payload": payload,
+    }))
+    return payload
 
 
 @router.get("/stats", response_model=StatsOverview)
 def get_stats(profile: str = Query("default")):
     """Get dashboard aggregates."""
     store = get_store(profile)
-    # The Store method already handles all counts and JSON parsing
-    raw_stats = store.get_stats()
+    raw_stats = _get_or_build_analytics_payload(
+        store,
+        cache_key=f"stats_cache_{profile}",
+        builder=store.get_stats,
+    )
     return StatsOverview(**raw_stats)
 
 
@@ -20,8 +83,11 @@ def get_stats(profile: str = Query("default")):
 def get_trends(profile: str = Query("default"), days: int = Query(30, ge=1, le=365)):
     """Get time-series and categorical data for charts."""
     store = get_store(profile)
-    # The Store method already performs the SQL grouping and JSON parsing
-    trends_data = store.get_trends(days=days)
+    trends_data = _get_or_build_analytics_payload(
+        store,
+        cache_key=f"trends_cache_{profile}_{days}",
+        builder=lambda: store.get_trends(days=days),
+    )
     return TrendsResponse(**trends_data)
 
 
@@ -75,7 +141,11 @@ async def _generate_insights_report(market_data: dict, days: int, profile: str) 
 def get_market_intelligence(profile: str = Query("default"), days: int = Query(30, ge=1, le=365)):
     """Get structured market intelligence data for charts."""
     store = get_store(profile)
-    data = store.get_market_intelligence(days=days)
+    data = _get_or_build_analytics_payload(
+        store,
+        cache_key=f"market_cache_{profile}_{days}",
+        builder=lambda: store.get_market_intelligence(days=days),
+    )
     # Convert skip_reason_distribution dict → list[SkipReasonStat]
     skip_list = [
         {"reason": reason, "count": count}
