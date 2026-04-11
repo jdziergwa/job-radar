@@ -1224,6 +1224,11 @@ export interface components {
              */
             total_new_today: number;
             /**
+             * High Priority Today
+             * @default 0
+             */
+            high_priority_today: number;
+            /**
              * New This Week
              * @default 0
              */

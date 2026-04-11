@@ -530,6 +530,10 @@ class Store:
             new_this_week = conn.execute(
                 "SELECT COUNT(*) FROM jobs WHERE first_seen_at >= ? AND status != 'dismissed'", (week_ago,)
             ).fetchone()[0]
+            high_priority_today_rows = conn.execute(
+                "SELECT fit_score, score_breakdown FROM jobs WHERE first_seen_at >= ? AND score_breakdown IS NOT NULL",
+                (today,),
+            ).fetchall()
             scored = conn.execute(
                 "SELECT COUNT(*) FROM jobs WHERE scored_at IS NOT NULL"
             ).fetchone()[0]
@@ -578,10 +582,23 @@ class Store:
                 if priority in priority_counts:
                     priority_counts[priority] += 1
 
+            high_priority_today = 0
+            for row in high_priority_today_rows:
+                breakdown, apply_priority, skip_reason, _ = self._parse_score_breakdown_payload(row["score_breakdown"])
+                priority, _ = normalize_persisted_priority(
+                    row["fit_score"],
+                    breakdown,
+                    apply_priority,
+                    skip_reason,
+                )
+                if priority == "high":
+                    high_priority_today += 1
+
         return {
             "total_jobs": total,
             "new_today": new_today,
             "total_new_today": total_new_today,
+            "high_priority_today": high_priority_today,
             "new_this_week": new_this_week,
             "last_pipeline_run_at": last_run,
             "scored": scored,

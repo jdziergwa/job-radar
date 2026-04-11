@@ -96,12 +96,36 @@ export default function JobsPage() {
   }
 
   useEffect(() => {
-    // Check URL for initial status (e.g. from Dashboard link)
     const params = new URLSearchParams(window.location.search)
     const initialStatus = params.get('status') || 'new,scored,applied'
-    
+    const initialSort = params.get('sort') || 'score'
+    const initialMinScore = params.get('min_score') || ''
+    const initialSearch = params.get('search') || ''
+    const initialTodayOnly = params.get('today_only') === 'true'
+    const initialSparse = initialMinScore === 'sparse'
+
     setStatus(initialStatus)
-    fetchJobs(1, { status: initialStatus })
+    setSort(initialSort)
+    setTodayOnly(initialTodayOnly)
+    setSearchTerm(initialSearch)
+    setSearch(initialSearch)
+
+    if (initialSparse) {
+      setMinScore('')
+      setIsSparse(true)
+    } else {
+      setMinScore(initialMinScore)
+      setIsSparse(null)
+    }
+
+    fetchJobs(1, {
+      status: initialStatus,
+      sort: initialSort,
+      minScore: initialSparse ? '' : initialMinScore,
+      search: initialSearch,
+      today_only: initialTodayOnly,
+      is_sparse: initialSparse ? true : null,
+    })
 
     // Listen for pipeline completion to refresh job data
     const handleRefresh = () => fetchJobs(1, { status: 'new,scored,applied' })

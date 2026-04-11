@@ -100,6 +100,7 @@ class StatsOverview(BaseModel):
     total_jobs: int = 0
     new_today: int = 0
     total_new_today: int = 0
+    high_priority_today: int = 0
     new_this_week: int = 0
     last_pipeline_run_at: Optional[str] = None
     scored: int = 0

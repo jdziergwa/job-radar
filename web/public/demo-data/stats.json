@@ -2,6 +2,7 @@
   "total_jobs": 27331,
   "new_today": 292,
   "total_new_today": 27331,
+  "high_priority_today": 0,
   "new_this_week": 292,
   "last_pipeline_run_at": "2026-04-10T13:59:49.425686",
   "scored": 292,
