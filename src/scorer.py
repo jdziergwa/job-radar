@@ -286,9 +286,9 @@ _SENIORITY_PREFIXES = {
 }
 _LOWER_SENIORITY_MARKERS = {"junior", "jr", "jr.", "mid", "middle", "associate"}
 
-
 def _normalize_phrase(text: str) -> str:
-    cleaned = re.sub(r"[^a-z0-9]+", " ", (text or "").lower())
+    """Unicode-safe phrase normalizer for dedup and role matching."""
+    cleaned = re.sub(r"[\W]+", " ", (text or "").lower(), flags=re.UNICODE)
     return " ".join(cleaned.split())
 
 
@@ -322,12 +322,64 @@ def _title_looks_lower_seniority(title: str) -> bool:
 
 
 def _ensure_string_list(value: Any) -> list[str]:
-    if isinstance(value, list):
+    if isinstance(value, (list, tuple, set)):
         return [str(item).strip() for item in value if str(item).strip()]
     if value is None:
         return []
     text = str(value).strip()
     return [text] if text else []
+
+
+def _normalize_description_text(text: str) -> str:
+    """Clean whitespace while preserving paragraph breaks and bullets."""
+    if not text:
+        return ""
+
+    normalized = text.replace("\r\n", "\n").replace("\r", "\n").replace("\xa0", " ")
+    normalized = re.sub(r"[ \t]+", " ", normalized)
+    normalized = re.sub(r"(?<=\S)\s*([•●▪◦])\s+", r"\n\1 ", normalized)
+    normalized = re.sub(r"\n[ \t]+", "\n", normalized)
+    normalized = re.sub(r"[ \t]+\n", "\n", normalized)
+    normalized = re.sub(r"\n{3,}", "\n\n", normalized)
+    return normalized.strip()
+
+
+def _compact_description_for_scoring(
+    text: str,
+    max_chars: int = 12000,
+    profile_config: dict[str, Any] | None = None,
+) -> str:
+    """Normalize, deduplicate paragraphs, and truncate from the end.
+
+    Boilerplate (DEI, privacy, legal) is almost always at the bottom of job
+    descriptions, so simple end-truncation acts as language-agnostic boilerplate
+    removal.
+    """
+    cleaned = _normalize_description_text(text)
+    if not cleaned:
+        return ""
+
+    # Deduplicate repeated paragraphs (common with some ATS platforms)
+    seen: set[str] = set()
+    kept: list[str] = []
+    for paragraph in re.split(r"\n\s*\n", cleaned):
+        paragraph = paragraph.strip()
+        if not paragraph:
+            continue
+        # Unicode-safe normalization for dedup key
+        key = re.sub(r"[\W]+", " ", paragraph.lower(), flags=re.UNICODE).strip()
+        if key and key not in seen:
+            seen.add(key)
+            kept.append(paragraph)
+
+    result = "\n\n".join(kept)
+
+    # Truncate from the end — requirements and tech stack are near the top,
+    # boilerplate and legal disclaimers are near the bottom.
+    if len(result) > max_chars:
+        result = result[:max_chars].rsplit("\n", 1)[0].rstrip()
+
+    return result.strip() or cleaned[:max_chars].strip()
 
 
 def _company_has_preferred_quality_signal(
@@ -413,13 +465,20 @@ def _derive_fit_category(
     return ""
 
 
-def _build_user_message(job: CandidateJob, max_desc_chars: int = 20000) -> str:
+def _build_user_message(
+    job: CandidateJob,
+    max_desc_chars: int = 20000,
+    profile_config: dict[str, Any] | None = None,
+) -> str:
     """Build the user message containing the job posting."""
     from src.providers.utils import strip_html
     
     raw_desc = job.description or "(No description available)"
-    # Strip HTML to save tokens and avoid noise for the LLM
-    description = strip_html(raw_desc)[:max_desc_chars]
+    description = _compact_description_for_scoring(
+        strip_html(raw_desc),
+        max_desc_chars,
+        profile_config,
+    )
 
     return f"""<job>
 Title: {job.title}
@@ -602,13 +661,21 @@ def _parse_score_response(text: str) -> dict[str, Any]:
     return data
 
 
-def _build_batch_user_message(jobs: list[CandidateJob], max_desc_chars: int = 20000) -> str:
+def _build_batch_user_message(
+    jobs: list[CandidateJob],
+    max_desc_chars: int = 20000,
+    profile_config: dict[str, Any] | None = None,
+) -> str:
     """Build the user message containing multiple job postings."""
     from src.providers.utils import strip_html
     parts = []
     for i, job in enumerate(jobs, 1):
         raw_desc = job.description or "(No description available)"
-        description = strip_html(raw_desc)[:max_desc_chars]
+        description = _compact_description_for_scoring(
+            strip_html(raw_desc),
+            max_desc_chars,
+            profile_config,
+        )
         parts.append(f"""<job id="{i}">
 Title: {job.title}
 Company: {job.company_name}
@@ -670,7 +737,7 @@ async def score_job(
 
     Returns a ScoredJob with fit assessment, or a zero-scored job on failure.
     """
-    user_message = _build_user_message(job, max_desc_chars)
+    user_message = _build_user_message(job, max_desc_chars, profile_config)
 
     for attempt in range(1, MAX_RETRIES + 1):
         try:
@@ -779,7 +846,7 @@ async def score_batch(
         # Optimization: delegate to score_job for single-item batches
         return [await score_job(client, jobs[0], system_prompt, profile_config, model, max_desc_chars, rate_limiter)]
 
-    user_message = _build_batch_user_message(jobs, max_desc_chars)
+    user_message = _build_batch_user_message(jobs, max_desc_chars, profile_config)
     max_tokens = min(800 * len(jobs), 4096)
 
     for attempt in range(1, MAX_RETRIES + 1):
@@ -952,6 +1019,7 @@ async def score_jobs(
     
     # Build system prompt (cached across all calls)
     system_prompt = _build_system_prompt(scoring_instructions, profile_doc, profile_config)
+    effective_profile_config = dict(profile_config or {})
 
     total = len(candidates)
     num_batches = (total + batch_size - 1) // batch_size
@@ -973,7 +1041,7 @@ async def score_jobs(
                 client,
                 batch,
                 system_prompt,
-                profile_config,
+                effective_profile_config,
                 model,
                 max_desc_chars,
                 rate_limiter,

@@ -160,10 +160,15 @@ async def fetch_description(client: httpx.AsyncClient, sem: asyncio.Semaphore, j
                             data = resp.json()
                             html_content = data.get("description", "")
                             for lst in data.get("lists", []):
-                                html_content += f"\n<h3>{lst.get('text', '')}</h3>\n<ul>"
-                                for item in lst.get("content", []):
-                                    html_content += f"<li>{item}</li>"
-                                html_content += "</ul>"
+                                html_content += f"\n<h3>{lst.get('text', '')}</h3>\n"
+                                content = lst.get("content", [])
+                                if isinstance(content, list):
+                                    html_content += "<ul>"
+                                    for item in content:
+                                        html_content += f"<li>{item}</li>"
+                                    html_content += "</ul>"
+                                elif isinstance(content, str):
+                                    html_content += content
                             if html_content: return html_content
                         elif resp.status_code == 404:
                             continue

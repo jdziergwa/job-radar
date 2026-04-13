@@ -179,9 +179,9 @@ scoring_context:
     cv value.'
 scoring:
   model: claude-haiku-4-5-20251001
-  max_description_chars: 20000
+  max_description_chars: 12000
   min_score_to_display: 50
-  concurrency: 25
+  concurrency: 10
   batch_size: 5
 output:
   terminal: true

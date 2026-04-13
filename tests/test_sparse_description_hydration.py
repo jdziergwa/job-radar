@@ -26,7 +26,7 @@ def _candidate(description: str) -> CandidateJob:
 def test_description_text_length_uses_plain_text_not_html_markup():
     description = "<div><p>Hello</p><p>World</p></div>"
 
-    assert description_text_length(description) == len("Hello\nWorld")
+    assert description_text_length(description) == len("Hello\n\nWorld")
 
 
 def test_should_hydrate_description_for_empty_and_sparse_content():
