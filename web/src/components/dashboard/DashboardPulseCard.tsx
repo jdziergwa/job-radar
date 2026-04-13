@@ -44,7 +44,8 @@ function ranToday(lastRunAt?: string | null) {
   return timestamp.toDateString() === new Date().toDateString()
 }
 
-function getHeadline(newToday: number, pending: number, highPriorityToday: number, highPriorityThisWeek: number) {
+function getHeadline(newToday: number, pending: number, highPriorityToday: number, highPriorityThisWeek: number, hasRun: boolean) {
+  if (!hasRun) return 'Ready to start your search'
   if (highPriorityToday > 0) return `${highPriorityToday} strong matches surfaced today`
   if (highPriorityThisWeek > 0) return `${highPriorityThisWeek} strong matches surfaced this week`
   if (pending > 0) return `${pending} jobs are waiting for review`
@@ -52,7 +53,10 @@ function getHeadline(newToday: number, pending: number, highPriorityToday: numbe
   return 'Search pulse is quiet right now'
 }
 
-function getSupportingCopy(newToday: number, pending: number, highPriorityToday: number, highPriorityThisWeek: number) {
+function getSupportingCopy(newToday: number, pending: number, highPriorityToday: number, highPriorityThisWeek: number, hasRun: boolean) {
+  if (!hasRun) {
+    return 'Run the pipeline to fetch, score, and surface your first batch of job matches.'
+  }
   if (highPriorityToday > 0 && pending > 0) {
     return `These are today’s strongest scored matches so far, with ${pending} more jobs still waiting for review.`
   }
@@ -128,8 +132,8 @@ export function DashboardPulseCard({
   const highPriorityThisWeek = funnelData?.high_priority ?? 0
   const freshness = getFreshnessState(lastRunAt)
   const hasRunToday = ranToday(lastRunAt)
-  const headline = getHeadline(newToday, pending, highPriorityToday, highPriorityThisWeek)
-  const supportingCopy = getSupportingCopy(newToday, pending, highPriorityToday, highPriorityThisWeek)
+  const headline = getHeadline(newToday, pending, highPriorityToday, highPriorityThisWeek, !!lastRunAt)
+  const supportingCopy = getSupportingCopy(newToday, pending, highPriorityToday, highPriorityThisWeek, !!lastRunAt)
 
   if (loading) {
     return (
