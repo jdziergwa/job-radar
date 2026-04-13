@@ -112,10 +112,16 @@ If you prefer direct editing, **Settings** still exposes the raw `profile_doc.md
 Claude costs are reasonable enough to try with a small credit balance. One real first-run example from my setup:
 
 - One-time profile generation with Sonnet: about `$0.15`
-- Scoring `855` jobs with Haiku: about `$1.88`
-- First broad run with all providers: roughly `30-40 minutes`
+- Scoring `880` jobs: about `$3.58`
+- First broad run with all providers: roughly `1 hour` (scoring takes the longest because it is rate-limited by the Claude API)
 
-Your numbers will vary with provider mix and how many jobs survive filtering, but in that run Haiku scoring came out to about `$0.22` per `100` scored jobs. After the first run, later runs are usually much cheaper and faster because only new surviving jobs need scoring. A `$5` top-up is usually enough to try profile generation plus many incremental runs.
+One real incremental-run example after one day:
+
+- New jobs found: `32`
+- Scoring cost: about `$0.15`
+- Incremental run with all providers: roughly `13 minutes`
+
+Your numbers will vary with provider mix and how many jobs survive filtering. Later runs are usually much cheaper and faster because only new surviving jobs need scoring, as in the example above. A `$5` top-up is usually enough to try profile generation plus ~10 incremental runs.
 
 If you want to try the pipeline cost-free first, use the web UI trigger with `Dry Run` to fetch and filter jobs without any Claude scoring, so you can see how many jobs would reach scoring. The CLI supports the same flow with `--dry-run`, for example: `.venv/bin/python -m src.main --source aggregator local --dry-run -v`.
 
