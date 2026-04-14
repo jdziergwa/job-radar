@@ -5,7 +5,7 @@ from api.models import CompanyEntry, CompaniesResponse, CompanyUpdateRequest
 
 router = APIRouter()
 
-PLATFORMS = ["greenhouse", "lever", "ashby", "workable"]
+PLATFORMS = ["greenhouse", "lever", "ashby", "workable", "bamboohr"]
 
 
 def _load_companies(profile: str) -> dict:
@@ -48,6 +48,7 @@ def get_companies(profile: str):
         lever=data.get("lever", []),
         ashby=data.get("ashby", []),
         workable=data.get("workable", []),
+        bamboohr=data.get("bamboohr", []),
     )
 
 

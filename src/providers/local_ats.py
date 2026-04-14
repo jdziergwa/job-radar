@@ -1,4 +1,4 @@
-"""ATS API fetcher — collects jobs from Greenhouse, Lever, Ashby, Workable.
+"""ATS API fetcher — collects jobs from Greenhouse, Lever, Ashby, Workable, BambooHR.
 
 Uses asyncio + aiohttp with platform-specific concurrency limits for polite access.
 """
@@ -30,18 +30,21 @@ PLATFORM_REQUEST_TIMEOUT = {
     "lever": 30,
     "ashby": REQUEST_TIMEOUT,
     "workable": REQUEST_TIMEOUT,
+    "bamboohr": REQUEST_TIMEOUT,
 }
 PLATFORM_CONCURRENCY = {
     "greenhouse": 5,
     "lever": 3,
     "ashby": 3,
     "workable": 3,
+    "bamboohr": 3,
 }
 PLATFORM_REQUEST_DELAY = {
     "greenhouse": 0.0,
     "lever": 0.0,
     "ashby": 0.0,
     "workable": 0.0,
+    "bamboohr": 0.0,
 }
 
 # SSL context using certifi for macOS compatibility
@@ -431,6 +434,83 @@ async def fetch_workable(
     return jobs
 
 
+async def fetch_bamboohr(
+    session: aiohttp.ClientSession,
+    sem: asyncio.Semaphore,
+    company: dict[str, str],
+) -> list[RawJob]:
+    """Fetch jobs from BambooHR public listing (embed2.php)."""
+    slug = company["slug"]
+    name = company.get("name", slug)
+    url = f"https://{slug}.bamboohr.com/jobs/embed2.php?company={slug}"
+
+    async with sem:
+        try:
+            async with session.get(url, timeout=aiohttp.ClientTimeout(total=_platform_timeout("bamboohr"))) as resp:
+                if resp.status == 404:
+                    logger.warning("BambooHR 404 for %s — slug may be dead", slug)
+                    return []
+                if resp.status != 200:
+                    logger.warning("BambooHR %d for %s", resp.status, slug)
+                    return []
+                html = await resp.text()
+        except asyncio.TimeoutError:
+            logger.warning("BambooHR timeout for %s", slug)
+            return []
+        except Exception as e:
+            logger.warning("BambooHR error for %s: %s", slug, e)
+            return []
+
+    now = datetime.now(timezone.utc).isoformat()
+    jobs: list[RawJob] = []
+    company_metadata = _build_company_metadata(company)
+
+    # BambooHR embed uses a simple list of <a> tags
+    # Pattern: <a href="//subdomain.bamboohr.com/jobs/view.php?id=123" ... >Title</a>
+    # Or: <a href="/jobs/view.php?id=123" ... >Title</a>
+    # We look for /jobs/view.php?id= or /careers/ (new format)
+    matches = re.finditer(
+        r'<a\s+[^>]*href=["\']([^"\']*(?:/jobs/view\.php\?id=|/careers/)[^"\']+)["\'][^>]*>(.*?)</a>',
+        html,
+        re.IGNORECASE | re.DOTALL
+    )
+
+    for match in matches:
+        job_url = match.group(1).strip()
+        title = re.sub(r"<[^>]+>", "", match.group(2)).strip()
+
+        # Handle protocol-relative URLs
+        if job_url.startswith("//"):
+            job_url = f"https:{job_url}"
+        elif job_url.startswith("/"):
+            job_url = f"https://{slug}.bamboohr.com{job_url}"
+
+        # Extract Job ID from URL
+        job_id_match = re.search(r"[?&]id=(\d+)", job_url)
+        if not job_id_match:
+            # Try new format: /careers/123
+            job_id_match = re.search(r"/careers/(\d+)", job_url)
+        
+        job_id = job_id_match.group(1) if job_id_match else job_url
+
+        jobs.append(RawJob(
+            ats_platform="bamboohr",
+            company_slug=slug,
+            company_name=name,
+            job_id=job_id,
+            title=title,
+            location="", # BambooHR listings often don't show location in this view
+            url=job_url,
+            description="", # Stage 2 hydration will handle this
+            posted_at=None,
+            fetched_at=now,
+            company_metadata=company_metadata,
+        ))
+
+    logger.debug("BambooHR %s: %d jobs", slug, len(jobs))
+    return jobs
+
+
 # ── Platform Dispatcher ─────────────────────────────────────────────
 
 FETCHERS = {
@@ -438,6 +518,7 @@ FETCHERS = {
     "lever": fetch_lever,
     "ashby": fetch_ashby,
     "workable": fetch_workable,
+    "bamboohr": fetch_bamboohr,
 }
 
 
@@ -557,11 +638,11 @@ async def collect_all(
 
 
 class LocalATSProvider:
-    """Greenhouse, Lever, Ashby, Workable — scans curated company list via direct API."""
+    """Greenhouse, Lever, Ashby, Workable, BambooHR — scans curated company list via direct API."""
 
     name = "local"
     display_name = "Targeted Boards"
-    description = "Direct Source: Scans your curated company list via direct API (Supports Greenhouse, Lever, Ashby, Workable)."
+    description = "Direct Source: Scans your curated company list via direct API (Supports Greenhouse, Lever, Ashby, Workable, BambooHR)."
     shows_aggregator_badge = False
 
     async def fetch_jobs(

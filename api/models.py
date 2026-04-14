@@ -215,7 +215,7 @@ class ProfileContent(BaseModel):
 
 
 class CompanyEntry(BaseModel):
-    platform: Literal["greenhouse", "lever", "ashby", "workable"]
+    platform: Literal["greenhouse", "lever", "ashby", "workable", "bamboohr"]
     slug: str
     name: str
     company_quality_signals: list[str] = []
@@ -237,6 +237,7 @@ class CompaniesResponse(BaseModel):
     lever: list[TrackedCompanyEntry] = []
     ashby: list[TrackedCompanyEntry] = []
     workable: list[TrackedCompanyEntry] = []
+    bamboohr: list[TrackedCompanyEntry] = []
 
 
 # Wizard Models

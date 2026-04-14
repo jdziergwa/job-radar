@@ -377,6 +377,8 @@ greenhouse:
   name: Golden Hippo
 - slug: grafanalabs
   name: Grafana Labs
+- slug: masterclass
+  name: MasterClass
 - slug: grailed
   name: Grailed
 - slug: guidepoint
@@ -780,6 +782,8 @@ greenhouse:
 lever:
 - slug: spotify
   name: Spotify
+- slug: morningbrew
+  name: Morning Brew
 - slug: apollographql
   name: Apollo GraphQL
 - slug: wealthsimple
@@ -1106,3 +1110,12 @@ ashby:
 workable:
 - slug: doist
   name: Doist
+bamboohr:
+- slug: quora
+  name: Quora
+- slug: wistia
+  name: Wistia
+- slug: 10web
+  name: 10Web
+- slug: whisk
+  name: whisk

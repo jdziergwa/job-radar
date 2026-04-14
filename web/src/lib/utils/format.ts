@@ -35,6 +35,7 @@ export function getPlatformName(slug: string): string {
     'lever': 'Lever',
     'ashby': 'Ashby',
     'workable': 'Workable',
+    'bamboohr': 'BambooHR',
     'aggregator': 'Aggregator',
   }
   return mapping[slug.toLowerCase()] || slug.charAt(0).toUpperCase() + slug.slice(1)

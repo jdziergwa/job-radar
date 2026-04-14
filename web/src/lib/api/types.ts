@@ -193,7 +193,7 @@ export interface paths {
         };
         /**
          * Get Insights
-         * @description Get LLM-generated market intelligence narrative report (cached 1h).
+         * @description Get cached market insights, or regenerate them only when explicitly forced.
          */
         get: operations["get_insights_api_stats_insights_get"];
         put?: never;
@@ -406,6 +406,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/wizard/state": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Wizard State
+         * @description Return the last saved wizard inputs so the UI can rerun guided flows.
+         */
+        get: operations["get_wizard_state_api_wizard_state_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/wizard/template": {
         parameters: {
             query?: never;
@@ -548,12 +568,12 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        /** Update Company */
-        patch: operations["update_company_api_companies__profile___platform___slug__patch"];
         /** Remove Company */
         delete: operations["remove_company_api_companies__profile___platform___slug__delete"];
         options?: never;
         head?: never;
+        /** Update Company */
+        patch: operations["update_company_api_companies__profile___platform___slug__patch"];
         trace?: never;
     };
     "/api/health": {
@@ -699,6 +719,11 @@ export interface components {
              * @default []
              */
             workable: components["schemas"]["TrackedCompanyEntry"][];
+            /**
+             * Bamboohr
+             * @default []
+             */
+            bamboohr: components["schemas"]["TrackedCompanyEntry"][];
         };
         /** CompanyEntry */
         CompanyEntry: {
@@ -706,21 +731,11 @@ export interface components {
              * Platform
              * @enum {string}
              */
-            platform: "greenhouse" | "lever" | "ashby" | "workable";
+            platform: "greenhouse" | "lever" | "ashby" | "workable" | "bamboohr";
             /** Slug */
             slug: string;
             /** Name */
             name: string;
-            /**
-             * Company Quality Signals
-             * @default []
-             */
-            company_quality_signals: string[];
-        };
-        /** CompanyUpdateRequest */
-        CompanyUpdateRequest: {
-            /** Name */
-            name?: string | null;
             /**
              * Company Quality Signals
              * @default []
@@ -738,6 +753,16 @@ export interface components {
             /** Last Seen */
             last_seen?: string | null;
         };
+        /** CompanyUpdateRequest */
+        CompanyUpdateRequest: {
+            /** Name */
+            name?: string | null;
+            /**
+             * Company Quality Signals
+             * @default []
+             */
+            company_quality_signals: string[];
+        };
         /** CountryStat */
         CountryStat: {
             /** Country */
@@ -751,21 +776,13 @@ export interface components {
             date: string;
             /** New Jobs */
             new_jobs: number;
-            /** In Funnel */
+            /**
+             * In Funnel
+             * @default 0
+             */
             in_funnel: number;
             /** Scored */
             scored: number;
-        };
-        /** PipelineFunnelStats */
-        PipelineFunnelStats: {
-            /** Collected */
-            collected: number;
-            /** Passed Prefilter */
-            passed_prefilter: number;
-            /** High Priority */
-            high_priority: number;
-            /** Applied */
-            applied: number;
         };
         /** DismissalStats */
         DismissalStats: {
@@ -987,6 +1004,29 @@ export interface components {
              */
             salary_distribution: components["schemas"]["SalaryStat"][];
         };
+        /** PipelineFunnelStats */
+        PipelineFunnelStats: {
+            /**
+             * Collected
+             * @default 0
+             */
+            collected: number;
+            /**
+             * Passed Prefilter
+             * @default 0
+             */
+            passed_prefilter: number;
+            /**
+             * High Priority
+             * @default 0
+             */
+            high_priority: number;
+            /**
+             * Applied
+             * @default 0
+             */
+            applied: number;
+        };
         /** PipelineRunRequest */
         PipelineRunRequest: {
             /**
@@ -1090,6 +1130,7 @@ export interface components {
             draft_doc: string;
             /** Draft Yaml */
             draft_yaml: string;
+            refinement_context?: components["schemas"]["ProfileRefinementContext"] | null;
         };
         /** ProfileRefineResponse */
         ProfileRefineResponse: {
@@ -1103,6 +1144,30 @@ export interface components {
              */
             changes_made: string[];
         };
+        /** ProfileRefinementContext */
+        ProfileRefinementContext: {
+            /**
+             * Mode
+             * @default fresh_start
+             * @enum {string}
+             */
+            mode: "fresh_start" | "preferences_edit";
+            /**
+             * Changed Fields
+             * @default []
+             */
+            changed_fields: string[];
+            /**
+             * Change Summary
+             * @default []
+             */
+            change_summary: string[];
+            /**
+             * Preserve Existing Shape
+             * @default true
+             */
+            preserve_existing_shape: boolean;
+        };
         /** ProfileSaveRequest */
         ProfileSaveRequest: {
             /** Profile Name */
@@ -1111,6 +1176,8 @@ export interface components {
             profile_yaml: string;
             /** Profile Doc */
             profile_doc: string;
+            cv_analysis?: components["schemas"]["CVAnalysisResponse"] | null;
+            user_preferences?: components["schemas"]["UserPreferences"] | null;
         };
         /** ProfileTemplateResponse */
         ProfileTemplateResponse: {
@@ -1233,6 +1300,8 @@ export interface components {
              * @default 0
              */
             new_this_week: number;
+            /** Last Pipeline Run At */
+            last_pipeline_run_at?: string | null;
             /**
              * Scored
              * @default 0
@@ -1281,6 +1350,18 @@ export interface components {
              */
             status: "new" | "scored" | "applied" | "dismissed";
         };
+        /** TrackedCompanyEntry */
+        TrackedCompanyEntry: {
+            /** Slug */
+            slug: string;
+            /** Name */
+            name: string;
+            /**
+             * Company Quality Signals
+             * @default []
+             */
+            company_quality_signals: string[];
+        };
         /** TrendsResponse */
         TrendsResponse: {
             /**
@@ -1289,7 +1370,6 @@ export interface components {
              */
             daily_counts: components["schemas"]["DailyCount"][];
             /**
-             * Pipeline Funnel
              * @default {
              *       "collected": 0,
              *       "passed_prefilter": 0,
@@ -1316,18 +1396,6 @@ export interface components {
                 [key: string]: unknown;
             }[];
         };
-        /** TrackedCompanyEntry */
-        TrackedCompanyEntry: {
-            /** Slug */
-            slug: string;
-            /** Name */
-            name: string;
-            /**
-             * Company Quality Signals
-             * @default []
-             */
-            company_quality_signals: string[];
-        };
         /** UserPreferences */
         UserPreferences: {
             /**
@@ -1342,6 +1410,13 @@ export interface components {
             seniority: string[];
             /** Location */
             location: string;
+            /** Basecity */
+            baseCity?: string | null;
+            /**
+             * Basecountry
+             * @default
+             */
+            baseCountry: string;
             /** Workauth */
             workAuth: string;
             /**
@@ -1375,6 +1450,11 @@ export interface components {
              * @default stay
              */
             careerGoal: ("stay" | "pivot" | "step_up" | "broaden") | null;
+            /**
+             * Careerdirectionedited
+             * @default false
+             */
+            careerDirectionEdited: boolean;
             /**
              * Goodmatchsignals
              * @default []
@@ -1425,6 +1505,13 @@ export interface components {
             input?: unknown;
             /** Context */
             ctx?: Record<string, never>;
+        };
+        /** WizardStateResponse */
+        WizardStateResponse: {
+            /** Profile Name */
+            profile_name: string;
+            cv_analysis?: components["schemas"]["CVAnalysisResponse"] | null;
+            user_preferences?: components["schemas"]["UserPreferences"] | null;
         };
     };
     responses: never;
@@ -1568,7 +1655,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PipelineRunResponse"];
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -1599,7 +1686,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PipelineRunResponse"];
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -2081,6 +2168,37 @@ export interface operations {
             };
         };
     };
+    get_wizard_state_api_wizard_state_get: {
+        parameters: {
+            query?: {
+                profile?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WizardStateResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_template_api_wizard_template_get: {
         parameters: {
             query?: never;
@@ -2416,7 +2534,7 @@ export interface operations {
             };
         };
     };
-    update_company_api_companies__profile___platform___slug__patch: {
+    remove_company_api_companies__profile___platform___slug__delete: {
         parameters: {
             query?: never;
             header?: never;
@@ -2427,11 +2545,7 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CompanyUpdateRequest"];
-            };
-        };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
@@ -2453,7 +2567,7 @@ export interface operations {
             };
         };
     };
-    remove_company_api_companies__profile___platform___slug__delete: {
+    update_company_api_companies__profile___platform___slug__patch: {
         parameters: {
             query?: never;
             header?: never;
@@ -2464,7 +2578,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CompanyUpdateRequest"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {

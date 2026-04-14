@@ -46,7 +46,8 @@ const PLATFORMS = [
   { id: 'greenhouse', name: 'Greenhouse' },
   { id: 'lever', name: 'Lever' },
   { id: 'ashby', name: 'Ashby' },
-  { id: 'workable', name: 'Workable' }
+  { id: 'workable', name: 'Workable' },
+  { id: 'bamboohr', name: 'BambooHR' }
 ] as const
 
 type PlatformId = typeof PLATFORMS[number]['id']
@@ -517,7 +518,7 @@ export default function CompaniesPage() {
                     <p className="text-xs text-muted-foreground/60">Click &apos;Add Company Board&apos; to start monitoring boards.</p>
                   </div>
                 ) : (
-                  <div className="space-y-2 max-w-7xl mx-auto">
+                  <div className="space-y-2 w-full">
                     {filteredCompanies(p.id).map((c) => (
                       <div
                         key={c.slug}

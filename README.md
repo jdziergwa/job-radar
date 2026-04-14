@@ -149,7 +149,7 @@ Each profile is a directory containing four main editable files:
     -   `keywords.location_patterns` / `remote_patterns`: Primary location targets and a remote tier (governed by the `fallback_tier` field).
     -   `scoring`: Choose your model (e.g., `claude-haiku-4-5-20251001`), set thresholds, and tune rate-limit behavior with `concurrency` and `min_request_interval_seconds` if Anthropic starts rejecting bursts.
 3.  **`scoring_philosophy.md`**: The per-profile scoring rubric used by the LLM after pre-filtering. This is editable from **Settings**.
-4.  **`companies.yaml`**: Specific companies to monitor directly via their ATS boards, grouped by platform.
+4.  **`companies.yaml`**: Specific companies to monitor directly via their ATS boards, grouped by platform (Greenhouse, Lever, Ashby, Workable, BambooHR).
 
 The guided wizard also persists structured state alongside those files:
 - `cv_analysis.json`: normalized CV extraction and derived signals

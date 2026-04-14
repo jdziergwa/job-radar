@@ -15,7 +15,7 @@ import certifi
 import yaml
 
 
-SUPPORTED_PLATFORMS = ("greenhouse", "lever", "ashby", "workable")
+SUPPORTED_PLATFORMS = ("greenhouse", "lever", "ashby", "workable", "bamboohr")
 
 PLATFORM_ALIASES = {
     "greenhouse": "greenhouse",
@@ -24,6 +24,7 @@ PLATFORM_ALIASES = {
     "ashby": "ashby",
     "ashbyhq": "ashby",
     "workable": "workable",
+    "bamboohr": "bamboohr",
 }
 
 URL_PATTERNS = (
@@ -31,6 +32,7 @@ URL_PATTERNS = (
     ("lever", re.compile(r"https?://(?:jobs|api)\.lever\.co/(?:v0/postings/)?(?P<slug>[a-z0-9\-]+)", re.IGNORECASE)),
     ("ashby", re.compile(r"https?://jobs\.ashbyhq\.com/(?P<slug>[a-z0-9\-]+)", re.IGNORECASE)),
     ("workable", re.compile(r"https?://apply\.workable\.com/(?P<slug>[a-z0-9\-]+)", re.IGNORECASE)),
+    ("bamboohr", re.compile(r"https?://(?P<slug>[a-z0-9\-]+)\.bamboohr\.com", re.IGNORECASE)),
 )
 
 _ssl_ctx = ssl.create_default_context(cafile=certifi.where())
@@ -162,6 +164,8 @@ def _extract_platform_from_record(record: dict[str, Any]) -> tuple[str | None, s
             return "ashby", _slugify(path_parts[0])
         if host == "apply.workable.com" and path_parts:
             return "workable", _slugify(path_parts[0])
+        if host.endswith(".bamboohr.com"):
+            return "bamboohr", _slugify(host.split(".")[0])
 
     return None, fallback_slug
 
