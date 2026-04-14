@@ -254,7 +254,7 @@ class Store:
             to_backfill_descriptions = [
                 (job.description, job.ats_platform, job.company_slug, job.job_id)
                 for job in jobs
-                if job.description and len(job.description) > 50
+                if job.description and len(job.description) > 500
             ]
 
             if db_has_rows:
@@ -288,7 +288,7 @@ class Store:
                 for start in range(0, total_backfills, UPSERT_WRITE_CHUNK_SIZE):
                     batch = to_backfill_descriptions[start:start + UPSERT_WRITE_CHUNK_SIZE]
                     conn.executemany(
-                        "UPDATE jobs SET description = ? WHERE ats_platform = ? AND company_slug = ? AND job_id = ? AND (description IS NULL OR length(description) < 50)",
+                        "UPDATE jobs SET description = ? WHERE ats_platform = ? AND company_slug = ? AND job_id = ? AND (description IS NULL OR length(description) < 500)",
                         batch,
                     )
                     if progress_callback:

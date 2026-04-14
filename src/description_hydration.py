@@ -6,7 +6,7 @@ from src.models import CandidateJob
 from src.providers.utils import strip_html
 
 
-SPARSE_DESCRIPTION_THRESHOLD = 600
+SPARSE_DESCRIPTION_THRESHOLD = 1000
 
 
 def description_text_length(description: str) -> int:
