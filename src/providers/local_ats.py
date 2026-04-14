@@ -265,8 +265,32 @@ async def fetch_lever(
     for item in data:
         categories = item.get("categories", {}) or {}
         location = categories.get("location", "") or ""
-        # descriptionPlain is already available, but description (HTML) is better
-        description = item.get("description") or item.get("descriptionPlain") or ""
+        
+        # Assemble full description from multiple potential fields
+        # 'description' is usually the intro
+        parts = []
+        intro = item.get("description") or item.get("descriptionPlain") or ""
+        if intro:
+            parts.append(intro)
+            
+        # 'lists' contains structured sections like Requirements, Responsibilities
+        lists = item.get("lists")
+        if isinstance(lists, list):
+            for section in lists:
+                header = section.get("text")
+                content = section.get("content")
+                if content:
+                    if header:
+                        parts.append(f"<h3>{header}</h3>")
+                    parts.append(content)
+                    
+        # 'additional' contains further info
+        additional = item.get("additional") or item.get("additionalPlain")
+        if additional:
+            parts.append(f"<h3>Additional Information</h3>")
+            parts.append(additional)
+            
+        description = "\n\n".join(parts) if parts else ""
 
         jobs.append(RawJob(
             ats_platform="lever",
