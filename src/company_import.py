@@ -15,7 +15,7 @@ import certifi
 import yaml
 
 
-SUPPORTED_PLATFORMS = ("greenhouse", "lever", "ashby", "workable", "bamboohr")
+SUPPORTED_PLATFORMS = ("greenhouse", "lever", "ashby", "workable", "bamboohr", "smartrecruiters")
 
 PLATFORM_ALIASES = {
     "greenhouse": "greenhouse",
@@ -25,6 +25,8 @@ PLATFORM_ALIASES = {
     "ashbyhq": "ashby",
     "workable": "workable",
     "bamboohr": "bamboohr",
+    "smartrecruiters": "smartrecruiters",
+    "sr": "smartrecruiters",
 }
 
 URL_PATTERNS = (
@@ -33,6 +35,7 @@ URL_PATTERNS = (
     ("ashby", re.compile(r"https?://jobs\.ashbyhq\.com/(?P<slug>[a-z0-9\-]+)", re.IGNORECASE)),
     ("workable", re.compile(r"https?://apply\.workable\.com/(?P<slug>[a-z0-9\-]+)", re.IGNORECASE)),
     ("bamboohr", re.compile(r"https?://(?P<slug>[a-z0-9\-]+)\.bamboohr\.com", re.IGNORECASE)),
+    ("smartrecruiters", re.compile(r"https?://(?:jobs|careers|api)\.smartrecruiters\.com/(?:v1/companies/)?(?P<slug>[a-z0-9\-]+)?", re.IGNORECASE)),
 )
 
 _ssl_ctx = ssl.create_default_context(cafile=certifi.where())

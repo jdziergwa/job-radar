@@ -31,6 +31,7 @@ PLATFORM_REQUEST_TIMEOUT = {
     "ashby": REQUEST_TIMEOUT,
     "workable": REQUEST_TIMEOUT,
     "bamboohr": REQUEST_TIMEOUT,
+    "smartrecruiters": REQUEST_TIMEOUT,
 }
 PLATFORM_CONCURRENCY = {
     "greenhouse": 5,
@@ -38,6 +39,7 @@ PLATFORM_CONCURRENCY = {
     "ashby": 3,
     "workable": 3,
     "bamboohr": 3,
+    "smartrecruiters": 3,
 }
 PLATFORM_REQUEST_DELAY = {
     "greenhouse": 0.0,
@@ -45,6 +47,7 @@ PLATFORM_REQUEST_DELAY = {
     "ashby": 0.0,
     "workable": 0.0,
     "bamboohr": 0.0,
+    "smartrecruiters": 0.0,
 }
 
 # SSL context using certifi for macOS compatibility
@@ -511,6 +514,51 @@ async def fetch_bamboohr(
     return jobs
 
 
+async def fetch_smartrecruiters(
+    session: aiohttp.ClientSession,
+    semaphore: asyncio.Semaphore,
+    company: dict[str, str],
+) -> list[RawJob]:
+    """Fetch jobs from SmartRecruiters API."""
+    slug = company["slug"]
+    url = f"https://api.smartrecruiters.com/v1/companies/{slug}/postings"
+    
+    async with semaphore:
+        async with session.get(url) as response:
+            if response.status == 404:
+                logger.warning("SmartRecruiters company not found: %s", slug)
+                return []
+            response.raise_for_status()
+            data = await response.json()
+
+    jobs = []
+    for item in data.get("content", []):
+        job_id = item.get("id")
+        title = item.get("name")
+        
+        # Build location string
+        loc_data = item.get("location", {})
+        city = loc_data.get("city")
+        country = loc_data.get("country", "").upper()
+        location_parts = [p for p in [city, country] if p]
+        location = ", ".join(location_parts) or "Remote"
+        
+        # SmartRecruiters jobs are usually at jobs.smartrecruiters.com/{slug}/{id}
+        job_url = f"https://jobs.smartrecruiters.com/{slug}/{job_id}"
+        
+        jobs.append(RawJob(
+            ats_platform="smartrecruiters",
+            company_slug=slug,
+            company_name=company.get("name", slug),
+            title=title,
+            location=location,
+            url=job_url,
+            posted_at=item.get("releasedDate"),
+        ))
+    
+    return jobs
+
+
 # ── Platform Dispatcher ─────────────────────────────────────────────
 
 FETCHERS = {
@@ -519,6 +567,7 @@ FETCHERS = {
     "ashby": fetch_ashby,
     "workable": fetch_workable,
     "bamboohr": fetch_bamboohr,
+    "smartrecruiters": fetch_smartrecruiters,
 }
 
 
@@ -637,12 +686,14 @@ async def collect_all(
     return all_jobs
 
 
+
+
 class LocalATSProvider:
     """Greenhouse, Lever, Ashby, Workable, BambooHR — scans curated company list via direct API."""
 
     name = "local"
     display_name = "Targeted Boards"
-    description = "Direct Source: Scans your curated company list via direct API (Supports Greenhouse, Lever, Ashby, Workable, BambooHR)."
+    description = "Direct Source: Scans your curated company list via direct API (Supports Greenhouse, Lever, Ashby, Workable, BambooHR, SmartRecruiters)."
     shows_aggregator_badge = False
 
     async def fetch_jobs(

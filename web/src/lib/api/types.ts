@@ -724,6 +724,11 @@ export interface components {
              * @default []
              */
             bamboohr: components["schemas"]["TrackedCompanyEntry"][];
+            /**
+             * Smartrecruiters
+             * @default []
+             */
+            smartrecruiters: components["schemas"]["TrackedCompanyEntry"][];
         };
         /** CompanyEntry */
         CompanyEntry: {
@@ -731,7 +736,7 @@ export interface components {
              * Platform
              * @enum {string}
              */
-            platform: "greenhouse" | "lever" | "ashby" | "workable" | "bamboohr";
+            platform: "greenhouse" | "lever" | "ashby" | "workable" | "bamboohr" | "smartrecruiters";
             /** Slug */
             slug: string;
             /** Name */

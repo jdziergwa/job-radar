@@ -47,7 +47,8 @@ const PLATFORMS = [
   { id: 'lever', name: 'Lever' },
   { id: 'ashby', name: 'Ashby' },
   { id: 'workable', name: 'Workable' },
-  { id: 'bamboohr', name: 'BambooHR' }
+  { id: 'bamboohr', name: 'BambooHR' },
+  { id: 'smartrecruiters', name: 'SmartRecruiters' }
 ] as const
 
 type PlatformId = typeof PLATFORMS[number]['id']
