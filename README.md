@@ -270,4 +270,4 @@ Run `make install` again to ensure your Python virtual environment is correctly 
 
 ## 📄 License
 
-Licensed under [GNU AGPL v3.0](https://www.gnu.org/licenses/agpl-3.0.en.html). See [LICENSE](LICENSE).
+Licensed under [GNU AGPL v3.0](https://www.gnu.org/licenses/agpl-3.0.en.html). See [LICENSE](LICENSE). Contributions: see [CLA](CLA.md).
