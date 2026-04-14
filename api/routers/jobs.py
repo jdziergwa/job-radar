@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Query
 from typing import Optional
 from api.deps import get_store
-from api.models import JobListResponse, JobDetailResponse, JobResponse, StatusUpdate
+from api.models import JobListResponse, JobDetailResponse, JobResponse, StatusUpdate, PipelineRunResponse
 from api import background as bg
 
 router = APIRouter()
@@ -74,7 +74,7 @@ def update_status(job_id: int, body: StatusUpdate, profile: str = Query("default
     return {"ok": True, "id": job_id, "status": body.status}
 
 
-@router.post("/jobs/{job_id}/rescore")
+@router.post("/jobs/{job_id}/rescore", response_model=PipelineRunResponse)
 async def rescore_job(job_id: int, profile: str = Query("default")):
     """Trigger AI rescoring for a specific job."""
     try:
@@ -82,12 +82,12 @@ async def rescore_job(job_id: int, profile: str = Query("default")):
             profile=profile,
             job_id=job_id
         )
-        return {"run_id": run_id}
+        return PipelineRunResponse(run_id=run_id)
     except RuntimeError as e:
         raise HTTPException(status_code=409, detail=str(e))
 
 
-@router.post("/jobs/rescore/all")
+@router.post("/jobs/rescore/all", response_model=PipelineRunResponse)
 async def rescore_all_jobs(profile: str = Query("default")):
     """Trigger AI rescoring for all previously scored jobs."""
     try:
@@ -95,6 +95,6 @@ async def rescore_all_jobs(profile: str = Query("default")):
             profile=profile,
             rescore_all=True
         )
-        return {"run_id": run_id}
+        return PipelineRunResponse(run_id=run_id)
     except RuntimeError as e:
         raise HTTPException(status_code=409, detail=str(e))
