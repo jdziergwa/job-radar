@@ -29,8 +29,13 @@ def test_upsert_jobs_backfills_short_existing_description():
 
         richer_description = (
             "This platform engineering role owns developer infrastructure, CI pipelines, "
-            "service reliability, and internal tooling across distributed systems."
-        )
+            "service reliability, and internal tooling across distributed systems. "
+            "We are looking for someone with deep experience in Kubernetes, Terraform, "
+            "and cloud-native architectures. You will be responsible for scaling our "
+            "data processing pipelines and ensuring 99.99% availability for our customers. "
+            "The ideal candidate has a strong background in Go or Python and has worked "
+            "on large-scale infrastructure projects. "
+        ) * 4  # Ensure it's well over the 500-char backfill threshold (approx 1200 chars)
 
         inserted_count = store.upsert_jobs([
             RawJob(
