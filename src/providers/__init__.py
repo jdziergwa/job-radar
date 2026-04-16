@@ -108,6 +108,7 @@ from src.providers.arbeitnow import ArbeitnowProvider
 from src.providers.weworkremotely import WeWorkRemotelyProvider
 from src.providers.adzuna import AdzunaProvider
 from src.providers.himalayas import HimalayasProvider
+from src.providers.jobicy import JobicyProvider
 
 register(RemotiveProvider())
 register(RemoteOKProvider())
@@ -116,3 +117,4 @@ register(ArbeitnowProvider())
 register(WeWorkRemotelyProvider())
 register(AdzunaProvider())
 register(HimalayasProvider())
+register(JobicyProvider())

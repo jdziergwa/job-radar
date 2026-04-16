@@ -7,6 +7,7 @@ from src.providers.hackernews import _parse_job_comment
 from src.providers.remotive import _parse_remotive_job
 from src.providers.remoteok import _parse_remoteok_job
 from src.providers.himalayas import HimalayasProvider, _parse_himalayas_job
+from src.providers.jobicy import JobicyProvider, _parse_jobicy_job, _rfc2822_to_iso
 
 
 def test_parse_remotive_job_normalizes_html_and_salary():
@@ -137,3 +138,60 @@ def test_himalayas_fetch_returns_empty_on_http_error():
 
     assert asyncio.run(_run()) == []
 
+
+# ── Jobicy ─────────────────────────────────────────────────────────────
+
+
+def test_rfc2822_to_iso_converts_correctly():
+    result = _rfc2822_to_iso("Mon, 08 Apr 2026 12:00:00 +0000")
+    assert result is not None
+    assert result.startswith("2026-04-08")
+    assert "T" in result
+
+
+def test_rfc2822_to_iso_returns_none_for_none():
+    assert _rfc2822_to_iso(None) is None
+
+
+def test_parse_jobicy_job_handles_html_and_rfc2822_date():
+    job = _parse_jobicy_job(
+        {
+            "id": 9999,
+            "companyName": "Remote Co",
+            "jobTitle": "QA Lead",
+            "jobGeo": "Worldwide",
+            "url": "https://jobicy.com/jobs/9999-qa-lead",
+            "jobDescription": "<p>Lead the <strong>QA</strong> team globally.</p>",
+            "pubDate": "Mon, 08 Apr 2026 10:00:00 +0000",
+            "annualSalaryMin": 70000,
+            "annualSalaryMax": 90000,
+            "salaryCurrency": "USD",
+        },
+        "2026-04-09T00:00:00Z",
+    )
+
+    assert job.ats_platform == "jobicy"
+    assert job.company_slug == "remote-co"
+    assert job.job_id == "9999"
+    assert job.title == "QA Lead"
+    assert job.location == "Worldwide"
+    assert "<" not in job.description
+    assert "Lead the" in job.description
+    assert job.posted_at is not None
+    assert job.posted_at.startswith("2026-04-08")
+    assert job.salary_min == 70000
+    assert job.salary_max == 90000
+    assert job.salary_currency == "USD"
+
+
+def test_jobicy_fetch_returns_empty_on_http_error():
+    import unittest.mock as mock
+
+    async def _run():
+        provider = JobicyProvider()
+        with mock.patch("httpx.AsyncClient") as mock_client:
+            instance = mock_client.return_value.__aenter__.return_value
+            instance.get.side_effect = httpx.ConnectError("simulated")
+            return await provider.fetch_jobs(ctx=None)
+
+    assert asyncio.run(_run()) == []

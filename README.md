@@ -168,6 +168,7 @@ Registered providers currently include:
 -   `weworkremotely`
 -   `adzuna`
 -   `himalayas`
+-   `jobicy`
 
 CLI examples:
 
@@ -250,6 +251,7 @@ graph TD
 - We Work Remotely source data provided by [We Work Remotely](https://weworkremotely.com).
 - Adzuna source data provided by [Adzuna](https://www.adzuna.com).
 - Himalayas source data provided by [Himalayas](https://himalayas.app).
+- Jobicy source data provided by [Jobicy](https://jobicy.com).
 - Company discovery imports may include normalized ATS company data derived from [Remotebear](https://github.com/remotebear-io/remotebear) and [Awesome Easy Apply](https://github.com/sample-resume/awesome-easy-apply).
 
 ---
