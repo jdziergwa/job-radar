@@ -107,6 +107,7 @@ from src.providers.hackernews import HackerNewsProvider
 from src.providers.arbeitnow import ArbeitnowProvider
 from src.providers.weworkremotely import WeWorkRemotelyProvider
 from src.providers.adzuna import AdzunaProvider
+from src.providers.himalayas import HimalayasProvider
 
 register(RemotiveProvider())
 register(RemoteOKProvider())
@@ -114,3 +115,4 @@ register(HackerNewsProvider())
 register(ArbeitnowProvider())
 register(WeWorkRemotelyProvider())
 register(AdzunaProvider())
+register(HimalayasProvider())

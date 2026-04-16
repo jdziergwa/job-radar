@@ -167,6 +167,7 @@ Registered providers currently include:
 -   `arbeitnow`
 -   `weworkremotely`
 -   `adzuna`
+-   `himalayas`
 
 CLI examples:
 
@@ -248,6 +249,7 @@ graph TD
 - Arbeitnow source data provided by [Arbeitnow](https://www.arbeitnow.com).
 - We Work Remotely source data provided by [We Work Remotely](https://weworkremotely.com).
 - Adzuna source data provided by [Adzuna](https://www.adzuna.com).
+- Himalayas source data provided by [Himalayas](https://himalayas.app).
 - Company discovery imports may include normalized ATS company data derived from [Remotebear](https://github.com/remotebear-io/remotebear) and [Awesome Easy Apply](https://github.com/sample-resume/awesome-easy-apply).
 
 ---

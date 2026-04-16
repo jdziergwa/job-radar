@@ -1,6 +1,12 @@
+import asyncio
+
+import httpx
+import pytest
+
 from src.providers.hackernews import _parse_job_comment
 from src.providers.remotive import _parse_remotive_job
 from src.providers.remoteok import _parse_remoteok_job
+from src.providers.himalayas import HimalayasProvider, _parse_himalayas_job
 
 
 def test_parse_remotive_job_normalizes_html_and_salary():
@@ -83,3 +89,51 @@ def test_parse_hackernews_comment_skips_candidate_posts():
     )
 
     assert job is None
+
+
+# ── Himalayas ──────────────────────────────────────────────────────────
+
+
+def test_parse_himalayas_job_normalizes_html_and_salary():
+    job = _parse_himalayas_job(
+        {
+            "guid": "https://himalayas.app/companies/acme/jobs/senior-sdet-12345",
+            "companyName": "Acme Corp",
+            "companySlug": "acme-corp",
+            "title": "Senior SDET",
+            "locationRestrictions": ["Europe", "USA"],
+            "applicationLink": "https://jobs.acme.com/apply/sdet",
+            "description": "<p>Own test automation and quality.</p>",
+            "pubDate": "2026-04-08T00:00:00Z",
+            "minSalary": 80000,
+            "maxSalary": 110000,
+            "currency": "USD",
+        },
+        "2026-04-09T00:00:00Z",
+    )
+
+    assert job.ats_platform == "himalayas"
+    assert job.company_slug == "acme-corp"
+    assert job.company_name == "Acme Corp"
+    assert job.title == "Senior SDET"
+    assert job.location == "Europe, USA"
+    assert job.url == "https://jobs.acme.com/apply/sdet"
+    assert "<" not in job.description
+    assert "Own test automation" in job.description
+    assert job.salary_min == 80000
+    assert job.salary_max == 110000
+    assert job.salary_currency == "USD"
+
+
+def test_himalayas_fetch_returns_empty_on_http_error():
+    import unittest.mock as mock
+
+    async def _run():
+        provider = HimalayasProvider()
+        with mock.patch("httpx.AsyncClient") as mock_client:
+            instance = mock_client.return_value.__aenter__.return_value
+            instance.get.side_effect = httpx.ConnectError("simulated")
+            return await provider.fetch_jobs(ctx=None)
+
+    assert asyncio.run(_run()) == []
+
