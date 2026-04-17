@@ -20,7 +20,8 @@ from api.models import (
     NotesUpdate,
     TimelineResponse,
 )
-from src.fetcher import detect_ats_platform, extract_id, extract_slug_from_url, fetch_job_from_url
+from src.fetcher import fetch_job_from_url
+from src.job_resolver import detect_ats_platform, resolve_job_ref
 from src.providers.utils import slugify
 
 router = APIRouter()
@@ -60,12 +61,9 @@ def _external_job_id(url: str) -> str:
 
 
 def _resolve_import_identity(url: str, fallback_name: str | None = None) -> tuple[str, str, str]:
-    platform = detect_ats_platform(url)
-    if platform:
-        company_slug = extract_slug_from_url(url, platform)
-        job_id = extract_id(url)
-        if company_slug and job_id:
-            return platform, company_slug, job_id
+    ref = resolve_job_ref(url)
+    if ref.platform and ref.company_slug and ref.job_id:
+        return ref.platform, ref.company_slug, ref.job_id
     return "external", _external_company_slug(url, fallback_name), _external_job_id(url)
 
 
@@ -204,9 +202,9 @@ async def import_application(body: ImportJobRequest, profile: str = Query("defau
     fetched_job = await fetch_job_from_url(body.url) if detect_ats_platform(body.url) else None
     if fetched_job:
         fetched = True
-        ats_platform = str(fetched_job["ats_platform"])
-        company_slug = str(fetched_job["company_slug"])
-        external_job_id = str(fetched_job["job_id"])
+        ats_platform = fetched_job.ats_platform
+        company_slug = fetched_job.company_slug
+        external_job_id = fetched_job.job_id
         existing = store.get_job_by_identity(ats_platform, company_slug, external_job_id)
         if existing:
             return _existing_import_response(existing, fetched=True)
@@ -215,12 +213,18 @@ async def import_application(body: ImportJobRequest, profile: str = Query("defau
             ats_platform=ats_platform,
             company_slug=company_slug,
             external_job_id=external_job_id,
-            company_name=body.company_name or str(fetched_job.get("company_name") or company_slug),
-            title=body.title or str(fetched_job.get("title") or "Imported Job"),
-            location=body.location or fetched_job.get("location"),
-            url=body.url,
-            description=fetched_job.get("description"),
+            company_name=body.company_name or fetched_job.company_name or company_slug,
+            title=body.title or fetched_job.title or "Imported Job",
+            location=body.location or fetched_job.location,
+            url=fetched_job.url or body.url,
+            description=fetched_job.description,
             notes=body.notes,
+            company_metadata=fetched_job.company_metadata,
+            location_metadata=fetched_job.location_metadata,
+            salary=fetched_job.salary,
+            salary_min=fetched_job.salary_min,
+            salary_max=fetched_job.salary_max,
+            salary_currency=fetched_job.salary_currency,
             source="manual",
             initial_event_note="Imported from URL",
         )

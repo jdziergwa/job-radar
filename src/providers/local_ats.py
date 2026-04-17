@@ -328,9 +328,9 @@ async def fetch_ashby(
 
     async with sem:
         try:
-            async with session.post(
+            async with session.get(
                 url,
-                json={},
+                params={"includeCompensation": "true"},
                 timeout=aiohttp.ClientTimeout(total=_platform_timeout("ashby")),
             ) as resp:
                 if resp.status == 404:

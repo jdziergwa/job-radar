@@ -2,6 +2,7 @@ import asyncio
 import json
 import logging
 import re
+from datetime import datetime, timezone
 from types import SimpleNamespace
 from typing import Any, Optional, Callable
 from urllib.parse import urlparse
@@ -9,19 +10,13 @@ from urllib.parse import urlparse
 import certifi
 import httpx
 
-from src.company_import import extract_platform_slug_from_url
+from src.job_resolver import resolve_job_ref, extract_id
+from src.providers.local_ats import _build_ashby_location_metadata
 from src.providers.utils import strip_html
 from src.models import RawJob
 from src.providers.utils import slugify
 
 logger = logging.getLogger(__name__)
-
-# Try to match job IDs from URLs
-# Greenhouse: /jobs/12345
-# Lever: /company/12345-uuid
-# Ashby: /company/12345-uuid
-ID_REGEX = re.compile(r"/([a-zA-Z0-9\-]+)/?$")
-
 
 def _humanize_slug(value: str) -> str:
     return " ".join(part.capitalize() for part in str(value or "").split("-") if part).strip()
@@ -40,91 +35,168 @@ def _guess_title_from_url(url: str, job_id: str, platform: str) -> str:
     return f"Imported {platform.title()} Job"
 
 
-def detect_ats_platform(url: str) -> str | None:
-    """Return the ATS platform implied by the URL, if recognized."""
-    platform, _ = extract_platform_slug_from_url(url)
-    return platform
+def _ashby_extract_description(item: dict[str, Any]) -> str | None:
+    for key in (
+        "descriptionHtml",
+        "descriptionPlain",
+        "jobDescriptionHtml",
+        "jobDescriptionPlain",
+        "description",
+    ):
+        value = item.get(key)
+        if isinstance(value, str) and value.strip():
+            return value
+    return None
 
 
-def extract_slug_from_url(url: str, platform: str) -> str:
-    """Extract the ATS company slug from a job URL."""
-    detected_platform, slug = extract_platform_slug_from_url(url)
-    if detected_platform == platform and slug:
-        return slug
+def _ashby_extract_location(item: dict[str, Any]) -> str | None:
+    location = item.get("location")
+    if isinstance(location, dict):
+        name = location.get("name")
+        if isinstance(name, str) and name.strip():
+            location = name.strip()
+    if isinstance(location, str) and location.strip():
+        location = location.strip()
+    else:
+        location = None
 
-    parsed = urlparse(url)
-    host = parsed.netloc.lower()
-    path_parts = [part for part in parsed.path.split("/") if part]
-    if platform == "bamboohr" and host.endswith(".bamboohr.com"):
-        return slugify(host.split(".")[0])
-    if path_parts:
-        return slugify(path_parts[0])
-    return slugify(host.split(".")[0] if host else platform)
+    workplace_type = item.get("workplaceType")
+    if isinstance(workplace_type, str) and workplace_type.strip():
+        normalized_workplace_type = workplace_type.strip()
+        if location and normalized_workplace_type.lower() not in location.lower():
+            return f"{normalized_workplace_type} • {location}"
+        if not location:
+            return normalized_workplace_type
 
-def extract_id(url: str) -> str:
-    """Robust job ID extraction from various ATS URL formats."""
-    # 1. Check for common query parameters
-    # Greenhouse often uses gh_jid on custom domains
-    for param in ["gh_jid", "lever-via", "jobId", "id"]:
-        match = re.search(rf"[?&]{param}=([a-zA-Z0-9\-_]+)", url)
-        if match:
-            return match.group(1)
-            
-    # 2. Extract last path segment, ignoring query/fragment
-    path = url.split("?")[0].split("#")[0].strip("/")
-    parts = f"/{path}".split("/") # Ensure leading slash
-    if not parts:
-        return ""
-        
-    # Handle Greenhouse specific IDs which might be numeric but in the middle
-    if "greenhouse" in url and "jobs/" in url:
-        gh_match = re.search(r"jobs/(\d+)", url)
-        if gh_match:
-            return gh_match.group(1)
-            
-    # Handle Lever IDs in path: /slug/uuid
-    if "lever.co" in url:
-        parts = [p for p in parts if p]
-        if len(parts) >= 2:
-            return parts[-1]
-
-    return parts[-1] if parts else ""
+    for key in ("locationName",):
+        value = item.get(key)
+        if isinstance(value, str) and value.strip():
+            return value.strip()
+    return location
 
 
-async def fetch_job_from_url(url: str) -> dict[str, Any] | None:
-    """Best-effort ATS import helper for a single job URL."""
-    platform = detect_ats_platform(url)
-    if not platform:
+def _ashby_extract_salary(item: dict[str, Any]) -> str | None:
+    for key in (
+        "compensationTierSummary",
+        "compensationSummary",
+        "salary",
+        "salarySummary",
+        "compensation",
+    ):
+        value = item.get(key)
+        if isinstance(value, str) and value.strip():
+            return value.strip()
+        if isinstance(value, dict):
+            for nested_key in ("summary", "displayText", "text", "shortSummary", "longSummary"):
+                nested = value.get(nested_key)
+                if isinstance(nested, str) and nested.strip():
+                    return nested.strip()
+    return None
+
+
+def _ashby_extract_company_name(payload: dict[str, Any], company_slug: str) -> str:
+    for key in ("companyName", "name", "organizationName", "organization_name"):
+        value = payload.get(key)
+        if isinstance(value, str) and value.strip():
+            return value.strip()
+    return _humanize_slug(company_slug) or company_slug
+
+
+async def _fetch_ashby_job_data(
+    client: httpx.AsyncClient,
+    *,
+    company_slug: str,
+    job_id: str,
+) -> RawJob | None:
+    api_url = f"https://api.ashbyhq.com/posting-api/job-board/{company_slug}"
+    response = await client.get(
+        api_url,
+        params={"includeCompensation": "true"},
+        timeout=8,
+    )
+    if response.status_code != 200:
         return None
 
-    company_slug = extract_slug_from_url(url, platform)
-    job_id = extract_id(url)
-    if not company_slug or not job_id:
+    payload = response.json()
+    if not isinstance(payload, dict):
+        return None
+
+    jobs = payload.get("jobs", [])
+    if not isinstance(jobs, list):
+        return None
+
+    job_item = next((item for item in jobs if str(item.get("id", "")) == job_id), None)
+    if not isinstance(job_item, dict):
+        return None
+
+    title = job_item.get("title")
+    if not isinstance(title, str) or not title.strip():
+        title = None
+
+    description = _ashby_extract_description(job_item) or ""
+    location = _ashby_extract_location(job_item) or ""
+
+    return RawJob(
+        ats_platform="ashby",
+        company_slug=company_slug,
+        company_name=_ashby_extract_company_name(payload, company_slug),
+        job_id=job_id,
+        title=title or _guess_title_from_url(
+            f"https://jobs.ashbyhq.com/{company_slug}/{job_id}",
+            job_id,
+            "ashby",
+        ),
+        location=location,
+        url=f"https://jobs.ashbyhq.com/{company_slug}/{job_id}",
+        description=description,
+        posted_at=None,
+        fetched_at=datetime.now(timezone.utc).isoformat(),
+        location_metadata=_build_ashby_location_metadata(job_item, location, description),
+        salary=_ashby_extract_salary(job_item),
+    )
+
+
+async def fetch_job_from_url(url: str) -> RawJob | None:
+    """Best-effort ATS import helper for a single job URL."""
+    ref = resolve_job_ref(url)
+    if not ref.platform or not ref.company_slug or not ref.job_id:
         return None
 
     temp_job = SimpleNamespace(
         url=url,
-        ats_platform=platform,
-        company_slug=company_slug,
-        company_name=_humanize_slug(company_slug) or company_slug,
+        ats_platform=ref.platform,
+        company_slug=ref.company_slug,
+        company_name=_humanize_slug(ref.company_slug) or ref.company_slug,
     )
     sem = asyncio.Semaphore(1)
 
     async with httpx.AsyncClient(verify=certifi.where()) as client:
+        if ref.platform == "ashby":
+            ashby_job = await _fetch_ashby_job_data(
+                client,
+                company_slug=ref.company_slug,
+                job_id=ref.job_id,
+            )
+            if ashby_job:
+                return ashby_job
+
         description = await fetch_description(client, sem, temp_job)
 
     if not description:
         return None
 
-    return {
-        "ats_platform": platform,
-        "company_slug": company_slug,
-        "job_id": job_id,
-        "company_name": _humanize_slug(company_slug) or company_slug,
-        "title": _guess_title_from_url(url, job_id, platform),
-        "location": None,
-        "description": description,
-    }
+    return RawJob(
+        ats_platform=ref.platform,
+        company_slug=ref.company_slug,
+        company_name=_humanize_slug(ref.company_slug) or ref.company_slug,
+        job_id=ref.job_id,
+        title=_guess_title_from_url(url, ref.job_id, ref.platform),
+        location="",
+        url=url,
+        description=description,
+        posted_at=None,
+        fetched_at=datetime.now(timezone.utc).isoformat(),
+    )
 
 def extract_json_ld(html: str) -> Optional[str]:
     """Try to find and parse schema.org JobPosting in JSON-LD."""
@@ -253,6 +325,17 @@ async def fetch_description(client: httpx.AsyncClient, sem: asyncio.Semaphore, j
                             continue
                         else:
                             break
+
+            # Ashby
+            elif "ashby" in ats or "ashbyhq.com" in url:
+                if slug and job_id:
+                    ashby_job = await _fetch_ashby_job_data(
+                        client,
+                        company_slug=slug,
+                        job_id=job_id,
+                    )
+                    if ashby_job and ashby_job.get("description"):
+                        return str(ashby_job["description"])
 
             # Workable
             elif "workable" in ats or "workable.com" in url:

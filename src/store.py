@@ -1110,13 +1110,24 @@ class Store:
         url: str,
         description: str | None,
         notes: str | None,
+        company_metadata: dict[str, object] | None = None,
+        location_metadata: dict[str, object] | None = None,
         salary: str | None = None,
+        salary_min: int | None = None,
+        salary_max: int | None = None,
+        salary_currency: str | None = None,
         source: str = "manual",
         initial_event_note: str | None = None,
     ) -> tuple[dict, bool]:
         """Create a tracked application or return an existing duplicate."""
         normalized_job_id = external_job_id or uuid.uuid4().hex
         now = datetime.utcnow().isoformat()
+        serialized_company_metadata = (
+            Store._serialize_metadata(company_metadata) if company_metadata else None
+        )
+        serialized_location_metadata = (
+            Store._serialize_metadata(location_metadata) if location_metadata else None
+        )
         with self._connect() as conn:
             existing = conn.execute(
                 """SELECT * FROM jobs
@@ -1128,17 +1139,20 @@ class Store:
 
             cursor = conn.execute(
                 """INSERT INTO jobs (
-                       ats_platform, company_slug, job_id, company_name, title, location, url,
-                       description, posted_at, first_seen_at, last_seen_at, status,
-                       application_status, applied_at, notes, source, salary
-                   ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                       ats_platform, company_slug, job_id, company_name, company_metadata,
+                       title, location, location_metadata, url, description, posted_at,
+                       first_seen_at, last_seen_at, status, application_status, applied_at,
+                       notes, source, salary, salary_min, salary_max, salary_currency
+                   ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
                     ats_platform,
                     company_slug,
                     normalized_job_id,
                     company_name,
+                    serialized_company_metadata,
                     title,
                     location,
+                    serialized_location_metadata,
                     url,
                     description,
                     None,
@@ -1150,6 +1164,9 @@ class Store:
                     notes,
                     source,
                     salary,
+                    salary_min,
+                    salary_max,
+                    salary_currency,
                 ),
             )
             new_id = int(cursor.lastrowid)

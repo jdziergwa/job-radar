@@ -1,3 +1,4 @@
+import json
 import tempfile
 from pathlib import Path
 
@@ -148,26 +149,35 @@ def test_application_import_endpoint_handles_fetch_duplicates_and_manual_fallbac
 
     async def fake_fetch_job_from_url(url: str):
         assert "greenhouse" in url
-        return {
-            "ats_platform": "greenhouse",
-            "company_slug": "acme",
-            "job_id": "12345",
-            "company_name": "Acme",
-            "title": "Senior QA Engineer",
-            "location": "Remote",
-            "description": "Test all the things.",
-        }
+        return RawJob(
+            ats_platform="greenhouse",
+            company_slug="example-team",
+            company_name="Example Team",
+            job_id="12345",
+            title="Senior QA Engineer",
+            location="Remote",
+            url="https://boards.greenhouse.io/example-team/jobs/12345",
+            description="Test all the things.",
+            posted_at=None,
+            fetched_at="2026-04-18T00:00:00Z",
+            company_metadata={"quality_signals": ["Top-tier product team"]},
+            location_metadata={"workplace_type": "Remote"},
+            salary="$180k - $220k",
+            salary_min=180000,
+            salary_max=220000,
+            salary_currency="USD",
+        )
 
     monkeypatch.setattr(applications_router, "fetch_job_from_url", fake_fetch_job_from_url)
 
     with TestClient(app) as client:
         first_import = client.post(
             "/api/applications/import",
-            json={"url": "https://boards.greenhouse.io/acme/jobs/12345", "notes": "Saved from external search"},
+            json={"url": "https://boards.greenhouse.io/example-team/jobs/12345", "notes": "Saved from external search"},
         )
         duplicate_import = client.post(
             "/api/applications/import",
-            json={"url": "https://boards.greenhouse.io/acme/jobs/12345"},
+            json={"url": "https://boards.greenhouse.io/example-team/jobs/12345"},
         )
 
         assert first_import.status_code == 200
@@ -176,6 +186,7 @@ def test_application_import_endpoint_handles_fetch_duplicates_and_manual_fallbac
         assert first_payload["already_tracked"] is False
         assert first_payload["job"]["application_status"] == "applied"
         assert first_payload["job"]["source"] == "manual"
+        assert first_payload["job"]["salary"] == "$180k - $220k"
 
         assert duplicate_import.status_code == 200
         assert duplicate_import.json()["already_tracked"] is True
@@ -216,6 +227,13 @@ def test_application_import_endpoint_handles_fetch_duplicates_and_manual_fallbac
     assert external_payload["job"]["company_slug"] == "example-inc"
     assert len(store.get_job_detail(external_payload["job_id"])["job_id"]) == 16
 
+    imported_row = store.get_job_detail(first_payload["job_id"])
+    assert json.loads(imported_row["company_metadata"]) == {"quality_signals": ["Top-tier product team"]}
+    assert json.loads(imported_row["location_metadata"]) == {"workplace_type": "Remote"}
+    assert imported_row["salary_min"] == 180000
+    assert imported_row["salary_max"] == 220000
+    assert imported_row["salary_currency"] == "USD"
+
 
 def test_manual_application_import_persists_manual_identity_and_salary(monkeypatch):
     store = _build_store()
@@ -225,7 +243,7 @@ def test_manual_application_import_persists_manual_identity_and_salary(monkeypat
         response = client.post(
             "/api/applications/import/manual",
             json={
-                "company_name": "Globex Corporation",
+                "company_name": "Example Manual Company",
                 "title": "QA Lead",
                 "location": "Berlin",
                 "description": "Own release quality.",
@@ -238,7 +256,7 @@ def test_manual_application_import_persists_manual_identity_and_salary(monkeypat
     payload = response.json()
     assert payload["already_tracked"] is False
     assert payload["job"]["ats_platform"] == "manual"
-    assert payload["job"]["company_slug"] == "globex-corporation"
+    assert payload["job"]["company_slug"] == "example-manual-company"
     assert payload["job"]["application_status"] == "applied"
     assert payload["job"]["salary"] == "$150k"
-    assert payload["job"]["url"].startswith("manual://globex-corporation/")
+    assert payload["job"]["url"].startswith("manual://example-manual-company/")
