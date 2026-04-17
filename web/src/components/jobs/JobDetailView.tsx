@@ -3,6 +3,10 @@
 import { useCallback, useEffect, useState } from 'react'
 import { api } from '@/lib/api/client'
 import type { components } from '@/lib/api/types'
+import { NotesEditor } from '@/components/applications/NotesEditor'
+import { NextStepEditor } from '@/components/applications/NextStepEditor'
+import { StatusTimeline } from '@/components/applications/StatusTimeline'
+import { StatusTransitionButtons } from '@/components/applications/StatusTransitionButtons'
 import { getMatchQualityLabel } from '@/lib/utils/score'
 import { ScoreRing } from '@/components/score/ScoreRing'
 import { ScoreBar } from '@/components/score/ScoreBar'
@@ -30,6 +34,8 @@ import {
   HelpCircle,
   Sparkles,
   ExternalLink,
+  ClipboardList,
+  FileText,
 } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { useRouter } from 'next/navigation'
@@ -37,15 +43,8 @@ import { toast } from 'sonner'
 
 type JobDetailResponse = components["schemas"]["JobDetailResponse"]
 type JobStatus = components["schemas"]["StatusUpdate"]["status"]
-type ApplicationStatus =
-  | 'applied'
-  | 'screening'
-  | 'interviewing'
-  | 'offer'
-  | 'accepted'
-  | 'rejected_by_company'
-  | 'rejected_by_user'
-  | 'ghosted'
+type ApplicationStatus = components['schemas']['ApplicationStatusUpdate']['application_status']
+type ApplicationEventResponse = components['schemas']['ApplicationEventResponse']
 
 interface JobDetailViewProps {
   jobId: number | null
@@ -67,6 +66,10 @@ export function JobDetailView({
   const [job, setJob] = useState<JobDetailResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [updating, setUpdating] = useState(false)
+  const [timeline, setTimeline] = useState<ApplicationEventResponse[]>([])
+  const [timelineLoading, setTimelineLoading] = useState(false)
+  const [savingNotes, setSavingNotes] = useState(false)
+  const [savingNextStep, setSavingNextStep] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [rescoreRunId, setRescoreRunId] = useState<string | null>(null)
 
@@ -105,6 +108,23 @@ export function JobDetailView({
     }
   }, [jobId])
 
+  const fetchTimeline = useCallback(async () => {
+    if (!jobId) return
+
+    setTimelineLoading(true)
+    try {
+      const { data, error: apiError } = await api.GET('/api/jobs/{job_id}/timeline', {
+        params: { path: { job_id: jobId } },
+      })
+      if (apiError) throw new Error('Failed to load tracker timeline')
+      setTimeline(data?.events ?? [])
+    } catch (err: any) {
+      toast.error(err.message)
+    } finally {
+      setTimelineLoading(false)
+    }
+  }, [jobId])
+
   const updateStatus = async (newStatus: JobStatus) => {
     if (!jobId) return
 
@@ -127,26 +147,89 @@ export function JobDetailView({
     }
   }
 
-  const updateApplicationStatus = async (newStatus: ApplicationStatus) => {
+  const updateApplicationStatus = async (newStatus: ApplicationStatus, note?: string) => {
     if (!jobId) return
+    const isTrackerEntry = !job?.application_status
 
     setUpdating(true)
     try {
-      const { data, error: patchError } = await (api as any).PATCH('/api/jobs/{job_id}/application-status', {
+      const { data, error: patchError } = await api.PATCH('/api/jobs/{job_id}/application-status', {
         params: {
           path: { job_id: jobId },
         },
-        body: { application_status: newStatus },
+        body: { application_status: newStatus, note },
       })
       if (patchError) throw new Error('Failed to update application status')
 
       setJob((prev) => prev ? { ...prev, ...(data ?? {}), application_status: newStatus } : prev)
+      await fetchTimeline()
       router.refresh()
-      toast.success('Application added to tracker')
+      toast.success(isTrackerEntry ? 'Application added to tracker' : 'Application status updated')
     } catch (err: any) {
       toast.error(err.message)
     } finally {
       setUpdating(false)
+    }
+  }
+
+  const removeFromTracker = async () => {
+    if (!jobId) return
+
+    setUpdating(true)
+    try {
+      const { data, error: deleteError } = await api.DELETE('/api/jobs/{job_id}/application-status', {
+        params: { path: { job_id: jobId } },
+      })
+      if (deleteError) throw new Error('Failed to remove job from tracker')
+
+      setJob((prev) => prev ? { ...prev, ...(data ?? {}), application_status: null, next_step: null, next_step_date: null } : prev)
+      setTimeline([])
+      router.refresh()
+      toast.success('Removed from tracker')
+    } catch (err: any) {
+      toast.error(err.message)
+    } finally {
+      setUpdating(false)
+    }
+  }
+
+  const saveNotes = async (notes: string) => {
+    if (!jobId) return
+
+    setSavingNotes(true)
+    try {
+      const { data, error: patchError } = await api.PATCH('/api/jobs/{job_id}/notes', {
+        params: { path: { job_id: jobId } },
+        body: { notes },
+      })
+      if (patchError) throw new Error('Failed to save notes')
+
+      setJob((prev) => prev ? { ...prev, ...(data ?? {}), notes } : prev)
+      toast.success('Notes saved')
+    } catch (err: any) {
+      toast.error(err.message)
+    } finally {
+      setSavingNotes(false)
+    }
+  }
+
+  const saveNextStep = async (payload: { next_step: string | null; next_step_date: string | null }) => {
+    if (!jobId) return
+
+    setSavingNextStep(true)
+    try {
+      const { data, error: patchError } = await api.PATCH('/api/jobs/{job_id}/next-step', {
+        params: { path: { job_id: jobId } },
+        body: payload,
+      })
+      if (patchError) throw new Error('Failed to save next step')
+
+      setJob((prev) => prev ? { ...prev, ...(data ?? {}), ...payload } : prev)
+      toast.success(payload.next_step || payload.next_step_date ? 'Next step saved' : 'Next step cleared')
+    } catch (err: any) {
+      toast.error(err.message)
+    } finally {
+      setSavingNextStep(false)
     }
   }
 
@@ -201,6 +284,15 @@ export function JobDetailView({
     fetchJob()
   }, [fetchJob])
 
+  useEffect(() => {
+    if (!job?.application_status) {
+      setTimeline([])
+      return
+    }
+
+    void fetchTimeline()
+  }, [fetchTimeline, job?.application_status])
+
   const shellClassName = isSheet
     ? 'mx-auto max-w-7xl space-y-8 px-5 py-5 sm:px-6 sm:py-6'
     : 'mx-auto max-w-7xl animate-in space-y-8 px-4 py-6 fade-in duration-700 sm:space-y-10 sm:px-6 sm:py-10'
@@ -243,6 +335,8 @@ export function JobDetailView({
   const companySignals = Array.isArray(job.company_quality_signals) ? job.company_quality_signals : []
   const matchQualityLabel = job.is_sparse ? 'Manual Review Required' : getMatchQualityLabel(job.score_breakdown?.apply_priority)
   const scoreReasoning = job.score_reasoning || 'No detailed reasoning provided.'
+  const trackerStatusLabel = job.application_status ? job.application_status.replaceAll('_', ' ') : null
+  const trackerStatus = job.application_status as ApplicationStatus | null
 
   return (
     <div className={shellClassName}>
@@ -434,7 +528,7 @@ export function JobDetailView({
         <div className="w-full lg:w-80 shrink-0 space-y-4">
           <Card className="border-border/50 bg-card/60 backdrop-blur-xl shadow-2xl overflow-hidden">
             <CardContent className="p-5 space-y-3">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground pb-1">Manage Status</p>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground pb-1">Board Status</p>
               <a
                 href={job.url}
                 target="_blank"
@@ -443,15 +537,17 @@ export function JobDetailView({
               >
                 Apply Now <ExternalLink className="h-4 w-4" />
               </a>
-              <Button
-                variant="outline"
-                className="w-full gap-2 font-bold h-11"
-                onClick={() => updateApplicationStatus('applied')}
-                disabled={!!job.application_status || updating}
-              >
-                <CheckCircle2 className="h-4 w-4" />
-                {job.application_status ? 'Tracked in Applications' : 'Track Application'}
-              </Button>
+              {!job.application_status && (
+                <Button
+                  variant="outline"
+                  className="w-full gap-2 font-bold h-11"
+                  onClick={() => updateApplicationStatus('applied')}
+                  disabled={updating}
+                >
+                  <CheckCircle2 className="h-4 w-4" />
+                  Track Application
+                </Button>
+              )}
               <Button
                 variant="outline"
                 className="w-full gap-2 h-11 transition-colors hover:bg-destructive/10 hover:text-destructive hover:border-destructive/20"
@@ -472,8 +568,38 @@ export function JobDetailView({
                   Restore to Scored
                 </Button>
               )}
+              <div className="rounded-2xl border border-border/40 bg-background/35 px-3 py-3 text-xs leading-relaxed text-muted-foreground">
+                Dismissing here only hides the role from the board. If you withdrew from the interview process, use the tracker status <span className="font-semibold text-foreground/80">Withdrawn</span> instead.
+              </div>
             </CardContent>
           </Card>
+
+          {trackerStatus && (
+            <Card className="border-border/50 bg-card/60 backdrop-blur-xl shadow-xl overflow-hidden">
+              <CardContent className="p-5 space-y-4">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <ClipboardList className="h-4 w-4 text-primary" />
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Application Progress</p>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge variant="outline" className="capitalize border-primary/20 bg-primary/10 text-primary">
+                      {trackerStatusLabel}
+                    </Badge>
+                    {job.applied_at && (
+                      <span className="text-xs text-muted-foreground">Applied {formatDate(job.applied_at)}</span>
+                    )}
+                  </div>
+                </div>
+                <StatusTransitionButtons
+                  currentStatus={trackerStatus}
+                  saving={updating}
+                  onTransition={updateApplicationStatus}
+                  onRemove={removeFromTracker}
+                />
+              </CardContent>
+            </Card>
+          )}
 
           {!job.is_sparse && Object.keys(dimensions).length > 0 && (
             <Card className="border-border/50 bg-card/60 backdrop-blur-xl shadow-xl overflow-hidden">
@@ -529,6 +655,43 @@ export function JobDetailView({
         </div>
 
         <div className="space-y-8">
+          {job.application_status && (
+            <>
+              <div className="space-y-4">
+                <h3 className="text-sm font-bold uppercase tracking-widest flex items-center gap-2 text-primary">
+                  <Calendar className="h-4 w-4" />
+                  Next Step
+                </h3>
+                <NextStepEditor
+                  nextStep={job.next_step}
+                  nextStepDate={job.next_step_date}
+                  saving={savingNextStep}
+                  onSave={saveNextStep}
+                />
+              </div>
+
+              <div className="space-y-4">
+                <h3 className="text-sm font-bold uppercase tracking-widest flex items-center gap-2 text-primary">
+                  <FileText className="h-4 w-4" />
+                  Notes
+                </h3>
+                <NotesEditor
+                  notes={job.notes}
+                  saving={savingNotes}
+                  onSave={saveNotes}
+                />
+              </div>
+
+              <div className="space-y-4">
+                <h3 className="text-sm font-bold uppercase tracking-widest flex items-center gap-2 text-primary">
+                  <ClipboardList className="h-4 w-4" />
+                  Status Timeline
+                </h3>
+                <StatusTimeline events={timeline} loading={timelineLoading} />
+              </div>
+            </>
+          )}
+
           {companySignals.length > 0 && (
             <div className="space-y-4">
               <h3 className="text-sm font-bold uppercase tracking-widest flex items-center gap-2 text-fuchsia-500">
