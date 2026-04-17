@@ -10,8 +10,7 @@ from urllib.request import urlopen
 
 
 DEFAULT_INPUT = "https://raw.githubusercontent.com/italiaremote/awesome-italia-remote/main/README.md"
-ROW_PATTERN = re.compile(r"^\|")
-SEPARATOR_PATTERN = re.compile(r"^\|\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?$")
+SEPARATOR_CELL_PATTERN = re.compile(r"^:?-{3,}:?$")
 LINK_PATTERN = re.compile(r"\[([^\]]+)\]\((https?://[^)\s]+)\)")
 URL_PATTERN = re.compile(r"https?://[^\s|)]+")
 
@@ -37,12 +36,21 @@ def _split_row(line: str) -> list[str]:
     return [cell.strip() for cell in line.strip().strip("|").split("|")]
 
 
+def _looks_like_table_row(line: str) -> bool:
+    return "|" in line
+
+
+def _looks_like_separator_row(line: str) -> bool:
+    cells = _split_row(line)
+    return bool(cells) and all(SEPARATOR_CELL_PATTERN.fullmatch(cell) for cell in cells)
+
+
 def _find_target_table(markdown: str) -> tuple[list[str], list[str]] | None:
     lines = markdown.splitlines()
     for index in range(len(lines) - 1):
         header_line = lines[index]
         separator_line = lines[index + 1]
-        if not ROW_PATTERN.match(header_line) or not SEPARATOR_PATTERN.match(separator_line):
+        if not _looks_like_table_row(header_line) or not _looks_like_separator_row(separator_line):
             continue
 
         headers = _split_row(header_line)
@@ -54,9 +62,9 @@ def _find_target_table(markdown: str) -> tuple[list[str], list[str]] | None:
 
         data_lines: list[str] = []
         for line in lines[index + 2 :]:
-            if not ROW_PATTERN.match(line):
+            if not _looks_like_table_row(line):
                 break
-            if SEPARATOR_PATTERN.match(line):
+            if _looks_like_separator_row(line):
                 continue
             data_lines.append(line)
 

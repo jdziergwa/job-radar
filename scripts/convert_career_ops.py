@@ -10,11 +10,14 @@ from urllib.request import urlopen
 import yaml
 
 
+DEFAULT_INPUT = "https://raw.githubusercontent.com/santifer/career-ops/main/templates/portals.example.yml"
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Convert career-ops YAML into importer-ready JSON.",
     )
-    parser.add_argument("--input", required=True, help="YAML file path or URL.")
+    parser.add_argument("--input", default=DEFAULT_INPUT, help="YAML file path or URL.")
     parser.add_argument("--output", help="Optional path to write JSON. Defaults to stdout.")
     return parser
 

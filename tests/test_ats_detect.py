@@ -35,6 +35,20 @@ def test_detect_from_html_iframe():
     assert asyncio.run(_run()) == ("greenhouse", "acme")
 
 
+def test_detect_from_greenhouse_embed_query_param():
+    async def _run():
+        html = '<iframe src="https://boards.greenhouse.io/embed/job_board?for=brave"></iframe>'
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            return httpx.Response(200, text=html, request=request)
+
+        transport = httpx.MockTransport(handler)
+        async with httpx.AsyncClient(transport=transport, follow_redirects=True) as client:
+            return await detect_ats("https://example.com/careers", client)
+
+    assert asyncio.run(_run()) == ("greenhouse", "brave")
+
+
 def test_detect_returns_none_for_unknown():
     async def _run():
         def handler(request: httpx.Request) -> httpx.Response:

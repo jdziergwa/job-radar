@@ -26,8 +26,18 @@ REQUEST_HEADERS = {
 }
 
 HTML_ATS_PATTERNS = [
-    (re.compile(r"""(?:src|href)=["']https?://boards\.greenhouse\.io/([a-z0-9_-]+)""", re.I), "greenhouse"),
-    (re.compile(r"""(?:src|href)=["']https?://job-boards\.greenhouse\.io/([a-z0-9_-]+)""", re.I), "greenhouse"),
+    (
+        re.compile(r"""(?:src|href)=["']https?://boards\.greenhouse\.io/embed/(?:job_board|job_app)\?for=([a-z0-9_-]+)""", re.I),
+        "greenhouse",
+    ),
+    (
+        re.compile(r"""(?:src|href)=["']https?://boards\.greenhouse\.io/(?!embed/)([a-z0-9_-]+)""", re.I),
+        "greenhouse",
+    ),
+    (
+        re.compile(r"""(?:src|href)=["']https?://job-boards\.greenhouse\.io/(?!embed/)([a-z0-9_-]+)""", re.I),
+        "greenhouse",
+    ),
     (re.compile(r"""(?:src|href)=["']https?://jobs\.lever\.co/([a-z0-9_-]+)""", re.I), "lever"),
     (re.compile(r"""(?:src|href)=["']https?://jobs\.ashbyhq\.com/([a-z0-9_-]+)""", re.I), "ashby"),
     (re.compile(r"""(?:src|href)=["']https?://apply\.workable\.com/([a-z0-9_-]+)""", re.I), "workable"),
@@ -92,7 +102,6 @@ async def detect_ats_batch(
         return []
 
     sem = asyncio.Semaphore(max(1, concurrency))
-    ssl_context = certifi.where()
     total = len(companies)
     completed = 0
     ssl_context = ssl.create_default_context(cafile=certifi.where())

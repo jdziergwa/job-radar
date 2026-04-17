@@ -252,7 +252,7 @@ graph TD
 - Adzuna source data provided by [Adzuna](https://www.adzuna.com).
 - Himalayas source data provided by [Himalayas](https://himalayas.app).
 - Jobicy source data provided by [Jobicy](https://jobicy.com).
-- Company discovery imports may include normalized ATS company data derived from [Remotebear](https://github.com/remotebear-io/remotebear) and [Awesome Easy Apply](https://github.com/sample-resume/awesome-easy-apply).
+- Company discovery imports and the example `companies.yaml` profile may include normalized ATS company data derived from [Remotebear](https://github.com/remotebear-io/remotebear), [Awesome Easy Apply](https://github.com/sample-resume/awesome-easy-apply), [remoteintech/remote-jobs](https://github.com/remoteintech/remote-jobs) (ISC), [italiaremote/awesome-italia-remote](https://github.com/italiaremote/awesome-italia-remote) (MIT), and [santifer/career-ops](https://github.com/santifer/career-ops) (MIT).
 
 ---
 

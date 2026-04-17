@@ -32,10 +32,10 @@ def test_convert_italiaremote_parses_markdown_table():
     markdown = """
 # Awesome Italia Remote
 
-| Name | Career Page | Type |
-| --- | --- | --- |
-| [Alfa](https://alfa.example) | [Jobs](https://boards.greenhouse.io/alfa) | Remote-first |
-| [Beta](https://beta.example) | https://jobs.lever.co/beta | Hybrid |
+Name | Career Page | Type
+--- | --- | ---
+[Alfa](https://alfa.example) | [Jobs](https://boards.greenhouse.io/alfa) | Remote-first
+[Beta](https://beta.example) | https://jobs.lever.co/beta | Hybrid
 """
 
     records = extract_italiaremote_records(markdown)
