@@ -165,7 +165,6 @@ def test_pipeline_funnel_counts_collected_prefilter_high_priority_and_applied():
                 posted_at="2026-04-08T00:00:00Z",
                 fetched_at="2026-04-08T00:00:00Z",
                 match_tier="broad_match",
-                status="applied",
             ),
             RawJob(
                 ats_platform="ashby",
@@ -191,6 +190,7 @@ def test_pipeline_funnel_counts_collected_prefilter_high_priority_and_applied():
             breakdown={"tech_stack_match": 84, "remote_location_fit": 90},
             apply_priority="medium",
         )
+        store.update_application_status(candidates["applied-role"].db_id, "applied")
 
         trends = store.get_trends(days=30)
         funnel = trends["pipeline_funnel"]

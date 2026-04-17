@@ -106,7 +106,7 @@ Examples:
   python src/main.py --history 7              # Show last 7 days of scores
   python src/main.py --stats                  # Database statistics
   python src/main.py --open 42               # Open job #42 in browser
-  python src/main.py --mark-applied 42       # Mark job #42 as applied
+  python src/main.py --mark-applied 42       # Track application for job #42
 """,
     )
 
@@ -156,7 +156,7 @@ Examples:
     )
     parser.add_argument(
         "--mark-applied", type=int, metavar="JOB_ID",
-        help="Mark a job as 'applied'",
+        help="Track an application for a job",
     )
     parser.add_argument(
         "--dismiss", type=int, metavar="JOB_ID",
@@ -262,10 +262,10 @@ async def run() -> None:
         return
 
     if args.mark_applied is not None:
-        if store.update_status(args.mark_applied, "applied"):
+        if store.update_application_status(args.mark_applied, "applied"):
             job = store.get_job_by_id(args.mark_applied)
             name = f"{job.title} @ {job.company_name}" if job else f"#{args.mark_applied}"
-            print(f"\n  ✓ Marked as applied: {name}\n")
+            print(f"\n  ✓ Tracked application: {name}\n")
         else:
             print(f"\n  ✗ Job #{args.mark_applied} not found\n")
         return

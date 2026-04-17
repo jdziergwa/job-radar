@@ -36,6 +36,12 @@ class JobResponse(BaseModel):
     score_breakdown: Optional[ScoreBreakdown] = None
     scored_at: Optional[str] = None
     status: str = "new"
+    application_status: Optional[str] = None
+    applied_at: Optional[str] = None
+    notes: Optional[str] = None
+    next_step: Optional[str] = None
+    next_step_date: Optional[str] = None
+    source: Optional[str] = None
     dismissal_reason: Optional[str] = None
     match_tier: Optional[str] = None
     salary: Optional[str] = None
@@ -93,7 +99,29 @@ class JobListResponse(BaseModel):
 
 
 class StatusUpdate(BaseModel):
-    status: Literal["new", "scored", "applied", "dismissed"]
+    status: Literal["new", "scored", "dismissed"]
+
+
+class ApplicationStatusUpdate(BaseModel):
+    application_status: Literal[
+        "applied",
+        "screening",
+        "interviewing",
+        "offer",
+        "accepted",
+        "rejected_by_company",
+        "rejected_by_user",
+        "ghosted",
+    ]
+    note: Optional[str] = None
+
+
+class ApplicationEventResponse(BaseModel):
+    id: int
+    job_id: int
+    status: str
+    note: Optional[str] = None
+    created_at: str
 
 
 class StatsOverview(BaseModel):

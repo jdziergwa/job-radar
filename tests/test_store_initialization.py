@@ -54,3 +54,90 @@ def test_store_connections_set_busy_timeout():
             busy_timeout_ms = conn.execute("PRAGMA busy_timeout").fetchone()[0]
 
         assert busy_timeout_ms == 30000
+
+
+def test_store_migrates_legacy_applied_status_into_application_tracking():
+    with tempfile.TemporaryDirectory() as tmpdir:
+        db_path = Path(tmpdir) / "jobs.db"
+        conn = sqlite3.connect(db_path)
+        try:
+            conn.executescript(
+                """
+                CREATE TABLE jobs (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    ats_platform TEXT NOT NULL,
+                    company_slug TEXT NOT NULL,
+                    job_id TEXT NOT NULL,
+                    company_name TEXT,
+                    title TEXT NOT NULL,
+                    location TEXT,
+                    url TEXT NOT NULL,
+                    description TEXT,
+                    posted_at TEXT,
+                    first_seen_at TEXT NOT NULL,
+                    last_seen_at TEXT,
+                    fit_score INTEGER,
+                    score_reasoning TEXT,
+                    score_breakdown TEXT,
+                    scored_at TEXT,
+                    status TEXT DEFAULT 'new',
+                    dismissal_reason TEXT,
+                    match_tier TEXT,
+                    salary TEXT,
+                    salary_min INTEGER,
+                    salary_max INTEGER,
+                    salary_currency TEXT,
+                    is_sparse INTEGER DEFAULT 0,
+                    UNIQUE(ats_platform, company_slug, job_id)
+                );
+                CREATE TABLE metadata (
+                    key TEXT PRIMARY KEY,
+                    value TEXT
+                );
+                """
+            )
+            conn.execute(
+                """INSERT INTO jobs (
+                       ats_platform, company_slug, job_id, company_name, title, location, url,
+                       description, posted_at, first_seen_at, last_seen_at, scored_at, status
+                   ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (
+                    "ashby",
+                    "acme",
+                    "legacy-job",
+                    "Acme",
+                    "QA Engineer",
+                    "Remote",
+                    "https://example.com/jobs/legacy",
+                    "Legacy role",
+                    "2026-04-08T00:00:00Z",
+                    "2026-04-08T10:00:00",
+                    "2026-04-09T10:00:00",
+                    "2026-04-10T12:00:00",
+                    "applied",
+                ),
+            )
+            conn.commit()
+        finally:
+            conn.close()
+
+        store = Store(str(db_path))
+
+        with store._connect() as migrated_conn:
+            row = migrated_conn.execute(
+                """SELECT status, application_status, applied_at, source
+                   FROM jobs WHERE job_id = 'legacy-job'"""
+            ).fetchone()
+            events = migrated_conn.execute(
+                """SELECT status, note FROM application_events
+                   WHERE job_id = (SELECT id FROM jobs WHERE job_id = 'legacy-job')"""
+            ).fetchall()
+
+        assert row is not None
+        assert row["status"] == "scored"
+        assert row["application_status"] == "applied"
+        assert row["applied_at"] == "2026-04-09T10:00:00"
+        assert row["source"] == "pipeline"
+        assert len(events) == 1
+        assert events[0]["status"] == "applied"
+        assert events[0]["note"] == "Migrated from existing application status"

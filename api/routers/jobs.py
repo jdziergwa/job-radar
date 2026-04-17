@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, Query
-from typing import Optional
+from typing import Literal, Optional
 from api.deps import get_store
 from api.models import JobListResponse, JobDetailResponse, JobResponse, StatusUpdate, PipelineRunResponse
 from api import background as bg
@@ -11,6 +11,7 @@ router = APIRouter()
 def list_jobs(
     profile: str = Query("default"),
     status: Optional[str] = Query(None),          # comma-separated: "new,scored"
+    tracked_mode: Literal["all", "only", "exclude"] = Query("all"),
     min_score: Optional[int] = Query(None, ge=0, le=100),
     max_score: Optional[int] = Query(None, ge=0, le=100),
     priority: Optional[str] = Query(None),         # high|medium|low|skip
@@ -30,6 +31,7 @@ def list_jobs(
     
     rows, total = store.get_jobs_filtered(
         status=status_list,
+        tracked_mode=tracked_mode,
         min_score=min_score,
         max_score=max_score,
         priority=priority,
@@ -67,7 +69,7 @@ def get_job(job_id: int, profile: str = Query("default")):
 
 @router.patch("/jobs/{job_id}/status")
 def update_status(job_id: int, body: StatusUpdate, profile: str = Query("default")):
-    """Update a job's status (applied, dismissed, etc)."""
+    """Update a job's board-level status (new, scored, dismissed)."""
     store = get_store(profile)
     if not store.update_status(job_id, body.status):
         raise HTTPException(status_code=404, detail="Job not found")

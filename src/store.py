@@ -13,7 +13,7 @@ import sqlite3
 import threading
 from contextlib import contextmanager
 from datetime import datetime, timedelta
-from typing import Callable, Generator
+from typing import Callable, Generator, Literal
 
 from src.models import CandidateJob, RawJob, ScoredJob
 from src.salary import parse_salary_string
@@ -90,6 +90,12 @@ CREATE TABLE IF NOT EXISTS jobs (
 
     -- Status tracking
     status TEXT DEFAULT 'new',
+    application_status TEXT,
+    applied_at TEXT,
+    notes TEXT,
+    next_step TEXT,
+    next_step_date TEXT,
+    source TEXT DEFAULT 'pipeline',
     dismissal_reason TEXT,
     match_tier TEXT,
     salary TEXT,
@@ -105,6 +111,15 @@ CREATE INDEX IF NOT EXISTS idx_first_seen ON jobs(first_seen_at);
 CREATE INDEX IF NOT EXISTS idx_status ON jobs(status);
 CREATE INDEX IF NOT EXISTS idx_score ON jobs(fit_score);
 CREATE INDEX IF NOT EXISTS idx_last_seen ON jobs(last_seen_at);
+CREATE TABLE IF NOT EXISTS application_events (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    job_id INTEGER NOT NULL REFERENCES jobs(id),
+    status TEXT NOT NULL,
+    note TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (job_id) REFERENCES jobs(id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS idx_app_events_job ON application_events(job_id);
 CREATE TABLE IF NOT EXISTS metadata (
     key TEXT PRIMARY KEY,
     value TEXT
@@ -141,55 +156,67 @@ class Store:
         with self._connect() as conn:
             conn.execute("PRAGMA journal_mode=WAL")
             conn.executescript(SCHEMA)
-            
-            # Migration: Add dismissal_reason if missing
-            try:
-                conn.execute("ALTER TABLE jobs ADD COLUMN dismissal_reason TEXT")
-                logger.debug("Migrated DB: Added 'dismissal_reason' column")
-            except sqlite3.OperationalError:
-                # Column already exists or table doesn't exist yet
-                pass
 
-            # Migration: Add match_tier if missing
-            try:
-                conn.execute("ALTER TABLE jobs ADD COLUMN match_tier TEXT")
-                logger.debug("Migrated DB: Added 'match_tier' column")
-            except sqlite3.OperationalError:
-                pass
+            existing_columns = {
+                str(row[1])
+                for row in conn.execute("PRAGMA table_info(jobs)").fetchall()
+            }
 
-            # Migration: Add salary fields if missing
             for col, col_type in [
+                ("dismissal_reason", "TEXT"),
+                ("match_tier", "TEXT"),
                 ("salary", "TEXT"),
                 ("salary_min", "INTEGER"),
                 ("salary_max", "INTEGER"),
                 ("salary_currency", "TEXT"),
+                ("is_sparse", "INTEGER DEFAULT 0"),
+                ("location_metadata", "TEXT"),
+                ("company_metadata", "TEXT"),
+                ("application_status", "TEXT"),
+                ("applied_at", "TEXT"),
+                ("notes", "TEXT"),
+                ("next_step", "TEXT"),
+                ("next_step_date", "TEXT"),
+                ("source", "TEXT DEFAULT 'pipeline'"),
             ]:
-                try:
-                    conn.execute(f"ALTER TABLE jobs ADD COLUMN {col} {col_type}")
-                    logger.debug("Migrated DB: Added '%s' column", col)
-                except sqlite3.OperationalError:
-                    pass
+                if col in existing_columns:
+                    continue
+                conn.execute(f"ALTER TABLE jobs ADD COLUMN {col} {col_type}")
+                logger.debug("Migrated DB: Added '%s' column", col)
 
-            # Migration: Add is_sparse if missing
-            try:
-                conn.execute("ALTER TABLE jobs ADD COLUMN is_sparse INTEGER DEFAULT 0")
-                logger.debug("Migrated DB: Added 'is_sparse' column")
-            except sqlite3.OperationalError:
-                pass
-
-            # Migration: Add location_metadata if missing
-            try:
-                conn.execute("ALTER TABLE jobs ADD COLUMN location_metadata TEXT")
-                logger.debug("Migrated DB: Added 'location_metadata' column")
-            except sqlite3.OperationalError:
-                pass
-
-            # Migration: Add company_metadata if missing
-            try:
-                conn.execute("ALTER TABLE jobs ADD COLUMN company_metadata TEXT")
-                logger.debug("Migrated DB: Added 'company_metadata' column")
-            except sqlite3.OperationalError:
-                pass
+            # Migrate legacy status='applied' rows to the tracker-specific application_status field.
+            conn.execute(
+                """UPDATE jobs
+                   SET application_status = 'applied'
+                   WHERE status = 'applied' AND application_status IS NULL"""
+            )
+            conn.execute(
+                """UPDATE jobs
+                   SET applied_at = COALESCE(last_seen_at, first_seen_at)
+                   WHERE status = 'applied' AND applied_at IS NULL"""
+            )
+            conn.execute("UPDATE jobs SET source = 'pipeline' WHERE source IS NULL")
+            conn.execute(
+                """INSERT INTO application_events (job_id, status, note, created_at)
+                   SELECT jobs.id,
+                          'applied',
+                          'Migrated from existing application status',
+                          COALESCE(jobs.applied_at, jobs.first_seen_at)
+                   FROM jobs
+                   WHERE jobs.application_status = 'applied'
+                     AND NOT EXISTS (
+                         SELECT 1 FROM application_events ev WHERE ev.job_id = jobs.id
+                     )"""
+            )
+            conn.execute(
+                """UPDATE jobs
+                   SET status = CASE
+                       WHEN scored_at IS NOT NULL THEN 'scored'
+                       ELSE 'new'
+                   END
+                   WHERE status = 'applied'"""
+            )
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_application_status ON jobs(application_status)")
 
             logger.debug("Database initialized at %s", self.db_path)
 
@@ -435,6 +462,68 @@ class Store:
         logger.warning("Job %d not found", db_id)
         return False
 
+    def update_application_status(
+        self,
+        db_id: int,
+        application_status: str,
+        note: str | None = None,
+    ) -> bool:
+        """Update tracker status and append a timeline event."""
+        now = datetime.utcnow().isoformat()
+        with self._connect() as conn:
+            row = conn.execute(
+                "SELECT application_status, applied_at FROM jobs WHERE id = ?",
+                (db_id,),
+            ).fetchone()
+            if row is None:
+                logger.warning("Job %d not found for application status update", db_id)
+                return False
+
+            current_status = row["application_status"]
+            if current_status == application_status:
+                return True
+
+            if current_status is None and application_status == "applied" and not row["applied_at"]:
+                conn.execute(
+                    """UPDATE jobs
+                       SET application_status = ?, applied_at = ?
+                       WHERE id = ?""",
+                    (application_status, now, db_id),
+                )
+            else:
+                conn.execute(
+                    "UPDATE jobs SET application_status = ? WHERE id = ?",
+                    (application_status, db_id),
+                )
+
+            conn.execute(
+                """INSERT INTO application_events (job_id, status, note, created_at)
+                   VALUES (?, ?, ?, ?)""",
+                (db_id, application_status, note, now),
+            )
+
+        self.set_metadata("last_job_status_change_at", now)
+        logger.debug("Job %d application_status → %s", db_id, application_status)
+        return True
+
+    def remove_from_tracker(self, db_id: int) -> bool:
+        """Clear tracker-only state while preserving application history."""
+        with self._connect() as conn:
+            cursor = conn.execute(
+                """UPDATE jobs
+                   SET application_status = NULL,
+                       next_step = NULL,
+                       next_step_date = NULL
+                   WHERE id = ?""",
+                (db_id,),
+            )
+        if cursor.rowcount > 0:
+            self.set_metadata("last_job_status_change_at", datetime.utcnow().isoformat())
+            logger.debug("Job %d removed from tracker", db_id)
+            return True
+        logger.warning("Job %d not found for tracker removal", db_id)
+        return False
+
     def update_job_description(self, db_id: int, description: str) -> bool:
         """Update job description. Returns True if found."""
         with self._connect() as conn:
@@ -492,7 +581,8 @@ class Store:
                    SET status = 'closed'
                    WHERE last_seen_at IS NOT NULL
                      AND last_seen_at < ?
-                     AND status NOT IN ('applied', 'dismissed', 'closed')""",
+                     AND status NOT IN ('dismissed', 'closed')
+                     AND application_status IS NULL""",
                 (cutoff,),
             )
         count = cursor.rowcount
@@ -541,7 +631,7 @@ class Store:
                 "SELECT COUNT(*) FROM jobs WHERE scored_at IS NOT NULL"
             ).fetchone()[0]
             applied = conn.execute(
-                "SELECT COUNT(*) FROM jobs WHERE status = 'applied'"
+                "SELECT COUNT(*) FROM jobs WHERE application_status IS NOT NULL"
             ).fetchone()[0]
             dismissed = conn.execute(
                 "SELECT COUNT(*) FROM jobs WHERE status = 'dismissed'"
@@ -628,6 +718,7 @@ class Store:
     def get_jobs_filtered(
         self,
         status: list[str] | None = None,
+        tracked_mode: Literal["all", "only", "exclude"] = "all",
         min_score: int | None = None,
         max_score: int | None = None,
         priority: str | None = None,
@@ -648,7 +739,8 @@ class Store:
         columns = (
             "id, ats_platform, company_slug, company_name, job_id, title, "
             "location, company_metadata, url, posted_at, first_seen_at, last_seen_at, "
-            "fit_score, score_reasoning, score_breakdown, scored_at, status, dismissal_reason, match_tier, "
+            "fit_score, score_reasoning, score_breakdown, scored_at, status, application_status, "
+            "applied_at, notes, next_step, next_step_date, source, dismissal_reason, match_tier, "
             "salary, salary_min, salary_max, salary_currency, is_sparse"
         )
         
@@ -659,6 +751,11 @@ class Store:
             placeholders = ",".join("?" * len(status))
             where_clauses.append(f"status IN ({placeholders})")
             params.extend(status)
+
+        if tracked_mode == "only":
+            where_clauses.append("application_status IS NOT NULL")
+        elif tracked_mode == "exclude":
+            where_clauses.append("application_status IS NULL")
         
         if min_score is not None:
             where_clauses.append("fit_score >= ?")
@@ -759,7 +856,8 @@ class Store:
                       AND (
                           match_tier IS NOT NULL
                           OR scored_at IS NOT NULL
-                          OR status IN ('scored', 'applied')
+                          OR status = 'scored'
+                          OR application_status IS NOT NULL
                       )
                     GROUP BY date(first_seen_at)
                 ),
@@ -799,6 +897,7 @@ class Store:
             funnel_rows = conn.execute("""
                 SELECT
                     status,
+                    application_status,
                     fit_score,
                     score_breakdown,
                     match_tier
@@ -814,7 +913,7 @@ class Store:
                     AVG(CASE WHEN fit_score IS NOT NULL THEN fit_score END) as avg_score,
                     MAX(date(COALESCE(last_seen_at, first_seen_at))) as last_seen
                 FROM jobs
-                WHERE status IN ('new', 'scored', 'applied')
+                WHERE (status IN ('new', 'scored') OR application_status IS NOT NULL)
                   AND date(COALESCE(last_seen_at, first_seen_at)) >= date('now', ?)
                 GROUP BY company_name
                 ORDER BY job_count DESC
@@ -851,7 +950,7 @@ class Store:
         for row in funnel_rows:
             if row["match_tier"]:
                 funnel_counts["passed_prefilter"] += 1
-            if row["status"] == "applied":
+            if row["application_status"] is not None:
                 funnel_counts["applied"] += 1
             if row["score_breakdown"]:
                 breakdown, apply_priority, skip_reason, _ = self._parse_score_breakdown_payload(row["score_breakdown"])

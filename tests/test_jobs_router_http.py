@@ -90,13 +90,30 @@ def test_jobs_endpoints_list_detail_and_status_update(monkeypatch):
 
         patch_response = client.patch(
             f"/api/jobs/{scored_id}/status",
-            json={"status": "applied"},
+            json={"status": "dismissed"},
         )
 
         assert patch_response.status_code == 200
-        assert patch_response.json() == {"ok": True, "id": scored_id, "status": "applied"}
-        assert store.get_job_detail(scored_id)["status"] == "applied"
+        assert patch_response.json() == {"ok": True, "id": scored_id, "status": "dismissed"}
+        assert store.get_job_detail(scored_id)["status"] == "dismissed"
         assert store.get_metadata("last_job_status_change_at") is not None
+
+
+def test_jobs_list_tracked_mode_filters(monkeypatch):
+    store = _build_store()
+    scored_id = _seed_jobs(store)
+    other_id = next(job.db_id for job in store.get_unscored() if job.job_id == "job-2")
+    assert store.update_application_status(scored_id, "applied")
+    monkeypatch.setattr(jobs_router, "get_store", lambda profile="default": store)
+
+    with TestClient(app) as client:
+        only_tracked = client.get("/api/jobs", params={"tracked_mode": "only"})
+        exclude_tracked = client.get("/api/jobs", params={"tracked_mode": "exclude"})
+
+    assert only_tracked.status_code == 200
+    assert [job["id"] for job in only_tracked.json()["jobs"]] == [scored_id]
+    assert exclude_tracked.status_code == 200
+    assert [job["id"] for job in exclude_tracked.json()["jobs"]] == [other_id]
 
 
 def test_jobs_rescore_endpoints_use_mocked_pipeline_launcher(monkeypatch):
