@@ -3,11 +3,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { api } from '@/lib/api/client'
 import { ApplicationFilters, type ApplicationGroup } from '@/components/applications/ApplicationFilters'
+import { ImportJobDialog } from '@/components/applications/ImportJobDialog'
 import { ApplicationListItem } from '@/components/applications/ApplicationListItem'
 import { ApplicationStats } from '@/components/applications/ApplicationStats'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { ClipboardList, RefreshCw, SearchX } from 'lucide-react'
+import { ClipboardList, Plus, RefreshCw, SearchX } from 'lucide-react'
 
 interface ApplicationJob {
   id: number
@@ -50,6 +51,7 @@ export default function ApplicationsPage() {
   const [stats, setStats] = useState<ApplicationStatsPayload | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [importDialogOpen, setImportDialogOpen] = useState(false)
   const [group, setGroup] = useState<ApplicationGroup>('active')
   const [status, setStatus] = useState('')
   const [sort, setSort] = useState('next_step_date')
@@ -119,8 +121,13 @@ export default function ApplicationsPage() {
         </div>
 
         <div className="flex items-center gap-3">
-          <Button variant="outline" disabled className="rounded-full border-dashed border-border/60 bg-background/50 text-muted-foreground">
-            Import Job Soon
+          <Button
+            variant="outline"
+            onClick={() => setImportDialogOpen(true)}
+            className="gap-2 rounded-full border-border/50 bg-background/50 shadow-sm"
+          >
+            <Plus className="h-4 w-4" />
+            Import Job
           </Button>
           <Button
             variant="outline"
@@ -176,6 +183,14 @@ export default function ApplicationsPage() {
           jobs.map((job) => <ApplicationListItem key={job.id} job={job} />)
         )}
       </section>
+
+      <ImportJobDialog
+        open={importDialogOpen}
+        onOpenChange={setImportDialogOpen}
+        onImported={async () => {
+          await fetchData()
+        }}
+      />
     </div>
   )
 }
