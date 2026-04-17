@@ -55,6 +55,34 @@ def _slugify(text: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", (text or "").lower()).strip("-")
 
 
+def extract_platform_slug_from_url(url: str, fallback_slug: str | None = None) -> tuple[str | None, str | None]:
+    normalized_fallback = _slugify(fallback_slug) if fallback_slug else None
+
+    for platform, pattern in URL_PATTERNS:
+        match = pattern.search(url)
+        if match:
+            slug = match.groupdict().get("slug") or normalized_fallback
+            if slug:
+                return platform, _slugify(slug)
+
+    parsed = urlparse(url)
+    host = parsed.netloc.lower()
+    path_parts = [part for part in parsed.path.split("/") if part]
+
+    if host == "boards.greenhouse.io" and path_parts:
+        return "greenhouse", _slugify(path_parts[0])
+    if host == "jobs.lever.co" and path_parts:
+        return "lever", _slugify(path_parts[0])
+    if host == "jobs.ashbyhq.com" and path_parts:
+        return "ashby", _slugify(path_parts[0])
+    if host == "apply.workable.com" and path_parts:
+        return "workable", _slugify(path_parts[0])
+    if host.endswith(".bamboohr.com"):
+        return "bamboohr", _slugify(host.split(".")[0])
+
+    return None, normalized_fallback
+
+
 def _normalize_platform(value: Any) -> str | None:
     if not isinstance(value, str):
         return None
@@ -148,27 +176,9 @@ def _extract_platform_from_record(record: dict[str, Any]) -> tuple[str | None, s
 
     urls = _extract_urls(record)
     for url in urls:
-        for platform, pattern in URL_PATTERNS:
-            match = pattern.search(url)
-            if match:
-                slug = match.groupdict().get("slug") or fallback_slug
-                if slug:
-                    return platform, _slugify(slug)
-
-        parsed = urlparse(url)
-        host = parsed.netloc.lower()
-        path_parts = [part for part in parsed.path.split("/") if part]
-
-        if host == "boards.greenhouse.io" and path_parts:
-            return "greenhouse", _slugify(path_parts[0])
-        if host == "jobs.lever.co" and path_parts:
-            return "lever", _slugify(path_parts[0])
-        if host == "jobs.ashbyhq.com" and path_parts:
-            return "ashby", _slugify(path_parts[0])
-        if host == "apply.workable.com" and path_parts:
-            return "workable", _slugify(path_parts[0])
-        if host.endswith(".bamboohr.com"):
-            return "bamboohr", _slugify(host.split(".")[0])
+        platform, slug = extract_platform_slug_from_url(url, fallback_slug=fallback_slug)
+        if platform and slug:
+            return platform, slug
 
     return None, fallback_slug
 
@@ -189,7 +199,7 @@ def normalize_company_record(record: dict[str, Any]) -> ImportedCompany | None:
     return ImportedCompany(platform=platform, slug=slug, name=name)
 
 
-def _iter_candidate_records(payload: Any) -> list[dict[str, Any]]:
+def extract_candidate_records(payload: Any) -> list[dict[str, Any]]:
     candidates: list[dict[str, Any]] = []
 
     def walk(value: Any) -> None:
@@ -208,10 +218,10 @@ def _iter_candidate_records(payload: Any) -> list[dict[str, Any]]:
     return candidates
 
 
-def import_companies_from_payload(payload: Any) -> dict[str, list[dict[str, str]]]:
+def import_companies_from_records(records: list[dict[str, Any]]) -> dict[str, list[dict[str, str]]]:
     deduped: dict[str, dict[str, dict[str, str]]] = {platform: {} for platform in SUPPORTED_PLATFORMS}
 
-    for record in _iter_candidate_records(payload):
+    for record in records:
         normalized = normalize_company_record(record)
         if normalized is None:
             continue
@@ -222,6 +232,10 @@ def import_companies_from_payload(payload: Any) -> dict[str, list[dict[str, str]
         for platform, entries in deduped.items()
         if entries
     }
+
+
+def import_companies_from_payload(payload: Any) -> dict[str, list[dict[str, str]]]:
+    return import_companies_from_records(extract_candidate_records(payload))
 
 
 def dump_companies_yaml(companies: dict[str, list[dict[str, str]]]) -> str:
