@@ -24,13 +24,13 @@ import {
 } from '@/lib/jobs/navigation'
 
 const STATUS_OPTIONS = [
-  { value: 'new,scored,applied', label: 'Active' },
-  { value: 'new', label: 'Unscored' },
-  { value: 'scored', label: 'Scored' },
-  { value: 'applied', label: 'Applied' },
-  { value: 'dismissed', label: 'Dismissed' },
-  { value: '', label: 'Total' },
-]
+  { value: 'new,scored', trackedMode: 'exclude', label: 'Active' },
+  { value: 'new', trackedMode: 'exclude', label: 'Unscored' },
+  { value: 'scored', trackedMode: 'exclude', label: 'Scored' },
+  { value: '', trackedMode: 'only', label: 'Tracked' },
+  { value: 'dismissed', trackedMode: 'all', label: 'Dismissed' },
+  { value: '', trackedMode: 'all', label: 'Total' },
+] as const
 
 const SORT_OPTIONS = [
   { value: 'score', label: 'Score' },
@@ -55,6 +55,7 @@ export default function JobsPage() {
   const [pages, setPages] = useState(1)
   const [loading, setLoading] = useState(true)
   const [status, setStatus] = useState(DEFAULT_JOB_BOARD_STATE.status)
+  const [trackedMode, setTrackedMode] = useState(DEFAULT_JOB_BOARD_STATE.trackedMode)
   const [sort, setSort] = useState(DEFAULT_JOB_BOARD_STATE.sort)
   const [minScore, setMinScore] = useState(DEFAULT_JOB_BOARD_STATE.minScore)
   const [searchTerm, setSearchTerm] = useState(DEFAULT_JOB_BOARD_STATE.search)
@@ -95,6 +96,7 @@ export default function JobsPage() {
     return {
       page: pageNum,
       status: overrides.status ?? currentState.status,
+      trackedMode: overrides.trackedMode ?? currentState.trackedMode,
       sort: overrides.sort ?? currentState.sort,
       minScore: Object.prototype.hasOwnProperty.call(overrides, 'minScore')
         ? overrides.minScore ?? ''
@@ -115,6 +117,7 @@ export default function JobsPage() {
     boardStateRef.current = nextState
     setPage(nextState.page)
     setStatus(nextState.status)
+    setTrackedMode(nextState.trackedMode)
     setSort(nextState.sort)
     setMinScore(nextState.minScore)
     setSearch(nextState.search)
@@ -130,6 +133,7 @@ export default function JobsPage() {
     try {
       const query: Record<string, any> = { page: nextState.page, per_page: 15, sort: nextState.sort }
       if (nextState.status) query.status = nextState.status
+      if (nextState.trackedMode) query.tracked_mode = nextState.trackedMode
       if (nextState.minScore) query.min_score = parseInt(nextState.minScore, 10)
       if (nextState.search) query.search = nextState.search
       if (nextState.isSparse !== null) query.is_sparse = nextState.isSparse
@@ -177,6 +181,7 @@ export default function JobsPage() {
   const boardHref = buildJobBoardHref({
     page,
     status,
+    trackedMode,
     sort,
     minScore,
     search,
@@ -202,8 +207,8 @@ export default function JobsPage() {
     clearSavedJobBoardScroll()
   }, [boardHref, loading])
 
-  const applyStatus = (val: string) => {
-    fetchJobs(buildNextState(1, { status: val }))
+  const applyStatus = (val: string, nextTrackedMode: JobBoardState['trackedMode']) => {
+    fetchJobs(buildNextState(1, { status: val, trackedMode: nextTrackedMode }))
   }
 
   const applyTodayOnly = (val: boolean) => {
@@ -277,17 +282,17 @@ export default function JobsPage() {
             onClick={() => setStatusOpen(!statusOpen)}
             className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-all border bg-primary text-primary-foreground border-primary shadow-sm cursor-pointer"
           >
-            {STATUS_OPTIONS.find(o => o.value === status)?.label || 'Active'}
+            {STATUS_OPTIONS.find((o) => o.value === status && o.trackedMode === trackedMode)?.label || 'Active'}
             <ChevronDown className={`h-3 w-3 text-muted-foreground transition-transform ${statusOpen ? 'rotate-180' : ''}`} />
           </button>
           {statusOpen && (
             <div className="absolute top-full left-0 mt-2 min-w-[140px] rounded-xl border border-border/50 bg-popover shadow-2xl z-50 overflow-hidden py-1 animate-in fade-in slide-in-from-top-1 duration-150">
               {STATUS_OPTIONS.map((opt) => (
                 <button
-                  key={opt.value}
-                  onClick={() => { applyStatus(opt.value); setStatusOpen(false) }}
+                  key={`${opt.label}-${opt.value}-${opt.trackedMode}`}
+                  onClick={() => { applyStatus(opt.value, opt.trackedMode); setStatusOpen(false) }}
                   className={`w-full text-left px-3 py-1.5 text-xs font-semibold transition-colors block ${
-                    status === opt.value
+                    status === opt.value && trackedMode === opt.trackedMode
                       ? 'text-primary bg-primary/10'
                       : 'text-popover-foreground/70 hover:text-popover-foreground hover:bg-muted/40'
                   }`}

@@ -19,6 +19,17 @@ const PRIORITY_BORDER: Record<string, string> = {
   skip:   'border-l-red-500/40',
 }
 
+const APPLICATION_BADGE_STYLES: Record<string, string> = {
+  applied: 'bg-sky-500/10 text-sky-700 dark:text-sky-300 border-sky-500/20',
+  screening: 'bg-cyan-500/10 text-cyan-700 dark:text-cyan-300 border-cyan-500/20',
+  interviewing: 'bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border-indigo-500/20',
+  offer: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20',
+  accepted: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20',
+  rejected_by_company: 'bg-rose-500/10 text-rose-700 dark:text-rose-300 border-rose-500/20',
+  rejected_by_user: 'bg-orange-500/10 text-orange-700 dark:text-orange-300 border-orange-500/20',
+  ghosted: 'bg-slate-500/10 text-slate-700 dark:text-slate-300 border-slate-500/20',
+}
+
 export function JobListItem({ job, boardHref }: { job: JobResponse; boardHref: string }) {
   const priority = job.score_breakdown?.apply_priority as string | undefined
   const fitCategory = job.score_breakdown?.fit_category as string | undefined
@@ -66,6 +77,14 @@ export function JobListItem({ job, boardHref }: { job: JobResponse; boardHref: s
                     </Badge>
                   )}
                 </div>
+              )}
+              {job.application_status && (
+                <Badge
+                  variant="outline"
+                  className={`h-4 px-2 py-0 text-[10px] font-semibold capitalize ${APPLICATION_BADGE_STYLES[job.application_status] || 'border-primary/20 bg-primary/10 text-primary'}`}
+                >
+                  {job.application_status.replaceAll('_', ' ')}
+                </Badge>
               )}
               {job.match_tier && job.status !== 'dismissed' && (
                 <div className="flex items-center gap-1.5">

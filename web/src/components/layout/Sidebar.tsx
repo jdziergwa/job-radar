@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation'
 import { 
   LayoutDashboard, 
   Briefcase, 
+  ClipboardList,
   BarChart3, 
   Building2, 
   Settings, 
@@ -21,6 +22,7 @@ import { PipelineTrigger } from '@/components/pipeline/PipelineTrigger'
 export const navItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/jobs', label: 'Job Board', icon: Briefcase },
+  { href: '/applications', label: 'Applications', icon: ClipboardList },
   { href: '/stats', label: 'Market Trends', icon: BarChart3 },
   { href: '/companies', label: 'Companies', icon: Building2 },
   { href: '/settings', label: 'Settings', icon: Settings },

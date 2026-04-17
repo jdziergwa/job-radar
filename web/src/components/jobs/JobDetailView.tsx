@@ -37,6 +37,15 @@ import { toast } from 'sonner'
 
 type JobDetailResponse = components["schemas"]["JobDetailResponse"]
 type JobStatus = components["schemas"]["StatusUpdate"]["status"]
+type ApplicationStatus =
+  | 'applied'
+  | 'screening'
+  | 'interviewing'
+  | 'offer'
+  | 'accepted'
+  | 'rejected_by_company'
+  | 'rejected_by_user'
+  | 'ghosted'
 
 interface JobDetailViewProps {
   jobId: number | null
@@ -53,6 +62,7 @@ export function JobDetailView({
 }: JobDetailViewProps) {
   const router = useRouter()
   const isSheet = mode === 'sheet'
+  const backLabel = boardHref.startsWith('/applications') ? 'Back to Applications' : 'Back to Job Board'
 
   const [job, setJob] = useState<JobDetailResponse | null>(null)
   const [loading, setLoading] = useState(true)
@@ -110,6 +120,29 @@ export function JobDetailView({
 
       setJob((prev) => prev ? { ...prev, status: newStatus } : prev)
       router.refresh()
+    } catch (err: any) {
+      toast.error(err.message)
+    } finally {
+      setUpdating(false)
+    }
+  }
+
+  const updateApplicationStatus = async (newStatus: ApplicationStatus) => {
+    if (!jobId) return
+
+    setUpdating(true)
+    try {
+      const { data, error: patchError } = await (api as any).PATCH('/api/jobs/{job_id}/application-status', {
+        params: {
+          path: { job_id: jobId },
+        },
+        body: { application_status: newStatus },
+      })
+      if (patchError) throw new Error('Failed to update application status')
+
+      setJob((prev) => prev ? { ...prev, ...(data ?? {}), application_status: newStatus } : prev)
+      router.refresh()
+      toast.success('Application added to tracker')
     } catch (err: any) {
       toast.error(err.message)
     } finally {
@@ -192,11 +225,11 @@ export function JobDetailView({
         <p className="text-muted-foreground">{error || "The requested job doesn't exist or has been removed."}</p>
         {onClose ? (
           <Button variant="outline" className="gap-2" onClick={onClose}>
-            <ArrowLeft className="h-4 w-4" /> Back to Job Board
+            <ArrowLeft className="h-4 w-4" /> {backLabel}
           </Button>
         ) : (
           <Button variant="outline" className="gap-2" onClick={goBackToBoard}>
-            <ArrowLeft className="h-4 w-4" /> Back to Board
+            <ArrowLeft className="h-4 w-4" /> {backLabel}
           </Button>
         )}
       </div>
@@ -216,7 +249,7 @@ export function JobDetailView({
       <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         {onClose ? (
           <Button variant="ghost" className="gap-2 -ml-2 self-start px-2 text-muted-foreground hover:text-foreground" onClick={onClose}>
-            <ArrowLeft className="h-4 w-4" /> Back to Job Board
+            <ArrowLeft className="h-4 w-4" /> {backLabel}
           </Button>
         ) : (
           <Button
@@ -224,7 +257,7 @@ export function JobDetailView({
             className="gap-2 -ml-2 self-start px-2 text-muted-foreground hover:text-foreground"
             onClick={goBackToBoard}
           >
-            <ArrowLeft className="h-4 w-4" /> Back to Job Board
+            <ArrowLeft className="h-4 w-4" /> {backLabel}
           </Button>
         )}
         <div className="flex w-full items-center gap-3 sm:w-auto">
@@ -251,6 +284,11 @@ export function JobDetailView({
               <Badge variant="outline" className="capitalize px-3 border-border/50 bg-muted/20">
                 Status: {job.status}
               </Badge>
+              {job.application_status && (
+                <Badge variant="outline" className="capitalize px-3 border-primary/20 bg-primary/10 text-primary">
+                  Tracker: {job.application_status.replaceAll('_', ' ')}
+                </Badge>
+              )}
               {job.match_tier && <MatchTierBadge matchTier={job.match_tier} />}
               {job.status === 'dismissed' && job.dismissal_reason && (
                 <Badge variant="destructive" className="px-3 border-none bg-destructive/15 text-destructive font-bold">
@@ -408,11 +446,11 @@ export function JobDetailView({
               <Button
                 variant="outline"
                 className="w-full gap-2 font-bold h-11"
-                onClick={() => updateStatus('applied')}
-                disabled={job.status === 'applied' || updating}
+                onClick={() => updateApplicationStatus('applied')}
+                disabled={!!job.application_status || updating}
               >
                 <CheckCircle2 className="h-4 w-4" />
-                {job.status === 'applied' ? 'Applied' : 'Mark as Applied'}
+                {job.application_status ? 'Tracked in Applications' : 'Track Application'}
               </Button>
               <Button
                 variant="outline"

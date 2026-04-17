@@ -4,6 +4,7 @@ const JOB_BOARD_SCROLL_RESTORE_KEY = 'job-board:restore'
 export type JobBoardState = {
   page: number
   status: string
+  trackedMode: 'all' | 'only' | 'exclude'
   sort: string
   minScore: string
   search: string
@@ -13,7 +14,8 @@ export type JobBoardState = {
 
 export const DEFAULT_JOB_BOARD_STATE: JobBoardState = {
   page: 1,
-  status: 'new,scored,applied',
+  status: 'new,scored',
+  trackedMode: 'exclude',
   sort: 'score',
   minScore: '',
   search: '',
@@ -29,6 +31,7 @@ export function parseJobBoardState(searchParams: URLSearchParams): JobBoardState
   return {
     page: Number.isFinite(rawPage) && rawPage > 0 ? rawPage : 1,
     status: searchParams.get('status') || DEFAULT_JOB_BOARD_STATE.status,
+    trackedMode: (searchParams.get('tracked_mode') as JobBoardState['trackedMode']) || DEFAULT_JOB_BOARD_STATE.trackedMode,
     sort: searchParams.get('sort') || DEFAULT_JOB_BOARD_STATE.sort,
     minScore: isSparse ? '' : rawMinScore,
     search: searchParams.get('search') || '',
@@ -42,6 +45,7 @@ export function buildJobBoardHref(state: JobBoardState): string {
 
   if (state.page > 1) params.set('page', String(state.page))
   if (state.status !== DEFAULT_JOB_BOARD_STATE.status) params.set('status', state.status)
+  if (state.trackedMode !== DEFAULT_JOB_BOARD_STATE.trackedMode) params.set('tracked_mode', state.trackedMode)
   if (state.sort !== DEFAULT_JOB_BOARD_STATE.sort) params.set('sort', state.sort)
   if (state.isSparse) {
     params.set('min_score', 'sparse')

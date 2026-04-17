@@ -168,7 +168,7 @@ export function DashboardPulseCard({
         : hasRunToday
           ? 'Found in today’s pipeline run.'
           : `No scan today yet. Last sync ${timeAgo(lastRunAt)}.`,
-      href: '/jobs?status=new,scored,applied&today_only=true',
+      href: '/jobs?status=new,scored&today_only=true',
       icon: CalendarDays,
     },
     {
@@ -189,7 +189,7 @@ export function DashboardPulseCard({
       label: 'New This Week',
       value: newThisWeek,
       copy: 'Fresh matches surfaced in the last 7 days.',
-      href: '/jobs?status=new,scored,applied',
+      href: '/jobs?status=new,scored',
       icon: CalendarDays,
     },
     {
