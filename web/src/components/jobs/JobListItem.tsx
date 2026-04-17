@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { MapPin, Building2, ChevronRight, Banknote, HelpCircle } from 'lucide-react'
 import { getCompanyQualitySignalLabel } from '@/lib/company-quality'
 import { saveJobBoardScroll } from '@/lib/jobs/navigation'
+import { formatJobLocation } from '@/lib/jobs/location'
 
 type JobResponse = components["schemas"]["JobResponse"]
 
@@ -38,6 +39,7 @@ export function JobListItem({ job, boardHref }: { job: JobResponse; boardHref: s
   const companySignals = Array.isArray(job.company_quality_signals) ? job.company_quality_signals.slice(0, 2) : []
   const isStrategicException = fitCategory === 'strategic_exception'
   const detailHref = `/jobs/detail?id=${job.id}&from=${encodeURIComponent(boardHref)}`
+  const displayLocation = formatJobLocation(job)
 
   return (
     <Link
@@ -108,7 +110,7 @@ export function JobListItem({ job, boardHref }: { job: JobResponse; boardHref: s
               </div>
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                 <MapPin className="h-3.5 w-3.5" />
-                <span>{job.location}</span>
+                <span>{displayLocation}</span>
               </div>
               {job.salary && (
                 <div className="flex items-center gap-1.5 text-xs text-green-600/80 dark:text-green-400/80 font-medium">

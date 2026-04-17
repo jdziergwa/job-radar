@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
 import { ScoreRing } from '@/components/score/ScoreRing'
 import { timeAgo } from '@/lib/utils/format'
+import { formatJobLocation } from '@/lib/jobs/location'
 import { Building2, ExternalLink, MapPin } from 'lucide-react'
 
 export function HighPriorityTable({ jobs, loading }: { jobs: any[], loading?: boolean }) {
@@ -68,7 +69,7 @@ export function HighPriorityTable({ jobs, loading }: { jobs: any[], loading?: bo
                       </div>
                       <div className="flex items-center gap-1">
                         <MapPin className="h-3 w-3" />
-                        <span className="truncate max-w-[140px]">{job.location}</span>
+                        <span className="truncate max-w-[140px]">{formatJobLocation(job)}</span>
                       </div>
                     </div>
                   </div>

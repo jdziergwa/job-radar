@@ -15,6 +15,7 @@ import { FitCategoryBadge } from '@/components/score/FitCategoryBadge'
 import { MatchTierBadge } from '@/components/score/MatchTierBadge'
 import { formatDate, getPlatformName } from '@/lib/utils/format'
 import { getCompanyQualitySignalLabel } from '@/lib/company-quality'
+import { formatJobLocation } from '@/lib/jobs/location'
 import { Badge } from '@/components/ui/badge'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -72,6 +73,7 @@ export function JobDetailView({
   const [savingNextStep, setSavingNextStep] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [rescoreRunId, setRescoreRunId] = useState<string | null>(null)
+  const displayLocation = job ? formatJobLocation(job) : ''
 
   const goBackToBoard = useCallback(() => {
     if (typeof window !== 'undefined' && window.history.length > 1) {
@@ -404,7 +406,7 @@ export function JobDetailView({
               </div>
               <div className="flex min-w-0 items-center gap-2">
                 <MapPin className="h-4 w-4 shrink-0 text-primary/70" />
-                <span className="truncate">{job.location}</span>
+                <span className="truncate">{displayLocation}</span>
               </div>
               <div className="flex min-w-0 items-center gap-2">
                 <Calendar className="h-4 w-4 shrink-0 text-primary/70" />

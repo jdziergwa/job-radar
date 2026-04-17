@@ -95,6 +95,40 @@ def test_job_detail_response_exposes_company_quality_signals():
         assert response.company_quality_signals == ["strong cv value"]
 
 
+def test_job_response_exposes_structured_location_metadata_fields():
+    with tempfile.TemporaryDirectory() as tmpdir:
+        db_path = Path(tmpdir) / "jobs.db"
+        store = Store(str(db_path))
+
+        store.upsert_jobs([
+            RawJob(
+                ats_platform="ashby",
+                company_slug="example-labs",
+                company_name="Example Labs",
+                job_id="role-structured-location",
+                title="Staff QA Engineer",
+                location="London",
+                url="https://example.com/jobs/structured-location",
+                description="Structured location metadata example.",
+                posted_at="2026-04-08T00:00:00Z",
+                fetched_at="2026-04-08T00:00:00Z",
+                location_metadata={
+                    "raw_location": "London",
+                    "workplace_type": "Remote",
+                },
+            )
+        ])
+
+        row = store.get_job_detail(store.get_unscored()[0].db_id)
+        assert row is not None
+
+        response = JobDetailResponse.from_row(row)
+
+        assert response.location == "London"
+        assert response.raw_location == "London"
+        assert response.workplace_type == "Remote"
+
+
 def test_job_response_normalizes_stale_priority_from_fit_score():
     with tempfile.TemporaryDirectory() as tmpdir:
         db_path = Path(tmpdir) / "jobs.db"

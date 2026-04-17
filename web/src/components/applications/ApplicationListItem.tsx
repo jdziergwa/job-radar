@@ -5,12 +5,15 @@ import { Badge } from '@/components/ui/badge'
 import { ScoreRing } from '@/components/score/ScoreRing'
 import { Building2, CalendarDays, ChevronRight, FileText, MapPin } from 'lucide-react'
 import { formatDate } from '@/lib/utils/format'
+import { formatJobLocation } from '@/lib/jobs/location'
 
 interface ApplicationJob {
   id: number
   title: string
   company_name: string
   location: string
+  workplace_type?: string | null
+  raw_location?: string | null
   status: string
   application_status: string
   applied_at?: string | null
@@ -73,6 +76,7 @@ export function ApplicationListItem({ job }: { job: ApplicationJob }) {
   const sourceLabel = job.source === 'manual' ? 'Manual' : 'Pipeline'
   const appliedLabel = job.applied_at ? `Applied ${formatDate(job.applied_at)}` : 'Applied date unavailable'
   const nextStepLabel = job.next_step_date ? `${job.next_step || 'Next step'} · ${formatDate(job.next_step_date)}` : (job.next_step || 'No upcoming steps')
+  const displayLocation = formatJobLocation(job)
 
   return (
     <Link
@@ -118,7 +122,7 @@ export function ApplicationListItem({ job }: { job: ApplicationJob }) {
                   </span>
                   <span className="inline-flex items-center gap-1.5">
                     <MapPin className="h-4 w-4" />
-                    {job.location}
+                    {displayLocation}
                   </span>
                   <span className="inline-flex items-center gap-1.5">
                     <CalendarDays className="h-4 w-4" />

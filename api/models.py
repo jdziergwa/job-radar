@@ -51,12 +51,16 @@ class JobResponse(BaseModel):
     salary_currency: Optional[str] = None
     is_sparse: bool = False
     company_quality_signals: list[str] = []
+    workplace_type: Optional[str] = None
+    raw_location: Optional[str] = None
 
     @classmethod
     def from_row(cls, row: dict) -> "JobResponse":
         """Parse a SQLite row dict into a JobResponse."""
         breakdown = None
         company_quality_signals: list[str] = []
+        workplace_type: str | None = None
+        raw_location: str | None = None
         if row.get("score_breakdown"):
             try:
                 raw = json.loads(row["score_breakdown"])
@@ -84,7 +88,27 @@ class JobResponse(BaseModel):
                     ]
             except (json.JSONDecodeError, Exception):
                 pass
-        return cls(**{**row, "score_breakdown": breakdown, "company_quality_signals": company_quality_signals})
+        if row.get("location_metadata"):
+            try:
+                location_metadata = json.loads(row["location_metadata"])
+                if isinstance(location_metadata, dict):
+                    raw_workplace = location_metadata.get("workplace_type")
+                    raw_location_value = location_metadata.get("raw_location")
+                    if isinstance(raw_workplace, str) and raw_workplace.strip():
+                        workplace_type = raw_workplace.strip()
+                    if isinstance(raw_location_value, str) and raw_location_value.strip():
+                        raw_location = raw_location_value.strip()
+            except (json.JSONDecodeError, Exception):
+                pass
+        return cls(
+            **{
+                **row,
+                "score_breakdown": breakdown,
+                "company_quality_signals": company_quality_signals,
+                "workplace_type": workplace_type,
+                "raw_location": raw_location,
+            }
+        )
 
 
 class JobDetailResponse(JobResponse):

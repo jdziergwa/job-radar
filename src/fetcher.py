@@ -115,74 +115,83 @@ def extract_json_ld(html: str) -> Optional[str]:
             continue
     return None
 
+async def _fetch_description_via_supported_resolver(
+    client: httpx.AsyncClient,
+    url: str,
+) -> str | None:
+    ref = resolve_job_ref(url)
+    if ref.platform not in {"greenhouse", "lever", "ashby", "workable"}:
+        return None
+    resolved_job = await fetch_supported_job(client, ref)
+    if resolved_job and resolved_job.description:
+        return resolved_job.description
+    return None
+
+
+async def _fetch_description_via_fallback_scrape(
+    client: httpx.AsyncClient,
+    *,
+    url: str,
+    company_name: str,
+) -> str | None:
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Referer": "https://www.google.com/",
+        "Cache-Control": "no-cache",
+    }
+
+    try:
+        resp = await client.get(url, timeout=12, follow_redirects=True, headers=headers)
+        if resp.status_code != 200:
+            return None
+
+        html = resp.text
+        json_ld_desc = extract_json_ld(html)
+        if json_ld_desc:
+            return json_ld_desc
+
+        for selector in [
+            r'class=["\'][^"\']*(?:job-description|description|posting-content|job-detail-description)[^"\']*["\'][^>]*>(.*?)</div>',
+            r'id=["\'][^"\']*(?:job-description|description|content)[^"\']*["\'][^>]*>(.*?)</div>',
+            r'<article[^>]*>(.*?)</article>',
+            r'<main[^>]*>(.*?)</main>',
+        ]:
+            match = re.search(selector, html, re.DOTALL | re.IGNORECASE)
+            if match:
+                content_piece = match.group(1)
+                if len(strip_html(content_piece)) > 200:
+                    return content_piece
+
+        content = strip_html(html)
+        if len(content) > 300:
+            return content
+    except Exception as e:
+        logger.debug("Scraper fallback failed for %s (%s): %s", company_name, url, e)
+    return None
+
+
 async def fetch_description(client: httpx.AsyncClient, sem: asyncio.Semaphore, job: Any) -> Optional[str]:
     """
-    Given a job, fetch its full description using ATS-specific APIs or HTML scraping.
+    Given a job, fetch its full description using ATS resolvers first, then generic scraping.
     """
     async with sem:
         url = str(job.url or "")
-        ats = str(job.ats_platform or "").lower()
-        ref = resolve_job_ref(url)
-        
-        # Realistic headers to avoid bot detection
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-            "Accept-Language": "en-US,en;q=0.9",
-            "Referer": "https://www.google.com/",
-            "Cache-Control": "no-cache",
-        }
+        company_name = str(job.company_name or "")
 
         try:
-            # 1. Try Platform-Specific API Hydration First
-            if ats in {"greenhouse", "lever", "ashby", "workable"}:
-                supported_job = await fetch_supported_job(client, ref)
-                if supported_job and supported_job.description:
-                    return supported_job.description
-
+            resolved = await _fetch_description_via_supported_resolver(client, url)
+            if resolved:
+                return resolved
         except Exception as e:
-            logger.debug("API hydration failed for %s: %s", job.company_name, e)
+            logger.debug("API hydration failed for %s: %s", company_name, e)
 
-        # 2. General Scraper Fallback (JSON-LD and common selectors)
-        # This handles BambooHR, Workday, and failed API attempts
-        try:
-            resp = await client.get(url, timeout=12, follow_redirects=True, headers=headers)
-            if resp.status_code == 200:
-                html = resp.text
-                
-                # Check for JobPosting metadata first - the most reliable way
-                json_ld_desc = extract_json_ld(html)
-                if json_ld_desc:
-                    return json_ld_desc
-
-                # Ashby/Other JSON extraction workarounds
-                if "ashby" in ats or "ashbyhq.com" in url:
-                    match = re.search(r'"descriptionHtml":"(.*?)","', html)
-                    if match:
-                        return match.group(1).replace("\\n", "\n").replace("\\\"", "\"")
-                
-                # Heuristic: look for common job description containers
-                for selector in [
-                    r'class=["\'][^"\']*(?:job-description|description|posting-content|job-detail-description)[^"\']*["\'][^>]*>(.*?)</div>',
-                    r'id=["\'][^"\']*(?:job-description|description|content)[^"\']*["\'][^>]*>(.*?)</div>',
-                    r'<article[^>]*>(.*?)</article>',
-                    r'<main[^>]*>(.*?)</main>',
-                ]:
-                    match = re.search(selector, html, re.DOTALL | re.IGNORECASE)
-                    if match:
-                        content_piece = match.group(1)
-                        if len(strip_html(content_piece)) > 200:
-                            return content_piece
-
-                # Absolute last resort
-                content = strip_html(html)
-                if len(content) > 300:
-                    return content
-                
-        except Exception as e:
-            logger.debug("Scraper fallback failed for %s (%s): %s", job.company_name, url, e)
-            
-    return None
+        return await _fetch_description_via_fallback_scrape(
+            client,
+            url=url,
+            company_name=company_name,
+        )
 
 async def populate_descriptions(
     jobs: list[Any], 

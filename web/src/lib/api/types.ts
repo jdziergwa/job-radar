@@ -843,6 +843,10 @@ export interface components {
              * @default []
              */
             company_quality_signals: string[];
+            /** Workplace Type */
+            workplace_type?: string | null;
+            /** Raw Location */
+            raw_location?: string | null;
             /** Days Since Applied */
             days_since_applied?: number | null;
         };
@@ -1294,6 +1298,10 @@ export interface components {
              * @default []
              */
             company_quality_signals: string[];
+            /** Workplace Type */
+            workplace_type?: string | null;
+            /** Raw Location */
+            raw_location?: string | null;
             /** Description */
             description?: string | null;
         };
@@ -1378,6 +1386,10 @@ export interface components {
              * @default []
              */
             company_quality_signals: string[];
+            /** Workplace Type */
+            workplace_type?: string | null;
+            /** Raw Location */
+            raw_location?: string | null;
         };
         /** ManualImportRequest */
         ManualImportRequest: {
