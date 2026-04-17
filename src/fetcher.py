@@ -10,8 +10,8 @@ from urllib.parse import urlparse
 import certifi
 import httpx
 
-from src.job_resolver import resolve_job_ref, extract_id
-from src.providers.local_ats import _build_ashby_location_metadata
+from src.job_resolver import resolve_job_ref
+from src.providers.ats_resolvers import fetch_supported_job
 from src.providers.utils import strip_html
 from src.models import RawJob
 from src.providers.utils import slugify
@@ -35,127 +35,6 @@ def _guess_title_from_url(url: str, job_id: str, platform: str) -> str:
     return f"Imported {platform.title()} Job"
 
 
-def _ashby_extract_description(item: dict[str, Any]) -> str | None:
-    for key in (
-        "descriptionHtml",
-        "descriptionPlain",
-        "jobDescriptionHtml",
-        "jobDescriptionPlain",
-        "description",
-    ):
-        value = item.get(key)
-        if isinstance(value, str) and value.strip():
-            return value
-    return None
-
-
-def _ashby_extract_location(item: dict[str, Any]) -> str | None:
-    location = item.get("location")
-    if isinstance(location, dict):
-        name = location.get("name")
-        if isinstance(name, str) and name.strip():
-            location = name.strip()
-    if isinstance(location, str) and location.strip():
-        location = location.strip()
-    else:
-        location = None
-
-    workplace_type = item.get("workplaceType")
-    if isinstance(workplace_type, str) and workplace_type.strip():
-        normalized_workplace_type = workplace_type.strip()
-        if location and normalized_workplace_type.lower() not in location.lower():
-            return f"{normalized_workplace_type} • {location}"
-        if not location:
-            return normalized_workplace_type
-
-    for key in ("locationName",):
-        value = item.get(key)
-        if isinstance(value, str) and value.strip():
-            return value.strip()
-    return location
-
-
-def _ashby_extract_salary(item: dict[str, Any]) -> str | None:
-    for key in (
-        "compensationTierSummary",
-        "compensationSummary",
-        "salary",
-        "salarySummary",
-        "compensation",
-    ):
-        value = item.get(key)
-        if isinstance(value, str) and value.strip():
-            return value.strip()
-        if isinstance(value, dict):
-            for nested_key in ("summary", "displayText", "text", "shortSummary", "longSummary"):
-                nested = value.get(nested_key)
-                if isinstance(nested, str) and nested.strip():
-                    return nested.strip()
-    return None
-
-
-def _ashby_extract_company_name(payload: dict[str, Any], company_slug: str) -> str:
-    for key in ("companyName", "name", "organizationName", "organization_name"):
-        value = payload.get(key)
-        if isinstance(value, str) and value.strip():
-            return value.strip()
-    return _humanize_slug(company_slug) or company_slug
-
-
-async def _fetch_ashby_job_data(
-    client: httpx.AsyncClient,
-    *,
-    company_slug: str,
-    job_id: str,
-) -> RawJob | None:
-    api_url = f"https://api.ashbyhq.com/posting-api/job-board/{company_slug}"
-    response = await client.get(
-        api_url,
-        params={"includeCompensation": "true"},
-        timeout=8,
-    )
-    if response.status_code != 200:
-        return None
-
-    payload = response.json()
-    if not isinstance(payload, dict):
-        return None
-
-    jobs = payload.get("jobs", [])
-    if not isinstance(jobs, list):
-        return None
-
-    job_item = next((item for item in jobs if str(item.get("id", "")) == job_id), None)
-    if not isinstance(job_item, dict):
-        return None
-
-    title = job_item.get("title")
-    if not isinstance(title, str) or not title.strip():
-        title = None
-
-    description = _ashby_extract_description(job_item) or ""
-    location = _ashby_extract_location(job_item) or ""
-
-    return RawJob(
-        ats_platform="ashby",
-        company_slug=company_slug,
-        company_name=_ashby_extract_company_name(payload, company_slug),
-        job_id=job_id,
-        title=title or _guess_title_from_url(
-            f"https://jobs.ashbyhq.com/{company_slug}/{job_id}",
-            job_id,
-            "ashby",
-        ),
-        location=location,
-        url=f"https://jobs.ashbyhq.com/{company_slug}/{job_id}",
-        description=description,
-        posted_at=None,
-        fetched_at=datetime.now(timezone.utc).isoformat(),
-        location_metadata=_build_ashby_location_metadata(job_item, location, description),
-        salary=_ashby_extract_salary(job_item),
-    )
-
-
 async def fetch_job_from_url(url: str) -> RawJob | None:
     """Best-effort ATS import helper for a single job URL."""
     ref = resolve_job_ref(url)
@@ -171,14 +50,9 @@ async def fetch_job_from_url(url: str) -> RawJob | None:
     sem = asyncio.Semaphore(1)
 
     async with httpx.AsyncClient(verify=certifi.where()) as client:
-        if ref.platform == "ashby":
-            ashby_job = await _fetch_ashby_job_data(
-                client,
-                company_slug=ref.company_slug,
-                job_id=ref.job_id,
-            )
-            if ashby_job:
-                return ashby_job
+        resolved_job = await fetch_supported_job(client, ref)
+        if resolved_job:
+            return resolved_job
 
         description = await fetch_description(client, sem, temp_job)
 
@@ -248,8 +122,7 @@ async def fetch_description(client: httpx.AsyncClient, sem: asyncio.Semaphore, j
     async with sem:
         url = str(job.url or "")
         ats = str(job.ats_platform or "").lower()
-        slug = str(job.company_slug or "").lower() # Force lowercase
-        job_id = extract_id(url)
+        ref = resolve_job_ref(url)
         
         # Realistic headers to avoid bot detection
         headers = {
@@ -262,96 +135,10 @@ async def fetch_description(client: httpx.AsyncClient, sem: asyncio.Semaphore, j
 
         try:
             # 1. Try Platform-Specific API Hydration First
-            
-            # Greenhouse (boards or job-boards)
-            if "greenhouse" in ats or "greenhouse.io" in url or "gh_jid=" in url:
-                if not slug:
-                    # Try to extract slug from common patterns
-                    for pattern in [r"greenhouse\.io/([^/?#]+)", r"careers/([^/?#]+)"]:
-                        match = re.search(pattern, url)
-                        if match: 
-                            slug = match.group(1).lower()
-                            break
-                
-                if slug and job_id:
-                    # Try some common slug variations if the first one fails
-                    slugs_to_try = [slug]
-                    if "pro" not in slug: slugs_to_try.append(f"{slug}pro")
-                    if "-" in slug: slugs_to_try.append(slug.replace("-", ""))
-                    else: slugs_to_try.append("-".join(re.findall(r'[a-z]+', slug))) # e.g. housecall -> housecall
-                    
-                    # Clean up duplicates
-                    slugs_to_try = list(dict.fromkeys(slugs_to_try))
-
-                    for s in slugs_to_try:
-                        api_url = f"https://boards-api.greenhouse.io/v1/boards/{s}/jobs/{job_id}"
-                        resp = await client.get(api_url, timeout=8)
-                        if resp.status_code == 200:
-                            data = resp.json()
-                            content = data.get("content", "")
-                            if content: return content
-                        elif resp.status_code == 404:
-                            continue # Try next slug
-                        else:
-                            break # Other error, stop
-                        
-            # Lever
-            elif "lever" in ats or "lever.co" in url:
-                if not slug:
-                    match = re.search(r"lever\.co/([^/?#]+)", url)
-                    if match: slug = match.group(1).lower()
-                
-                if slug and job_id:
-                    slugs_to_try = [slug]
-                    # Lever slugs are almost always lowercase but sometimes have -inc or similar
-                    for s in slugs_to_try:
-                        api_url = f"https://api.lever.co/v0/postings/{s}/{job_id}"
-                        resp = await client.get(api_url, timeout=8)
-                        if resp.status_code == 200:
-                            data = resp.json()
-                            html_content = data.get("description", "")
-                            for lst in data.get("lists", []):
-                                html_content += f"\n<h3>{lst.get('text', '')}</h3>\n"
-                                content = lst.get("content", [])
-                                if isinstance(content, list):
-                                    html_content += "<ul>"
-                                    for item in content:
-                                        html_content += f"<li>{item}</li>"
-                                    html_content += "</ul>"
-                                elif isinstance(content, str):
-                                    html_content += content
-                            if html_content: return html_content
-                        elif resp.status_code == 404:
-                            continue
-                        else:
-                            break
-
-            # Ashby
-            elif "ashby" in ats or "ashbyhq.com" in url:
-                if slug and job_id:
-                    ashby_job = await _fetch_ashby_job_data(
-                        client,
-                        company_slug=slug,
-                        job_id=job_id,
-                    )
-                    if ashby_job and ashby_job.get("description"):
-                        return str(ashby_job["description"])
-
-            # Workable
-            elif "workable" in ats or "workable.com" in url:
-                if not slug:
-                    match = re.search(r"workable\.com/([^/?#]+)", url)
-                    if match: slug = match.group(1).lower()
-                
-                if slug and job_id:
-                    api_url = f"https://apply.workable.com/api/v3/accounts/{slug}/jobs/{job_id}"
-                    resp = await client.get(api_url, timeout=8)
-                    if resp.status_code == 200:
-                        data = resp.json()
-                        html_content = (data.get("description", "") + "\n" + 
-                                       data.get("requirements", "") + "\n" + 
-                                       data.get("benefits", ""))
-                        if html_content: return html_content
+            if ats in {"greenhouse", "lever", "ashby", "workable"}:
+                supported_job = await fetch_supported_job(client, ref)
+                if supported_job and supported_job.description:
+                    return supported_job.description
 
         except Exception as e:
             logger.debug("API hydration failed for %s: %s", job.company_name, e)

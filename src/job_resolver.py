@@ -5,7 +5,13 @@ import re
 from urllib.parse import urlparse
 
 from src.company_import import extract_platform_slug_from_url
-from src.providers.utils import slugify
+
+
+def _slugify(text: str) -> str:
+    if not text:
+        return "unknown"
+    normalized = re.sub(r"[^a-z0-9]+", "-", text.lower())
+    return normalized.strip("-") or "unknown"
 
 
 @dataclass(frozen=True)
@@ -32,10 +38,10 @@ def extract_slug_from_url(url: str, platform: str) -> str:
     host = parsed.netloc.lower()
     path_parts = [part for part in parsed.path.split("/") if part]
     if platform == "bamboohr" and host.endswith(".bamboohr.com"):
-        return slugify(host.split(".")[0])
+        return _slugify(host.split(".")[0])
     if path_parts:
-        return slugify(path_parts[0])
-    return slugify(host.split(".")[0] if host else platform)
+        return _slugify(path_parts[0])
+    return _slugify(host.split(".")[0] if host else platform)
 
 
 def extract_id(url: str) -> str:
