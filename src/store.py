@@ -11,6 +11,7 @@ import logging
 import os
 import sqlite3
 import threading
+import uuid
 from contextlib import contextmanager
 from datetime import datetime, timedelta
 from typing import Callable, Generator, Literal
@@ -524,6 +525,41 @@ class Store:
         logger.warning("Job %d not found for tracker removal", db_id)
         return False
 
+    def update_notes(self, db_id: int, notes: str) -> bool:
+        """Update free-form tracker notes."""
+        with self._connect() as conn:
+            cursor = conn.execute(
+                "UPDATE jobs SET notes = ? WHERE id = ?",
+                (notes, db_id),
+            )
+        if cursor.rowcount > 0:
+            self.set_metadata("last_job_status_change_at", datetime.utcnow().isoformat())
+            logger.debug("Job %d notes updated", db_id)
+            return True
+        logger.warning("Job %d not found for notes update", db_id)
+        return False
+
+    def update_next_step(
+        self,
+        db_id: int,
+        next_step: str | None,
+        next_step_date: str | None,
+    ) -> bool:
+        """Update next-step tracker metadata."""
+        with self._connect() as conn:
+            cursor = conn.execute(
+                """UPDATE jobs
+                   SET next_step = ?, next_step_date = ?
+                   WHERE id = ?""",
+                (next_step, next_step_date, db_id),
+            )
+        if cursor.rowcount > 0:
+            self.set_metadata("last_job_status_change_at", datetime.utcnow().isoformat())
+            logger.debug("Job %d next-step updated", db_id)
+            return True
+        logger.warning("Job %d not found for next-step update", db_id)
+        return False
+
     def update_job_description(self, db_id: int, description: str) -> bool:
         """Update job description. Returns True if found."""
         with self._connect() as conn:
@@ -823,6 +859,309 @@ class Store:
         total = len(result)
         offset = (page - 1) * per_page
         return result[offset:offset + per_page], total
+
+    def get_applications_filtered(
+        self,
+        application_statuses: list[str] | None = None,
+        search: str | None = None,
+        sort: str = "next_step_date",
+        order: str = "asc",
+        page: int = 1,
+        per_page: int = 50,
+    ) -> tuple[list[dict], int]:
+        """Filtered, paginated tracker list."""
+        columns = (
+            "id, ats_platform, company_slug, company_name, job_id, title, "
+            "location, company_metadata, url, posted_at, first_seen_at, last_seen_at, "
+            "fit_score, score_reasoning, score_breakdown, scored_at, status, application_status, "
+            "applied_at, notes, next_step, next_step_date, source, dismissal_reason, match_tier, "
+            "salary, salary_min, salary_max, salary_currency, is_sparse"
+        )
+
+        where_clauses = ["application_status IS NOT NULL"]
+        params: list[object] = []
+
+        if application_statuses:
+            placeholders = ",".join("?" * len(application_statuses))
+            where_clauses.append(f"application_status IN ({placeholders})")
+            params.extend(application_statuses)
+
+        if search:
+            where_clauses.append(
+                "(LOWER(title) LIKE ? OR LOWER(company_name) LIKE ? OR LOWER(COALESCE(notes, '')) LIKE ?)"
+            )
+            search_value = f"%{search.lower()}%"
+            params.extend([search_value, search_value, search_value])
+
+        sort_map = {
+            "applied_date": "applied_at",
+            "company": "company_name",
+            "status": "application_status",
+            "next_step_date": "next_step_date",
+        }
+        sort_col = sort_map.get(sort, "next_step_date")
+        order_sql = "DESC" if order.lower() == "desc" else "ASC"
+        where_sql = " AND ".join(where_clauses)
+
+        with self._connect() as conn:
+            rows = conn.execute(
+                f"""SELECT {columns}
+                    FROM jobs
+                    WHERE {where_sql}
+                    ORDER BY {sort_col} {order_sql} NULLS LAST, applied_at DESC NULLS LAST""",
+                params,
+            ).fetchall()
+            result = [dict(row) for row in rows]
+
+        total = len(result)
+        offset = (page - 1) * per_page
+        return result[offset:offset + per_page], total
+
+    def get_application_timeline(self, db_id: int) -> list[dict]:
+        """Return tracker timeline events for a job."""
+        with self._connect() as conn:
+            rows = conn.execute(
+                """SELECT id, job_id, status, note, created_at
+                   FROM application_events
+                   WHERE job_id = ?
+                   ORDER BY created_at ASC, id ASC""",
+                (db_id,),
+            ).fetchall()
+        return [dict(row) for row in rows]
+
+    def get_application_stats(self) -> dict:
+        """Aggregate tracker stats for the applications page."""
+        with self._connect() as conn:
+            app_rows = conn.execute(
+                """SELECT id, company_name, fit_score, source, application_status, applied_at
+                   FROM jobs
+                   WHERE application_status IS NOT NULL"""
+            ).fetchall()
+            event_rows = conn.execute(
+                """SELECT job_id, status, created_at
+                   FROM application_events
+                   ORDER BY created_at ASC, id ASC"""
+            ).fetchall()
+
+        status_counts = {
+            "applied": 0,
+            "screening": 0,
+            "interviewing": 0,
+            "offer": 0,
+            "accepted": 0,
+            "rejected_by_company": 0,
+            "rejected_by_user": 0,
+            "ghosted": 0,
+        }
+        source_breakdown = {"pipeline": 0, "manual": 0}
+        top_companies: dict[str, dict[str, object]] = {}
+        active_count = 0
+        offers_count = 0
+
+        events_by_job: dict[int, list[sqlite3.Row]] = {}
+        for event in event_rows:
+            events_by_job.setdefault(event["job_id"], []).append(event)
+
+        response_deltas: list[float] = []
+        weekly_velocity: dict[str, int] = {}
+        outcome_breakdown = {
+            "offer": 0,
+            "accepted": 0,
+            "rejected_by_company": 0,
+            "rejected_by_user": 0,
+            "ghosted": 0,
+        }
+        funnel = {
+            "applied": 0,
+            "screening": 0,
+            "interviewing": 0,
+            "offer": 0,
+            "accepted": 0,
+        }
+
+        for row in app_rows:
+            app_status = row["application_status"]
+            if app_status in status_counts:
+                status_counts[app_status] += 1
+            if app_status in {"applied", "screening", "interviewing"}:
+                active_count += 1
+            if app_status in {"offer", "accepted"}:
+                offers_count += 1
+            if app_status in outcome_breakdown:
+                outcome_breakdown[app_status] += 1
+
+            source = row["source"] or "pipeline"
+            source_breakdown[source] = source_breakdown.get(source, 0) + 1
+
+            company_name = row["company_name"] or "Unknown"
+            company_stats = top_companies.setdefault(
+                company_name,
+                {"company_name": company_name, "applications": 0, "furthest_stage": "applied", "avg_score_sum": 0, "avg_score_count": 0},
+            )
+            company_stats["applications"] = int(company_stats["applications"]) + 1
+            if row["fit_score"] is not None:
+                company_stats["avg_score_sum"] = int(company_stats["avg_score_sum"]) + int(row["fit_score"])
+                company_stats["avg_score_count"] = int(company_stats["avg_score_count"]) + 1
+
+            stage_order = {
+                "applied": 1,
+                "screening": 2,
+                "interviewing": 3,
+                "offer": 4,
+                "accepted": 5,
+                "rejected_by_company": 3,
+                "rejected_by_user": 3,
+                "ghosted": 2,
+            }
+            current_best = str(company_stats["furthest_stage"])
+            if stage_order.get(app_status, 0) > stage_order.get(current_best, 0):
+                company_stats["furthest_stage"] = app_status
+
+            applied_at_raw = row["applied_at"]
+            if applied_at_raw:
+                try:
+                    applied_at = datetime.fromisoformat(str(applied_at_raw))
+                except ValueError:
+                    applied_at = None
+                if applied_at is not None:
+                    week_bucket = f"{applied_at.isocalendar().year}-W{applied_at.isocalendar().week:02d}"
+                    weekly_velocity[week_bucket] = weekly_velocity.get(week_bucket, 0) + 1
+
+                    events = events_by_job.get(row["id"], [])
+                    for event in events:
+                        if event["status"] != "applied":
+                            try:
+                                event_time = datetime.fromisoformat(str(event["created_at"]))
+                            except ValueError:
+                                continue
+                            response_deltas.append((event_time - applied_at).total_seconds() / 86400)
+                            break
+
+            events = events_by_job.get(row["id"], [])
+            seen_statuses = {event["status"] for event in events}
+            for key in funnel:
+                if key in seen_statuses or app_status == key:
+                    funnel[key] += 1
+
+        response_numerator = sum(
+            status_counts[key]
+            for key in ("screening", "interviewing", "offer", "accepted", "rejected_by_company")
+        )
+        total = len(app_rows)
+        response_rate = round((response_numerator / total) * 100, 1) if total else 0.0
+        avg_time = round(sum(response_deltas) / len(response_deltas), 1) if response_deltas else None
+
+        top_company_rows: list[dict[str, object]] = []
+        for data in top_companies.values():
+            avg_score = None
+            if int(data["avg_score_count"]) > 0:
+                avg_score = round(int(data["avg_score_sum"]) / int(data["avg_score_count"]), 1)
+            top_company_rows.append(
+                {
+                    "company_name": data["company_name"],
+                    "applications": data["applications"],
+                    "furthest_stage": data["furthest_stage"],
+                    "avg_score": avg_score,
+                }
+            )
+        top_company_rows.sort(key=lambda item: (-int(item["applications"]), str(item["company_name"])))
+
+        return {
+            "total": total,
+            "active_count": active_count,
+            "offers_count": offers_count,
+            "response_rate": response_rate,
+            "avg_time_to_response_days": avg_time,
+            "status_counts": status_counts,
+            "weekly_velocity": [
+                {"week": week, "applications": weekly_velocity[week]}
+                for week in sorted(weekly_velocity.keys())
+            ],
+            "funnel": funnel,
+            "outcome_breakdown": outcome_breakdown,
+            "source_breakdown": source_breakdown,
+            "top_companies": top_company_rows[:10],
+        }
+
+    def get_job_by_identity(
+        self,
+        ats_platform: str,
+        company_slug: str,
+        external_job_id: str,
+    ) -> dict | None:
+        """Look up an existing job by its source identity."""
+        with self._connect() as conn:
+            row = conn.execute(
+                """SELECT * FROM jobs
+                   WHERE ats_platform = ? AND company_slug = ? AND job_id = ?""",
+                (ats_platform, company_slug, external_job_id),
+            ).fetchone()
+        return dict(row) if row is not None else None
+
+    def import_job(
+        self,
+        *,
+        ats_platform: str,
+        company_slug: str,
+        external_job_id: str | None,
+        company_name: str,
+        title: str,
+        location: str | None,
+        url: str,
+        description: str | None,
+        notes: str | None,
+        salary: str | None = None,
+        source: str = "manual",
+        initial_event_note: str | None = None,
+    ) -> tuple[dict, bool]:
+        """Create a tracked application or return an existing duplicate."""
+        normalized_job_id = external_job_id or uuid.uuid4().hex
+        now = datetime.utcnow().isoformat()
+        with self._connect() as conn:
+            existing = conn.execute(
+                """SELECT * FROM jobs
+                   WHERE ats_platform = ? AND company_slug = ? AND job_id = ?""",
+                (ats_platform, company_slug, normalized_job_id),
+            ).fetchone()
+            if existing is not None:
+                return dict(existing), True
+
+            cursor = conn.execute(
+                """INSERT INTO jobs (
+                       ats_platform, company_slug, job_id, company_name, title, location, url,
+                       description, posted_at, first_seen_at, last_seen_at, status,
+                       application_status, applied_at, notes, source, salary
+                   ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (
+                    ats_platform,
+                    company_slug,
+                    normalized_job_id,
+                    company_name,
+                    title,
+                    location,
+                    url,
+                    description,
+                    None,
+                    now,
+                    now,
+                    "new",
+                    "applied",
+                    now,
+                    notes,
+                    source,
+                    salary,
+                ),
+            )
+            new_id = int(cursor.lastrowid)
+            conn.execute(
+                """INSERT INTO application_events (job_id, status, note, created_at)
+                   VALUES (?, 'applied', ?, ?)""",
+                (new_id, initial_event_note, now),
+            )
+            created = conn.execute("SELECT * FROM jobs WHERE id = ?", (new_id,)).fetchone()
+
+        self.set_metadata("last_job_status_change_at", now)
+        return dict(created), False
 
     def get_job_detail(self, db_id: int) -> dict | None:
         """Get a single job by ID, including description."""

@@ -1,3 +1,4 @@
+from datetime import datetime
 from pydantic import BaseModel
 from typing import Optional, Literal
 import json
@@ -122,6 +123,111 @@ class ApplicationEventResponse(BaseModel):
     status: str
     note: Optional[str] = None
     created_at: str
+
+
+def _parse_iso_datetime(value: str | None) -> datetime | None:
+    if not value:
+        return None
+    normalized = value[:-1] + "+00:00" if value.endswith("Z") else value
+    try:
+        return datetime.fromisoformat(normalized)
+    except ValueError:
+        return None
+
+
+class ApplicationJobResponse(JobResponse):
+    days_since_applied: Optional[int] = None
+
+    @classmethod
+    def from_row(cls, row: dict) -> "ApplicationJobResponse":
+        base = JobResponse.from_row(row)
+        applied_at = _parse_iso_datetime(row.get("applied_at"))
+        days_since_applied = None
+        if applied_at is not None:
+            now = datetime.utcnow() if applied_at.tzinfo is None else datetime.now(tz=applied_at.tzinfo)
+            days_since_applied = max(0, (now.date() - applied_at.date()).days)
+        return cls(**base.model_dump(), days_since_applied=days_since_applied)
+
+
+class ApplicationListResponse(BaseModel):
+    jobs: list[ApplicationJobResponse]
+    total: int
+    page: int
+    pages: int
+    per_page: int
+
+
+class ApplicationWeeklyVelocityPoint(BaseModel):
+    week: str
+    applications: int
+
+
+class ApplicationFunnelStats(BaseModel):
+    applied: int = 0
+    screening: int = 0
+    interviewing: int = 0
+    offer: int = 0
+    accepted: int = 0
+
+
+class ApplicationTopCompanyResponse(BaseModel):
+    company_name: str
+    applications: int
+    furthest_stage: str
+    avg_score: Optional[float] = None
+
+
+class ApplicationStatsResponse(BaseModel):
+    total: int = 0
+    active_count: int = 0
+    offers_count: int = 0
+    response_rate: float = 0
+    avg_time_to_response_days: Optional[float] = None
+    status_counts: dict[str, int] = {}
+    weekly_velocity: list[ApplicationWeeklyVelocityPoint] = []
+    funnel: ApplicationFunnelStats = ApplicationFunnelStats()
+    outcome_breakdown: dict[str, int] = {}
+    source_breakdown: dict[str, int] = {}
+    top_companies: list[ApplicationTopCompanyResponse] = []
+
+
+class ImportJobRequest(BaseModel):
+    url: str
+    company_name: Optional[str] = None
+    title: Optional[str] = None
+    location: Optional[str] = None
+    notes: Optional[str] = None
+
+
+class ManualImportRequest(BaseModel):
+    url: Optional[str] = None
+    company_name: str
+    title: str
+    location: Optional[str] = None
+    description: Optional[str] = None
+    salary: Optional[str] = None
+    notes: Optional[str] = None
+
+
+class ImportJobResponse(BaseModel):
+    job_id: Optional[int] = None
+    fetched: bool
+    needs_manual_entry: bool
+    already_tracked: bool
+    job: Optional[JobResponse] = None
+
+
+class NotesUpdate(BaseModel):
+    notes: str
+
+
+class NextStepUpdate(BaseModel):
+    next_step: Optional[str] = None
+    next_step_date: Optional[str] = None
+
+
+class TimelineResponse(BaseModel):
+    events: list[ApplicationEventResponse] = []
 
 
 class StatsOverview(BaseModel):

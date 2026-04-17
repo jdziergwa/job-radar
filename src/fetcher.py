@@ -2,13 +2,17 @@ import asyncio
 import json
 import logging
 import re
+from types import SimpleNamespace
 from typing import Any, Optional, Callable
+from urllib.parse import urlparse
 
 import certifi
 import httpx
 
+from src.company_import import extract_platform_slug_from_url
 from src.providers.utils import strip_html
 from src.models import RawJob
+from src.providers.utils import slugify
 
 logger = logging.getLogger(__name__)
 
@@ -17,6 +21,45 @@ logger = logging.getLogger(__name__)
 # Lever: /company/12345-uuid
 # Ashby: /company/12345-uuid
 ID_REGEX = re.compile(r"/([a-zA-Z0-9\-]+)/?$")
+
+
+def _humanize_slug(value: str) -> str:
+    return " ".join(part.capitalize() for part in str(value or "").split("-") if part).strip()
+
+
+def _guess_title_from_url(url: str, job_id: str, platform: str) -> str:
+    path_parts = [part for part in urlparse(url).path.split("/") if part]
+    normalized_job_id = slugify(job_id)
+    for part in reversed(path_parts):
+        normalized = slugify(part)
+        if not normalized or normalized == normalized_job_id:
+            continue
+        if normalized in {"jobs", "job", "careers", "positions", "apply"}:
+            continue
+        return _humanize_slug(normalized)
+    return f"Imported {platform.title()} Job"
+
+
+def detect_ats_platform(url: str) -> str | None:
+    """Return the ATS platform implied by the URL, if recognized."""
+    platform, _ = extract_platform_slug_from_url(url)
+    return platform
+
+
+def extract_slug_from_url(url: str, platform: str) -> str:
+    """Extract the ATS company slug from a job URL."""
+    detected_platform, slug = extract_platform_slug_from_url(url)
+    if detected_platform == platform and slug:
+        return slug
+
+    parsed = urlparse(url)
+    host = parsed.netloc.lower()
+    path_parts = [part for part in parsed.path.split("/") if part]
+    if platform == "bamboohr" and host.endswith(".bamboohr.com"):
+        return slugify(host.split(".")[0])
+    if path_parts:
+        return slugify(path_parts[0])
+    return slugify(host.split(".")[0] if host else platform)
 
 def extract_id(url: str) -> str:
     """Robust job ID extraction from various ATS URL formats."""
@@ -46,6 +89,42 @@ def extract_id(url: str) -> str:
             return parts[-1]
 
     return parts[-1] if parts else ""
+
+
+async def fetch_job_from_url(url: str) -> dict[str, Any] | None:
+    """Best-effort ATS import helper for a single job URL."""
+    platform = detect_ats_platform(url)
+    if not platform:
+        return None
+
+    company_slug = extract_slug_from_url(url, platform)
+    job_id = extract_id(url)
+    if not company_slug or not job_id:
+        return None
+
+    temp_job = SimpleNamespace(
+        url=url,
+        ats_platform=platform,
+        company_slug=company_slug,
+        company_name=_humanize_slug(company_slug) or company_slug,
+    )
+    sem = asyncio.Semaphore(1)
+
+    async with httpx.AsyncClient(verify=certifi.where()) as client:
+        description = await fetch_description(client, sem, temp_job)
+
+    if not description:
+        return None
+
+    return {
+        "ats_platform": platform,
+        "company_slug": company_slug,
+        "job_id": job_id,
+        "company_name": _humanize_slug(company_slug) or company_slug,
+        "title": _guess_title_from_url(url, job_id, platform),
+        "location": None,
+        "description": description,
+    }
 
 def extract_json_ld(html: str) -> Optional[str]:
     """Try to find and parse schema.org JobPosting in JSON-LD."""

@@ -1,0 +1,244 @@
+import tempfile
+from pathlib import Path
+
+from fastapi.testclient import TestClient
+
+from api.main import app
+from api.routers import applications as applications_router
+from src.models import RawJob
+from src.store import Store
+
+
+def _build_store() -> Store:
+    tmpdir = tempfile.TemporaryDirectory()
+    db_path = Path(tmpdir.name) / "jobs.db"
+    store = Store(str(db_path))
+    store._tmpdir = tmpdir  # keep temp dir alive for the test lifetime
+    return store
+
+
+def _seed_jobs(store: Store) -> dict[str, int]:
+    store.upsert_jobs(
+        [
+            RawJob(
+                ats_platform="ashby",
+                company_slug="acme",
+                company_name="Acme",
+                job_id="job-1",
+                title="Senior QA Engineer",
+                location="Remote",
+                url="https://example.com/jobs/1",
+                description="Own the test platform.",
+                posted_at="2026-04-08T00:00:00Z",
+                fetched_at="2026-04-08T00:00:00Z",
+                match_tier="high_confidence",
+            ),
+            RawJob(
+                ats_platform="lever",
+                company_slug="globex",
+                company_name="Globex",
+                job_id="job-2",
+                title="Backend Engineer",
+                location="Berlin",
+                url="https://example.com/jobs/2",
+                description="Backend APIs.",
+                posted_at="2026-04-08T00:00:00Z",
+                fetched_at="2026-04-08T00:00:00Z",
+            ),
+        ]
+    )
+    seeded: dict[str, int] = {}
+    for candidate in store.get_unscored():
+        seeded[candidate.job_id] = candidate.db_id
+        if candidate.job_id == "job-1":
+            store.update_score(
+                db_id=candidate.db_id,
+                fit_score=82,
+                reasoning="Strong fit for SDET scope.",
+                breakdown={
+                    "tech_stack_match": 84,
+                    "seniority_match": 80,
+                    "remote_location_fit": 90,
+                    "growth_potential": 76,
+                },
+                fit_category="core_fit",
+                apply_priority="medium",
+            )
+    return seeded
+
+
+def test_application_endpoints_lifecycle_stats_and_timeline(monkeypatch):
+    store = _build_store()
+    ids = _seed_jobs(store)
+    job_id = ids["job-1"]
+    monkeypatch.setattr(applications_router, "get_store", lambda profile="default": store)
+
+    with TestClient(app) as client:
+        invalid_transition = client.patch(
+            f"/api/jobs/{job_id}/application-status",
+            json={"application_status": "offer"},
+        )
+
+        assert invalid_transition.status_code == 422
+
+        applied_response = client.patch(
+            f"/api/jobs/{job_id}/application-status",
+            json={"application_status": "applied", "note": "Sent via referral"},
+        )
+
+        assert applied_response.status_code == 200
+        assert applied_response.json()["application_status"] == "applied"
+        assert applied_response.json()["applied_at"] is not None
+
+        notes_response = client.patch(
+            f"/api/jobs/{job_id}/notes",
+            json={"notes": "Strong referral from previous teammate."},
+        )
+        next_step_response = client.patch(
+            f"/api/jobs/{job_id}/next-step",
+            json={"next_step": "Recruiter call", "next_step_date": "2026-04-20"},
+        )
+        screening_response = client.patch(
+            f"/api/jobs/{job_id}/application-status",
+            json={"application_status": "screening", "note": "Recruiter replied"},
+        )
+        timeline_response = client.get(f"/api/jobs/{job_id}/timeline")
+        list_response = client.get("/api/applications", params={"status": "screening"})
+        stats_response = client.get("/api/applications/stats")
+
+        assert notes_response.status_code == 200
+        assert notes_response.json()["notes"] == "Strong referral from previous teammate."
+        assert next_step_response.status_code == 200
+        assert next_step_response.json()["next_step"] == "Recruiter call"
+        assert screening_response.status_code == 200
+        assert screening_response.json()["application_status"] == "screening"
+
+        assert timeline_response.status_code == 200
+        timeline_events = timeline_response.json()["events"]
+        assert [event["status"] for event in timeline_events] == ["applied", "screening"]
+        assert timeline_events[-1]["note"] == "Recruiter replied"
+
+        assert list_response.status_code == 200
+        assert list_response.json()["total"] == 1
+        listed_job = list_response.json()["jobs"][0]
+        assert listed_job["id"] == job_id
+        assert listed_job["days_since_applied"] is not None
+
+        assert stats_response.status_code == 200
+        stats_payload = stats_response.json()
+        assert stats_payload["total"] == 1
+        assert stats_payload["active_count"] == 1
+        assert stats_payload["response_rate"] == 100.0
+        assert stats_payload["status_counts"]["screening"] == 1
+
+        remove_response = client.delete(f"/api/jobs/{job_id}/application-status")
+        timeline_after_remove = client.get(f"/api/jobs/{job_id}/timeline")
+
+    assert remove_response.status_code == 200
+    assert remove_response.json()["application_status"] is None
+    assert remove_response.json()["next_step"] is None
+    assert remove_response.json()["notes"] == "Strong referral from previous teammate."
+    assert timeline_after_remove.status_code == 200
+    assert [event["status"] for event in timeline_after_remove.json()["events"]] == ["applied", "screening"]
+
+
+def test_application_import_endpoint_handles_fetch_duplicates_and_manual_fallback(monkeypatch):
+    store = _build_store()
+    monkeypatch.setattr(applications_router, "get_store", lambda profile="default": store)
+
+    async def fake_fetch_job_from_url(url: str):
+        assert "greenhouse" in url
+        return {
+            "ats_platform": "greenhouse",
+            "company_slug": "acme",
+            "job_id": "12345",
+            "company_name": "Acme",
+            "title": "Senior QA Engineer",
+            "location": "Remote",
+            "description": "Test all the things.",
+        }
+
+    monkeypatch.setattr(applications_router, "fetch_job_from_url", fake_fetch_job_from_url)
+
+    with TestClient(app) as client:
+        first_import = client.post(
+            "/api/applications/import",
+            json={"url": "https://boards.greenhouse.io/acme/jobs/12345", "notes": "Saved from external search"},
+        )
+        duplicate_import = client.post(
+            "/api/applications/import",
+            json={"url": "https://boards.greenhouse.io/acme/jobs/12345"},
+        )
+
+        assert first_import.status_code == 200
+        first_payload = first_import.json()
+        assert first_payload["fetched"] is True
+        assert first_payload["already_tracked"] is False
+        assert first_payload["job"]["application_status"] == "applied"
+        assert first_payload["job"]["source"] == "manual"
+
+        assert duplicate_import.status_code == 200
+        assert duplicate_import.json()["already_tracked"] is True
+
+        async def failed_fetch_job_from_url(url: str):
+            return None
+
+        monkeypatch.setattr(applications_router, "fetch_job_from_url", failed_fetch_job_from_url)
+
+        missing_details = client.post(
+            "/api/applications/import",
+            json={"url": "https://jobs.example.com/role/abc"},
+        )
+        external_import = client.post(
+            "/api/applications/import",
+            json={
+                "url": "https://jobs.example.com/role/abc",
+                "company_name": "Example Inc",
+                "title": "QA Lead",
+                "location": "Remote",
+            },
+        )
+
+    assert missing_details.status_code == 200
+    assert missing_details.json() == {
+        "job_id": None,
+        "fetched": False,
+        "needs_manual_entry": True,
+        "already_tracked": False,
+        "job": None,
+    }
+
+    assert external_import.status_code == 200
+    external_payload = external_import.json()
+    assert external_payload["fetched"] is False
+    assert external_payload["already_tracked"] is False
+    assert external_payload["job"]["ats_platform"] == "external"
+    assert external_payload["job"]["company_slug"] == "example-inc"
+    assert len(store.get_job_detail(external_payload["job_id"])["job_id"]) == 16
+
+
+def test_manual_application_import_persists_manual_identity_and_salary(monkeypatch):
+    store = _build_store()
+    monkeypatch.setattr(applications_router, "get_store", lambda profile="default": store)
+
+    with TestClient(app) as client:
+        response = client.post(
+            "/api/applications/import/manual",
+            json={
+                "company_name": "Globex Corporation",
+                "title": "QA Lead",
+                "location": "Berlin",
+                "description": "Own release quality.",
+                "salary": "$150k",
+                "notes": "Warm intro from recruiter.",
+            },
+        )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["already_tracked"] is False
+    assert payload["job"]["ats_platform"] == "manual"
+    assert payload["job"]["company_slug"] == "globex-corporation"
+    assert payload["job"]["application_status"] == "applied"
+    assert payload["job"]["salary"] == "$150k"
+    assert payload["job"]["url"].startswith("manual://globex-corporation/")

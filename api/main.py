@@ -22,8 +22,9 @@ app.add_middleware(
 )
 
 # Routers will be registered here in later prompts (03-06)
-from api.routers import jobs, stats, pipeline, profile, companies, wizard
+from api.routers import applications, jobs, stats, pipeline, profile, companies, wizard
 app.include_router(jobs.router, prefix="/api", tags=["jobs"])
+app.include_router(applications.router, prefix="/api", tags=["applications"])
 app.include_router(stats.router, prefix="/api", tags=["stats"])
 app.include_router(pipeline.router, prefix="/api", tags=["pipeline"])
 app.include_router(wizard.router, prefix="/api", tags=["wizard"])
