@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import type { components } from '@/lib/api/types'
 import { api } from '@/lib/api/client'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   Dialog,
   DialogContent,
@@ -21,8 +22,69 @@ import { ExternalLink, FilePenLine, Loader2, Sparkles } from 'lucide-react'
 import { toast } from 'sonner'
 
 type ImportJobResponse = components['schemas']['ImportJobResponse']
+type CompaniesResponse = components['schemas']['CompaniesResponse']
 
 type Mode = 'url' | 'manual'
+
+type TrackableCompany = {
+  platform: 'greenhouse' | 'lever' | 'ashby' | 'workable' | 'bamboohr' | 'smartrecruiters'
+  slug: string
+  name: string
+}
+
+function titleizeSlug(slug: string) {
+  return slug
+    .split(/[-_]+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ')
+}
+
+function resolveTrackableCompany(url: string, fallbackName?: string): TrackableCompany | null {
+  const trimmed = url.trim()
+  if (!trimmed) return null
+
+  let parsed: URL
+  try {
+    parsed = new URL(trimmed)
+  } catch {
+    return null
+  }
+
+  const host = parsed.hostname.toLowerCase()
+  const segments = parsed.pathname.split('/').filter(Boolean)
+  const makeCompany = (platform: TrackableCompany['platform'], slug?: string | null) => {
+    if (!slug) return null
+    const normalizedSlug = slug.trim().toLowerCase()
+    if (!normalizedSlug) return null
+    return {
+      platform,
+      slug: normalizedSlug,
+      name: fallbackName?.trim() || titleizeSlug(normalizedSlug),
+    } satisfies TrackableCompany
+  }
+
+  if (host.includes('greenhouse.io')) {
+    return makeCompany('greenhouse', segments[0])
+  }
+  if (host === 'jobs.lever.co') {
+    return makeCompany('lever', segments[0])
+  }
+  if (host === 'jobs.ashbyhq.com') {
+    return makeCompany('ashby', segments[0])
+  }
+  if (host === 'apply.workable.com') {
+    return makeCompany('workable', segments[0])
+  }
+  if (host.endsWith('.bamboohr.com')) {
+    return makeCompany('bamboohr', host.split('.')[0])
+  }
+  if (host === 'jobs.smartrecruiters.com' || host === 'careers.smartrecruiters.com') {
+    return makeCompany('smartrecruiters', segments[0])
+  }
+
+  return null
+}
 
 function emptyForm() {
   return {
@@ -34,6 +96,7 @@ function emptyForm() {
     description: '',
     salary: '',
     notes: '',
+    track_company_in_pipeline: false,
   }
 }
 
@@ -49,12 +112,31 @@ export function ImportJobDialog({
   const [mode, setMode] = useState<Mode>('url')
   const [submitting, setSubmitting] = useState(false)
   const [form, setForm] = useState(emptyForm())
+  const [trackedCompanies, setTrackedCompanies] = useState<CompaniesResponse | null>(null)
 
   useEffect(() => {
     if (!open) {
       setMode('url')
       setSubmitting(false)
       setForm(emptyForm())
+      setTrackedCompanies(null)
+    }
+  }, [open])
+
+  useEffect(() => {
+    if (!open) return
+
+    let cancelled = false
+    void (async () => {
+      const { data, error } = await api.GET('/api/companies/{profile}', {
+        params: { path: { profile: 'default' } },
+      })
+      if (cancelled || error || !data) return
+      setTrackedCompanies(data)
+    })()
+
+    return () => {
+      cancelled = true
     }
   }, [open])
 
@@ -63,6 +145,25 @@ export function ImportJobDialog({
     () => form.company_name.trim().length > 0 && form.title.trim().length > 0,
     [form.company_name, form.title]
   )
+  const trackableCompany = useMemo(
+    () => resolveTrackableCompany(form.url, form.company_name),
+    [form.company_name, form.url]
+  )
+  const companyAlreadyTracked = useMemo(() => {
+    if (!trackableCompany || !trackedCompanies) return false
+    const entries = trackedCompanies[trackableCompany.platform] ?? []
+    return entries.some((entry) => entry.slug === trackableCompany.slug)
+  }, [trackableCompany, trackedCompanies])
+  const showTrackCompanyOption = Boolean(trackableCompany && !companyAlreadyTracked)
+
+  useEffect(() => {
+    if (showTrackCompanyOption) return
+    setForm((prev) => (
+      prev.track_company_in_pipeline
+        ? { ...prev, track_company_in_pipeline: false }
+        : prev
+    ))
+  }, [showTrackCompanyOption])
 
   const finishImport = async (response: ImportJobResponse, successMessage: string) => {
     await onImported(response.job_id)
@@ -82,6 +183,7 @@ export function ImportJobDialog({
           url: form.url.trim(),
           applied_at: form.applied_at || undefined,
           notes: form.notes.trim() || undefined,
+          track_company_in_pipeline: showTrackCompanyOption ? form.track_company_in_pipeline : false,
         },
       })
       if (error || !data) throw new Error('Failed to import application')
@@ -116,6 +218,7 @@ export function ImportJobDialog({
             location: form.location.trim() || undefined,
             applied_at: form.applied_at || undefined,
             notes: form.notes.trim() || undefined,
+            track_company_in_pipeline: showTrackCompanyOption ? form.track_company_in_pipeline : false,
           },
         })
         if (error || !data) throw new Error('Failed to import application')
@@ -131,6 +234,7 @@ export function ImportJobDialog({
             description: form.description.trim() || undefined,
             salary: form.salary.trim() || undefined,
             notes: form.notes.trim() || undefined,
+            track_company_in_pipeline: showTrackCompanyOption ? form.track_company_in_pipeline : false,
           },
         })
         if (error || !data) throw new Error('Failed to create manual application')
@@ -299,10 +403,22 @@ export function ImportJobDialog({
                 className="min-h-40 rounded-2xl border-border/50 bg-background/50 px-4 py-3"
               />
 
-              {showUrlFields && (
-                <div className="rounded-2xl border border-border/40 bg-background/45 p-4 text-xs leading-relaxed text-muted-foreground">
-                  Successful URL imports are added immediately to the tracker. If automatic fetch fails, the dialog will switch to manual entry with the URL preserved.
-                </div>
+              {showTrackCompanyOption && trackableCompany && (
+                <label className="flex items-start gap-3 rounded-2xl border border-border/40 bg-background/40 px-4 py-3">
+                  <Checkbox
+                    checked={form.track_company_in_pipeline}
+                    onCheckedChange={(checked) => setForm((prev) => ({ ...prev, track_company_in_pipeline: checked === true }))}
+                    className="mt-0.5"
+                  />
+                  <div className="space-y-1">
+                    <div className="text-sm font-medium text-foreground">
+                      Track {trackableCompany.name} in the pipeline
+                    </div>
+                    <p className="text-xs leading-relaxed text-muted-foreground">
+                      Add this company board to future pipeline runs so new roles from {trackableCompany.name} can show up automatically.
+                    </p>
+                  </div>
+                </label>
               )}
 
               {showManualFields && form.url.trim() && (

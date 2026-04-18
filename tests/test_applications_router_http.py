@@ -3,9 +3,11 @@ import tempfile
 from pathlib import Path
 
 from fastapi.testclient import TestClient
+import yaml
 
 from api.main import app
 from api.routers import applications as applications_router
+from api.routers import companies as companies_router
 from src.models import RawJob
 from src.store import Store
 
@@ -364,3 +366,53 @@ def test_manual_application_import_persists_manual_identity_and_salary(monkeypat
     assert payload["job"]["applied_at"] == "2026-04-01"
     assert payload["job"]["salary"] == "$150k"
     assert payload["job"]["url"].startswith("manual://example-manual-company/")
+
+
+def test_application_import_can_add_company_to_pipeline(monkeypatch):
+    store = _build_store()
+    monkeypatch.setattr(applications_router, "get_store", lambda profile="default": store)
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        base_dir = Path(tmpdir)
+        profile_dir = base_dir / "default"
+        profile_dir.mkdir(parents=True, exist_ok=True)
+        (profile_dir / "companies.yaml").write_text(
+            yaml.safe_dump({"greenhouse": []}, sort_keys=False),
+            encoding="utf-8",
+        )
+
+        original_profiles_dir = companies_router.PROFILES_DIR
+        companies_router.PROFILES_DIR = base_dir
+
+        async def fake_fetch_job_from_url(url: str):
+            return RawJob(
+                ats_platform="greenhouse",
+                company_slug="example-team",
+                company_name="Example Team",
+                job_id="12345",
+                title="Senior QA Engineer",
+                location="Remote",
+                url="https://boards.greenhouse.io/example-team/jobs/12345",
+                description="Test all the things.",
+                posted_at=None,
+                fetched_at="2026-04-18T00:00:00Z",
+            )
+
+        monkeypatch.setattr(applications_router, "fetch_job_from_url", fake_fetch_job_from_url)
+
+        try:
+            with TestClient(app) as client:
+                response = client.post(
+                    "/api/applications/import",
+                    json={
+                        "url": "https://boards.greenhouse.io/example-team/jobs/12345",
+                        "track_company_in_pipeline": True,
+                    },
+                )
+        finally:
+            companies_router.PROFILES_DIR = original_profiles_dir
+
+        saved = yaml.safe_load((profile_dir / "companies.yaml").read_text(encoding="utf-8"))
+
+    assert response.status_code == 200
+    assert saved["greenhouse"] == [{"slug": "example-team", "name": "Example Team"}]

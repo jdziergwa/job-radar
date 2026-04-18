@@ -40,6 +40,40 @@ def _clean_company_quality_signals(values: list[str]) -> list[str]:
     return cleaned
 
 
+def company_exists(profile: str, platform: str, slug: str) -> bool:
+    if platform not in PLATFORMS:
+        return False
+    data = _load_companies(profile)
+    return any(entry.get("slug") == slug for entry in data.get(platform, []))
+
+
+def ensure_company(
+    profile: str,
+    *,
+    platform: str,
+    slug: str,
+    name: str,
+    company_quality_signals: list[str] | None = None,
+) -> bool:
+    """Ensure a company exists in companies.yaml. Returns True if added."""
+    if platform not in PLATFORMS:
+        return False
+
+    data = _load_companies(profile)
+    platform_list = data.get(platform, [])
+    if any(entry.get("slug") == slug for entry in platform_list):
+        return False
+
+    entry = {"slug": slug, "name": name}
+    signals = _clean_company_quality_signals(company_quality_signals or [])
+    if signals:
+        entry["company_quality_signals"] = signals
+    platform_list.append(entry)
+    data[platform] = platform_list
+    _save_companies(profile, data)
+    return True
+
+
 @router.get("/companies/{profile}", response_model=CompaniesResponse)
 def get_companies(profile: str):
     data = _load_companies(profile)

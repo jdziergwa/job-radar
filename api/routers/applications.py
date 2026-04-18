@@ -26,6 +26,7 @@ from api.models import (
     ResponseDateUpdate,
     TimelineResponse,
 )
+from api.routers.companies import ensure_company
 from src.fetcher import fetch_job_from_url
 from src.job_resolver import detect_ats_platform, resolve_job_ref
 from src.providers.utils import slugify
@@ -144,6 +145,24 @@ def _retracked_import_response(existing: dict, fetched: bool) -> ImportJobRespon
         needs_manual_entry=False,
         already_tracked=False,
         job=JobResponse.from_row(existing),
+    )
+
+
+def _maybe_track_company(
+    *,
+    profile: str,
+    should_track: bool,
+    ats_platform: str,
+    company_slug: str,
+    company_name: str | None,
+) -> None:
+    if not should_track:
+        return
+    ensure_company(
+        profile,
+        platform=ats_platform,
+        slug=company_slug,
+        name=company_name or company_slug,
     )
 
 
@@ -351,10 +370,24 @@ async def import_application(body: ImportJobRequest, profile: str = Query("defau
                 store.update_applied_at(existing["id"], body.applied_at)
             if body.notes:
                 store.update_notes(existing["id"], body.notes)
+            _maybe_track_company(
+                profile=profile,
+                should_track=body.track_company_in_pipeline,
+                ats_platform=ats_platform,
+                company_slug=company_slug,
+                company_name=existing.get("company_name"),
+            )
             updated = store.get_job_detail(existing["id"])
             if not updated:
                 raise HTTPException(status_code=404, detail="Job not found")
             return _retracked_import_response(updated, fetched=False)
+        _maybe_track_company(
+            profile=profile,
+            should_track=body.track_company_in_pipeline,
+            ats_platform=ats_platform,
+            company_slug=company_slug,
+            company_name=existing.get("company_name"),
+        )
         return _existing_import_response(existing, fetched=False)
 
     fetched = False
@@ -369,12 +402,28 @@ async def import_application(body: ImportJobRequest, profile: str = Query("defau
             if existing.get("application_status") is None:
                 if not store.update_application_status(existing["id"], "applied", "Re-added from URL import"):
                     raise HTTPException(status_code=404, detail="Job not found")
+                if body.applied_at is not None:
+                    store.update_applied_at(existing["id"], body.applied_at)
                 if body.notes:
                     store.update_notes(existing["id"], body.notes)
+                _maybe_track_company(
+                    profile=profile,
+                    should_track=body.track_company_in_pipeline,
+                    ats_platform=ats_platform,
+                    company_slug=company_slug,
+                    company_name=existing.get("company_name") or fetched_job.company_name,
+                )
                 updated = store.get_job_detail(existing["id"])
                 if not updated:
                     raise HTTPException(status_code=404, detail="Job not found")
                 return _retracked_import_response(updated, fetched=True)
+            _maybe_track_company(
+                profile=profile,
+                should_track=body.track_company_in_pipeline,
+                ats_platform=ats_platform,
+                company_slug=company_slug,
+                company_name=existing.get("company_name") or fetched_job.company_name,
+            )
             return _existing_import_response(existing, fetched=True)
 
         created, already_tracked = store.import_job(
@@ -396,6 +445,13 @@ async def import_application(body: ImportJobRequest, profile: str = Query("defau
             salary_currency=fetched_job.salary_currency,
             source="manual",
             initial_event_note="Imported from URL",
+        )
+        _maybe_track_company(
+            profile=profile,
+            should_track=body.track_company_in_pipeline,
+            ats_platform=ats_platform,
+            company_slug=company_slug,
+            company_name=body.company_name or fetched_job.company_name or company_slug,
         )
         return ImportJobResponse(
             job_id=created["id"],
@@ -425,6 +481,13 @@ async def import_application(body: ImportJobRequest, profile: str = Query("defau
         notes=body.notes,
         source="manual",
         initial_event_note="Imported from URL",
+    )
+    _maybe_track_company(
+        profile=profile,
+        should_track=body.track_company_in_pipeline,
+        ats_platform=ats_platform,
+        company_slug=company_slug,
+        company_name=body.company_name,
     )
     return ImportJobResponse(
         job_id=created["id"],
@@ -456,6 +519,16 @@ def import_manual_application(body: ManualImportRequest, profile: str = Query("d
         source="manual",
         initial_event_note="Manually added",
     )
+    if body.url:
+        ref = resolve_job_ref(body.url)
+        if ref.platform and ref.company_slug:
+            _maybe_track_company(
+                profile=profile,
+                should_track=body.track_company_in_pipeline,
+                ats_platform=ref.platform,
+                company_slug=ref.company_slug,
+                company_name=body.company_name,
+            )
     return ImportJobResponse(
         job_id=created["id"],
         fetched=False,

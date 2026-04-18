@@ -1253,6 +1253,11 @@ export interface components {
             applied_at?: string | null;
             /** Notes */
             notes?: string | null;
+            /**
+             * Track Company In Pipeline
+             * @default false
+             */
+            track_company_in_pipeline: boolean;
         };
         /** ImportJobResponse */
         ImportJobResponse: {
@@ -1454,6 +1459,11 @@ export interface components {
             salary?: string | null;
             /** Notes */
             notes?: string | null;
+            /**
+             * Track Company In Pipeline
+             * @default false
+             */
+            track_company_in_pipeline: boolean;
         };
         /** MarketIntelligenceResponse */
         MarketIntelligenceResponse: {

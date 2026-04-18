@@ -222,6 +222,7 @@ class ImportJobRequest(BaseModel):
     location: Optional[str] = None
     applied_at: Optional[str] = None
     notes: Optional[str] = None
+    track_company_in_pipeline: bool = False
 
 
 class ManualImportRequest(BaseModel):
@@ -233,6 +234,7 @@ class ManualImportRequest(BaseModel):
     description: Optional[str] = None
     salary: Optional[str] = None
     notes: Optional[str] = None
+    track_company_in_pipeline: bool = False
 
 
 class ImportJobResponse(BaseModel):
