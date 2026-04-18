@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Textarea } from '@/components/ui/textarea'
 import { ArrowRight, Loader2, MessageSquarePlus, Trash2 } from 'lucide-react'
 
@@ -17,10 +18,10 @@ export type ApplicationStatus =
 
 const TRANSITIONS: Record<ApplicationStatus, ApplicationStatus[]> = {
   applied: ['screening', 'interviewing', 'rejected_by_company', 'rejected_by_user', 'ghosted'],
-  screening: ['interviewing', 'rejected_by_company', 'rejected_by_user', 'ghosted'],
-  interviewing: ['offer', 'rejected_by_company', 'rejected_by_user', 'ghosted'],
-  offer: ['accepted', 'rejected_by_user'],
-  accepted: ['rejected_by_user'],
+  screening: ['applied', 'interviewing', 'rejected_by_company', 'rejected_by_user', 'ghosted'],
+  interviewing: ['screening', 'offer', 'rejected_by_company', 'rejected_by_user', 'ghosted'],
+  offer: ['interviewing', 'accepted', 'rejected_by_user'],
+  accepted: ['offer', 'rejected_by_user'],
   rejected_by_company: ['applied'],
   rejected_by_user: ['applied'],
   ghosted: ['screening', 'interviewing'],
@@ -42,81 +43,111 @@ export function StatusTransitionButtons({
   saving = false,
   onTransition,
   onRemove,
+  open,
+  onOpenChange,
+  showTrigger = true,
 }: {
   currentStatus: ApplicationStatus
   saving?: boolean
   onTransition: (status: ApplicationStatus, note?: string) => Promise<void> | void
   onRemove: () => Promise<void> | void
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+  showTrigger?: boolean
 }) {
+  const [internalOpen, setInternalOpen] = useState(false)
   const [pendingStatus, setPendingStatus] = useState<ApplicationStatus | null>(null)
   const [note, setNote] = useState('')
   const nextStatuses = useMemo(() => TRANSITIONS[currentStatus] ?? [], [currentStatus])
+  const dialogOpen = open ?? internalOpen
 
   const confirmTransition = async () => {
     if (!pendingStatus) return
     await onTransition(pendingStatus, note.trim() || undefined)
-    setPendingStatus(null)
-    setNote('')
+    closeTransitionDialog(false)
+  }
+
+  const closeTransitionDialog = (open: boolean) => {
+    if (onOpenChange) onOpenChange(open)
+    else setInternalOpen(open)
+
+    if (!open) {
+      setPendingStatus(null)
+      setNote('')
+    }
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap gap-2">
-        {nextStatuses.map((status) => (
-          <Button
-            key={status}
-            variant={pendingStatus === status ? 'default' : 'outline'}
-            size="sm"
-            disabled={saving}
-            onClick={() => {
-              setPendingStatus(status)
-              if (pendingStatus === status) {
-                setPendingStatus(null)
-                setNote('')
-              }
-            }}
-            className="gap-2"
-          >
-            <ArrowRight className="h-3.5 w-3.5" />
-            {LABELS[status]}
-          </Button>
-        ))}
+    <div className="space-y-3">
+      {showTrigger && (
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={saving}
+          onClick={() => closeTransitionDialog(true)}
+          className="gap-2"
+        >
+          <ArrowRight className="h-3.5 w-3.5" />
+          Change Status
+        </Button>
+      )}
+
+      <div className="border-t border-border/35 pt-3">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => void onRemove()}
+          disabled={saving}
+          className="gap-2 text-muted-foreground hover:text-destructive"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+          Remove from Tracker
+        </Button>
       </div>
 
-      {pendingStatus && (
-        <div className="space-y-3 rounded-2xl border border-border/40 bg-background/40 p-4">
-          <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-            <MessageSquarePlus className="h-4 w-4 text-primary" />
-            Move to {LABELS[pendingStatus]}
+      <Dialog open={dialogOpen} onOpenChange={closeTransitionDialog}>
+        <DialogContent className="sm:max-w-lg" showCloseButton>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <MessageSquarePlus className="h-4 w-4 text-primary" />
+              Change Status
+            </DialogTitle>
+            <DialogDescription>
+              Choose the next valid stage for this application, including stepping back if you clicked the wrong status. You can add an optional note to the timeline.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-wrap gap-2">
+            {nextStatuses.map((status) => (
+              <Button
+                key={status}
+                variant={pendingStatus === status ? 'default' : 'outline'}
+                size="sm"
+                disabled={saving}
+                onClick={() => setPendingStatus(status)}
+                className="gap-2"
+              >
+                <ArrowRight className="h-3.5 w-3.5" />
+                {LABELS[status]}
+              </Button>
+            ))}
           </div>
           <Textarea
             value={note}
             onChange={(event) => setNote(event.target.value)}
             placeholder="Optional note for this transition..."
-            className="min-h-24 rounded-2xl border-border/50 bg-background/50"
+            className="min-h-28 rounded-2xl border-border/50 bg-background/50"
           />
-          <div className="flex items-center justify-end gap-2">
-            <Button variant="ghost" size="sm" onClick={() => { setPendingStatus(null); setNote('') }} disabled={saving}>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => closeTransitionDialog(false)} disabled={saving}>
               Cancel
             </Button>
-            <Button size="sm" onClick={() => void confirmTransition()} disabled={saving} className="gap-2">
+            <Button onClick={() => void confirmTransition()} disabled={saving || !pendingStatus} className="gap-2">
               {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ArrowRight className="h-3.5 w-3.5" />}
               Confirm
             </Button>
-          </div>
-        </div>
-      )}
-
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => void onRemove()}
-        disabled={saving}
-        className="gap-2 text-muted-foreground hover:text-destructive"
-      >
-        <Trash2 className="h-3.5 w-3.5" />
-        Remove from Tracker
-      </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

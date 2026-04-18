@@ -177,6 +177,23 @@ export interface paths {
         patch: operations["update_applied_at_api_jobs__job_id__applied_at_patch"];
         trace?: never;
     };
+    "/api/jobs/{job_id}/response-date": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Response Date */
+        patch: operations["update_response_date_api_jobs__job_id__response_date_patch"];
+        trace?: never;
+    };
     "/api/jobs/{job_id}/notes": {
         parameters: {
             query?: never;
@@ -1678,6 +1695,11 @@ export interface components {
             /** Shows Aggregator Badge */
             shows_aggregator_badge: boolean;
         };
+        /** ResponseDateUpdate */
+        ResponseDateUpdate: {
+            /** Response Date */
+            response_date?: string | null;
+        };
         /** SalaryStat */
         SalaryStat: {
             /** Currency */
@@ -2385,6 +2407,43 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JobResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_response_date_api_jobs__job_id__response_date_patch: {
+        parameters: {
+            query?: {
+                profile?: string;
+            };
+            header?: never;
+            path: {
+                job_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResponseDateUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApplicationEventResponse"];
                 };
             };
             /** @description Validation Error */

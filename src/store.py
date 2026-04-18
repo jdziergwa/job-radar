@@ -210,6 +210,29 @@ class Store:
                      )"""
             )
             conn.execute(
+                """UPDATE application_events
+                   SET created_at = (
+                       SELECT jobs.applied_at
+                       FROM jobs
+                       WHERE jobs.id = application_events.job_id
+                   )
+                   WHERE status = 'applied'
+                     AND EXISTS (
+                         SELECT 1
+                         FROM jobs
+                         WHERE jobs.id = application_events.job_id
+                           AND jobs.applied_at IS NOT NULL
+                     )
+                     AND id = (
+                         SELECT ev.id
+                         FROM application_events ev
+                         WHERE ev.job_id = application_events.job_id
+                           AND ev.status = 'applied'
+                         ORDER BY ev.created_at ASC, ev.id ASC
+                         LIMIT 1
+                     )"""
+            )
+            conn.execute(
                 """UPDATE jobs
                    SET status = CASE
                        WHEN scored_at IS NOT NULL THEN 'scored'
@@ -485,6 +508,7 @@ class Store:
             if current_status == application_status:
                 return True
 
+            event_created_at = now
             if current_status is None and application_status == "applied" and not row["applied_at"]:
                 conn.execute(
                     """UPDATE jobs
@@ -492,6 +516,12 @@ class Store:
                        WHERE id = ?""",
                     (application_status, now, db_id),
                 )
+            elif current_status is None and application_status == "applied" and row["applied_at"]:
+                conn.execute(
+                    "UPDATE jobs SET application_status = ? WHERE id = ?",
+                    (application_status, db_id),
+                )
+                event_created_at = str(row["applied_at"])
             else:
                 conn.execute(
                     "UPDATE jobs SET application_status = ? WHERE id = ?",
@@ -501,7 +531,7 @@ class Store:
             conn.execute(
                 """INSERT INTO application_events (job_id, status, note, created_at)
                    VALUES (?, ?, ?, ?)""",
-                (db_id, application_status, note, now),
+                (db_id, application_status, note, event_created_at),
             )
 
         self.set_metadata("last_job_status_change_at", now)
@@ -515,12 +545,58 @@ class Store:
                 "UPDATE jobs SET applied_at = ? WHERE id = ?",
                 (applied_at, db_id),
             )
+            if applied_at:
+                conn.execute(
+                    """UPDATE application_events
+                       SET created_at = ?
+                       WHERE id = (
+                           SELECT id
+                           FROM application_events
+                           WHERE job_id = ? AND status = 'applied'
+                           ORDER BY created_at ASC, id ASC
+                           LIMIT 1
+                       )""",
+                    (applied_at, db_id),
+                )
         if cursor.rowcount > 0:
             self.set_metadata("last_job_status_change_at", datetime.utcnow().isoformat())
             logger.debug("Job %d applied_at updated", db_id)
             return True
         logger.warning("Job %d not found for applied_at update", db_id)
         return False
+
+    def get_first_response_event(self, db_id: int) -> dict | None:
+        """Return the first non-applied tracker event for a job."""
+        with self._connect() as conn:
+            row = conn.execute(
+                """SELECT id, job_id, status, note, created_at
+                   FROM application_events
+                   WHERE job_id = ? AND status != 'applied'
+                   ORDER BY created_at ASC, id ASC
+                   LIMIT 1""",
+                (db_id,),
+            ).fetchone()
+        return dict(row) if row is not None else None
+
+    def update_first_response_date(self, db_id: int, response_date: str) -> dict | None:
+        """Update the first non-applied tracker event date for a job."""
+        first_response = self.get_first_response_event(db_id)
+        if first_response is None:
+            return None
+
+        with self._connect() as conn:
+            conn.execute(
+                "UPDATE application_events SET created_at = ? WHERE id = ?",
+                (response_date, first_response["id"]),
+            )
+            row = conn.execute(
+                """SELECT id, job_id, status, note, created_at
+                   FROM application_events
+                   WHERE id = ?""",
+                (first_response["id"],),
+            ).fetchone()
+        self.set_metadata("last_job_status_change_at", datetime.utcnow().isoformat())
+        return dict(row) if row is not None else None
 
     def remove_from_tracker(self, db_id: int) -> bool:
         """Clear tracker-only state while preserving application history."""

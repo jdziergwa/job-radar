@@ -58,9 +58,9 @@ export function StatusTimeline({
 }) {
   if (loading) {
     return (
-      <div className="space-y-3">
+      <div className="space-y-2.5">
         {[1, 2].map((row) => (
-          <div key={row} className="h-16 animate-pulse rounded-2xl bg-muted/25" />
+          <div key={row} className="h-14 animate-pulse rounded-2xl bg-muted/25" />
         ))}
       </div>
     )
@@ -75,7 +75,7 @@ export function StatusTimeline({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {events.map((event, index) => {
         const meta = STATUS_META[event.status] ?? {
           label: event.status.replaceAll('_', ' '),
@@ -85,12 +85,12 @@ export function StatusTimeline({
         const isLast = index === events.length - 1
 
         return (
-          <div key={event.id} className="relative pl-8">
+          <div key={event.id} className="relative pl-7">
             {!isLast && (
-              <div className="absolute left-[11px] top-6 h-[calc(100%+0.75rem)] w-px bg-border/60" />
+              <div className="absolute left-[9px] top-5 h-[calc(100%+0.5rem)] w-px bg-border/60" />
             )}
-            <span className={`absolute left-0 top-1.5 h-6 w-6 rounded-full border-4 border-background shadow-sm ${meta.dot}`} />
-            <div className="rounded-2xl border border-border/40 bg-background/40 px-4 py-3 shadow-sm">
+            <span className={`absolute left-0 top-1.5 h-5 w-5 rounded-full border-[3px] border-background shadow-sm ${meta.dot}`} />
+            <div className="rounded-2xl border border-border/40 bg-background/40 px-3.5 py-2.5 shadow-sm">
               <div className="flex flex-wrap items-center gap-2">
                 <Badge variant="outline" className={`px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest ${meta.badge}`}>
                   {meta.label}
@@ -98,7 +98,7 @@ export function StatusTimeline({
                 <span className="text-xs text-muted-foreground">{formatDate(event.created_at)}</span>
               </div>
               {event.note && (
-                <p className="mt-2 text-sm leading-relaxed text-foreground/85">{event.note}</p>
+                <p className="mt-1.5 text-sm leading-relaxed text-foreground/85">{event.note}</p>
               )}
             </div>
           </div>

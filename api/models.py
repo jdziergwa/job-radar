@@ -256,6 +256,10 @@ class AppliedAtUpdate(BaseModel):
     applied_at: Optional[str] = None
 
 
+class ResponseDateUpdate(BaseModel):
+    response_date: Optional[str] = None
+
+
 class TimelineResponse(BaseModel):
     events: list[ApplicationEventResponse] = []
 

@@ -141,3 +141,101 @@ def test_store_migrates_legacy_applied_status_into_application_tracking():
         assert len(events) == 1
         assert events[0]["status"] == "applied"
         assert events[0]["note"] == "Migrated from existing application status"
+
+
+def test_store_repairs_mismatched_legacy_applied_event_date():
+    with tempfile.TemporaryDirectory() as tmpdir:
+        db_path = Path(tmpdir) / "jobs.db"
+        conn = sqlite3.connect(db_path)
+        try:
+            conn.executescript(
+                """
+                CREATE TABLE jobs (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    ats_platform TEXT NOT NULL,
+                    company_slug TEXT NOT NULL,
+                    job_id TEXT NOT NULL,
+                    company_name TEXT,
+                    title TEXT NOT NULL,
+                    location TEXT,
+                    url TEXT NOT NULL,
+                    description TEXT,
+                    posted_at TEXT,
+                    first_seen_at TEXT NOT NULL,
+                    last_seen_at TEXT,
+                    fit_score INTEGER,
+                    score_reasoning TEXT,
+                    score_breakdown TEXT,
+                    scored_at TEXT,
+                    status TEXT DEFAULT 'new',
+                    application_status TEXT,
+                    applied_at TEXT,
+                    dismissal_reason TEXT,
+                    match_tier TEXT,
+                    salary TEXT,
+                    salary_min INTEGER,
+                    salary_max INTEGER,
+                    salary_currency TEXT,
+                    is_sparse INTEGER DEFAULT 0,
+                    source TEXT DEFAULT 'pipeline',
+                    UNIQUE(ats_platform, company_slug, job_id)
+                );
+                CREATE TABLE application_events (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    job_id INTEGER NOT NULL,
+                    status TEXT NOT NULL,
+                    note TEXT,
+                    created_at TEXT NOT NULL
+                );
+                CREATE TABLE metadata (
+                    key TEXT PRIMARY KEY,
+                    value TEXT
+                );
+                """
+            )
+            conn.execute(
+                """INSERT INTO jobs (
+                       ats_platform, company_slug, job_id, company_name, title, location, url,
+                       description, posted_at, first_seen_at, last_seen_at, status, application_status, applied_at
+                   ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (
+                    "ashby",
+                    "example-co",
+                    "legacy-tracked-job",
+                    "Example Co",
+                    "QA Engineer",
+                    "Remote",
+                    "https://example.com/jobs/legacy-tracked-job",
+                    "Legacy tracked role",
+                    "2026-04-08T00:00:00Z",
+                    "2026-04-08T10:00:00",
+                    "2026-04-09T10:00:00",
+                    "scored",
+                    "applied",
+                    "2026-04-15",
+                ),
+            )
+            conn.execute(
+                """INSERT INTO application_events (job_id, status, note, created_at)
+                   VALUES (
+                     (SELECT id FROM jobs WHERE job_id = 'legacy-tracked-job'),
+                     'applied',
+                     'Migrated from existing application status',
+                     '2026-04-17'
+                   )"""
+            )
+            conn.commit()
+        finally:
+            conn.close()
+
+        store = Store(str(db_path))
+
+        with store._connect() as migrated_conn:
+            event = migrated_conn.execute(
+                """SELECT created_at FROM application_events
+                   WHERE job_id = (SELECT id FROM jobs WHERE job_id = 'legacy-tracked-job')
+                     AND status = 'applied'"""
+            ).fetchone()
+
+        assert event is not None
+        assert event["created_at"] == "2026-04-15"

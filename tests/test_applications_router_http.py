@@ -107,6 +107,10 @@ def test_application_endpoints_lifecycle_stats_and_timeline(monkeypatch):
             f"/api/jobs/{job_id}/application-status",
             json={"application_status": "screening", "note": "Recruiter replied"},
         )
+        response_date_response = client.patch(
+            f"/api/jobs/{job_id}/response-date",
+            json={"response_date": "2026-04-12"},
+        )
         timeline_response = client.get(f"/api/jobs/{job_id}/timeline")
         list_response = client.get("/api/applications", params={"status": "screening"})
         stats_response = client.get("/api/applications/stats")
@@ -119,11 +123,14 @@ def test_application_endpoints_lifecycle_stats_and_timeline(monkeypatch):
         assert applied_at_response.json()["applied_at"] == "2026-04-10"
         assert screening_response.status_code == 200
         assert screening_response.json()["application_status"] == "screening"
+        assert response_date_response.status_code == 200
+        assert response_date_response.json()["created_at"] == "2026-04-12"
 
         assert timeline_response.status_code == 200
         timeline_events = timeline_response.json()["events"]
         assert [event["status"] for event in timeline_events] == ["applied", "screening"]
         assert timeline_events[-1]["note"] == "Recruiter replied"
+        assert timeline_events[-1]["created_at"] == "2026-04-12"
 
         assert list_response.status_code == 200
         assert list_response.json()["total"] == 1
@@ -251,6 +258,34 @@ def test_application_import_endpoint_handles_fetch_duplicates_and_manual_fallbac
     assert imported_row["salary_currency"] == "USD"
 
 
+def test_application_status_allows_stepping_back_one_stage(monkeypatch):
+    store = _build_store()
+    ids = _seed_jobs(store)
+    job_id = ids["job-1"]
+    monkeypatch.setattr(applications_router, "get_store", lambda profile="default": store)
+
+    with TestClient(app) as client:
+      client.patch(
+          f"/api/jobs/{job_id}/application-status",
+          json={"application_status": "applied"},
+      )
+      forward = client.patch(
+          f"/api/jobs/{job_id}/application-status",
+          json={"application_status": "screening", "note": "Recruiter replied"},
+      )
+      backward = client.patch(
+          f"/api/jobs/{job_id}/application-status",
+          json={"application_status": "applied", "note": "Clicked screening by mistake"},
+      )
+      timeline = client.get(f"/api/jobs/{job_id}/timeline")
+
+    assert forward.status_code == 200
+    assert backward.status_code == 200
+    assert backward.json()["application_status"] == "applied"
+    assert [event["status"] for event in timeline.json()["events"]] == ["applied", "screening", "applied"]
+    assert timeline.json()["events"][-1]["note"] == "Clicked screening by mistake"
+
+
 def test_application_import_retracks_existing_identity_after_tracker_removal(monkeypatch):
     store = _build_store()
     monkeypatch.setattr(applications_router, "get_store", lambda profile="default": store)
@@ -274,7 +309,10 @@ def test_application_import_retracks_existing_identity_after_tracker_removal(mon
     with TestClient(app) as client:
         first_import = client.post(
             "/api/applications/import",
-            json={"url": "https://boards.greenhouse.io/example-team/jobs/12345"},
+            json={
+                "url": "https://boards.greenhouse.io/example-team/jobs/12345",
+                "applied_at": "2026-04-05",
+            },
         )
         job_id = first_import.json()["job_id"]
 
@@ -296,6 +334,7 @@ def test_application_import_retracks_existing_identity_after_tracker_removal(mon
 
     assert timeline_response.status_code == 200
     assert [event["status"] for event in timeline_response.json()["events"]] == ["applied", "applied"]
+    assert timeline_response.json()["events"][-1]["created_at"] == "2026-04-05"
 
 
 def test_manual_application_import_persists_manual_identity_and_salary(monkeypatch):

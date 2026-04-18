@@ -16,12 +16,14 @@ from api.models import (
     ApplicationListResponse,
     ApplicationStatsResponse,
     ApplicationStatusUpdate,
+    ApplicationEventResponse,
     ImportJobRequest,
     ImportJobResponse,
     JobResponse,
     ManualImportRequest,
     NextStepUpdate,
     NotesUpdate,
+    ResponseDateUpdate,
     TimelineResponse,
 )
 from src.fetcher import fetch_job_from_url
@@ -34,10 +36,10 @@ APPLICATIONS_CACHE_TTL = timedelta(minutes=2)
 ALLOWED_APPLICATION_TRANSITIONS: dict[str | None, set[str]] = {
     None: {"applied"},
     "applied": {"screening", "interviewing", "rejected_by_company", "rejected_by_user", "ghosted"},
-    "screening": {"interviewing", "rejected_by_company", "rejected_by_user", "ghosted"},
-    "interviewing": {"offer", "rejected_by_company", "rejected_by_user", "ghosted"},
-    "offer": {"accepted", "rejected_by_user"},
-    "accepted": {"rejected_by_user"},
+    "screening": {"applied", "interviewing", "rejected_by_company", "rejected_by_user", "ghosted"},
+    "interviewing": {"screening", "offer", "rejected_by_company", "rejected_by_user", "ghosted"},
+    "offer": {"interviewing", "accepted", "rejected_by_user"},
+    "accepted": {"offer", "rejected_by_user"},
     "rejected_by_company": {"applied"},
     "rejected_by_user": {"applied"},
     "ghosted": {"screening", "interviewing"},
@@ -260,6 +262,32 @@ def update_applied_at(job_id: int, body: AppliedAtUpdate, profile: str = Query("
     if not updated:
         raise HTTPException(status_code=404, detail="Job not found")
     return JobResponse.from_row(updated)
+
+
+@router.patch("/jobs/{job_id}/response-date", response_model=ApplicationEventResponse)
+def update_response_date(job_id: int, body: ResponseDateUpdate, profile: str = Query("default")):
+    if not body.response_date:
+        raise HTTPException(status_code=422, detail="Response date is required")
+
+    store = get_store(profile)
+    existing = store.get_job_detail(job_id)
+    if not existing:
+        raise HTTPException(status_code=404, detail="Job not found")
+    if existing.get("application_status") is None:
+        raise HTTPException(status_code=422, detail="Response date can only be set for tracked jobs")
+
+    first_response = store.get_first_response_event(job_id)
+    if not first_response:
+        raise HTTPException(status_code=422, detail="No response event exists for this job yet")
+
+    applied_at = existing.get("applied_at")
+    if applied_at and body.response_date < str(applied_at)[:10]:
+        raise HTTPException(status_code=422, detail="Response date cannot be earlier than applied date")
+
+    updated = store.update_first_response_date(job_id, body.response_date)
+    if not updated:
+        raise HTTPException(status_code=404, detail="Response event not found")
+    return ApplicationEventResponse(**updated)
 
 
 @router.delete("/jobs/{job_id}/application-status", response_model=JobResponse)

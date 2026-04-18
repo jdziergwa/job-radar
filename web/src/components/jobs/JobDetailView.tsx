@@ -4,7 +4,6 @@ import { useCallback, useEffect, useState } from 'react'
 import { api } from '@/lib/api/client'
 import type { components } from '@/lib/api/types'
 import { NotesEditor } from '@/components/applications/NotesEditor'
-import { NextStepEditor } from '@/components/applications/NextStepEditor'
 import { StatusTimeline } from '@/components/applications/StatusTimeline'
 import { StatusTransitionButtons } from '@/components/applications/StatusTransitionButtons'
 import { getMatchQualityLabel } from '@/lib/utils/score'
@@ -81,8 +80,15 @@ export function JobDetailView({
   const [savingNotes, setSavingNotes] = useState(false)
   const [savingNextStep, setSavingNextStep] = useState(false)
   const [savingAppliedAt, setSavingAppliedAt] = useState(false)
+  const [savingResponseDate, setSavingResponseDate] = useState(false)
   const [appliedDateDialogOpen, setAppliedDateDialogOpen] = useState(false)
   const [appliedDateDraft, setAppliedDateDraft] = useState('')
+  const [responseDateDialogOpen, setResponseDateDialogOpen] = useState(false)
+  const [responseDateDraft, setResponseDateDraft] = useState('')
+  const [statusDialogOpen, setStatusDialogOpen] = useState(false)
+  const [nextStepDialogOpen, setNextStepDialogOpen] = useState(false)
+  const [nextStepDraft, setNextStepDraft] = useState('')
+  const [nextStepDateDraft, setNextStepDateDraft] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [rescoreRunId, setRescoreRunId] = useState<string | null>(null)
   const displayLocation = job ? formatJobLocation(job) : ''
@@ -267,6 +273,7 @@ export function JobDetailView({
       if (patchError) throw new Error('Failed to save next step')
 
       setJob((prev) => prev ? { ...prev, ...(data ?? {}), ...payload } : prev)
+      setNextStepDialogOpen(false)
       toast.success(payload.next_step || payload.next_step_date ? 'Next step saved' : 'Next step cleared')
     } catch (err: any) {
       toast.error(err.message)
@@ -299,6 +306,39 @@ export function JobDetailView({
   const openAppliedDateDialog = () => {
     setAppliedDateDraft(normalizeAppliedDateForInput(job?.applied_at))
     setAppliedDateDialogOpen(true)
+  }
+
+  const saveResponseDate = async (responseDate: string | null) => {
+    if (!jobId || !responseDate) return
+
+    setSavingResponseDate(true)
+    try {
+      const { error: patchError } = await api.PATCH('/api/jobs/{job_id}/response-date', {
+        params: { path: { job_id: jobId } },
+        body: { response_date: responseDate },
+      })
+      if (patchError) throw new Error('Failed to save response date')
+
+      await fetchTimeline()
+      setResponseDateDialogOpen(false)
+      toast.success('Response date saved')
+    } catch (err: any) {
+      toast.error(err.message)
+    } finally {
+      setSavingResponseDate(false)
+    }
+  }
+
+  const openResponseDateDialog = () => {
+    const firstResponseEvent = timeline.find((event) => event.status !== 'applied')
+    setResponseDateDraft(normalizeAppliedDateForInput(firstResponseEvent?.created_at))
+    setResponseDateDialogOpen(true)
+  }
+
+  const openNextStepDialog = () => {
+    setNextStepDraft(job?.next_step ?? '')
+    setNextStepDateDraft(normalizeAppliedDateForInput(job?.next_step_date))
+    setNextStepDialogOpen(true)
   }
 
   const handleRescore = async () => {
@@ -362,8 +402,8 @@ export function JobDetailView({
   }, [fetchTimeline, job?.application_status])
 
   const shellClassName = isSheet
-    ? 'mx-auto max-w-7xl space-y-8 px-5 py-5 sm:px-6 sm:py-6'
-    : 'mx-auto max-w-7xl animate-in space-y-8 px-4 py-6 fade-in duration-700 sm:space-y-10 sm:px-6 sm:py-10'
+    ? 'mx-auto max-w-7xl space-y-6 px-5 py-5 sm:px-6 sm:py-6'
+    : 'mx-auto max-w-7xl animate-in space-y-6 px-4 py-6 fade-in duration-700 sm:space-y-8 sm:px-6 sm:py-10'
 
   const loadingClassName = isSheet
     ? 'flex min-h-[40vh] flex-col items-center justify-center gap-4'
@@ -405,6 +445,13 @@ export function JobDetailView({
   const scoreReasoning = job.score_reasoning || 'No detailed reasoning provided.'
   const trackerStatusLabel = job.application_status ? job.application_status.replaceAll('_', ' ') : null
   const trackerStatus = job.application_status as ApplicationStatus | null
+  const firstResponseEvent = timeline.find((event) => event.status !== 'applied')
+  const nextStepSummary = job.next_step_date
+    ? `${job.next_step || 'Next step'} · ${formatDate(job.next_step_date)}`
+    : (job.next_step || null)
+  const metadataRowClass = 'flex items-center justify-between gap-3 px-4 py-3'
+  const metadataLabelClass = 'text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70'
+  const metadataValueClass = 'text-sm font-medium text-foreground/90'
 
   return (
     <div className={shellClassName}>
@@ -434,7 +481,7 @@ export function JobDetailView({
         </div>
       </header>
 
-      <section className="flex flex-col items-start gap-6 lg:flex-row lg:gap-10">
+      <section className="flex flex-col items-start gap-6 lg:flex-row lg:gap-8">
         <div className="flex-1 space-y-6">
           <div className="space-y-4">
             <div className="flex flex-wrap items-center gap-3">
@@ -591,9 +638,10 @@ export function JobDetailView({
               </div>
             </div>
           </div>
+
         </div>
 
-        <div className="w-full lg:w-80 shrink-0 space-y-4">
+        <div className="w-full lg:w-80 shrink-0 space-y-3">
           <Card className="border-border/50 bg-card/60 backdrop-blur-xl shadow-2xl overflow-hidden">
             <CardContent className="p-5 space-y-3">
               <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground pb-1">Board Status</p>
@@ -653,54 +701,6 @@ export function JobDetailView({
             </CardContent>
           </Card>
 
-          {trackerStatus && (
-            <Card className="border-border/50 bg-card/60 backdrop-blur-xl shadow-xl overflow-hidden">
-              <CardContent className="p-5 space-y-4">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <ClipboardList className="h-4 w-4 text-primary" />
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Application Progress</p>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Badge variant="outline" className="capitalize border-primary/20 bg-primary/10 text-primary">
-                      {trackerStatusLabel}
-                    </Badge>
-                    {job.applied_at && (
-                      <div className="flex items-center gap-1">
-                        <span className="text-xs text-muted-foreground">Applied {formatDate(job.applied_at)}</span>
-                        <Tooltip>
-                          <TooltipTrigger
-                            render={(triggerProps) => (
-                              <Button
-                                {...triggerProps}
-                                variant="ghost"
-                                size="icon-xs"
-                                onClick={openAppliedDateDialog}
-                                className="text-muted-foreground/70 hover:bg-primary/10 hover:text-primary"
-                                aria-label="Edit applied date"
-                              >
-                                <PencilLine className="h-3 w-3" />
-                              </Button>
-                            )}
-                          />
-                          <TooltipContent className="border border-border/50 bg-popover/80 text-[10px] text-popover-foreground shadow-xl backdrop-blur-md">
-                            <p>Edit applied date</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <StatusTransitionButtons
-                  currentStatus={trackerStatus}
-                  saving={updating}
-                  onTransition={updateApplicationStatus}
-                  onRemove={removeFromTracker}
-                />
-              </CardContent>
-            </Card>
-          )}
-
           {!job.is_sparse && Object.keys(dimensions).length > 0 && (
             <Card className="border-border/50 bg-card/60 backdrop-blur-xl shadow-xl overflow-hidden">
               <CardContent className="p-5 space-y-4">
@@ -716,7 +716,175 @@ export function JobDetailView({
         </div>
       </section>
 
-      <section className="grid grid-cols-1 gap-8 pb-12 lg:grid-cols-3 lg:gap-10 lg:pb-16">
+      {trackerStatus && (
+        <section className="grid gap-4 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:items-stretch">
+          <Card className="h-full border-border/50 bg-card/60 backdrop-blur-xl shadow-xl overflow-hidden">
+            <CardContent className="flex h-full flex-col px-4 pt-4 pb-2">
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <ClipboardList className="h-4 w-4 text-primary" />
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Application Progress</p>
+                </div>
+                <div className="rounded-2xl border border-border/40 bg-background/35 p-3.5">
+                  <p className={metadataLabelClass}>Current Stage</p>
+                  <div className="mt-2.5 flex items-center justify-between gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setStatusDialogOpen(true)}
+                      className="rounded-full border border-primary/25 bg-primary/12 px-4 py-2.5 text-xl font-semibold capitalize text-primary transition-colors hover:border-primary/40 hover:bg-primary/18"
+                    >
+                      {trackerStatusLabel}
+                    </button>
+                    <Tooltip>
+                      <TooltipTrigger
+                        render={(triggerProps) => (
+                          <Button
+                            {...triggerProps}
+                            variant="ghost"
+                            size="icon-sm"
+                            onClick={() => setStatusDialogOpen(true)}
+                            className="shrink-0 rounded-full text-muted-foreground/70 hover:bg-primary/10 hover:text-primary"
+                            aria-label="Edit application status"
+                          >
+                            <PencilLine className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
+                      />
+                      <TooltipContent className="border border-border/50 bg-popover/80 text-[10px] text-popover-foreground shadow-xl backdrop-blur-md">
+                        <p>Change status</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                </div>
+                <div className="overflow-hidden rounded-2xl border border-border/40 bg-background/30">
+                  {job.applied_at && (
+                    <div className={metadataRowClass}>
+                      <div className="space-y-1">
+                        <p className={metadataLabelClass}>Applied</p>
+                        <p className={metadataValueClass}>{formatDate(job.applied_at)}</p>
+                      </div>
+                      <Tooltip>
+                        <TooltipTrigger
+                          render={(triggerProps) => (
+                            <Button
+                              {...triggerProps}
+                              variant="ghost"
+                              size="icon-sm"
+                              onClick={openAppliedDateDialog}
+                              className="shrink-0 rounded-full text-muted-foreground/70 hover:bg-primary/10 hover:text-primary"
+                              aria-label="Edit applied date"
+                            >
+                              <PencilLine className="h-3.5 w-3.5" />
+                            </Button>
+                          )}
+                        />
+                        <TooltipContent className="border border-border/50 bg-popover/80 text-[10px] text-popover-foreground shadow-xl backdrop-blur-md">
+                          <p>Edit applied date</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                  )}
+                  {firstResponseEvent && (
+                    <div className={`${metadataRowClass} border-t border-border/35`}>
+                      <div className="space-y-1">
+                        <p className={metadataLabelClass}>Responded</p>
+                        <p className={metadataValueClass}>{formatDate(firstResponseEvent.created_at)}</p>
+                      </div>
+                      <Tooltip>
+                        <TooltipTrigger
+                          render={(triggerProps) => (
+                            <Button
+                              {...triggerProps}
+                              variant="ghost"
+                              size="icon-sm"
+                              onClick={openResponseDateDialog}
+                              className="shrink-0 rounded-full text-muted-foreground/70 hover:bg-primary/10 hover:text-primary"
+                              aria-label="Edit response date"
+                            >
+                              <PencilLine className="h-3.5 w-3.5" />
+                            </Button>
+                          )}
+                        />
+                        <TooltipContent className="border border-border/50 bg-popover/80 text-[10px] text-popover-foreground shadow-xl backdrop-blur-md">
+                          <p>Edit response date</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                  )}
+                  <div className={`${metadataRowClass} ${(job.applied_at || firstResponseEvent) ? 'border-t border-border/35' : ''}`}>
+                    <div className="space-y-1">
+                      <p className={metadataLabelClass}>Next Step</p>
+                      <p className={metadataValueClass}>{nextStepSummary || 'No upcoming step set'}</p>
+                    </div>
+                    <Tooltip>
+                      <TooltipTrigger
+                        render={(triggerProps) => (
+                          <Button
+                            {...triggerProps}
+                            variant="ghost"
+                            size="icon-sm"
+                            onClick={openNextStepDialog}
+                            className="shrink-0 rounded-full text-muted-foreground/70 hover:bg-primary/10 hover:text-primary"
+                            aria-label="Edit next step"
+                          >
+                            <PencilLine className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
+                      />
+                      <TooltipContent className="border border-border/50 bg-popover/80 text-[10px] text-popover-foreground shadow-xl backdrop-blur-md">
+                        <p>Edit next step</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                </div>
+              </div>
+              <div className="mt-auto pt-3">
+                <StatusTransitionButtons
+                  currentStatus={trackerStatus}
+                  saving={updating}
+                  onTransition={updateApplicationStatus}
+                  onRemove={removeFromTracker}
+                  open={statusDialogOpen}
+                  onOpenChange={setStatusDialogOpen}
+                  showTrigger={false}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="flex h-full flex-col gap-4">
+            <Card className="flex-1 border-border/50 bg-card/60 backdrop-blur-xl shadow-xl overflow-hidden">
+              <CardContent className="flex h-full flex-col px-4 pt-4 pb-2">
+                <div className="flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-primary" />
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Notes</p>
+                </div>
+                <div className="flex-1 pt-3">
+                  <NotesEditor
+                    notes={job.notes}
+                    saving={savingNotes}
+                    onSave={saveNotes}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="flex-1 border-border/50 bg-card/60 backdrop-blur-xl shadow-xl overflow-hidden">
+              <CardContent className="flex h-full flex-col px-4 pt-4 pb-2">
+                <div className="flex items-center gap-2">
+                  <ClipboardList className="h-4 w-4 text-primary" />
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Status Timeline</p>
+                </div>
+                <div className="flex-1 pt-3">
+                  <StatusTimeline events={timeline} loading={timelineLoading} />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </section>
+      )}
+
+      <section className="grid grid-cols-1 gap-8 pb-12 lg:grid-cols-3 lg:gap-8 lg:pb-16">
         <div className="lg:col-span-2 space-y-8">
           <div className="space-y-4">
             <h2 className="text-2xl font-bold tracking-tight underline decoration-primary/30 decoration-4 underline-offset-8">Job Description</h2>
@@ -754,44 +922,7 @@ export function JobDetailView({
           </div>
         </div>
 
-        <div className="space-y-8">
-          {job.application_status && (
-            <>
-              <div className="space-y-4">
-                <h3 className="text-sm font-bold uppercase tracking-widest flex items-center gap-2 text-primary">
-                  <Calendar className="h-4 w-4" />
-                  Next Step
-                </h3>
-                <NextStepEditor
-                  nextStep={job.next_step}
-                  nextStepDate={job.next_step_date}
-                  saving={savingNextStep}
-                  onSave={saveNextStep}
-                />
-              </div>
-
-              <div className="space-y-4">
-                <h3 className="text-sm font-bold uppercase tracking-widest flex items-center gap-2 text-primary">
-                  <FileText className="h-4 w-4" />
-                  Notes
-                </h3>
-                <NotesEditor
-                  notes={job.notes}
-                  saving={savingNotes}
-                  onSave={saveNotes}
-                />
-              </div>
-
-              <div className="space-y-4">
-                <h3 className="text-sm font-bold uppercase tracking-widest flex items-center gap-2 text-primary">
-                  <ClipboardList className="h-4 w-4" />
-                  Status Timeline
-                </h3>
-                <StatusTimeline events={timeline} loading={timelineLoading} />
-              </div>
-            </>
-          )}
-
+        <div className="space-y-5">
           {companySignals.length > 0 && (
             <div className="space-y-4">
               <h3 className="text-sm font-bold uppercase tracking-widest flex items-center gap-2 text-fuchsia-500">
@@ -860,7 +991,7 @@ export function JobDetailView({
           <DialogHeader>
             <DialogTitle>Edit Applied Date</DialogTitle>
             <DialogDescription>
-              Use this when you added the application after the fact or want tracker stats to reflect the real apply date.
+              Update the date you actually applied so the tracker timeline and stats stay accurate.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2">
@@ -870,26 +1001,96 @@ export function JobDetailView({
               onChange={(event) => setAppliedDateDraft(event.target.value)}
               className="h-11 rounded-2xl border-border/50 bg-background/50 px-4"
             />
-            <p className="text-xs text-muted-foreground">
-              Leave empty to clear the explicit date and fall back to the tracker entry date.
-            </p>
+          </div>
+          <DialogFooter>
+            <Button
+              disabled={savingAppliedAt || !appliedDateDraft || appliedDateDraft === normalizeAppliedDateForInput(job?.applied_at)}
+              onClick={() => void saveAppliedAt({ applied_at: appliedDateDraft })}
+              className="gap-2"
+            >
+              {savingAppliedAt ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <PencilLine className="h-3.5 w-3.5" />}
+              Save Date
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={responseDateDialogOpen} onOpenChange={setResponseDateDialogOpen}>
+        <DialogContent className="sm:max-w-md" showCloseButton>
+          <DialogHeader>
+            <DialogTitle>Edit Response Date</DialogTitle>
+            <DialogDescription>
+              This is the first company response date used for tracker history and response-time stats.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Input
+              type="date"
+              value={responseDateDraft}
+              onChange={(event) => setResponseDateDraft(event.target.value)}
+              className="h-11 rounded-2xl border-border/50 bg-background/50 px-4"
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              disabled={savingResponseDate || !responseDateDraft || responseDateDraft === normalizeAppliedDateForInput(firstResponseEvent?.created_at)}
+              onClick={() => void saveResponseDate(responseDateDraft || null)}
+              className="gap-2"
+            >
+              {savingResponseDate ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <PencilLine className="h-3.5 w-3.5" />}
+              Save Date
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={nextStepDialogOpen} onOpenChange={setNextStepDialogOpen}>
+        <DialogContent className="sm:max-w-lg" showCloseButton>
+          <DialogHeader>
+            <DialogTitle>Edit Next Step</DialogTitle>
+            <DialogDescription>
+              Keep the immediate next step visible here so the tracker card reflects what is actually scheduled.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_180px]">
+            <Input
+              value={nextStepDraft}
+              onChange={(event) => setNextStepDraft(event.target.value)}
+              placeholder="Screening interview, recruiter follow-up, salary call..."
+              className="h-11 rounded-2xl border-border/50 bg-background/50 px-4"
+            />
+            <Input
+              type="date"
+              value={nextStepDateDraft}
+              onChange={(event) => setNextStepDateDraft(event.target.value)}
+              className="h-11 rounded-2xl border-border/50 bg-background/50 px-4"
+            />
           </div>
           <DialogFooter>
             <Button
               variant="ghost"
-              disabled={savingAppliedAt || !job?.applied_at}
-              onClick={() => void saveAppliedAt({ applied_at: null })}
+              disabled={savingNextStep || (!nextStepDraft.trim() && !nextStepDateDraft)}
+              onClick={() => void saveNextStep({ next_step: null, next_step_date: null })}
               className="text-muted-foreground"
             >
               Clear
             </Button>
             <Button
-              disabled={savingAppliedAt || appliedDateDraft === normalizeAppliedDateForInput(job?.applied_at)}
-              onClick={() => void saveAppliedAt({ applied_at: appliedDateDraft || null })}
+              disabled={
+                savingNextStep
+                || (
+                  nextStepDraft.trim() === (job?.next_step ?? '')
+                  && nextStepDateDraft === normalizeAppliedDateForInput(job?.next_step_date)
+                )
+              }
+              onClick={() => void saveNextStep({
+                next_step: nextStepDraft.trim() || null,
+                next_step_date: nextStepDateDraft || null,
+              })}
               className="gap-2"
             >
-              {savingAppliedAt ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <PencilLine className="h-3.5 w-3.5" />}
-              Save Date
+              {savingNextStep ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <PencilLine className="h-3.5 w-3.5" />}
+              Save Next Step
             </Button>
           </DialogFooter>
         </DialogContent>
