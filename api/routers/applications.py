@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import uuid
+from collections.abc import Callable
+from datetime import datetime, timedelta
 from urllib.parse import urlparse
 
 from fastapi import APIRouter, HTTPException, Query
@@ -25,6 +28,7 @@ from src.job_resolver import detect_ats_platform, resolve_job_ref
 from src.providers.utils import slugify
 
 router = APIRouter()
+APPLICATIONS_CACHE_TTL = timedelta(minutes=2)
 
 ALLOWED_APPLICATION_TRANSITIONS: dict[str | None, set[str]] = {
     None: {"applied"},
@@ -37,6 +41,59 @@ ALLOWED_APPLICATION_TRANSITIONS: dict[str | None, set[str]] = {
     "rejected_by_user": {"applied"},
     "ghosted": {"screening", "interviewing"},
 }
+
+
+def _applications_cache_fingerprint(store) -> str:
+    return "|".join([
+        store.get_metadata("last_pipeline_run_at", "") or "",
+        store.get_metadata("last_job_status_change_at", "") or "",
+        datetime.utcnow().date().isoformat(),
+    ])
+
+
+def _get_cached_applications_payload(
+    store,
+    cache_key: str,
+    fingerprint: str,
+):
+    cached_raw = store.get_metadata(cache_key)
+    if not cached_raw:
+        return None
+
+    try:
+        cached_data = json.loads(cached_raw)
+        if not isinstance(cached_data, dict):
+            return None
+        cached_fingerprint = str(cached_data["fingerprint"])
+        created_at = datetime.fromisoformat(str(cached_data["created_at"]))
+        payload = cached_data["payload"]
+    except (json.JSONDecodeError, KeyError, TypeError, ValueError):
+        return None
+
+    if cached_fingerprint != fingerprint:
+        return None
+    if datetime.utcnow() - created_at > APPLICATIONS_CACHE_TTL:
+        return None
+    return payload
+
+
+def _get_or_build_applications_payload(
+    store,
+    cache_key: str,
+    builder: Callable[[], dict],
+):
+    fingerprint = _applications_cache_fingerprint(store)
+    cached_payload = _get_cached_applications_payload(store, cache_key, fingerprint)
+    if cached_payload is not None:
+        return cached_payload
+
+    payload = builder()
+    store.set_metadata(cache_key, json.dumps({
+        "fingerprint": fingerprint,
+        "created_at": datetime.utcnow().isoformat(),
+        "payload": payload,
+    }))
+    return payload
 
 
 def _external_company_slug(url: str, fallback_name: str | None = None) -> str:
@@ -87,6 +144,35 @@ def _retracked_import_response(existing: dict, fetched: bool) -> ImportJobRespon
     )
 
 
+def _build_application_list_payload(
+    *,
+    store,
+    status: str | None,
+    search: str | None,
+    sort: str,
+    order: str,
+    page: int,
+    per_page: int,
+) -> dict:
+    status_list = status.split(",") if status else None
+    rows, total = store.get_applications_filtered(
+        application_statuses=status_list,
+        search=search,
+        sort=sort,
+        order=order,
+        page=page,
+        per_page=per_page,
+    )
+    jobs = [ApplicationJobResponse.from_row(row).model_dump() for row in rows]
+    return {
+        "jobs": jobs,
+        "total": total,
+        "page": page,
+        "pages": max(1, -(-total // per_page)),
+        "per_page": per_page,
+    }
+
+
 @router.get("/applications", response_model=ApplicationListResponse)
 def list_applications(
     profile: str = Query("default"),
@@ -98,29 +184,36 @@ def list_applications(
     per_page: int = Query(50, ge=1, le=200),
 ):
     store = get_store(profile)
-    status_list = status.split(",") if status else None
-    rows, total = store.get_applications_filtered(
-        application_statuses=status_list,
-        search=search,
-        sort=sort,
-        order=order,
-        page=page,
-        per_page=per_page,
+    status_key = status or ""
+    search_key = search or ""
+    cache_key = (
+        f"applications_cache_{profile}_{status_key}_{search_key}_{sort}_{order}_{page}_{per_page}"
     )
-    jobs = [ApplicationJobResponse.from_row(row) for row in rows]
-    return ApplicationListResponse(
-        jobs=jobs,
-        total=total,
-        page=page,
-        pages=max(1, -(-total // per_page)),
-        per_page=per_page,
+    payload = _get_or_build_applications_payload(
+        store,
+        cache_key=cache_key,
+        builder=lambda: _build_application_list_payload(
+            store=store,
+            status=status,
+            search=search,
+            sort=sort,
+            order=order,
+            page=page,
+            per_page=per_page,
+        ),
     )
+    return ApplicationListResponse(**payload)
 
 
 @router.get("/applications/stats", response_model=ApplicationStatsResponse)
 def get_application_stats(profile: str = Query("default")):
     store = get_store(profile)
-    return ApplicationStatsResponse(**store.get_application_stats())
+    payload = _get_or_build_applications_payload(
+        store,
+        cache_key=f"applications_stats_cache_{profile}",
+        builder=store.get_application_stats,
+    )
+    return ApplicationStatsResponse(**payload)
 
 
 @router.patch("/jobs/{job_id}/application-status", response_model=JobResponse)
