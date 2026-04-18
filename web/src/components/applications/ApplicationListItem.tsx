@@ -77,6 +77,7 @@ export function ApplicationListItem({ job }: { job: ApplicationJob }) {
   const appliedLabel = job.applied_at ? `Applied ${formatDate(job.applied_at)}` : 'Applied date unavailable'
   const nextStepLabel = job.next_step_date ? `${job.next_step || 'Next step'} · ${formatDate(job.next_step_date)}` : (job.next_step || 'No upcoming steps')
   const displayLocation = formatJobLocation(job)
+  const hasUpcomingStep = Boolean(job.next_step || job.next_step_date)
 
   return (
     <Link
@@ -85,8 +86,8 @@ export function ApplicationListItem({ job }: { job: ApplicationJob }) {
       aria-label={`Open application for ${job.title} at ${job.company_name}`}
     >
       <div className="relative overflow-hidden rounded-3xl border border-border/40 bg-card/35 p-5 shadow-sm backdrop-blur-sm transition-all duration-300 hover:border-primary/25 hover:bg-card/60 hover:shadow-xl">
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-start">
-          <div className="flex items-start gap-4">
+        <div className="flex flex-col gap-5 lg:grid lg:grid-cols-[minmax(0,1fr)_18rem_auto] lg:items-center lg:gap-5">
+          <div className="flex min-w-0 items-start gap-4">
             <div className="mt-1 flex items-center gap-3">
               <span className={`h-3 w-3 rounded-full shadow-sm ${meta.dot}`} />
               {job.fit_score != null ? (
@@ -98,7 +99,7 @@ export function ApplicationListItem({ job }: { job: ApplicationJob }) {
               )}
             </div>
 
-            <div className="space-y-3">
+            <div className="min-w-0 space-y-3">
               <div className="flex flex-wrap items-center gap-2">
                 <Badge variant="outline" className={`px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest ${meta.badge}`}>
                   {meta.label}
@@ -112,7 +113,7 @@ export function ApplicationListItem({ job }: { job: ApplicationJob }) {
               </div>
 
               <div>
-                <h3 className="text-xl font-black tracking-tight text-foreground transition-colors group-hover:text-primary">
+                <h3 className="truncate text-xl font-black tracking-tight text-foreground transition-colors group-hover:text-primary">
                   {job.title}
                 </h3>
                 <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
@@ -133,12 +134,14 @@ export function ApplicationListItem({ job }: { job: ApplicationJob }) {
             </div>
           </div>
 
-          <div className="min-w-0 flex-1 lg:border-l lg:border-border/40 lg:pl-5">
-            <div className="rounded-2xl border border-border/40 bg-background/35 p-4">
+          <div className="min-w-0 lg:w-[18rem] lg:border-l lg:border-border/40 lg:pl-5">
+            <div className="space-y-1.5">
               <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/65">Next Step</div>
-              <p className="mt-2 text-sm font-medium text-foreground">{nextStepLabel}</p>
+              <p className={`text-sm leading-relaxed ${hasUpcomingStep ? 'font-medium text-foreground' : 'text-muted-foreground'}`}>
+                {nextStepLabel}
+              </p>
               {job.notes && (
-                <div className="mt-3 inline-flex items-center gap-2 text-xs text-muted-foreground">
+                <div className="inline-flex items-center gap-2 pt-1 text-xs text-muted-foreground">
                   <FileText className="h-3.5 w-3.5" />
                   Notes saved
                 </div>
@@ -146,7 +149,7 @@ export function ApplicationListItem({ job }: { job: ApplicationJob }) {
             </div>
           </div>
 
-          <div className="flex items-center justify-end lg:min-h-full lg:self-stretch">
+          <div className="flex items-center justify-end">
             <div className="rounded-full border border-border/50 bg-background/60 p-3 text-muted-foreground transition-all group-hover:border-primary/30 group-hover:bg-primary/5 group-hover:text-primary">
               <ChevronRight className="h-4 w-4" />
             </div>
