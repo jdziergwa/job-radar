@@ -11,7 +11,7 @@ import certifi
 import httpx
 
 from src.job_resolver import resolve_job_ref
-from src.providers.ats_resolvers import fetch_supported_job
+from src.providers.ats_resolvers import SINGLE_JOB_FETCHERS, fetch_supported_job
 from src.providers.utils import strip_html
 from src.models import RawJob
 from src.providers.utils import slugify
@@ -120,7 +120,7 @@ async def _fetch_description_via_supported_resolver(
     url: str,
 ) -> str | None:
     ref = resolve_job_ref(url)
-    if ref.platform not in {"greenhouse", "lever", "ashby", "workable"}:
+    if ref.platform not in SINGLE_JOB_FETCHERS:
         return None
     resolved_job = await fetch_supported_job(client, ref)
     if resolved_job and resolved_job.description:

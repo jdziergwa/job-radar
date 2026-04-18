@@ -435,7 +435,7 @@ export function ImportJobDialog({
           </div>
         </div>
 
-        <DialogFooter className="rounded-b-3xl">
+        <DialogFooter className="mx-0 mb-0 rounded-b-3xl border-t border-border/40 bg-background/30 px-6 py-4 backdrop-blur-sm">
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>
             Cancel
           </Button>

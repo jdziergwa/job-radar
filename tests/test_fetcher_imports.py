@@ -246,3 +246,63 @@ def test_fetch_job_from_url_uses_workable_resolver_for_normalized_raw_job():
         posted_at=None,
         fetched_at=result.fetched_at,
     )
+
+
+def test_fetch_job_from_url_uses_smartrecruiters_resolver_for_normalized_raw_job():
+    smartrecruiters_job_id = "sr-job-12345"
+
+    class _FakeResponse:
+        def __init__(self, *, status_code: int, payload: dict):
+            self.status_code = status_code
+            self._payload = payload
+
+        def json(self):
+            return self._payload
+
+    class _FakeAsyncClient:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc, tb):
+            return False
+
+        async def get(self, url: str, params=None, timeout=None):
+            assert url == f"https://api.smartrecruiters.com/v1/companies/example-team/postings/{smartrecruiters_job_id}"
+            return _FakeResponse(
+                status_code=200,
+                payload={
+                    "id": smartrecruiters_job_id,
+                    "name": "Staff Quality Engineer",
+                    "ref": f"https://jobs.smartrecruiters.com/example-team/{smartrecruiters_job_id}",
+                    "releasedDate": "2026-04-18T10:00:00Z",
+                    "location": {
+                        "city": "Example City",
+                        "country": "Exampleland",
+                    },
+                    "jobAd": {
+                        "sections": "<p>Build resilient test systems.</p>",
+                    },
+                },
+            )
+
+    async def _run():
+        with mock.patch("src.fetcher.httpx.AsyncClient", _FakeAsyncClient):
+            return await fetcher.fetch_job_from_url(f"https://jobs.smartrecruiters.com/example-team/{smartrecruiters_job_id}")
+
+    result = asyncio.run(_run())
+
+    assert result == RawJob(
+        ats_platform="smartrecruiters",
+        company_slug="example-team",
+        company_name="Example Team",
+        job_id=smartrecruiters_job_id,
+        title="Staff Quality Engineer",
+        location="Example City, Exampleland",
+        url=f"https://jobs.smartrecruiters.com/example-team/{smartrecruiters_job_id}",
+        description="<p>Build resilient test systems.</p>",
+        posted_at="2026-04-18T10:00:00Z",
+        fetched_at=result.fetched_at,
+    )

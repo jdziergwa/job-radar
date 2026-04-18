@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 import re
-from typing import Any
+from typing import Any, Awaitable, Callable
 
 import httpx
 
@@ -238,6 +238,56 @@ def build_workable_job(
     )
 
 
+def build_smartrecruiters_job(
+    item: dict[str, Any],
+    *,
+    company_slug: str,
+    company_name: str,
+    fetched_at: str,
+) -> RawJob:
+    location_obj = item.get("location") or {}
+    city = ""
+    region = ""
+    country = ""
+    if isinstance(location_obj, dict):
+        city = str(location_obj.get("city") or "").strip()
+        region = str(location_obj.get("region") or location_obj.get("regionCode") or "").strip()
+        country = str(location_obj.get("country") or location_obj.get("countryCode") or "").strip()
+
+    location_parts = _dedupe_text([city, region, country])
+    location = ", ".join(location_parts)
+
+    title = item.get("name") or item.get("title") or ""
+    description = item.get("jobAd", {}) if isinstance(item.get("jobAd"), dict) else {}
+    description_text = ""
+    for key in ("sections", "content", "jobDescription"):
+        value = description.get(key)
+        if isinstance(value, str) and value.strip():
+            description_text = value
+            break
+    if not description_text:
+        for key in ("jobAd", "description"):
+            value = item.get(key)
+            if isinstance(value, str) and value.strip():
+                description_text = value
+                break
+
+    job_id = str(item.get("id", ""))
+    default_url = f"https://jobs.smartrecruiters.com/{company_slug}/{job_id}"
+    return RawJob(
+        ats_platform="smartrecruiters",
+        company_slug=company_slug,
+        company_name=company_name,
+        job_id=job_id,
+        title=str(title),
+        location=location,
+        url=str(item.get("ref") or item.get("jobLink") or item.get("applyUrl") or default_url),
+        description=description_text,
+        posted_at=item.get("releasedDate") if isinstance(item.get("releasedDate"), str) else None,
+        fetched_at=fetched_at,
+    )
+
+
 def _extract_ashby_company_name(payload: dict[str, Any], company_slug: str) -> str:
     for key in ("companyName", "name", "organizationName", "organization_name"):
         value = payload.get(key)
@@ -404,6 +454,40 @@ async def fetch_workable_job(
     )
 
 
+async def fetch_smartrecruiters_job(
+    client: httpx.AsyncClient,
+    *,
+    company_slug: str,
+    job_id: str,
+) -> RawJob | None:
+    response = await client.get(
+        f"https://api.smartrecruiters.com/v1/companies/{company_slug}/postings/{job_id}",
+        timeout=8,
+    )
+    if response.status_code != 200:
+        return None
+    payload = response.json()
+    if not isinstance(payload, dict):
+        return None
+    return build_smartrecruiters_job(
+        payload,
+        company_slug=company_slug,
+        company_name=_humanize_slug(company_slug) or company_slug,
+        fetched_at=datetime.now(timezone.utc).isoformat(),
+    )
+
+
+SingleJobFetcher = Callable[..., Awaitable[RawJob | None]]
+
+SINGLE_JOB_FETCHERS: dict[str, SingleJobFetcher] = {
+    "greenhouse": fetch_greenhouse_job,
+    "lever": fetch_lever_job,
+    "ashby": fetch_ashby_job,
+    "workable": fetch_workable_job,
+    "smartrecruiters": fetch_smartrecruiters_job,
+}
+
+
 async def fetch_supported_job(
     client: httpx.AsyncClient,
     ref: ResolvedJobRef,
@@ -411,12 +495,7 @@ async def fetch_supported_job(
     if not ref.platform or not ref.company_slug or not ref.job_id:
         return None
 
-    if ref.platform == "greenhouse":
-        return await fetch_greenhouse_job(client, company_slug=ref.company_slug, job_id=ref.job_id)
-    if ref.platform == "lever":
-        return await fetch_lever_job(client, company_slug=ref.company_slug, job_id=ref.job_id)
-    if ref.platform == "ashby":
-        return await fetch_ashby_job(client, company_slug=ref.company_slug, job_id=ref.job_id)
-    if ref.platform == "workable":
-        return await fetch_workable_job(client, company_slug=ref.company_slug, job_id=ref.job_id)
-    return None
+    fetcher = SINGLE_JOB_FETCHERS.get(ref.platform)
+    if fetcher is None:
+        return None
+    return await fetcher(client, company_slug=ref.company_slug, job_id=ref.job_id)

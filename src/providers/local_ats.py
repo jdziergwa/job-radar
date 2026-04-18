@@ -20,11 +20,13 @@ import aiohttp
 import certifi
 
 from src.models import RawJob
+from src.providers.ats_registry import register_bulk_fetchers
 from src.providers.ats_resolvers import (
     build_ashby_job,
     build_ashby_location_metadata as _build_ashby_location_metadata,
     build_greenhouse_job,
     build_lever_job,
+    build_smartrecruiters_job,
     build_workable_job,
     extract_ashby_description as _extract_ashby_description,
 )
@@ -372,6 +374,7 @@ async def fetch_smartrecruiters(
 ) -> list[RawJob]:
     """Fetch jobs from SmartRecruiters API."""
     slug = company["slug"]
+    name = company.get("name", slug)
     url = f"https://api.smartrecruiters.com/v1/companies/{slug}/postings"
     
     async with semaphore:
@@ -382,44 +385,33 @@ async def fetch_smartrecruiters(
             response.raise_for_status()
             data = await response.json()
 
-    jobs = []
+    now = datetime.now(timezone.utc).isoformat()
+    jobs: list[RawJob] = []
+    company_metadata = _build_company_metadata(company)
     for item in data.get("content", []):
-        job_id = item.get("id")
-        title = item.get("name")
-        
-        # Build location string
-        loc_data = item.get("location", {})
-        city = loc_data.get("city")
-        country = loc_data.get("country", "").upper()
-        location_parts = [p for p in [city, country] if p]
-        location = ", ".join(location_parts) or "Remote"
-        
-        # SmartRecruiters jobs are usually at jobs.smartrecruiters.com/{slug}/{id}
-        job_url = f"https://jobs.smartrecruiters.com/{slug}/{job_id}"
-        
-        jobs.append(RawJob(
-            ats_platform="smartrecruiters",
+        job = build_smartrecruiters_job(
+            item,
             company_slug=slug,
-            company_name=company.get("name", slug),
-            title=title,
-            location=location,
-            url=job_url,
-            posted_at=item.get("releasedDate"),
-        ))
-    
+            company_name=name,
+            fetched_at=now,
+        )
+        job.company_metadata = company_metadata
+        jobs.append(job)
+
+    logger.debug("SmartRecruiters %s: %d jobs", slug, len(jobs))
     return jobs
 
 
 # ── Platform Dispatcher ─────────────────────────────────────────────
 
-FETCHERS = {
+FETCHERS = register_bulk_fetchers({
     "greenhouse": fetch_greenhouse,
     "lever": fetch_lever,
     "ashby": fetch_ashby,
     "workable": fetch_workable,
     "bamboohr": fetch_bamboohr,
     "smartrecruiters": fetch_smartrecruiters,
-}
+})
 
 
 def _platform_concurrency(platform: str, runtime_config: dict[str, object] | None = None) -> int:
