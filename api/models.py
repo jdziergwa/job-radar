@@ -220,6 +220,7 @@ class ImportJobRequest(BaseModel):
     company_name: Optional[str] = None
     title: Optional[str] = None
     location: Optional[str] = None
+    applied_at: Optional[str] = None
     notes: Optional[str] = None
 
 
@@ -228,6 +229,7 @@ class ManualImportRequest(BaseModel):
     company_name: str
     title: str
     location: Optional[str] = None
+    applied_at: Optional[str] = None
     description: Optional[str] = None
     salary: Optional[str] = None
     notes: Optional[str] = None
@@ -248,6 +250,10 @@ class NotesUpdate(BaseModel):
 class NextStepUpdate(BaseModel):
     next_step: Optional[str] = None
     next_step_date: Optional[str] = None
+
+
+class AppliedAtUpdate(BaseModel):
+    applied_at: Optional[str] = None
 
 
 class TimelineResponse(BaseModel):

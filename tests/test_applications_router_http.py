@@ -99,6 +99,10 @@ def test_application_endpoints_lifecycle_stats_and_timeline(monkeypatch):
             f"/api/jobs/{job_id}/next-step",
             json={"next_step": "Recruiter call", "next_step_date": "2026-04-20"},
         )
+        applied_at_response = client.patch(
+            f"/api/jobs/{job_id}/applied-at",
+            json={"applied_at": "2026-04-10"},
+        )
         screening_response = client.patch(
             f"/api/jobs/{job_id}/application-status",
             json={"application_status": "screening", "note": "Recruiter replied"},
@@ -111,6 +115,8 @@ def test_application_endpoints_lifecycle_stats_and_timeline(monkeypatch):
         assert notes_response.json()["notes"] == "Strong referral from previous teammate."
         assert next_step_response.status_code == 200
         assert next_step_response.json()["next_step"] == "Recruiter call"
+        assert applied_at_response.status_code == 200
+        assert applied_at_response.json()["applied_at"] == "2026-04-10"
         assert screening_response.status_code == 200
         assert screening_response.json()["application_status"] == "screening"
 
@@ -173,23 +179,32 @@ def test_application_import_endpoint_handles_fetch_duplicates_and_manual_fallbac
     with TestClient(app) as client:
         first_import = client.post(
             "/api/applications/import",
-            json={"url": "https://boards.greenhouse.io/example-team/jobs/12345", "notes": "Saved from external search"},
+            json={
+                "url": "https://boards.greenhouse.io/example-team/jobs/12345",
+                "applied_at": "2026-04-05",
+                "notes": "Saved from external search",
+            },
         )
         duplicate_import = client.post(
             "/api/applications/import",
             json={"url": "https://boards.greenhouse.io/example-team/jobs/12345"},
         )
+        timeline_response = client.get(f"/api/jobs/{first_import.json()['job_id']}/timeline")
 
         assert first_import.status_code == 200
         first_payload = first_import.json()
         assert first_payload["fetched"] is True
         assert first_payload["already_tracked"] is False
         assert first_payload["job"]["application_status"] == "applied"
+        assert first_payload["job"]["applied_at"] == "2026-04-05"
         assert first_payload["job"]["source"] == "manual"
         assert first_payload["job"]["salary"] == "$180k - $220k"
 
         assert duplicate_import.status_code == 200
         assert duplicate_import.json()["already_tracked"] is True
+        assert timeline_response.status_code == 200
+        assert timeline_response.json()["events"][0]["status"] == "applied"
+        assert timeline_response.json()["events"][0]["created_at"] == "2026-04-05"
 
         async def failed_fetch_job_from_url(url: str):
             return None
@@ -228,6 +243,7 @@ def test_application_import_endpoint_handles_fetch_duplicates_and_manual_fallbac
     assert len(store.get_job_detail(external_payload["job_id"])["job_id"]) == 16
 
     imported_row = store.get_job_detail(first_payload["job_id"])
+    assert imported_row["applied_at"] == "2026-04-05"
     assert json.loads(imported_row["company_metadata"]) == {"quality_signals": ["Top-tier product team"]}
     assert json.loads(imported_row["location_metadata"]) == {"workplace_type": "Remote"}
     assert imported_row["salary_min"] == 180000
@@ -293,6 +309,7 @@ def test_manual_application_import_persists_manual_identity_and_salary(monkeypat
                 "company_name": "Example Manual Company",
                 "title": "QA Lead",
                 "location": "Berlin",
+                "applied_at": "2026-04-01",
                 "description": "Own release quality.",
                 "salary": "$150k",
                 "notes": "Warm intro from recruiter.",
@@ -305,5 +322,6 @@ def test_manual_application_import_persists_manual_identity_and_salary(monkeypat
     assert payload["job"]["ats_platform"] == "manual"
     assert payload["job"]["company_slug"] == "example-manual-company"
     assert payload["job"]["application_status"] == "applied"
+    assert payload["job"]["applied_at"] == "2026-04-01"
     assert payload["job"]["salary"] == "$150k"
     assert payload["job"]["url"].startswith("manual://example-manual-company/")

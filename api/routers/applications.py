@@ -11,6 +11,7 @@ from fastapi import APIRouter, HTTPException, Query
 
 from api.deps import get_store
 from api.models import (
+    AppliedAtUpdate,
     ApplicationJobResponse,
     ApplicationListResponse,
     ApplicationStatsResponse,
@@ -245,6 +246,22 @@ def update_application_status(
     return JobResponse.from_row(updated)
 
 
+@router.patch("/jobs/{job_id}/applied-at", response_model=JobResponse)
+def update_applied_at(job_id: int, body: AppliedAtUpdate, profile: str = Query("default")):
+    store = get_store(profile)
+    existing = store.get_job_detail(job_id)
+    if not existing:
+        raise HTTPException(status_code=404, detail="Job not found")
+    if existing.get("application_status") is None:
+        raise HTTPException(status_code=422, detail="Applied date can only be set for tracked jobs")
+    if not store.update_applied_at(job_id, body.applied_at):
+        raise HTTPException(status_code=404, detail="Job not found")
+    updated = store.get_job_detail(job_id)
+    if not updated:
+        raise HTTPException(status_code=404, detail="Job not found")
+    return JobResponse.from_row(updated)
+
+
 @router.delete("/jobs/{job_id}/application-status", response_model=JobResponse)
 def delete_application_status(job_id: int, profile: str = Query("default")):
     store = get_store(profile)
@@ -302,6 +319,8 @@ async def import_application(body: ImportJobRequest, profile: str = Query("defau
         if existing.get("application_status") is None:
             if not store.update_application_status(existing["id"], "applied", "Re-added from URL import"):
                 raise HTTPException(status_code=404, detail="Job not found")
+            if body.applied_at is not None:
+                store.update_applied_at(existing["id"], body.applied_at)
             if body.notes:
                 store.update_notes(existing["id"], body.notes)
             updated = store.get_job_detail(existing["id"])
@@ -339,6 +358,7 @@ async def import_application(body: ImportJobRequest, profile: str = Query("defau
             location=body.location or fetched_job.location,
             url=fetched_job.url or body.url,
             description=fetched_job.description,
+            applied_at=body.applied_at,
             notes=body.notes,
             company_metadata=fetched_job.company_metadata,
             location_metadata=fetched_job.location_metadata,
@@ -373,6 +393,7 @@ async def import_application(body: ImportJobRequest, profile: str = Query("defau
         location=body.location,
         url=body.url,
         description=None,
+        applied_at=body.applied_at,
         notes=body.notes,
         source="manual",
         initial_event_note="Imported from URL",
@@ -401,6 +422,7 @@ def import_manual_application(body: ManualImportRequest, profile: str = Query("d
         location=body.location,
         url=url,
         description=body.description,
+        applied_at=body.applied_at,
         notes=body.notes,
         salary=body.salary,
         source="manual",

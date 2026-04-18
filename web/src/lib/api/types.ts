@@ -160,6 +160,23 @@ export interface paths {
         patch: operations["update_application_status_api_jobs__job_id__application_status_patch"];
         trace?: never;
     };
+    "/api/jobs/{job_id}/applied-at": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Applied At */
+        patch: operations["update_applied_at_api_jobs__job_id__applied_at_patch"];
+        trace?: never;
+    };
     "/api/jobs/{job_id}/notes": {
         parameters: {
             query?: never;
@@ -961,6 +978,11 @@ export interface components {
             /** Applications */
             applications: number;
         };
+        /** AppliedAtUpdate */
+        AppliedAtUpdate: {
+            /** Applied At */
+            applied_at?: string | null;
+        };
         /** Body_analyze_cv_api_wizard_analyze_cv_post */
         Body_analyze_cv_api_wizard_analyze_cv_post: {
             /** File */
@@ -1210,6 +1232,8 @@ export interface components {
             title?: string | null;
             /** Location */
             location?: string | null;
+            /** Applied At */
+            applied_at?: string | null;
             /** Notes */
             notes?: string | null;
         };
@@ -1405,6 +1429,8 @@ export interface components {
             title: string;
             /** Location */
             location?: string | null;
+            /** Applied At */
+            applied_at?: string | null;
             /** Description */
             description?: string | null;
             /** Salary */
@@ -2312,6 +2338,43 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["ApplicationStatusUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_applied_at_api_jobs__job_id__applied_at_patch: {
+        parameters: {
+            query?: {
+                profile?: string;
+            };
+            header?: never;
+            path: {
+                job_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AppliedAtUpdate"];
             };
         };
         responses: {

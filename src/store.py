@@ -508,6 +508,20 @@ class Store:
         logger.debug("Job %d application_status → %s", db_id, application_status)
         return True
 
+    def update_applied_at(self, db_id: int, applied_at: str | None) -> bool:
+        """Update the applied date without mutating tracker history."""
+        with self._connect() as conn:
+            cursor = conn.execute(
+                "UPDATE jobs SET applied_at = ? WHERE id = ?",
+                (applied_at, db_id),
+            )
+        if cursor.rowcount > 0:
+            self.set_metadata("last_job_status_change_at", datetime.utcnow().isoformat())
+            logger.debug("Job %d applied_at updated", db_id)
+            return True
+        logger.warning("Job %d not found for applied_at update", db_id)
+        return False
+
     def remove_from_tracker(self, db_id: int) -> bool:
         """Clear tracker-only state while preserving application history."""
         with self._connect() as conn:
@@ -1110,7 +1124,8 @@ class Store:
         location: str | None,
         url: str,
         description: str | None,
-        notes: str | None,
+        applied_at: str | None = None,
+        notes: str | None = None,
         company_metadata: dict[str, object] | None = None,
         location_metadata: dict[str, object] | None = None,
         salary: str | None = None,
@@ -1123,6 +1138,7 @@ class Store:
         """Create a tracked application or return an existing duplicate."""
         normalized_job_id = external_job_id or uuid.uuid4().hex
         now = datetime.utcnow().isoformat()
+        normalized_applied_at = applied_at or now
         serialized_company_metadata = (
             Store._serialize_metadata(company_metadata) if company_metadata else None
         )
@@ -1161,7 +1177,7 @@ class Store:
                     now,
                     "new",
                     "applied",
-                    now,
+                    normalized_applied_at,
                     notes,
                     source,
                     salary,
@@ -1174,7 +1190,7 @@ class Store:
             conn.execute(
                 """INSERT INTO application_events (job_id, status, note, created_at)
                    VALUES (?, 'applied', ?, ?)""",
-                (new_id, initial_event_note, now),
+                (new_id, initial_event_note, normalized_applied_at),
             )
             created = conn.execute("SELECT * FROM jobs WHERE id = ?", (new_id,)).fetchone()
 

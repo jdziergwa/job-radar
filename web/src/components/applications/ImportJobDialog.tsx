@@ -30,6 +30,7 @@ function emptyForm() {
     company_name: '',
     title: '',
     location: '',
+    applied_at: '',
     description: '',
     salary: '',
     notes: '',
@@ -79,6 +80,7 @@ export function ImportJobDialog({
       const { data, error } = await api.POST('/api/applications/import', {
         body: {
           url: form.url.trim(),
+          applied_at: form.applied_at || undefined,
           notes: form.notes.trim() || undefined,
         },
       })
@@ -112,6 +114,7 @@ export function ImportJobDialog({
             company_name: form.company_name.trim(),
             title: form.title.trim(),
             location: form.location.trim() || undefined,
+            applied_at: form.applied_at || undefined,
             notes: form.notes.trim() || undefined,
           },
         })
@@ -124,6 +127,7 @@ export function ImportJobDialog({
             company_name: form.company_name.trim(),
             title: form.title.trim(),
             location: form.location.trim() || undefined,
+            applied_at: form.applied_at || undefined,
             description: form.description.trim() || undefined,
             salary: form.salary.trim() || undefined,
             notes: form.notes.trim() || undefined,
@@ -200,6 +204,20 @@ export function ImportJobDialog({
                 />
                 <p className="text-xs text-muted-foreground">
                   Supported URLs can be imported directly. Unsupported URLs can still be added with manual details.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="import-applied-at">Applied on</Label>
+                <Input
+                  id="import-applied-at"
+                  type="date"
+                  value={form.applied_at}
+                  onChange={(event) => setForm((prev) => ({ ...prev, applied_at: event.target.value }))}
+                  className="h-11 rounded-2xl border-border/50 bg-background/50 px-4"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Optional. Use this when adding jobs you applied to earlier. Leave blank to use today.
                 </p>
               </div>
 

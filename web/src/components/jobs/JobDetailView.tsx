@@ -19,6 +19,8 @@ import { formatJobLocation } from '@/lib/jobs/location'
 import { Badge } from '@/components/ui/badge'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
 import { JobDescription } from '@/components/jobs/JobDescription'
 import { cn } from '@/lib/utils'
 import {
@@ -37,6 +39,7 @@ import {
   ExternalLink,
   ClipboardList,
   FileText,
+  PencilLine,
   Trash2,
 } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
@@ -47,6 +50,11 @@ type JobDetailResponse = components["schemas"]["JobDetailResponse"]
 type JobStatus = components["schemas"]["StatusUpdate"]["status"]
 type ApplicationStatus = components['schemas']['ApplicationStatusUpdate']['application_status']
 type ApplicationEventResponse = components['schemas']['ApplicationEventResponse']
+
+function normalizeAppliedDateForInput(value?: string | null): string {
+  if (!value) return ''
+  return value.includes('T') ? value.slice(0, 10) : value
+}
 
 interface JobDetailViewProps {
   jobId: number | null
@@ -72,6 +80,9 @@ export function JobDetailView({
   const [timelineLoading, setTimelineLoading] = useState(false)
   const [savingNotes, setSavingNotes] = useState(false)
   const [savingNextStep, setSavingNextStep] = useState(false)
+  const [savingAppliedAt, setSavingAppliedAt] = useState(false)
+  const [appliedDateDialogOpen, setAppliedDateDialogOpen] = useState(false)
+  const [appliedDateDraft, setAppliedDateDraft] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [rescoreRunId, setRescoreRunId] = useState<string | null>(null)
   const displayLocation = job ? formatJobLocation(job) : ''
@@ -262,6 +273,32 @@ export function JobDetailView({
     } finally {
       setSavingNextStep(false)
     }
+  }
+
+  const saveAppliedAt = async (payload: { applied_at: string | null }) => {
+    if (!jobId) return
+
+    setSavingAppliedAt(true)
+    try {
+      const { data, error: patchError } = await api.PATCH('/api/jobs/{job_id}/applied-at', {
+        params: { path: { job_id: jobId } },
+        body: payload,
+      })
+      if (patchError) throw new Error('Failed to save applied date')
+
+      setJob((prev) => prev ? { ...prev, ...(data ?? {}), applied_at: payload.applied_at } : prev)
+      setAppliedDateDialogOpen(false)
+      toast.success(payload.applied_at ? 'Applied date saved' : 'Applied date cleared')
+    } catch (err: any) {
+      toast.error(err.message)
+    } finally {
+      setSavingAppliedAt(false)
+    }
+  }
+
+  const openAppliedDateDialog = () => {
+    setAppliedDateDraft(normalizeAppliedDateForInput(job?.applied_at))
+    setAppliedDateDialogOpen(true)
   }
 
   const handleRescore = async () => {
@@ -629,7 +666,28 @@ export function JobDetailView({
                       {trackerStatusLabel}
                     </Badge>
                     {job.applied_at && (
-                      <span className="text-xs text-muted-foreground">Applied {formatDate(job.applied_at)}</span>
+                      <div className="flex items-center gap-1">
+                        <span className="text-xs text-muted-foreground">Applied {formatDate(job.applied_at)}</span>
+                        <Tooltip>
+                          <TooltipTrigger
+                            render={(triggerProps) => (
+                              <Button
+                                {...triggerProps}
+                                variant="ghost"
+                                size="icon-xs"
+                                onClick={openAppliedDateDialog}
+                                className="text-muted-foreground/70 hover:bg-primary/10 hover:text-primary"
+                                aria-label="Edit applied date"
+                              >
+                                <PencilLine className="h-3 w-3" />
+                              </Button>
+                            )}
+                          />
+                          <TooltipContent className="border border-border/50 bg-popover/80 text-[10px] text-popover-foreground shadow-xl backdrop-blur-md">
+                            <p>Edit applied date</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -796,6 +854,46 @@ export function JobDetailView({
           </div>
         </div>
       </section>
+
+      <Dialog open={appliedDateDialogOpen} onOpenChange={setAppliedDateDialogOpen}>
+        <DialogContent className="sm:max-w-md" showCloseButton>
+          <DialogHeader>
+            <DialogTitle>Edit Applied Date</DialogTitle>
+            <DialogDescription>
+              Use this when you added the application after the fact or want tracker stats to reflect the real apply date.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Input
+              type="date"
+              value={appliedDateDraft}
+              onChange={(event) => setAppliedDateDraft(event.target.value)}
+              className="h-11 rounded-2xl border-border/50 bg-background/50 px-4"
+            />
+            <p className="text-xs text-muted-foreground">
+              Leave empty to clear the explicit date and fall back to the tracker entry date.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="ghost"
+              disabled={savingAppliedAt || !job?.applied_at}
+              onClick={() => void saveAppliedAt({ applied_at: null })}
+              className="text-muted-foreground"
+            >
+              Clear
+            </Button>
+            <Button
+              disabled={savingAppliedAt || appliedDateDraft === normalizeAppliedDateForInput(job?.applied_at)}
+              onClick={() => void saveAppliedAt({ applied_at: appliedDateDraft || null })}
+              className="gap-2"
+            >
+              {savingAppliedAt ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <PencilLine className="h-3.5 w-3.5" />}
+              Save Date
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
