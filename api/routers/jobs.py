@@ -67,6 +67,20 @@ def get_job(job_id: int, profile: str = Query("default")):
     return JobDetailResponse.from_row(row)
 
 
+@router.delete("/jobs/{job_id}")
+def delete_job(job_id: int, profile: str = Query("default")):
+    """Hard-delete a manually imported job."""
+    store = get_store(profile)
+    row = store.get_job_detail(job_id)
+    if not row:
+        raise HTTPException(status_code=404, detail="Job not found")
+    if row.get("source") != "manual":
+        raise HTTPException(status_code=403, detail="Only manually imported jobs can be deleted")
+    if not store.delete_job(job_id):
+        raise HTTPException(status_code=404, detail="Job not found")
+    return {"ok": True, "id": job_id}
+
+
 @router.patch("/jobs/{job_id}/status")
 def update_status(job_id: int, body: StatusUpdate, profile: str = Query("default")):
     """Update a job's board-level status (new, scored, dismissed)."""

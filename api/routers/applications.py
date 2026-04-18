@@ -77,6 +77,16 @@ def _existing_import_response(existing: dict, fetched: bool) -> ImportJobRespons
     )
 
 
+def _retracked_import_response(existing: dict, fetched: bool) -> ImportJobResponse:
+    return ImportJobResponse(
+        job_id=existing["id"],
+        fetched=fetched,
+        needs_manual_entry=False,
+        already_tracked=False,
+        job=JobResponse.from_row(existing),
+    )
+
+
 @router.get("/applications", response_model=ApplicationListResponse)
 def list_applications(
     profile: str = Query("default"),
@@ -196,6 +206,15 @@ async def import_application(body: ImportJobRequest, profile: str = Query("defau
     ats_platform, company_slug, external_job_id = _resolve_import_identity(body.url, body.company_name)
     existing = store.get_job_by_identity(ats_platform, company_slug, external_job_id)
     if existing:
+        if existing.get("application_status") is None:
+            if not store.update_application_status(existing["id"], "applied", "Re-added from URL import"):
+                raise HTTPException(status_code=404, detail="Job not found")
+            if body.notes:
+                store.update_notes(existing["id"], body.notes)
+            updated = store.get_job_detail(existing["id"])
+            if not updated:
+                raise HTTPException(status_code=404, detail="Job not found")
+            return _retracked_import_response(updated, fetched=False)
         return _existing_import_response(existing, fetched=False)
 
     fetched = False
@@ -207,6 +226,15 @@ async def import_application(body: ImportJobRequest, profile: str = Query("defau
         external_job_id = fetched_job.job_id
         existing = store.get_job_by_identity(ats_platform, company_slug, external_job_id)
         if existing:
+            if existing.get("application_status") is None:
+                if not store.update_application_status(existing["id"], "applied", "Re-added from URL import"):
+                    raise HTTPException(status_code=404, detail="Job not found")
+                if body.notes:
+                    store.update_notes(existing["id"], body.notes)
+                updated = store.get_job_detail(existing["id"])
+                if not updated:
+                    raise HTTPException(status_code=404, detail="Job not found")
+                return _retracked_import_response(updated, fetched=True)
             return _existing_import_response(existing, fetched=True)
 
         created, already_tracked = store.import_job(

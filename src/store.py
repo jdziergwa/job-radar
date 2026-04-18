@@ -227,6 +227,7 @@ class Store:
         conn = sqlite3.connect(self.db_path, timeout=self._busy_timeout_ms / 1000)
         conn.row_factory = sqlite3.Row
         conn.execute(f"PRAGMA busy_timeout={self._busy_timeout_ms}")
+        conn.execute("PRAGMA foreign_keys=ON")
         try:
             yield conn
             conn.commit()
@@ -1189,6 +1190,17 @@ class Store:
         if row is None:
             return None
         return dict(row)
+
+    def delete_job(self, db_id: int) -> bool:
+        """Hard-delete a job row and any dependent tracker events."""
+        with self._connect() as conn:
+            cursor = conn.execute("DELETE FROM jobs WHERE id = ?", (db_id,))
+        if cursor.rowcount > 0:
+            self.set_metadata("last_job_status_change_at", datetime.utcnow().isoformat())
+            logger.debug("Job %d deleted", db_id)
+            return True
+        logger.warning("Job %d not found for deletion", db_id)
+        return False
 
     def get_trends(self, days: int = 30) -> dict:
         """Get trend data for charts: daily counts, skills, company stats, score trends."""

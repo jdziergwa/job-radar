@@ -37,6 +37,7 @@ import {
   ExternalLink,
   ClipboardList,
   FileText,
+  Trash2,
 } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { useRouter } from 'next/navigation'
@@ -188,6 +189,34 @@ export function JobDetailView({
       setTimeline([])
       router.refresh()
       toast.success('Removed from tracker')
+    } catch (err: any) {
+      toast.error(err.message)
+    } finally {
+      setUpdating(false)
+    }
+  }
+
+  const deleteImportedJob = async () => {
+    if (!jobId || job?.source !== 'manual') return
+    if (typeof window !== 'undefined') {
+      const confirmed = window.confirm(
+        'Delete this imported job permanently? This will remove the job and its application history from the database.'
+      )
+      if (!confirmed) return
+    }
+
+    setUpdating(true)
+    try {
+      const { error: deleteError } = await api.DELETE('/api/jobs/{job_id}', {
+        params: { path: { job_id: jobId } },
+      })
+      if (deleteError) throw new Error('Failed to delete imported job')
+
+      toast.success('Imported job deleted')
+      if (isSheet && onClose) {
+        onClose()
+      }
+      goBackToBoard()
     } catch (err: any) {
       toast.error(err.message)
     } finally {
@@ -573,6 +602,17 @@ export function JobDetailView({
               <div className="rounded-2xl border border-border/40 bg-background/35 px-3 py-3 text-xs leading-relaxed text-muted-foreground">
                 Dismissing here only hides the role from the board. If you withdrew from the interview process, use the tracker status <span className="font-semibold text-foreground/80">Withdrawn</span> instead.
               </div>
+              {job.source === 'manual' && (
+                <Button
+                  variant="outline"
+                  className="w-full gap-2 h-11 border-destructive/20 text-destructive hover:bg-destructive/10 hover:border-destructive/30"
+                  onClick={deleteImportedJob}
+                  disabled={updating}
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Delete Imported Job
+                </Button>
+              )}
             </CardContent>
           </Card>
 

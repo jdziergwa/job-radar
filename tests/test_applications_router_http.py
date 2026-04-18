@@ -235,6 +235,53 @@ def test_application_import_endpoint_handles_fetch_duplicates_and_manual_fallbac
     assert imported_row["salary_currency"] == "USD"
 
 
+def test_application_import_retracks_existing_identity_after_tracker_removal(monkeypatch):
+    store = _build_store()
+    monkeypatch.setattr(applications_router, "get_store", lambda profile="default": store)
+
+    async def fake_fetch_job_from_url(url: str):
+        return RawJob(
+            ats_platform="greenhouse",
+            company_slug="example-team",
+            company_name="Example Team",
+            job_id="12345",
+            title="Senior QA Engineer",
+            location="Remote",
+            url="https://boards.greenhouse.io/example-team/jobs/12345",
+            description="Test all the things.",
+            posted_at=None,
+            fetched_at="2026-04-18T00:00:00Z",
+        )
+
+    monkeypatch.setattr(applications_router, "fetch_job_from_url", fake_fetch_job_from_url)
+
+    with TestClient(app) as client:
+        first_import = client.post(
+            "/api/applications/import",
+            json={"url": "https://boards.greenhouse.io/example-team/jobs/12345"},
+        )
+        job_id = first_import.json()["job_id"]
+
+        remove_response = client.delete(f"/api/jobs/{job_id}/application-status")
+        second_import = client.post(
+            "/api/applications/import",
+            json={"url": "https://boards.greenhouse.io/example-team/jobs/12345", "notes": "Re-added after reconsidering"},
+        )
+        timeline_response = client.get(f"/api/jobs/{job_id}/timeline")
+
+    assert first_import.status_code == 200
+    assert remove_response.status_code == 200
+    assert second_import.status_code == 200
+    second_payload = second_import.json()
+    assert second_payload["job_id"] == job_id
+    assert second_payload["already_tracked"] is False
+    assert second_payload["job"]["application_status"] == "applied"
+    assert second_payload["job"]["notes"] == "Re-added after reconsidering"
+
+    assert timeline_response.status_code == 200
+    assert [event["status"] for event in timeline_response.json()["events"]] == ["applied", "applied"]
+
+
 def test_manual_application_import_persists_manual_identity_and_salary(monkeypatch):
     store = _build_store()
     monkeypatch.setattr(applications_router, "get_store", lambda profile="default": store)

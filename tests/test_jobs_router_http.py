@@ -141,3 +141,44 @@ def test_jobs_rescore_endpoints_use_mocked_pipeline_launcher(monkeypatch):
         {"profile": "default", "job_id": scored_id},
         {"profile": "default", "rescore_all": True},
     ]
+
+
+def test_delete_job_allows_manual_imports_and_rejects_pipeline_jobs(monkeypatch):
+    store = _build_store()
+    scored_id = _seed_jobs(store)
+
+    manual_job, _ = store.import_job(
+        ats_platform="manual",
+        company_slug="example-manual-company",
+        external_job_id="manual-delete-target",
+        company_name="Example Manual Company",
+        title="QA Lead",
+        location="Remote",
+        url="manual://example-manual-company/manual-delete-target",
+        description="Temporary imported job.",
+        notes="Delete me",
+        source="manual",
+        initial_event_note="Manually added",
+    )
+    manual_id = manual_job["id"]
+
+    monkeypatch.setattr(jobs_router, "get_store", lambda profile="default": store)
+
+    with TestClient(app) as client:
+        forbidden_response = client.delete(f"/api/jobs/{scored_id}")
+        allowed_response = client.delete(f"/api/jobs/{manual_id}")
+        deleted_detail = client.get(f"/api/jobs/{manual_id}")
+
+    assert forbidden_response.status_code == 403
+    assert forbidden_response.json()["detail"] == "Only manually imported jobs can be deleted"
+    assert allowed_response.status_code == 200
+    assert allowed_response.json() == {"ok": True, "id": manual_id}
+    assert deleted_detail.status_code == 404
+    assert store.get_job_detail(manual_id) is None
+
+    with store._connect() as conn:
+        event_count = conn.execute(
+            "SELECT COUNT(*) FROM application_events WHERE job_id = ?",
+            (manual_id,),
+        ).fetchone()[0]
+    assert event_count == 0
