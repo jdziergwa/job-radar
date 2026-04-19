@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+import json
 import re
 from typing import Any, Awaitable, Callable
+from urllib.parse import quote
 
 import httpx
 
@@ -124,6 +126,264 @@ def _extract_greenhouse_location(item: dict[str, Any]) -> str:
         name = location_obj.get("name")
         return name if isinstance(name, str) else ""
     return str(location_obj or "")
+
+
+def _extract_json_ld_objects(html: str) -> list[Any]:
+    matches = re.finditer(
+        r'<script[^>]*type=["\']application\/ld\+json["\'][^>]*>(.*?)</script>',
+        html,
+        re.DOTALL | re.IGNORECASE,
+    )
+    objects: list[Any] = []
+    for match in matches:
+        raw_text = match.group(1).strip()
+        if not raw_text:
+            continue
+        try:
+            objects.append(json.loads(raw_text))
+        except json.JSONDecodeError:
+            continue
+    return objects
+
+
+def _find_job_posting_payload(value: Any) -> dict[str, Any] | None:
+    if isinstance(value, dict):
+        type_value = str(value.get("@type") or value.get("type") or "").lower()
+        if "jobposting" in type_value:
+            return value
+        for nested in value.values():
+            result = _find_job_posting_payload(nested)
+            if result:
+                return result
+    elif isinstance(value, list):
+        for item in value:
+            result = _find_job_posting_payload(item)
+            if result:
+                return result
+    return None
+
+
+def _extract_bamboohr_title(job_posting: dict[str, Any], html: str, company_slug: str) -> str:
+    title = job_posting.get("title")
+    if isinstance(title, str) and title.strip():
+        return title.strip()
+
+    for pattern in (
+        r'<meta[^>]+property=["\']og:title["\'][^>]+content=["\']([^"\']+)["\']',
+        r'<meta[^>]+name=["\']twitter:title["\'][^>]+content=["\']([^"\']+)["\']',
+        r"<title>(.*?)</title>",
+        r"<h1[^>]*>(.*?)</h1>",
+    ):
+        match = re.search(pattern, html, re.IGNORECASE | re.DOTALL)
+        if not match:
+            continue
+        raw = re.sub(r"<[^>]+>", " ", match.group(1))
+        normalized = " ".join(raw.split()).strip()
+        if not normalized:
+            continue
+        suffix = f" - {_humanize_slug(company_slug)}"
+        if normalized.endswith(suffix):
+            normalized = normalized[: -len(suffix)].strip()
+        return normalized
+
+    return ""
+
+
+def _extract_bamboohr_meta_content(html: str, property_name: str) -> str:
+    patterns = (
+        rf'<meta[^>]+property=["\']{re.escape(property_name)}["\'][^>]+content=["\']([^"\']+)["\']',
+        rf'<meta[^>]+name=["\']{re.escape(property_name)}["\'][^>]+content=["\']([^"\']+)["\']',
+    )
+    for pattern in patterns:
+        match = re.search(pattern, html, re.IGNORECASE | re.DOTALL)
+        if not match:
+            continue
+        content = " ".join(match.group(1).split()).strip()
+        if content:
+            return content
+    return ""
+
+
+def _extract_bamboohr_description(job_posting: dict[str, Any], html: str) -> str:
+    description = job_posting.get("description")
+    if isinstance(description, str) and description.strip():
+        return description.strip()
+
+    for pattern in (
+        r'<section[^>]+(?:description|job-description|posting-content)[^>]*>(.*?)</section>',
+        r'<div[^>]+(?:description|job-description|posting-content|job-details)[^>]*>(.*?)</div>',
+        r"<article[^>]*>(.*?)</article>",
+        r"<main[^>]*>(.*?)</main>",
+    ):
+        match = re.search(pattern, html, re.IGNORECASE | re.DOTALL)
+        if match:
+            content = match.group(1).strip()
+            if content:
+                return content
+
+    for meta_key in ("og:description", "twitter:description", "description"):
+        content = _extract_bamboohr_meta_content(html, meta_key)
+        if content:
+            return content
+
+    return ""
+
+
+def _extract_bamboohr_location(job_posting: dict[str, Any], html: str) -> tuple[str, dict[str, object]]:
+    metadata: dict[str, object] = {}
+    workplace_type = job_posting.get("jobLocationType")
+    if isinstance(workplace_type, str) and workplace_type.strip():
+        workplace_text = workplace_type.strip()
+        if "telecommute" in workplace_text.lower():
+            workplace_text = "Remote"
+        metadata["workplace_type"] = workplace_text
+
+    address_fields: list[str] = []
+    locations = job_posting.get("jobLocation")
+    if isinstance(locations, dict):
+        locations = [locations]
+    if isinstance(locations, list):
+        for location in locations:
+            if not isinstance(location, dict):
+                continue
+            address = location.get("address")
+            if not isinstance(address, dict):
+                continue
+            for key in ("streetAddress", "addressLocality", "addressRegion", "postalCode", "addressCountry"):
+                value = address.get(key)
+                if isinstance(value, str) and value.strip():
+                    address_fields.append(value.strip())
+
+    deduped_address = _dedupe_text(address_fields)
+    location = ", ".join(deduped_address)
+    if location:
+        metadata["raw_location"] = location
+
+    if not location:
+        for pattern in (
+            r'(?is)<[^>]*>\s*Location\s*</[^>]*>\s*<[^>]*>\s*([^<]{2,120})\s*</[^>]*>',
+            r'(?is)\bLocation\b\s*</[^>]*>\s*<[^>]*>\s*([^<]{2,120})\s*</[^>]*>',
+        ):
+            match = re.search(pattern, html)
+            if match:
+                location = " ".join(match.group(1).split()).strip()
+                if location:
+                    metadata["raw_location"] = location
+                    break
+
+    return location, metadata
+
+
+def _map_bamboohr_location_type(location_type: Any) -> str | None:
+    normalized = str(location_type or "").strip()
+    if normalized == "1":
+        return "Remote"
+    return None
+
+
+def build_bamboohr_job_from_detail_payload(
+    payload: dict[str, Any],
+    *,
+    company_slug: str,
+    company_name: str,
+    job_id: str,
+    fetched_at: str,
+) -> RawJob | None:
+    result = payload.get("result")
+    if not isinstance(result, dict):
+        return None
+    job_opening = result.get("jobOpening")
+    if not isinstance(job_opening, dict):
+        return None
+
+    title = str(job_opening.get("jobOpeningName") or "").strip()
+    description = str(job_opening.get("description") or "").strip()
+    posted_at = (
+        str(job_opening.get("datePosted")).strip()
+        if isinstance(job_opening.get("datePosted"), str) and job_opening.get("datePosted")
+        else None
+    )
+
+    location_metadata: dict[str, object] = {}
+    location = ""
+
+    location_obj = job_opening.get("location")
+    if isinstance(location_obj, dict):
+        location_parts = _dedupe_text([
+            str(location_obj.get("city") or "").strip(),
+            str(location_obj.get("state") or "").strip(),
+            str(location_obj.get("addressCountry") or "").strip(),
+        ])
+        if location_parts:
+            location = ", ".join(location_parts)
+
+    ats_location = job_opening.get("atsLocation")
+    if not location and isinstance(ats_location, dict):
+        location_parts = _dedupe_text([
+            str(ats_location.get("city") or "").strip(),
+            str(ats_location.get("state") or "").strip(),
+            str(ats_location.get("country") or "").strip(),
+        ])
+        if location_parts:
+            location = ", ".join(location_parts)
+
+    workplace_type = _map_bamboohr_location_type(job_opening.get("locationType"))
+    if workplace_type:
+        location_metadata["workplace_type"] = workplace_type
+        if not location:
+            location = workplace_type
+
+    if location:
+        location_metadata["raw_location"] = location
+
+    return RawJob(
+        ats_platform="bamboohr",
+        company_slug=company_slug,
+        company_name=company_name,
+        job_id=job_id,
+        title=title,
+        location=location,
+        url=f"https://{company_slug}.bamboohr.com/careers/{quote(job_id)}",
+        description=description,
+        posted_at=posted_at,
+        fetched_at=fetched_at,
+        location_metadata=location_metadata,
+    )
+
+
+def build_bamboohr_job(
+    html: str,
+    *,
+    company_slug: str,
+    company_name: str,
+    job_id: str,
+    fetched_at: str,
+) -> RawJob:
+    job_posting: dict[str, Any] = {}
+    for obj in _extract_json_ld_objects(html):
+        result = _find_job_posting_payload(obj)
+        if result:
+            job_posting = result
+            break
+
+    location, location_metadata = _extract_bamboohr_location(job_posting, html)
+    title = _extract_bamboohr_title(job_posting, html, company_slug)
+    description = _extract_bamboohr_description(job_posting, html)
+    posted_at = job_posting.get("datePosted") if isinstance(job_posting.get("datePosted"), str) else None
+
+    return RawJob(
+        ats_platform="bamboohr",
+        company_slug=company_slug,
+        company_name=company_name,
+        job_id=job_id,
+        title=title,
+        location=location,
+        url=f"https://{company_slug}.bamboohr.com/careers/{quote(job_id)}",
+        description=description,
+        posted_at=posted_at,
+        fetched_at=fetched_at,
+        location_metadata=location_metadata,
+    )
 
 
 def build_greenhouse_job(
@@ -454,6 +714,61 @@ async def fetch_workable_job(
     )
 
 
+async def fetch_bamboohr_job(
+    client: httpx.AsyncClient,
+    *,
+    company_slug: str,
+    job_id: str,
+) -> RawJob | None:
+    company_name = _humanize_slug(company_slug) or company_slug
+    fetched_at = datetime.now(timezone.utc).isoformat()
+    job_path = quote(job_id)
+
+    for url in (
+        f"https://{company_slug}.bamboohr.com/careers/{job_path}/detail",
+        f"https://{company_slug}.bamboohr.com/careers/{job_path}",
+    ):
+        response = await client.get(
+            url,
+            timeout=8,
+            follow_redirects=True,
+        )
+        if response.status_code != 200:
+            continue
+
+        html = response.text
+        if not isinstance(html, str) or not html.strip():
+            continue
+
+        if url.endswith("/detail"):
+            try:
+                payload = json.loads(html)
+            except json.JSONDecodeError:
+                payload = None
+            if isinstance(payload, dict):
+                job = build_bamboohr_job_from_detail_payload(
+                    payload,
+                    company_slug=company_slug,
+                    company_name=company_name,
+                    job_id=job_id,
+                    fetched_at=fetched_at,
+                )
+                if job and (job.title or job.description):
+                    return job
+
+        job = build_bamboohr_job(
+            html,
+            company_slug=company_slug,
+            company_name=company_name,
+            job_id=job_id,
+            fetched_at=fetched_at,
+        )
+        if job.title or job.description:
+            return job
+
+    return None
+
+
 async def fetch_smartrecruiters_job(
     client: httpx.AsyncClient,
     *,
@@ -484,6 +799,7 @@ SINGLE_JOB_FETCHERS: dict[str, SingleJobFetcher] = {
     "lever": fetch_lever_job,
     "ashby": fetch_ashby_job,
     "workable": fetch_workable_job,
+    "bamboohr": fetch_bamboohr_job,
     "smartrecruiters": fetch_smartrecruiters_job,
 }
 

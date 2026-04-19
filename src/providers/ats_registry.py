@@ -16,6 +16,7 @@ SINGLE_JOB_IMPORT_ATS_PLATFORMS = (
     "lever",
     "ashby",
     "workable",
+    "bamboohr",
     "smartrecruiters",
 )
 

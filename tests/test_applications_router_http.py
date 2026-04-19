@@ -335,8 +335,8 @@ def test_application_import_retracks_existing_identity_after_tracker_removal(mon
     assert second_payload["job"]["notes"] == "Re-added after reconsidering"
 
     assert timeline_response.status_code == 200
-    assert [event["status"] for event in timeline_response.json()["events"]] == ["applied", "applied"]
-    assert timeline_response.json()["events"][-1]["created_at"] == "2026-04-05"
+    assert [event["status"] for event in timeline_response.json()["events"]] == ["applied"]
+    assert timeline_response.json()["events"][0]["created_at"] == "2026-04-05"
 
 
 def test_manual_application_import_persists_manual_identity_and_salary(monkeypatch):
@@ -416,3 +416,56 @@ def test_application_import_can_add_company_to_pipeline(monkeypatch):
 
     assert response.status_code == 200
     assert saved["greenhouse"] == [{"slug": "example-team", "name": "Example Team"}]
+
+
+def test_application_import_refreshes_existing_sparse_job_from_fetched_data(monkeypatch):
+    store = _build_store()
+    monkeypatch.setattr(applications_router, "get_store", lambda profile="default": store)
+
+    created, _ = store.import_job(
+        ats_platform="bamboohr",
+        company_slug="example-team",
+        external_job_id="155",
+        company_name="Example Team",
+        title="Example Team",
+        location="",
+        url="https://example-team.bamboohr.com/careers/155",
+        description="",
+        source="manual",
+        initial_event_note="Imported from URL",
+    )
+
+    async def fake_fetch_job_from_url(url: str):
+        assert url == "https://example-team.bamboohr.com/careers/155"
+        return RawJob(
+            ats_platform="bamboohr",
+            company_slug="example-team",
+            company_name="Example Team",
+            job_id="155",
+            title="Senior Software Engineer in Test",
+            location="London",
+            url="https://example-team.bamboohr.com/careers/155",
+            description="<p>Build resilient quality systems.</p>",
+            posted_at="2026-04-19",
+            fetched_at="2026-04-19T10:00:00Z",
+        )
+
+    monkeypatch.setattr(applications_router, "fetch_job_from_url", fake_fetch_job_from_url)
+
+    with TestClient(app) as client:
+        response = client.post(
+            "/api/applications/import",
+            json={"url": "https://example-team.bamboohr.com/careers/155"},
+        )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["already_tracked"] is True
+    assert payload["job_id"] == created["id"]
+    assert payload["job"]["title"] == "Senior Software Engineer in Test"
+    assert payload["job"]["location"] == "London"
+
+    refreshed = store.get_job_detail(created["id"])
+    assert refreshed["title"] == "Senior Software Engineer in Test"
+    assert refreshed["location"] == "London"
+    assert refreshed["description"] == "<p>Build resilient quality systems.</p>"

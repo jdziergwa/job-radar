@@ -69,7 +69,7 @@ def extract_platform_slug_from_url(url: str, fallback_slug: str | None = None) -
     host = parsed.netloc.lower()
     path_parts = [part for part in parsed.path.split("/") if part]
 
-    if host == "boards.greenhouse.io" and path_parts:
+    if host in {"boards.greenhouse.io", "job-boards.greenhouse.io"} and path_parts:
         return "greenhouse", _slugify(path_parts[0])
     if host == "jobs.lever.co" and path_parts:
         return "lever", _slugify(path_parts[0])

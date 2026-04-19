@@ -25,7 +25,8 @@ from src.description_hydration import (
     merge_hydrated_description,
     should_hydrate_description,
 )
-from src.models import CandidateJob
+from src.models import CandidateJob, RawJob
+from src.providers.ats_resolvers import SINGLE_JOB_FETCHERS
 from src.providers import PROVIDER_REGISTRY, ProviderContext
 from src.prefilter import prefilter
 from src.reporter import (
@@ -452,12 +453,35 @@ async def run() -> None:
                 # Persist successfully fetched descriptions to DB for future UI/detail views
                 for j in to_fetch:
                     if j.description:
-                        merged_description = merge_hydrated_description(
-                            original_descriptions.get(j.db_id, ""),
-                            j.description,
-                        )
+                        if j.ats_platform in SINGLE_JOB_FETCHERS:
+                            merged_description = j.description
+                        else:
+                            merged_description = merge_hydrated_description(
+                                original_descriptions.get(j.db_id, ""),
+                                j.description,
+                            )
                         j.description = merged_description
-                        store.update_job_description(j.db_id, merged_description)
+                        store.refresh_job_from_resolved_fetch(
+                            j.db_id,
+                            RawJob(
+                                ats_platform=j.ats_platform,
+                                company_slug=j.company_slug,
+                                company_name=j.company_name,
+                                job_id=j.job_id,
+                                title=j.title,
+                                location=j.location,
+                                url=j.url,
+                                description=merged_description,
+                                posted_at=j.posted_at,
+                                fetched_at=datetime.utcnow().isoformat(),
+                                company_metadata=j.company_metadata,
+                                location_metadata=j.location_metadata,
+                                salary=j.salary,
+                                salary_min=j.salary_min,
+                                salary_max=j.salary_max,
+                                salary_currency=j.salary_currency,
+                            ),
+                        )
 
             # Filter out jobs that still have no description (fetch failed)
             # We skip these as the LLM fits will be poor without content.

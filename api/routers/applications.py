@@ -148,6 +148,13 @@ def _retracked_import_response(existing: dict, fetched: bool) -> ImportJobRespon
     )
 
 
+def _refresh_existing_job_from_fetched(store, existing: dict, fetched_job) -> dict:
+    if not fetched_job:
+        return existing
+    refreshed = store.refresh_job_from_imported_fetch(existing["id"], fetched_job)
+    return refreshed or existing
+
+
 def _maybe_track_company(
     *,
     profile: str,
@@ -363,6 +370,8 @@ async def import_application(body: ImportJobRequest, profile: str = Query("defau
     ats_platform, company_slug, external_job_id = _resolve_import_identity(body.url, body.company_name)
     existing = store.get_job_by_identity(ats_platform, company_slug, external_job_id)
     if existing:
+        fetched_job = await fetch_job_from_url(body.url) if detect_ats_platform(body.url) else None
+        existing = _refresh_existing_job_from_fetched(store, existing, fetched_job)
         if existing.get("application_status") is None:
             if not store.update_application_status(existing["id"], "applied", "Re-added from URL import"):
                 raise HTTPException(status_code=404, detail="Job not found")
@@ -399,6 +408,7 @@ async def import_application(body: ImportJobRequest, profile: str = Query("defau
         external_job_id = fetched_job.job_id
         existing = store.get_job_by_identity(ats_platform, company_slug, external_job_id)
         if existing:
+            existing = _refresh_existing_job_from_fetched(store, existing, fetched_job)
             if existing.get("application_status") is None:
                 if not store.update_application_status(existing["id"], "applied", "Re-added from URL import"):
                     raise HTTPException(status_code=404, detail="Job not found")

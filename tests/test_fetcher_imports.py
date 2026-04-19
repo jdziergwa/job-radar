@@ -2,7 +2,7 @@ import asyncio
 from unittest import mock
 
 from src import fetcher
-from src.models import RawJob
+from src.models import CandidateJob, RawJob
 
 
 def test_fetch_job_from_url_uses_ashby_resolver_for_normalized_raw_job():
@@ -124,6 +124,246 @@ def test_fetch_job_from_url_uses_greenhouse_resolver_for_normalized_raw_job():
         description="<p>Own quality across backend services.</p>",
         posted_at="2026-04-18T10:00:00Z",
         fetched_at=result.fetched_at,
+    )
+
+
+def test_fetch_job_from_url_supports_job_boards_greenhouse_host():
+    class _FakeResponse:
+        def __init__(self, *, status_code: int, payload: dict):
+            self.status_code = status_code
+            self._payload = payload
+
+        def json(self):
+            return self._payload
+
+    class _FakeAsyncClient:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc, tb):
+            return False
+
+        async def get(self, url: str, params=None, timeout=None):
+            assert url == "https://boards-api.greenhouse.io/v1/boards/reddit/jobs/7488992"
+            return _FakeResponse(
+                status_code=200,
+                payload={
+                    "id": 7488992,
+                    "title": "Platform Quality Engineer",
+                    "absolute_url": "https://job-boards.greenhouse.io/reddit/jobs/7488992",
+                    "updated_at": "2026-04-19T10:00:00Z",
+                    "location": {"name": "Remote"},
+                    "content": "<p>Build reliable internal systems.</p>",
+                },
+            )
+
+    async def _run():
+        with mock.patch("src.fetcher.httpx.AsyncClient", _FakeAsyncClient):
+            return await fetcher.fetch_job_from_url("https://job-boards.greenhouse.io/reddit/jobs/7488992")
+
+    result = asyncio.run(_run())
+
+    assert result == RawJob(
+        ats_platform="greenhouse",
+        company_slug="reddit",
+        company_name="Reddit",
+        job_id="7488992",
+        title="Platform Quality Engineer",
+        location="Remote",
+        url="https://job-boards.greenhouse.io/reddit/jobs/7488992",
+        description="<p>Build reliable internal systems.</p>",
+        posted_at="2026-04-19T10:00:00Z",
+        fetched_at=result.fetched_at,
+    )
+
+
+def test_fetch_job_from_url_uses_bamboohr_resolver_for_normalized_raw_job():
+    class _FakeResponse:
+        def __init__(self, *, status_code: int, text: str):
+            self.status_code = status_code
+            self.text = text
+
+    class _FakeAsyncClient:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc, tb):
+            return False
+
+        async def get(self, url: str, params=None, timeout=None, follow_redirects=None, headers=None):
+            assert url == "https://example-team.bamboohr.com/careers/155/detail"
+            return _FakeResponse(
+                status_code=200,
+                text="""
+                {
+                  "result": {
+                    "jobOpening": {
+                      "jobOpeningName": "Senior Software Engineer in Test",
+                      "description": "<p>Own release quality and test automation.</p>",
+                      "datePosted": "2026-04-19",
+                      "locationType": "1",
+                      "location": {
+                        "city": null,
+                        "state": null,
+                        "addressCountry": null
+                      },
+                      "atsLocation": {
+                        "city": null,
+                        "state": null,
+                        "country": null
+                      }
+                    }
+                  }
+                }
+                """,
+            )
+
+    async def _run():
+        with mock.patch("src.fetcher.httpx.AsyncClient", _FakeAsyncClient):
+            return await fetcher.fetch_job_from_url("https://example-team.bamboohr.com/careers/155")
+
+    result = asyncio.run(_run())
+
+    assert result == RawJob(
+        ats_platform="bamboohr",
+        company_slug="example-team",
+        company_name="Example Team",
+        job_id="155",
+        title="Senior Software Engineer in Test",
+        location="Remote",
+        url="https://example-team.bamboohr.com/careers/155",
+        description="<p>Own release quality and test automation.</p>",
+        posted_at="2026-04-19",
+        fetched_at=result.fetched_at,
+        location_metadata={
+            "workplace_type": "Remote",
+            "raw_location": "Remote",
+        },
+    )
+
+
+def test_fetch_job_from_url_uses_bamboohr_detail_page_markup_when_available():
+    class _FakeResponse:
+        def __init__(self, *, status_code: int, text: str):
+            self.status_code = status_code
+            self.text = text
+
+    class _FakeAsyncClient:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc, tb):
+            return False
+
+        async def get(self, url: str, params=None, timeout=None, follow_redirects=None, headers=None):
+            assert url == "https://example-team.bamboohr.com/careers/155/detail"
+            return _FakeResponse(
+                status_code=200,
+                text="""
+                <html>
+                    <body>
+                        <main>
+                            <h1>Senior Quality Engineer</h1>
+                            <div>
+                                <p>About Example Team</p>
+                                <p>Build quality systems across connected experiences.</p>
+                            </div>
+                            <div>
+                                <p>Location</p>
+                                <p>Remote</p>
+                            </div>
+                            <div>
+                                <p>Department</p>
+                                <p>Quality Engineering</p>
+                            </div>
+                        </main>
+                    </body>
+                </html>
+                """,
+            )
+
+    async def _run():
+        with mock.patch("src.fetcher.httpx.AsyncClient", _FakeAsyncClient):
+            return await fetcher.fetch_job_from_url("https://example-team.bamboohr.com/careers/155")
+
+    result = asyncio.run(_run())
+
+    assert result is not None
+    assert result.ats_platform == "bamboohr"
+    assert result.company_slug == "example-team"
+    assert result.company_name == "Example Team"
+    assert result.job_id == "155"
+    assert result.title == "Senior Quality Engineer"
+    assert result.location == "Remote"
+    assert result.url == "https://example-team.bamboohr.com/careers/155"
+    assert "Build quality systems across connected experiences." in result.description
+    assert "Department" in result.description
+    assert result.posted_at is None
+    assert result.location_metadata == {
+        "raw_location": "Remote",
+    }
+
+
+def test_fetch_job_from_url_uses_bamboohr_meta_description_fallback():
+    class _FakeResponse:
+        def __init__(self, *, status_code: int, text: str):
+            self.status_code = status_code
+            self.text = text
+
+    class _FakeAsyncClient:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc, tb):
+            return False
+
+        async def get(self, url: str, params=None, timeout=None, follow_redirects=None, headers=None):
+            if url == "https://example-team.bamboohr.com/careers/155/detail":
+                return _FakeResponse(status_code=404, text="")
+            assert url == "https://example-team.bamboohr.com/careers/155"
+            return _FakeResponse(
+                status_code=200,
+                text="""
+                <html>
+                    <head>
+                        <meta property="og:title" content="Senior Quality Engineer" />
+                        <meta property="og:description" content="Build product quality systems across connected experiences." />
+                    </head>
+                    <body><div id="poRoot"></div></body>
+                </html>
+                """,
+            )
+
+    async def _run():
+        with mock.patch("src.fetcher.httpx.AsyncClient", _FakeAsyncClient):
+            return await fetcher.fetch_job_from_url("https://example-team.bamboohr.com/careers/155")
+
+    result = asyncio.run(_run())
+
+    assert result == RawJob(
+        ats_platform="bamboohr",
+        company_slug="example-team",
+        company_name="Example Team",
+        job_id="155",
+        title="Senior Quality Engineer",
+        location="",
+        url="https://example-team.bamboohr.com/careers/155",
+        description="Build product quality systems across connected experiences.",
+        posted_at=None,
+        fetched_at=result.fetched_at,
+        location_metadata={},
     )
 
 
@@ -306,3 +546,78 @@ def test_fetch_job_from_url_uses_smartrecruiters_resolver_for_normalized_raw_job
         posted_at="2026-04-18T10:00:00Z",
         fetched_at=result.fetched_at,
     )
+
+
+def test_populate_descriptions_applies_supported_ats_richer_fields():
+    class _FakeResponse:
+        def __init__(self, *, status_code: int, text: str):
+            self.status_code = status_code
+            self.text = text
+
+    class _FakeAsyncClient:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc, tb):
+            return False
+
+        async def get(self, url: str, params=None, timeout=None, follow_redirects=None, headers=None):
+            assert url == "https://example-team.bamboohr.com/careers/155/detail"
+            return _FakeResponse(
+                status_code=200,
+                text="""
+                {
+                  "result": {
+                    "jobOpening": {
+                      "jobOpeningName": "Senior Quality Engineer",
+                      "description": "<p>Build quality systems across connected experiences.</p>",
+                      "datePosted": "2026-04-19",
+                      "locationType": "1",
+                      "location": {
+                        "city": null,
+                        "state": null,
+                        "addressCountry": null
+                      },
+                      "atsLocation": {
+                        "city": null,
+                        "state": null,
+                        "country": null
+                      }
+                    }
+                  }
+                }
+                """,
+            )
+
+    candidate = CandidateJob(
+        db_id=1,
+        ats_platform="bamboohr",
+        company_slug="example-team",
+        company_name="Example Team",
+        job_id="155",
+        title="Example Team",
+        location="",
+        url="https://example-team.bamboohr.com/careers/155",
+        description="short stub",
+        posted_at=None,
+        first_seen_at="2026-04-19T10:00:00Z",
+    )
+
+    async def _run():
+        with mock.patch("src.fetcher.httpx.AsyncClient", _FakeAsyncClient):
+            hydrated = await fetcher.populate_descriptions([candidate])
+            return hydrated[0]
+
+    result = asyncio.run(_run())
+
+    assert result.title == "Senior Quality Engineer"
+    assert result.location == "Remote"
+    assert result.description == "<p>Build quality systems across connected experiences.</p>"
+    assert result.posted_at == "2026-04-19"
+    assert result.location_metadata == {
+        "workplace_type": "Remote",
+        "raw_location": "Remote",
+    }

@@ -2,6 +2,7 @@ import sqlite3
 import tempfile
 from pathlib import Path
 
+from src.models import RawJob
 from src.store import Store
 
 
@@ -239,3 +240,149 @@ def test_store_repairs_mismatched_legacy_applied_event_date():
 
         assert event is not None
         assert event["created_at"] == "2026-04-15"
+
+
+def test_refresh_job_from_imported_fetch_updates_cache_invalidation_metadata():
+    with tempfile.TemporaryDirectory() as tmpdir:
+        db_path = Path(tmpdir) / "jobs.db"
+        store = Store(str(db_path))
+
+        created, _ = store.import_job(
+            ats_platform="bamboohr",
+            company_slug="example-team",
+            external_job_id="155",
+            company_name="Example Team",
+            title="Example Team",
+            location="",
+            url="https://example-team.bamboohr.com/careers/155",
+            description="",
+            source="manual",
+            initial_event_note="Imported from URL",
+        )
+
+        before = store.get_metadata("last_job_status_change_at")
+        refreshed = store.refresh_job_from_imported_fetch(
+            created["id"],
+            RawJob(
+                ats_platform="bamboohr",
+                company_slug="example-team",
+                company_name="Example Team",
+                job_id="155",
+                title="Senior Quality Engineer",
+                location="Remote",
+                url="https://example-team.bamboohr.com/careers/155",
+                description="<p>Full description</p>",
+                posted_at=None,
+                fetched_at="2026-04-19T10:00:00Z",
+            ),
+        )
+        after = store.get_metadata("last_job_status_change_at")
+
+        assert refreshed is not None
+        assert refreshed["title"] == "Senior Quality Engineer"
+        assert refreshed["location"] == "Remote"
+        assert refreshed["description"] == "<p>Full description</p>"
+        assert after is not None
+        assert after != before
+
+
+def test_store_dedupes_exact_duplicate_application_events_on_init():
+    with tempfile.TemporaryDirectory() as tmpdir:
+        db_path = Path(tmpdir) / "jobs.db"
+        conn = sqlite3.connect(db_path)
+        try:
+            conn.executescript(
+                """
+                CREATE TABLE jobs (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    ats_platform TEXT NOT NULL,
+                    company_slug TEXT NOT NULL,
+                    job_id TEXT NOT NULL,
+                    company_name TEXT,
+                    title TEXT NOT NULL,
+                    location TEXT,
+                    url TEXT NOT NULL,
+                    description TEXT,
+                    posted_at TEXT,
+                    first_seen_at TEXT NOT NULL,
+                    last_seen_at TEXT,
+                    fit_score INTEGER,
+                    score_reasoning TEXT,
+                    score_breakdown TEXT,
+                    scored_at TEXT,
+                    status TEXT DEFAULT 'new',
+                    application_status TEXT,
+                    applied_at TEXT,
+                    dismissal_reason TEXT,
+                    match_tier TEXT,
+                    salary TEXT,
+                    salary_min INTEGER,
+                    salary_max INTEGER,
+                    salary_currency TEXT,
+                    is_sparse INTEGER DEFAULT 0,
+                    source TEXT DEFAULT 'pipeline',
+                    UNIQUE(ats_platform, company_slug, job_id)
+                );
+                CREATE TABLE application_events (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    job_id INTEGER NOT NULL,
+                    status TEXT NOT NULL,
+                    note TEXT,
+                    created_at TEXT NOT NULL
+                );
+                CREATE TABLE metadata (
+                    key TEXT PRIMARY KEY,
+                    value TEXT
+                );
+                """
+            )
+            conn.execute(
+                """INSERT INTO jobs (
+                       ats_platform, company_slug, job_id, company_name, title, location, url,
+                       description, posted_at, first_seen_at, last_seen_at, status, application_status, applied_at
+                   ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (
+                    "bamboohr",
+                    "example-team",
+                    "155",
+                    "Example Team",
+                    "Senior Quality Engineer",
+                    "Remote",
+                    "https://example-team.bamboohr.com/careers/155",
+                    "Description",
+                    None,
+                    "2026-04-10T10:00:00",
+                    "2026-04-10T10:00:00",
+                    "new",
+                    "applied",
+                    "2026-04-13",
+                ),
+            )
+            for _ in range(3):
+                conn.execute(
+                    """INSERT INTO application_events (job_id, status, note, created_at)
+                       VALUES (
+                         (SELECT id FROM jobs WHERE job_id = '155'),
+                         'applied',
+                         'Re-added from URL import',
+                         '2026-04-13'
+                       )"""
+                )
+            conn.commit()
+        finally:
+            conn.close()
+
+        store = Store(str(db_path))
+
+        with store._connect() as repaired_conn:
+            rows = repaired_conn.execute(
+                """SELECT status, note, created_at
+                   FROM application_events
+                   WHERE job_id = (SELECT id FROM jobs WHERE job_id = '155')
+                   ORDER BY id ASC"""
+            ).fetchall()
+
+        assert len(rows) == 1
+        assert rows[0]["status"] == "applied"
+        assert rows[0]["note"] == "Re-added from URL import"
+        assert rows[0]["created_at"] == "2026-04-13"

@@ -128,6 +128,29 @@ async def _fetch_description_via_supported_resolver(
     return None
 
 
+def _apply_resolved_job_details(job_obj: Any, resolved_job: RawJob) -> None:
+    """Mutate a candidate-like object with richer ATS-resolved job fields."""
+    for attr in ("title", "location", "url", "description", "posted_at", "company_name"):
+        value = getattr(resolved_job, attr, None)
+        if value:
+            setattr(job_obj, attr, value)
+
+    for attr in ("company_metadata", "location_metadata"):
+        value = getattr(resolved_job, attr, None)
+        if value:
+            setattr(job_obj, attr, value)
+
+    for attr in ("salary", "salary_currency"):
+        value = getattr(resolved_job, attr, None)
+        if value is not None:
+            setattr(job_obj, attr, value)
+
+    for attr in ("salary_min", "salary_max"):
+        value = getattr(resolved_job, attr, None)
+        if value is not None:
+            setattr(job_obj, attr, value)
+
+
 async def _fetch_description_via_fallback_scrape(
     client: httpx.AsyncClient,
     *,
@@ -211,9 +234,28 @@ async def populate_descriptions(
     async with httpx.AsyncClient(verify=ssl_context) as client:
         # Maintain job-to-result mapping by wrapping the fetch call per job.
         async def fetch_and_assign(job_obj):
-            desc = await fetch_description(client, sem, job_obj)
-            if desc:
-                job_obj.description = desc
+            url = str(job_obj.url or "")
+
+            async with sem:
+                resolved_job: RawJob | None = None
+                try:
+                    ref = resolve_job_ref(url)
+                    if ref.platform in SINGLE_JOB_FETCHERS:
+                        resolved_job = await fetch_supported_job(client, ref)
+                except Exception as e:
+                    logger.debug("API hydration failed for %s: %s", getattr(job_obj, "company_name", ""), e)
+
+                if resolved_job:
+                    _apply_resolved_job_details(job_obj, resolved_job)
+                    return job_obj
+
+                desc = await _fetch_description_via_fallback_scrape(
+                    client,
+                    url=url,
+                    company_name=str(getattr(job_obj, "company_name", "") or ""),
+                )
+                if desc:
+                    job_obj.description = desc
             return job_obj
 
         wrapped_tasks = [fetch_and_assign(j) for j in jobs]

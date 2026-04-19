@@ -233,6 +233,24 @@ class Store:
                      )"""
             )
             conn.execute(
+                """DELETE FROM application_events
+                   WHERE id IN (
+                       SELECT ev.id
+                       FROM application_events ev
+                       JOIN (
+                           SELECT job_id, status, COALESCE(note, '') AS note_key, created_at, MIN(id) AS keep_id, COUNT(*) AS cnt
+                           FROM application_events
+                           GROUP BY job_id, status, COALESCE(note, ''), created_at
+                           HAVING COUNT(*) > 1
+                       ) dup
+                         ON dup.job_id = ev.job_id
+                        AND dup.status = ev.status
+                        AND dup.note_key = COALESCE(ev.note, '')
+                        AND dup.created_at = ev.created_at
+                       WHERE ev.id != dup.keep_id
+                   )"""
+            )
+            conn.execute(
                 """UPDATE jobs
                    SET status = CASE
                        WHEN scored_at IS NOT NULL THEN 'scored'
@@ -509,6 +527,7 @@ class Store:
                 return True
 
             event_created_at = now
+            should_insert_event = True
             if current_status is None and application_status == "applied" and not row["applied_at"]:
                 conn.execute(
                     """UPDATE jobs
@@ -522,17 +541,28 @@ class Store:
                     (application_status, db_id),
                 )
                 event_created_at = str(row["applied_at"])
+                existing_applied_event = conn.execute(
+                    """SELECT id
+                       FROM application_events
+                       WHERE job_id = ? AND status = 'applied'
+                       ORDER BY created_at ASC, id ASC
+                       LIMIT 1""",
+                    (db_id,),
+                ).fetchone()
+                if existing_applied_event is not None:
+                    should_insert_event = False
             else:
                 conn.execute(
                     "UPDATE jobs SET application_status = ? WHERE id = ?",
                     (application_status, db_id),
                 )
 
-            conn.execute(
-                """INSERT INTO application_events (job_id, status, note, created_at)
-                   VALUES (?, ?, ?, ?)""",
-                (db_id, application_status, note, event_created_at),
-            )
+            if should_insert_event:
+                conn.execute(
+                    """INSERT INTO application_events (job_id, status, note, created_at)
+                       VALUES (?, ?, ?, ?)""",
+                    (db_id, application_status, note, event_created_at),
+                )
 
         self.set_metadata("last_job_status_change_at", now)
         logger.debug("Job %d application_status → %s", db_id, application_status)
@@ -662,6 +692,67 @@ class Store:
             return True
         logger.warning("Job %d not found for description update", db_id)
         return False
+
+    def refresh_job_from_resolved_fetch(self, db_id: int, job: RawJob) -> dict | None:
+        """Refresh an existing job row from a newly fetched ATS payload."""
+        with self._connect() as conn:
+            existing = conn.execute("SELECT * FROM jobs WHERE id = ?", (db_id,)).fetchone()
+            if existing is None:
+                return None
+
+            company_metadata = (
+                Store._serialize_metadata(job.company_metadata)
+                if job.company_metadata
+                else existing["company_metadata"]
+            )
+            location_metadata = (
+                Store._serialize_metadata(job.location_metadata)
+                if job.location_metadata
+                else existing["location_metadata"]
+            )
+
+            conn.execute(
+                """UPDATE jobs
+                   SET company_name = ?,
+                       company_metadata = ?,
+                       title = ?,
+                       location = ?,
+                       location_metadata = ?,
+                       url = ?,
+                       description = ?,
+                       posted_at = ?,
+                       salary = ?,
+                       salary_min = ?,
+                       salary_max = ?,
+                       salary_currency = ?
+                   WHERE id = ?""",
+                (
+                    job.company_name or existing["company_name"],
+                    company_metadata,
+                    job.title or existing["title"],
+                    job.location or existing["location"],
+                    location_metadata,
+                    job.url or existing["url"],
+                    job.description or existing["description"],
+                    job.posted_at or existing["posted_at"],
+                    job.salary if job.salary is not None else existing["salary"],
+                    job.salary_min if job.salary_min is not None else existing["salary_min"],
+                    job.salary_max if job.salary_max is not None else existing["salary_max"],
+                    job.salary_currency if job.salary_currency is not None else existing["salary_currency"],
+                    db_id,
+                ),
+            )
+            row = conn.execute("SELECT * FROM jobs WHERE id = ?", (db_id,)).fetchone()
+
+        if row is None:
+            return None
+        self.set_metadata("last_job_status_change_at", datetime.utcnow().isoformat())
+        logger.debug("Job %d refreshed from imported ATS payload", db_id)
+        return dict(row)
+
+    def refresh_job_from_imported_fetch(self, db_id: int, job: RawJob) -> dict | None:
+        """Backward-compatible wrapper for imported-row refreshes."""
+        return self.refresh_job_from_resolved_fetch(db_id, job)
 
     def bulk_update_status(self, db_ids: list[int], status: str, reason: str | None = None) -> int:
         """Update multiple job statuses and optional reason in a single transaction."""
