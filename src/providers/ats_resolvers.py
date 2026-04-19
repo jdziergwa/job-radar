@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 import json
 import re
 from typing import Any, Awaitable, Callable
-from urllib.parse import quote
+from urllib.parse import quote, urlparse
 
 import httpx
 
@@ -548,6 +548,59 @@ def build_smartrecruiters_job(
     )
 
 
+def build_workday_job(
+    payload: dict[str, Any],
+    *,
+    company_slug: str,
+    company_name: str,
+    job_id: str,
+    fetched_at: str,
+    default_url: str,
+) -> RawJob | None:
+    job_info = payload.get("jobPostingInfo")
+    if not isinstance(job_info, dict):
+        return None
+
+    title = str(job_info.get("title") or "").strip()
+    description = str(job_info.get("jobDescription") or "").strip()
+    location = str(job_info.get("location") or "").strip()
+    posted_at = str(job_info.get("startDate") or "").strip() or None
+    remote_type = str(job_info.get("remoteType") or "").strip()
+
+    if not location:
+        requisition_location = job_info.get("jobRequisitionLocation")
+        if isinstance(requisition_location, dict):
+            location = str(requisition_location.get("descriptor") or "").strip()
+
+    location_metadata: dict[str, object] = {}
+    if location:
+        location_metadata["raw_location"] = location
+    if remote_type:
+        location_metadata["workplace_type"] = remote_type
+
+    hiring_organization = payload.get("hiringOrganization")
+    if isinstance(hiring_organization, dict):
+        resolved_company_name = str(hiring_organization.get("name") or "").strip()
+        if resolved_company_name:
+            company_name = resolved_company_name
+
+    job_url = str(job_info.get("externalUrl") or "").strip() or default_url
+
+    return RawJob(
+        ats_platform="workday",
+        company_slug=company_slug,
+        company_name=company_name,
+        job_id=job_id,
+        title=title,
+        location=location,
+        url=job_url,
+        description=description,
+        posted_at=posted_at,
+        fetched_at=fetched_at,
+        location_metadata=location_metadata,
+    )
+
+
 def _extract_ashby_company_name(payload: dict[str, Any], company_slug: str) -> str:
     for key in ("companyName", "name", "organizationName", "organization_name"):
         value = payload.get(key)
@@ -792,6 +845,48 @@ async def fetch_smartrecruiters_job(
     )
 
 
+async def fetch_workday_job(
+    client: httpx.AsyncClient,
+    *,
+    company_slug: str,
+    job_id: str,
+    ref: ResolvedJobRef | None = None,
+) -> RawJob | None:
+    source_url = ref.url if ref is not None else ""
+    parsed = urlparse(source_url)
+    host = parsed.netloc.lower()
+    path_parts = [part for part in parsed.path.split("/") if part]
+
+    if not host or len(path_parts) < 4 or path_parts[2] != "job":
+        return None
+
+    site = path_parts[1]
+    detail_path = "/".join(path_parts[2:])
+    if not site or not detail_path:
+        return None
+
+    response = await client.get(
+        f"https://{host}/wday/cxs/{company_slug}/{site}/{detail_path}",
+        timeout=8,
+    )
+    if response.status_code != 200:
+        return None
+
+    payload = response.json()
+    if not isinstance(payload, dict):
+        return None
+
+    default_url = source_url or f"https://{host}/{site}/{detail_path}"
+    return build_workday_job(
+        payload,
+        company_slug=company_slug,
+        company_name=_humanize_slug(company_slug) or company_slug,
+        job_id=job_id,
+        fetched_at=datetime.now(timezone.utc).isoformat(),
+        default_url=default_url,
+    )
+
+
 SingleJobFetcher = Callable[..., Awaitable[RawJob | None]]
 
 SINGLE_JOB_FETCHERS: dict[str, SingleJobFetcher] = {
@@ -801,6 +896,7 @@ SINGLE_JOB_FETCHERS: dict[str, SingleJobFetcher] = {
     "workable": fetch_workable_job,
     "bamboohr": fetch_bamboohr_job,
     "smartrecruiters": fetch_smartrecruiters_job,
+    "workday": fetch_workday_job,
 }
 
 
@@ -814,4 +910,6 @@ async def fetch_supported_job(
     fetcher = SINGLE_JOB_FETCHERS.get(ref.platform)
     if fetcher is None:
         return None
+    if ref.platform == "workday":
+        return await fetcher(client, company_slug=ref.company_slug, job_id=ref.job_id, ref=ref)
     return await fetcher(client, company_slug=ref.company_slug, job_id=ref.job_id)

@@ -11,6 +11,10 @@ BULK_FETCH_ATS_PLATFORMS = (
     "smartrecruiters",
 )
 
+IMPORT_ONLY_ATS_PLATFORMS = (
+    "workday",
+)
+
 SINGLE_JOB_IMPORT_ATS_PLATFORMS = (
     "greenhouse",
     "lever",
@@ -18,6 +22,7 @@ SINGLE_JOB_IMPORT_ATS_PLATFORMS = (
     "workable",
     "bamboohr",
     "smartrecruiters",
+    "workday",
 )
 
 BULK_FETCHERS: dict[str, Any] = {}

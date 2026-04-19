@@ -548,6 +548,73 @@ def test_fetch_job_from_url_uses_smartrecruiters_resolver_for_normalized_raw_job
     )
 
 
+def test_fetch_job_from_url_uses_workday_resolver_for_normalized_raw_job():
+    class _FakeResponse:
+        def __init__(self, *, status_code: int, payload: dict):
+            self.status_code = status_code
+            self._payload = payload
+
+        def json(self):
+            return self._payload
+
+    class _FakeAsyncClient:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc, tb):
+            return False
+
+        async def get(self, url: str, params=None, timeout=None):
+            assert (
+                url
+                == "https://exampleco.wd12.myworkdayjobs.com/wday/cxs/exampleco/ExampleBoard/job/Remote/Staff-Quality-Engineer_R-12345-1"
+            )
+            return _FakeResponse(
+                status_code=200,
+                payload={
+                    "jobPostingInfo": {
+                        "title": "Staff Quality Engineer",
+                        "jobDescription": "<p>Drive quality strategy across product surfaces.</p>",
+                        "location": "London",
+                        "startDate": "2026-04-19",
+                        "remoteType": "Hybrid",
+                        "externalUrl": "https://exampleco.wd12.myworkdayjobs.com/ExampleBoard/job/Remote/Staff-Quality-Engineer_R-12345-1",
+                    },
+                    "hiringOrganization": {
+                        "name": "Example Co",
+                    },
+                },
+            )
+
+    async def _run():
+        with mock.patch("src.fetcher.httpx.AsyncClient", _FakeAsyncClient):
+            return await fetcher.fetch_job_from_url(
+                "https://exampleco.wd12.myworkdayjobs.com/en-US/ExampleBoard/job/Remote/Staff-Quality-Engineer_R-12345-1"
+            )
+
+    result = asyncio.run(_run())
+
+    assert result == RawJob(
+        ats_platform="workday",
+        company_slug="exampleco",
+        company_name="Example Co",
+        job_id="Staff-Quality-Engineer_R-12345-1",
+        title="Staff Quality Engineer",
+        location="London",
+        url="https://exampleco.wd12.myworkdayjobs.com/ExampleBoard/job/Remote/Staff-Quality-Engineer_R-12345-1",
+        description="<p>Drive quality strategy across product surfaces.</p>",
+        posted_at="2026-04-19",
+        fetched_at=result.fetched_at,
+        location_metadata={
+            "raw_location": "London",
+            "workplace_type": "Hybrid",
+        },
+    )
+
+
 def test_populate_descriptions_applies_supported_ats_richer_fields():
     class _FakeResponse:
         def __init__(self, *, status_code: int, text: str):

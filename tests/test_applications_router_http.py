@@ -418,6 +418,57 @@ def test_application_import_can_add_company_to_pipeline(monkeypatch):
     assert saved["greenhouse"] == [{"slug": "example-team", "name": "Example Team"}]
 
 
+def test_application_import_does_not_add_import_only_workday_company_to_pipeline(monkeypatch):
+    store = _build_store()
+    monkeypatch.setattr(applications_router, "get_store", lambda profile="default": store)
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        base_dir = Path(tmpdir)
+        profile_dir = base_dir / "default"
+        profile_dir.mkdir(parents=True, exist_ok=True)
+        (profile_dir / "companies.yaml").write_text(
+            yaml.safe_dump({"greenhouse": []}, sort_keys=False),
+            encoding="utf-8",
+        )
+
+        original_profiles_dir = companies_router.PROFILES_DIR
+        companies_router.PROFILES_DIR = base_dir
+
+        async def fake_fetch_job_from_url(url: str):
+            return RawJob(
+                ats_platform="workday",
+                company_slug="exampleco",
+                company_name="Example Co",
+                job_id="Staff-Quality-Engineer_R-12345-1",
+                title="Staff Quality Engineer",
+                location="London",
+                url="https://exampleco.wd12.myworkdayjobs.com/ExampleBoard/job/Remote/Staff-Quality-Engineer_R-12345-1",
+                description="Drive quality strategy across product surfaces.",
+                posted_at="2026-04-19",
+                fetched_at="2026-04-19T00:00:00Z",
+            )
+
+        monkeypatch.setattr(applications_router, "fetch_job_from_url", fake_fetch_job_from_url)
+
+        try:
+            with TestClient(app) as client:
+                response = client.post(
+                    "/api/applications/import",
+                    json={
+                        "url": "https://exampleco.wd12.myworkdayjobs.com/en-US/ExampleBoard/job/Remote/Staff-Quality-Engineer_R-12345-1",
+                        "track_company_in_pipeline": True,
+                    },
+                )
+        finally:
+            companies_router.PROFILES_DIR = original_profiles_dir
+
+        saved = yaml.safe_load((profile_dir / "companies.yaml").read_text(encoding="utf-8"))
+
+    assert response.status_code == 200
+    assert saved["greenhouse"] == []
+    assert "workday" not in saved
+
+
 def test_application_import_refreshes_existing_sparse_job_from_fetched_data(monkeypatch):
     store = _build_store()
     monkeypatch.setattr(applications_router, "get_store", lambda profile="default": store)

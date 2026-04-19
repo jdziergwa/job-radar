@@ -27,6 +27,7 @@ PLATFORM_ALIASES = {
     "bamboohr": "bamboohr",
     "smartrecruiters": "smartrecruiters",
     "sr": "smartrecruiters",
+    "workday": "workday",
 }
 
 URL_PATTERNS = (
@@ -36,6 +37,7 @@ URL_PATTERNS = (
     ("workable", re.compile(r"https?://apply\.workable\.com/(?P<slug>[a-z0-9\-]+)", re.IGNORECASE)),
     ("bamboohr", re.compile(r"https?://(?P<slug>[a-z0-9\-]+)\.bamboohr\.com", re.IGNORECASE)),
     ("smartrecruiters", re.compile(r"https?://(?:jobs|careers|api)\.smartrecruiters\.com/(?:v1/companies/)?(?P<slug>[a-z0-9\-]+)?", re.IGNORECASE)),
+    ("workday", re.compile(r"https?://(?P<slug>[a-z0-9\-]+)\.(?:wd[0-9]+|myworkday)\.myworkdayjobs\.com", re.IGNORECASE)),
 )
 
 _ssl_ctx = ssl.create_default_context(cafile=certifi.where())
@@ -79,6 +81,8 @@ def extract_platform_slug_from_url(url: str, fallback_slug: str | None = None) -
         return "workable", _slugify(path_parts[0])
     if host.endswith(".bamboohr.com"):
         return "bamboohr", _slugify(host.split(".")[0])
+    if host.endswith(".myworkdayjobs.com"):
+        return "workday", _slugify(host.split(".")[0])
 
     return None, normalized_fallback
 

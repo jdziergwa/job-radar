@@ -2,10 +2,11 @@ from fastapi import APIRouter, HTTPException
 import yaml
 from api.deps import PROFILES_DIR
 from api.models import CompanyEntry, CompaniesResponse, CompanyUpdateRequest
+from src.providers.ats_registry import BULK_FETCH_ATS_PLATFORMS
 
 router = APIRouter()
 
-PLATFORMS = ["greenhouse", "lever", "ashby", "workable", "bamboohr", "smartrecruiters"]
+PLATFORMS = list(BULK_FETCH_ATS_PLATFORMS)
 
 
 def _load_companies(profile: str) -> dict:

@@ -29,6 +29,7 @@ from api.models import (
 from api.routers.companies import ensure_company
 from src.fetcher import fetch_job_from_url
 from src.job_resolver import detect_ats_platform, resolve_job_ref
+from src.providers.ats_registry import BULK_FETCH_ATS_PLATFORMS
 from src.providers.utils import slugify
 
 router = APIRouter()
@@ -164,6 +165,8 @@ def _maybe_track_company(
     company_name: str | None,
 ) -> None:
     if not should_track:
+        return
+    if ats_platform not in BULK_FETCH_ATS_PLATFORMS:
         return
     ensure_company(
         profile,

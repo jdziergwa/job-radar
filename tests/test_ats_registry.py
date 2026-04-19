@@ -2,6 +2,7 @@ from src.providers import local_ats
 from src.providers.ats_registry import (
     BULK_FETCH_ATS_PLATFORMS,
     BULK_FETCHERS,
+    IMPORT_ONLY_ATS_PLATFORMS,
     SINGLE_JOB_IMPORT_ATS_PLATFORMS,
 )
 from src.providers.ats_resolvers import SINGLE_JOB_FETCHERS
@@ -17,4 +18,6 @@ def test_single_job_import_registry_matches_single_job_fetchers():
 
 
 def test_single_job_import_platforms_are_bulk_fetch_supported():
-    assert set(SINGLE_JOB_IMPORT_ATS_PLATFORMS).issubset(set(BULK_FETCH_ATS_PLATFORMS))
+    assert set(SINGLE_JOB_IMPORT_ATS_PLATFORMS) == (
+        set(BULK_FETCH_ATS_PLATFORMS) | set(IMPORT_ONLY_ATS_PLATFORMS)
+    )
