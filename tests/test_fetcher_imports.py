@@ -432,6 +432,93 @@ def test_fetch_job_from_url_uses_lever_resolver_for_normalized_raw_job():
     )
 
 
+def test_fetch_job_from_url_supports_regional_lever_host():
+    lever_job_id = "11111111-2222-4333-8444-555555555555"
+
+    class _FakeResponse:
+        def __init__(self, *, status_code: int, payload: dict | None = None, text: str = ""):
+            self.status_code = status_code
+            self._payload = payload
+            self.text = text
+
+        def json(self):
+            return self._payload
+
+    class _FakeAsyncClient:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc, tb):
+            return False
+
+        async def get(self, url: str, params=None, timeout=None, follow_redirects=None):
+            if url == f"https://api.lever.co/v0/postings/example-team/{lever_job_id}":
+                return _FakeResponse(
+                    status_code=404,
+                    payload={"ok": False, "error": "Document not found"},
+                )
+
+            assert url == f"https://jobs.eu.lever.co/example-team/{lever_job_id}"
+            return _FakeResponse(
+                status_code=200,
+                text="""
+                <html>
+                  <head>
+                    <meta property="og:title" content="Example Team Careers - Staff Quality Engineer" />
+                  </head>
+                  <body>
+                    <div class="posting-category location">
+                      Example City /<span> Example Region /</span><span> Remote</span>
+                    </div>
+                    <div class="posting-category workplaceTypes">Hybrid</div>
+                    <script type="application/ld+json">
+                      {
+                        "@context": "http://schema.org",
+                        "@type": "JobPosting",
+                        "title": "Staff Quality Engineer",
+                        "datePosted": "2026-03-11",
+                        "description": "<p>Build quality systems at scale.</p>",
+                        "jobLocation": [
+                          {"@type":"Place","address":{"@type":"PostalAddress","addressLocality":"Example Region"}},
+                          {"@type":"Place","address":{"@type":"PostalAddress","addressLocality":"Remote"}},
+                          {"@type":"Place","address":{"@type":"PostalAddress","addressLocality":"Example City"}}
+                        ]
+                      }
+                    </script>
+                  </body>
+                </html>
+                """,
+            )
+
+    async def _run():
+        with mock.patch("src.fetcher.httpx.AsyncClient", _FakeAsyncClient):
+            return await fetcher.fetch_job_from_url(
+                f"https://jobs.eu.lever.co/example-team/{lever_job_id}?lever-origin=applied&lever-source%5B%5D=TestSource"
+            )
+
+    result = asyncio.run(_run())
+
+    assert result == RawJob(
+        ats_platform="lever",
+        company_slug="example-team",
+        company_name="Example Team",
+        job_id=lever_job_id,
+        title="Staff Quality Engineer",
+        location="Example City / Example Region / Remote",
+        url=f"https://jobs.eu.lever.co/example-team/{lever_job_id}",
+        description="<p>Build quality systems at scale.</p>",
+        posted_at="2026-03-11",
+        fetched_at=result.fetched_at,
+        location_metadata={
+            "raw_location": "Example City / Example Region / Remote",
+            "workplace_type": "Hybrid",
+        },
+    )
+
+
 def test_fetch_job_from_url_uses_workable_resolver_for_normalized_raw_job():
     class _FakeResponse:
         def __init__(self, *, status_code: int, payload: dict):

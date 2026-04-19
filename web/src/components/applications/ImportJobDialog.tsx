@@ -67,7 +67,7 @@ function resolveTrackableCompany(url: string, fallbackName?: string): TrackableC
   if (host.includes('greenhouse.io')) {
     return makeCompany('greenhouse', segments[0])
   }
-  if (host === 'jobs.lever.co') {
+  if (host === 'jobs.lever.co' || (host.startsWith('jobs.') && host.endsWith('.lever.co'))) {
     return makeCompany('lever', segments[0])
   }
   if (host === 'jobs.ashbyhq.com') {

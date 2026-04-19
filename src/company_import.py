@@ -32,7 +32,7 @@ PLATFORM_ALIASES = {
 
 URL_PATTERNS = (
     ("greenhouse", re.compile(r"https?://(?:boards(?:-api)?\.greenhouse\.io/(?:v1/boards/)?|[^/]+/jobs/search\?gh_jid=)(?P<slug>[a-z0-9\-]+)?", re.IGNORECASE)),
-    ("lever", re.compile(r"https?://(?:jobs|api)\.lever\.co/(?:v0/postings/)?(?P<slug>[a-z0-9\-]+)", re.IGNORECASE)),
+    ("lever", re.compile(r"https?://(?:(?:jobs(?:\.[a-z]{2,})?)|api)\.lever\.co/(?:v0/postings/)?(?P<slug>[a-z0-9\-]+)", re.IGNORECASE)),
     ("ashby", re.compile(r"https?://jobs\.ashbyhq\.com/(?P<slug>[a-z0-9\-]+)", re.IGNORECASE)),
     ("workable", re.compile(r"https?://apply\.workable\.com/(?P<slug>[a-z0-9\-]+)", re.IGNORECASE)),
     ("bamboohr", re.compile(r"https?://(?P<slug>[a-z0-9\-]+)\.bamboohr\.com", re.IGNORECASE)),
@@ -73,7 +73,10 @@ def extract_platform_slug_from_url(url: str, fallback_slug: str | None = None) -
 
     if host in {"boards.greenhouse.io", "job-boards.greenhouse.io"} and path_parts:
         return "greenhouse", _slugify(path_parts[0])
-    if host == "jobs.lever.co" and path_parts:
+    if host == "jobs.lever.co" or (host.startswith("jobs.") and host.endswith(".lever.co")):
+        if path_parts:
+            return "lever", _slugify(path_parts[0])
+    if host == "api.lever.co" and path_parts:
         return "lever", _slugify(path_parts[0])
     if host == "jobs.ashbyhq.com" and path_parts:
         return "ashby", _slugify(path_parts[0])

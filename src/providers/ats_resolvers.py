@@ -460,6 +460,118 @@ def build_lever_job(
     )
 
 
+def _extract_lever_html_title(job_posting: dict[str, Any], html: str, company_slug: str) -> str:
+    title = job_posting.get("title")
+    if isinstance(title, str) and title.strip():
+        return title.strip()
+
+    for pattern in (
+        r'<meta[^>]+property=["\']og:title["\'][^>]+content=["\']([^"\']+)["\']',
+        r'<meta[^>]+name=["\']twitter:title["\'][^>]+content=["\']([^"\']+)["\']',
+        r"<h2[^>]*>(.*?)</h2>",
+        r"<title>(.*?)</title>",
+    ):
+        match = re.search(pattern, html, re.IGNORECASE | re.DOTALL)
+        if not match:
+            continue
+        raw = re.sub(r"<[^>]+>", " ", match.group(1))
+        normalized = " ".join(raw.split()).strip()
+        if not normalized:
+            continue
+        prefix = f"{_humanize_slug(company_slug)} Careers - "
+        if normalized.startswith(prefix):
+            normalized = normalized[len(prefix):].strip()
+        return normalized
+
+    return ""
+
+
+def _extract_lever_html_location(job_posting: dict[str, Any], html: str) -> tuple[str, dict[str, object]]:
+    metadata: dict[str, object] = {}
+
+    category_match = re.search(
+        r'class=["\'][^"\']*\blocation\b[^"\']*["\'][^>]*>(.*?)</div>',
+        html,
+        re.IGNORECASE | re.DOTALL,
+    )
+    if category_match:
+        raw = re.sub(r"<[^>]+>", " ", category_match.group(1))
+        location = " ".join(raw.split()).strip(" /")
+        if location:
+            metadata["raw_location"] = location
+            workplace_match = re.search(
+                r'class=["\'][^"\']*\bworkplaceTypes\b[^"\']*["\'][^>]*>(.*?)</div>',
+                html,
+                re.IGNORECASE | re.DOTALL,
+            )
+            if workplace_match:
+                workplace = " ".join(re.sub(r"<[^>]+>", " ", workplace_match.group(1)).split()).strip()
+                if workplace:
+                    metadata["workplace_type"] = workplace
+            return location, metadata
+
+    locations = job_posting.get("jobLocation")
+    texts: list[str] = []
+    if isinstance(locations, dict):
+        locations = [locations]
+    if isinstance(locations, list):
+        for location in locations:
+            if not isinstance(location, dict):
+                continue
+            address = location.get("address")
+            if not isinstance(address, dict):
+                continue
+            for key in ("addressLocality", "addressRegion", "addressCountry"):
+                value = address.get(key)
+                if isinstance(value, str) and value.strip():
+                    texts.append(value.strip())
+
+    deduped = _dedupe_text(texts)
+    location = " / ".join(deduped)
+    if location:
+        metadata["raw_location"] = location
+    return location, metadata
+
+
+def build_lever_job_from_html(
+    html: str,
+    *,
+    company_slug: str,
+    company_name: str,
+    job_id: str,
+    fetched_at: str,
+    default_url: str,
+) -> RawJob:
+    job_posting: dict[str, Any] = {}
+    for obj in _extract_json_ld_objects(html):
+        result = _find_job_posting_payload(obj)
+        if result:
+            job_posting = result
+            break
+
+    title = _extract_lever_html_title(job_posting, html, company_slug)
+    description = ""
+    description_value = job_posting.get("description")
+    if isinstance(description_value, str) and description_value.strip():
+        description = description_value.strip()
+    location, location_metadata = _extract_lever_html_location(job_posting, html)
+    posted_at = job_posting.get("datePosted") if isinstance(job_posting.get("datePosted"), str) else None
+
+    return RawJob(
+        ats_platform="lever",
+        company_slug=company_slug,
+        company_name=company_name,
+        job_id=job_id,
+        title=title,
+        location=location,
+        url=default_url,
+        description=description,
+        posted_at=posted_at,
+        fetched_at=fetched_at,
+        location_metadata=location_metadata,
+    )
+
+
 def _build_workable_description(item: dict[str, Any]) -> str:
     parts = [
         part
@@ -695,22 +807,37 @@ async def fetch_lever_job(
     *,
     company_slug: str,
     job_id: str,
+    ref: ResolvedJobRef | None = None,
 ) -> RawJob | None:
     response = await client.get(
         f"https://api.lever.co/v0/postings/{company_slug}/{job_id}",
         timeout=8,
     )
-    if response.status_code != 200:
-        return None
-    payload = response.json()
-    if not isinstance(payload, dict):
-        return None
-    return build_lever_job(
-        payload,
-        company_slug=company_slug,
-        company_name=_humanize_slug(company_slug) or company_slug,
-        fetched_at=datetime.now(timezone.utc).isoformat(),
-    )
+    if response.status_code == 200:
+        payload = response.json()
+        if isinstance(payload, dict):
+            return build_lever_job(
+                payload,
+                company_slug=company_slug,
+                company_name=_humanize_slug(company_slug) or company_slug,
+                fetched_at=datetime.now(timezone.utc).isoformat(),
+            )
+
+    if ref is not None and ref.url:
+        hosted_url = ref.url.split("?", 1)[0]
+        hosted_response = await client.get(hosted_url, timeout=8, follow_redirects=True)
+        if hosted_response.status_code == 200 and hosted_response.text.strip():
+            job = build_lever_job_from_html(
+                hosted_response.text,
+                company_slug=company_slug,
+                company_name=_humanize_slug(company_slug) or company_slug,
+                job_id=job_id,
+                fetched_at=datetime.now(timezone.utc).isoformat(),
+                default_url=hosted_url,
+            )
+            if job.title or job.description:
+                return job
+    return None
 
 
 async def fetch_ashby_job(
@@ -910,6 +1037,6 @@ async def fetch_supported_job(
     fetcher = SINGLE_JOB_FETCHERS.get(ref.platform)
     if fetcher is None:
         return None
-    if ref.platform == "workday":
+    if ref.platform in {"lever", "workday"}:
         return await fetcher(client, company_slug=ref.company_slug, job_id=ref.job_id, ref=ref)
     return await fetcher(client, company_slug=ref.company_slug, job_id=ref.job_id)
