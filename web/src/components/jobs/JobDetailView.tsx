@@ -4,8 +4,17 @@ import { useCallback, useEffect, useState } from 'react'
 import { api } from '@/lib/api/client'
 import type { components } from '@/lib/api/types'
 import { NotesEditor } from '@/components/applications/NotesEditor'
+import { StageEditorDialog } from '@/components/applications/StageEditorDialog'
 import { StatusTimeline } from '@/components/applications/StatusTimeline'
 import { StatusTransitionButtons } from '@/components/applications/StatusTransitionButtons'
+import {
+  getApplicationEventDate,
+  getApplicationStageLabel,
+  getNextApplicationStage,
+  normalizeTrackerDateForInput,
+  type ApplicationEventResponse,
+  type ApplicationStatus,
+} from '@/lib/applications/stages'
 import { getMatchQualityLabel } from '@/lib/utils/score'
 import { ScoreRing } from '@/components/score/ScoreRing'
 import { ScoreBar } from '@/components/score/ScoreBar'
@@ -20,7 +29,6 @@ import { Button, buttonVariants } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
 import { JobDescription } from '@/components/jobs/JobDescription'
 import { cn } from '@/lib/utils'
 import {
@@ -40,6 +48,7 @@ import {
   ClipboardList,
   FileText,
   PencilLine,
+  Plus,
   Trash2,
 } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
@@ -48,13 +57,6 @@ import { toast } from 'sonner'
 
 type JobDetailResponse = components["schemas"]["JobDetailResponse"]
 type JobStatus = components["schemas"]["StatusUpdate"]["status"]
-type ApplicationStatus = components['schemas']['ApplicationStatusUpdate']['application_status']
-type ApplicationEventResponse = components['schemas']['ApplicationEventResponse']
-
-function normalizeAppliedDateForInput(value?: string | null): string {
-  if (!value) return ''
-  return value.includes('T') ? value.slice(0, 10) : value
-}
 
 interface JobDetailViewProps {
   jobId: number | null
@@ -82,15 +84,14 @@ export function JobDetailView({
   const [savingNextStep, setSavingNextStep] = useState(false)
   const [savingAppliedAt, setSavingAppliedAt] = useState(false)
   const [savingResponseDate, setSavingResponseDate] = useState(false)
-  const [savingTimelineEventDate, setSavingTimelineEventDate] = useState(false)
+  const [savingTimelineEvent, setSavingTimelineEvent] = useState(false)
   const [deletingTimelineEventId, setDeletingTimelineEventId] = useState<number | null>(null)
   const [appliedDateDialogOpen, setAppliedDateDialogOpen] = useState(false)
   const [appliedDateDraft, setAppliedDateDraft] = useState('')
   const [responseDateDialogOpen, setResponseDateDialogOpen] = useState(false)
   const [responseDateDraft, setResponseDateDraft] = useState('')
-  const [timelineEventDialogOpen, setTimelineEventDialogOpen] = useState(false)
-  const [timelineEventDraft, setTimelineEventDraft] = useState('')
-  const [timelineEventNoteDraft, setTimelineEventNoteDraft] = useState('')
+  const [stageEditorOpen, setStageEditorOpen] = useState(false)
+  const [stageEditorMode, setStageEditorMode] = useState<'create' | 'edit'>('create')
   const [editingTimelineEvent, setEditingTimelineEvent] = useState<ApplicationEventResponse | null>(null)
   const [statusDialogOpen, setStatusDialogOpen] = useState(false)
   const [nextStepDialogOpen, setNextStepDialogOpen] = useState(false)
@@ -109,14 +110,14 @@ export function JobDetailView({
     router.push(boardHref)
   }, [boardHref, router])
 
-  const fetchJob = useCallback(async () => {
+  const fetchJob = useCallback(async ({ silent = false }: { silent?: boolean } = {}) => {
     if (!jobId) {
       setError('No job ID provided')
-      setLoading(false)
+      if (!silent) setLoading(false)
       return
     }
 
-    setLoading(true)
+    if (!silent) setLoading(true)
     setError(null)
 
     try {
@@ -131,7 +132,7 @@ export function JobDetailView({
     } catch (err: any) {
       setError(err.message)
     } finally {
-      setLoading(false)
+      if (!silent) setLoading(false)
     }
   }, [jobId])
 
@@ -317,7 +318,7 @@ export function JobDetailView({
   }
 
   const openAppliedDateDialog = () => {
-    setAppliedDateDraft(normalizeAppliedDateForInput(job?.applied_at))
+    setAppliedDateDraft(normalizeTrackerDateForInput(job?.applied_at))
     setAppliedDateDialogOpen(true)
   }
 
@@ -343,43 +344,61 @@ export function JobDetailView({
   }
 
   const openResponseDateDialog = () => {
-    const firstResponseEvent = timeline.find((event) => event.status !== 'applied')
-    setResponseDateDraft(normalizeAppliedDateForInput(firstResponseEvent?.created_at))
+    const firstResponseEvent = timeline.find((event) => event.canonical_phase !== 'applied')
+    setResponseDateDraft(normalizeTrackerDateForInput(firstResponseEvent ? getApplicationEventDate(firstResponseEvent) : null))
     setResponseDateDialogOpen(true)
   }
 
-  const openTimelineEventDialog = (event: ApplicationEventResponse) => {
-    setEditingTimelineEvent(event)
-    setTimelineEventDraft(normalizeAppliedDateForInput(event.created_at))
-    setTimelineEventNoteDraft(event.note ?? '')
-    setTimelineEventDialogOpen(true)
+  const openAddStageDialog = () => {
+    setStageEditorMode('create')
+    setEditingTimelineEvent(null)
+    setStageEditorOpen(true)
   }
 
-  const saveTimelineEventDate = async () => {
-    if (!jobId || !editingTimelineEvent || !timelineEventDraft) return
+  const openTimelineEventDialog = (event: ApplicationEventResponse) => {
+    setStageEditorMode('edit')
+    setEditingTimelineEvent(event)
+    setStageEditorOpen(true)
+  }
 
-    setSavingTimelineEventDate(true)
+  const saveTimelineEvent = async (payload: {
+    canonical_phase: ApplicationStatus
+    stage_label: string
+    occurred_at: string
+    note: string | null
+  }) => {
+    if (!jobId) return
+
+    setSavingTimelineEvent(true)
     try {
-      const { error: patchError } = await api.PATCH('/api/jobs/{job_id}/timeline/{event_id}', {
-        params: {
-          path: { job_id: jobId, event_id: editingTimelineEvent.id },
-        },
-        body: {
-          created_at: timelineEventDraft,
-          note: timelineEventNoteDraft.trim() || null,
-        },
-      })
-      if (patchError) throw new Error('Failed to update timeline event')
+      if (stageEditorMode === 'create') {
+        const { error: postError } = await api.POST('/api/jobs/{job_id}/timeline', {
+          params: {
+            path: { job_id: jobId },
+          },
+          body: payload,
+        })
+        if (postError) throw new Error('Failed to add timeline stage')
+      } else {
+        if (!editingTimelineEvent) return
 
-      await Promise.all([fetchTimeline(), fetchJob()])
-      setTimelineEventDialogOpen(false)
+        const { error: patchError } = await api.PATCH('/api/jobs/{job_id}/timeline/{event_id}', {
+          params: {
+            path: { job_id: jobId, event_id: editingTimelineEvent.id },
+          },
+          body: payload,
+        })
+        if (patchError) throw new Error('Failed to update timeline event')
+      }
+
+      await Promise.all([fetchTimeline(), fetchJob({ silent: true })])
+      setStageEditorOpen(false)
       setEditingTimelineEvent(null)
-      setTimelineEventNoteDraft('')
-      toast.success('Timeline event updated')
+      toast.success(stageEditorMode === 'create' ? 'Stage added to timeline' : 'Timeline stage updated')
     } catch (err: any) {
       toast.error(err.message)
     } finally {
-      setSavingTimelineEventDate(false)
+      setSavingTimelineEvent(false)
     }
   }
 
@@ -387,7 +406,7 @@ export function JobDetailView({
     if (!jobId) return
     if (typeof window !== 'undefined') {
       const confirmed = window.confirm(
-        `Delete the "${event.status.replaceAll('_', ' ')}" timeline stage?`
+        `Delete the "${event.stage_label}" timeline stage?`
       )
       if (!confirmed) return
     }
@@ -401,7 +420,7 @@ export function JobDetailView({
       })
       if (deleteError) throw new Error('Failed to delete timeline event')
 
-      await Promise.all([fetchTimeline(), fetchJob()])
+      await Promise.all([fetchTimeline(), fetchJob({ silent: true })])
       toast.success('Timeline stage removed')
     } catch (err: any) {
       toast.error(err.message)
@@ -412,7 +431,7 @@ export function JobDetailView({
 
   const openNextStepDialog = () => {
     setNextStepDraft(job?.next_step ?? '')
-    setNextStepDateDraft(normalizeAppliedDateForInput(job?.next_step_date))
+    setNextStepDateDraft(normalizeTrackerDateForInput(job?.next_step_date))
     setNextStepDialogOpen(true)
   }
 
@@ -448,7 +467,7 @@ export function JobDetailView({
         if (data.status === 'done') {
           clearInterval(interval)
           setRescoreRunId(null)
-          fetchJob()
+          fetchJob({ silent: true })
           toast.success('Job assessment refreshed')
         } else if (data.status === 'error') {
           clearInterval(interval)
@@ -518,9 +537,16 @@ export function JobDetailView({
   const companySignals = Array.isArray(job.company_quality_signals) ? job.company_quality_signals : []
   const matchQualityLabel = job.is_sparse ? 'Manual Review Required' : getMatchQualityLabel(job.score_breakdown?.apply_priority)
   const scoreReasoning = job.score_reasoning || 'No detailed reasoning provided.'
-  const trackerStatusLabel = job.application_status ? job.application_status.replaceAll('_', ' ') : null
+  const trackerStatusLabel = job.application_status ? getApplicationStageLabel(job.application_status) : null
   const trackerStatus = job.application_status as ApplicationStatus | null
-  const firstResponseEvent = timeline.find((event) => event.status !== 'applied')
+  const firstResponseEvent = timeline.find((event) => event.canonical_phase !== 'applied')
+  const latestTimelineEvent = timeline[timeline.length - 1] ?? null
+  const latestStageLabel = latestTimelineEvent?.stage_label?.trim() || null
+  const latestCanonicalLabel = latestTimelineEvent ? getApplicationStageLabel(latestTimelineEvent.canonical_phase) : null
+  const supportingStageLabel = latestStageLabel && latestCanonicalLabel && latestStageLabel !== latestCanonicalLabel
+    ? latestStageLabel
+    : null
+  const nextStageDefault = trackerStatus ? getNextApplicationStage(trackerStatus) : 'screening'
   const nextStepSummary = job.next_step_date
     ? `${job.next_step || 'Next step'} · ${formatDate(job.next_step_date)}`
     : (job.next_step || null)
@@ -569,8 +595,8 @@ export function JobDetailView({
                 Status: {job.status}
               </Badge>
               {job.application_status && (
-                <Badge variant="outline" className="capitalize px-3 border-primary/20 bg-primary/10 text-primary">
-                  Tracker: {job.application_status.replaceAll('_', ' ')}
+                <Badge variant="outline" className="px-3 border-primary/20 bg-primary/10 text-primary">
+                  Tracker: {trackerStatusLabel}
                 </Badge>
               )}
               {job.match_tier && <MatchTierBadge matchTier={job.match_tier} />}
@@ -806,7 +832,7 @@ export function JobDetailView({
                     <button
                       type="button"
                       onClick={() => setStatusDialogOpen(true)}
-                      className="rounded-full border border-primary/25 bg-primary/12 px-4 py-2.5 text-xl font-semibold capitalize text-primary transition-colors hover:border-primary/40 hover:bg-primary/18"
+                      className="rounded-full border border-primary/25 bg-primary/12 px-4 py-2.5 text-xl font-semibold text-primary transition-colors hover:border-primary/40 hover:bg-primary/18"
                     >
                       {trackerStatusLabel}
                     </button>
@@ -828,8 +854,13 @@ export function JobDetailView({
                       <TooltipContent className="border border-border/50 bg-popover/80 text-[10px] text-popover-foreground shadow-xl backdrop-blur-md">
                         <p>Change status</p>
                       </TooltipContent>
-                    </Tooltip>
+                      </Tooltip>
                   </div>
+                  {supportingStageLabel && (
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      Latest label: <span className="font-medium text-foreground/85">{supportingStageLabel}</span>
+                    </p>
+                  )}
                 </div>
                 <div className="overflow-hidden rounded-2xl border border-border/40 bg-background/30">
                   {job.applied_at && (
@@ -863,7 +894,7 @@ export function JobDetailView({
                     <div className={`${metadataRowClass} border-t border-border/35`}>
                       <div className="space-y-1">
                         <p className={metadataLabelClass}>Responded</p>
-                        <p className={metadataValueClass}>{formatDate(firstResponseEvent.created_at)}</p>
+                        <p className={metadataValueClass}>{formatDate(getApplicationEventDate(firstResponseEvent))}</p>
                       </div>
                       <Tooltip>
                         <TooltipTrigger
@@ -946,9 +977,21 @@ export function JobDetailView({
 
             <Card className="flex-1 border-border/50 bg-card/60 backdrop-blur-xl shadow-xl overflow-hidden">
               <CardContent className="flex h-full flex-col px-4 pt-4 pb-2">
-                <div className="flex items-center gap-2">
-                  <ClipboardList className="h-4 w-4 text-primary" />
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Status Timeline</p>
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <ClipboardList className="h-4 w-4 text-primary" />
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Status Timeline</p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={openAddStageDialog}
+                    disabled={timelineLoading || savingTimelineEvent}
+                    className="gap-2 rounded-full"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    Add Stage
+                  </Button>
                 </div>
                 <div className="flex-1 pt-3">
                   <StatusTimeline
@@ -956,7 +999,7 @@ export function JobDetailView({
                     loading={timelineLoading}
                     onEditEvent={openTimelineEventDialog}
                     onDeleteEvent={deleteTimelineEvent}
-                    editingEventId={savingTimelineEventDate ? editingTimelineEvent?.id ?? null : null}
+                    editingEventId={stageEditorMode === 'edit' && savingTimelineEvent ? editingTimelineEvent?.id ?? null : null}
                     deletingEventId={deletingTimelineEventId}
                   />
                 </div>
@@ -1086,7 +1129,7 @@ export function JobDetailView({
           </div>
           <DialogFooter>
             <Button
-              disabled={savingAppliedAt || !appliedDateDraft || appliedDateDraft === normalizeAppliedDateForInput(job?.applied_at)}
+              disabled={savingAppliedAt || !appliedDateDraft || appliedDateDraft === normalizeTrackerDateForInput(job?.applied_at)}
               onClick={() => void saveAppliedAt({ applied_at: appliedDateDraft })}
               className="gap-2"
             >
@@ -1097,82 +1140,20 @@ export function JobDetailView({
         </DialogContent>
       </Dialog>
 
-      <Dialog
-        open={timelineEventDialogOpen}
+      <StageEditorDialog
+        open={stageEditorOpen}
         onOpenChange={(open) => {
-          setTimelineEventDialogOpen(open)
+          setStageEditorOpen(open)
           if (!open) {
             setEditingTimelineEvent(null)
-            setTimelineEventNoteDraft('')
           }
         }}
-      >
-        <DialogContent className="max-w-md rounded-3xl border border-border/60 bg-popover/95 shadow-2xl backdrop-blur-xl">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-bold">Edit Timeline Stage</DialogTitle>
-            <DialogDescription>
-              Update the date or note for this stage while keeping the tracker summary and timeline aligned.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-3">
-            <div className="rounded-2xl border border-border/40 bg-background/40 px-4 py-3">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70">
-                Stage
-              </p>
-              <p className="mt-1 text-sm font-medium capitalize text-foreground/90">
-                {editingTimelineEvent?.status.replaceAll('_', ' ')}
-              </p>
-            </div>
-            <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
-                Date
-              </label>
-              <Input
-                type="date"
-                value={timelineEventDraft}
-                onChange={(event) => setTimelineEventDraft(event.target.value)}
-                className="h-12 rounded-2xl"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
-                Note
-              </label>
-              <Textarea
-                value={timelineEventNoteDraft}
-                onChange={(event) => setTimelineEventNoteDraft(event.target.value)}
-                placeholder="Optional note for this stage..."
-                className="min-h-28 rounded-2xl resize-none"
-              />
-            </div>
-          </div>
-
-          <DialogFooter className="gap-2">
-            <Button
-              variant="ghost"
-              onClick={() => setTimelineEventDialogOpen(false)}
-              disabled={savingTimelineEventDate}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={saveTimelineEventDate}
-              disabled={
-                savingTimelineEventDate
-                || !timelineEventDraft
-                || (
-                  timelineEventDraft === normalizeAppliedDateForInput(editingTimelineEvent?.created_at)
-                  && timelineEventNoteDraft === (editingTimelineEvent?.note ?? '')
-                )
-              }
-            >
-              {savingTimelineEventDate ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              Save Changes
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        mode={stageEditorMode}
+        saving={savingTimelineEvent}
+        event={editingTimelineEvent}
+        defaultPhase={nextStageDefault}
+        onSubmit={saveTimelineEvent}
+      />
 
       <Dialog open={responseDateDialogOpen} onOpenChange={setResponseDateDialogOpen}>
         <DialogContent className="sm:max-w-md" showCloseButton>
@@ -1192,7 +1173,7 @@ export function JobDetailView({
           </div>
           <DialogFooter>
             <Button
-              disabled={savingResponseDate || !responseDateDraft || responseDateDraft === normalizeAppliedDateForInput(firstResponseEvent?.created_at)}
+              disabled={savingResponseDate || !responseDateDraft || responseDateDraft === normalizeTrackerDateForInput(firstResponseEvent ? getApplicationEventDate(firstResponseEvent) : null)}
               onClick={() => void saveResponseDate(responseDateDraft || null)}
               className="gap-2"
             >
@@ -1239,7 +1220,7 @@ export function JobDetailView({
                 savingNextStep
                 || (
                   nextStepDraft.trim() === (job?.next_step ?? '')
-                  && nextStepDateDraft === normalizeAppliedDateForInput(job?.next_step_date)
+                  && nextStepDateDraft === normalizeTrackerDateForInput(job?.next_step_date)
                 )
               }
               onClick={() => void saveNextStep({

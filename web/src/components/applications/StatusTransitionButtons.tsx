@@ -4,39 +4,12 @@ import { useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Textarea } from '@/components/ui/textarea'
+import {
+  APPLICATION_STAGE_TRANSITIONS,
+  getApplicationStageLabel,
+  type ApplicationStatus,
+} from '@/lib/applications/stages'
 import { ArrowRight, Loader2, MessageSquarePlus, Trash2 } from 'lucide-react'
-
-export type ApplicationStatus =
-  | 'applied'
-  | 'screening'
-  | 'interviewing'
-  | 'offer'
-  | 'accepted'
-  | 'rejected_by_company'
-  | 'rejected_by_user'
-  | 'ghosted'
-
-const TRANSITIONS: Record<ApplicationStatus, ApplicationStatus[]> = {
-  applied: ['screening', 'interviewing', 'rejected_by_company', 'rejected_by_user', 'ghosted'],
-  screening: ['applied', 'interviewing', 'rejected_by_company', 'rejected_by_user', 'ghosted'],
-  interviewing: ['screening', 'offer', 'rejected_by_company', 'rejected_by_user', 'ghosted'],
-  offer: ['interviewing', 'accepted', 'rejected_by_user'],
-  accepted: ['offer', 'rejected_by_user'],
-  rejected_by_company: ['applied'],
-  rejected_by_user: ['applied'],
-  ghosted: ['screening', 'interviewing'],
-}
-
-const LABELS: Record<ApplicationStatus, string> = {
-  applied: 'Applied',
-  screening: 'Screening',
-  interviewing: 'Interviewing',
-  offer: 'Offer',
-  accepted: 'Accepted',
-  rejected_by_company: 'Rejected by Company',
-  rejected_by_user: 'Withdrawn',
-  ghosted: 'Ghosted',
-}
 
 export function StatusTransitionButtons({
   currentStatus,
@@ -58,7 +31,7 @@ export function StatusTransitionButtons({
   const [internalOpen, setInternalOpen] = useState(false)
   const [pendingStatus, setPendingStatus] = useState<ApplicationStatus | null>(null)
   const [note, setNote] = useState('')
-  const nextStatuses = useMemo(() => TRANSITIONS[currentStatus] ?? [], [currentStatus])
+  const nextStatuses = useMemo(() => APPLICATION_STAGE_TRANSITIONS[currentStatus] ?? [], [currentStatus])
   const dialogOpen = open ?? internalOpen
 
   const confirmTransition = async () => {
@@ -127,7 +100,7 @@ export function StatusTransitionButtons({
                 className="gap-2"
               >
                 <ArrowRight className="h-3.5 w-3.5" />
-                {LABELS[status]}
+                {getApplicationStageLabel(status)}
               </Button>
             ))}
           </div>
