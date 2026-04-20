@@ -141,16 +141,35 @@ class ApplicationStatusUpdate(BaseModel):
     note: Optional[str] = None
 
 
+ApplicationCanonicalPhase = Literal[
+    "applied",
+    "screening",
+    "interviewing",
+    "offer",
+    "accepted",
+    "rejected_by_company",
+    "rejected_by_user",
+    "ghosted",
+]
+
+
 class ApplicationEventResponse(BaseModel):
     id: int
     job_id: int
+    event_type: str = "stage"
+    canonical_phase: ApplicationCanonicalPhase
+    stage_label: str
+    occurred_at: str
     status: str
     note: Optional[str] = None
     created_at: str
 
 
 class TimelineEventDateUpdate(BaseModel):
-    created_at: str
+    canonical_phase: Optional[ApplicationCanonicalPhase] = None
+    stage_label: Optional[str] = None
+    occurred_at: Optional[str] = None
+    created_at: Optional[str] = None
     note: Optional[str] = None
 
 
@@ -265,6 +284,14 @@ class AppliedAtUpdate(BaseModel):
 
 class ResponseDateUpdate(BaseModel):
     response_date: Optional[str] = None
+
+
+class TimelineEventCreate(BaseModel):
+    canonical_phase: ApplicationCanonicalPhase
+    stage_label: str
+    occurred_at: Optional[str] = None
+    created_at: Optional[str] = None
+    note: Optional[str] = None
 
 
 class TimelineResponse(BaseModel):

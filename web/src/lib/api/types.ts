@@ -238,7 +238,8 @@ export interface paths {
         /** Get Timeline */
         get: operations["get_timeline_api_jobs__job_id__timeline_get"];
         put?: never;
-        post?: never;
+        /** Create Timeline Event */
+        post: operations["create_timeline_event_api_jobs__job_id__timeline_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -796,6 +797,20 @@ export interface components {
             id: number;
             /** Job Id */
             job_id: number;
+            /**
+             * Event Type
+             * @default stage
+             */
+            event_type: string;
+            /**
+             * Canonical Phase
+             * @enum {string}
+             */
+            canonical_phase: "applied" | "screening" | "interviewing" | "offer" | "accepted" | "rejected_by_company" | "rejected_by_user" | "ghosted";
+            /** Stage Label */
+            stage_label: string;
+            /** Occurred At */
+            occurred_at: string;
             /** Status */
             status: string;
             /** Note */
@@ -1881,10 +1896,32 @@ export interface components {
              */
             status: "new" | "scored" | "dismissed";
         };
+        /** TimelineEventCreate */
+        TimelineEventCreate: {
+            /**
+             * Canonical Phase
+             * @enum {string}
+             */
+            canonical_phase: "applied" | "screening" | "interviewing" | "offer" | "accepted" | "rejected_by_company" | "rejected_by_user" | "ghosted";
+            /** Stage Label */
+            stage_label: string;
+            /** Occurred At */
+            occurred_at?: string | null;
+            /** Created At */
+            created_at?: string | null;
+            /** Note */
+            note?: string | null;
+        };
         /** TimelineEventDateUpdate */
         TimelineEventDateUpdate: {
+            /** Canonical Phase */
+            canonical_phase?: ("applied" | "screening" | "interviewing" | "offer" | "accepted" | "rejected_by_company" | "rejected_by_user" | "ghosted") | null;
+            /** Stage Label */
+            stage_label?: string | null;
+            /** Occurred At */
+            occurred_at?: string | null;
             /** Created At */
-            created_at: string;
+            created_at?: string | null;
             /** Note */
             note?: string | null;
         };
@@ -2586,6 +2623,43 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TimelineResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_timeline_event_api_jobs__job_id__timeline_post: {
+        parameters: {
+            query?: {
+                profile?: string;
+            };
+            header?: never;
+            path: {
+                job_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TimelineEventCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApplicationEventResponse"];
                 };
             };
             /** @description Validation Error */

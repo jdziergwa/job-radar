@@ -412,11 +412,15 @@ class Store:
             conn.close()
 
     @staticmethod
-    def _application_event_to_legacy_dict(row: sqlite3.Row | dict) -> dict:
-        """Map the canonical event schema back to the legacy API response shape."""
+    def _application_event_to_api_dict(row: sqlite3.Row | dict) -> dict:
+        """Map the canonical event schema to the public API response shape."""
         return {
             "id": int(row["id"]),
             "job_id": int(row["job_id"]),
+            "event_type": str(row["event_type"]),
+            "canonical_phase": str(row["canonical_phase"]),
+            "stage_label": str(row["stage_label"]),
+            "occurred_at": str(row["occurred_at"]),
             "status": str(row["canonical_phase"]),
             "note": row["note"],
             "created_at": str(row["occurred_at"]),
@@ -474,6 +478,28 @@ class Store:
         ).fetchone()
         max_sort_order = int(row["max_sort_order"]) if row is not None else -1
         return max_sort_order + 1
+
+    def _insert_application_event(
+        self,
+        conn: sqlite3.Connection,
+        *,
+        db_id: int,
+        canonical_phase: str,
+        stage_label: str,
+        note: str | None,
+        occurred_at: str,
+        created_by: str,
+    ) -> int:
+        """Insert a canonical timeline event and return its row id."""
+        sort_order = self._next_sort_order(conn, db_id, occurred_at)
+        cursor = conn.execute(
+            """INSERT INTO application_events (
+                   job_id, event_type, canonical_phase, stage_label, note, occurred_at, sort_order, created_by
+               )
+               VALUES (?, 'stage', ?, ?, ?, ?, ?, ?)""",
+            (db_id, canonical_phase, stage_label, note, occurred_at, sort_order, created_by),
+        )
+        return int(cursor.lastrowid)
 
     # ── Upsert ──────────────────────────────────────────────────────
 
@@ -728,20 +754,14 @@ class Store:
                 if current_status is None and application_status == "applied" and row["applied_at"]
                 else now
             )
-            sort_order = self._next_sort_order(conn, db_id, occurred_at)
-            conn.execute(
-                """INSERT INTO application_events (
-                       job_id, event_type, canonical_phase, stage_label, note, occurred_at, sort_order, created_by
-                   )
-                   VALUES (?, 'stage', ?, ?, ?, ?, ?, 'user')""",
-                (
-                    db_id,
-                    application_status,
-                    _default_stage_label(application_status),
-                    note,
-                    occurred_at,
-                    sort_order,
-                ),
+            self._insert_application_event(
+                conn,
+                db_id=db_id,
+                canonical_phase=application_status,
+                stage_label=_default_stage_label(application_status),
+                note=note,
+                occurred_at=occurred_at,
+                created_by="user",
             )
             self._sync_job_tracker_fields_from_timeline(conn, db_id)
 
@@ -792,14 +812,14 @@ class Store:
         """Return the first non-applied tracker event for a job."""
         with self._connect() as conn:
             row = conn.execute(
-                f"""SELECT id, job_id, canonical_phase, note, occurred_at
+                f"""SELECT id, job_id, event_type, canonical_phase, stage_label, note, occurred_at
                    FROM application_events
                    WHERE job_id = ? AND canonical_phase != 'applied'
                    ORDER BY {APPLICATION_EVENT_ORDER_SQL}
                    LIMIT 1""",
                 (db_id,),
             ).fetchone()
-        return self._application_event_to_legacy_dict(row) if row is not None else None
+        return self._application_event_to_api_dict(row) if row is not None else None
 
     def update_first_response_date(self, db_id: int, response_date: str) -> dict | None:
         """Update the first non-applied tracker event date for a job."""
@@ -815,24 +835,24 @@ class Store:
             )
             self._sync_job_tracker_fields_from_timeline(conn, db_id)
             row = conn.execute(
-                """SELECT id, job_id, canonical_phase, note, occurred_at
+                """SELECT id, job_id, event_type, canonical_phase, stage_label, note, occurred_at
                    FROM application_events
                    WHERE id = ?""",
                 (first_response["id"],),
             ).fetchone()
         self.set_metadata("last_job_status_change_at", datetime.utcnow().isoformat())
-        return self._application_event_to_legacy_dict(row) if row is not None else None
+        return self._application_event_to_api_dict(row) if row is not None else None
 
     def get_application_event(self, db_id: int, event_id: int) -> dict | None:
         """Return a specific tracker timeline event for a job."""
         with self._connect() as conn:
             row = conn.execute(
-                """SELECT id, job_id, canonical_phase, note, occurred_at
+                """SELECT id, job_id, event_type, canonical_phase, stage_label, note, occurred_at
                    FROM application_events
                    WHERE job_id = ? AND id = ?""",
                 (db_id, event_id),
             ).fetchone()
-        return self._application_event_to_legacy_dict(row) if row is not None else None
+        return self._application_event_to_api_dict(row) if row is not None else None
 
     def _sync_job_tracker_fields_from_timeline(self, conn: sqlite3.Connection, db_id: int) -> None:
         rows = self._get_application_events(conn, db_id)
@@ -862,11 +882,13 @@ class Store:
         event_id: int,
         created_at: str,
         note: str | None,
+        canonical_phase: str | None = None,
+        stage_label: str | None = None,
     ) -> dict | None:
         """Update a specific tracker event and sync derived job fields."""
         with self._connect() as conn:
             existing = conn.execute(
-                """SELECT id, occurred_at, sort_order
+                """SELECT id, event_type, canonical_phase, stage_label, occurred_at, sort_order
                    FROM application_events
                    WHERE job_id = ? AND id = ?""",
                 (db_id, event_id),
@@ -874,6 +896,15 @@ class Store:
             if existing is None:
                 return None
 
+            next_phase = canonical_phase or str(existing["canonical_phase"])
+            existing_label = str(existing["stage_label"])
+            next_label = stage_label
+            if next_label is None:
+                next_label = (
+                    _default_stage_label(next_phase)
+                    if canonical_phase and existing_label == _default_stage_label(str(existing["canonical_phase"]))
+                    else existing_label
+                )
             sort_order = (
                 int(existing["sort_order"])
                 if existing["occurred_at"] == created_at and "sort_order" in existing.keys()
@@ -881,23 +912,23 @@ class Store:
             )
             cursor = conn.execute(
                 """UPDATE application_events
-                   SET occurred_at = ?, note = ?, sort_order = ?
+                   SET canonical_phase = ?, stage_label = ?, occurred_at = ?, note = ?, sort_order = ?
                    WHERE job_id = ? AND id = ?""",
-                (created_at, note, sort_order, db_id, event_id),
+                (next_phase, next_label, created_at, note, sort_order, db_id, event_id),
             )
             if cursor.rowcount <= 0:
                 return None
 
             self._sync_job_tracker_fields_from_timeline(conn, db_id)
             row = conn.execute(
-                """SELECT id, job_id, canonical_phase, note, occurred_at
+                """SELECT id, job_id, event_type, canonical_phase, stage_label, note, occurred_at
                    FROM application_events
                    WHERE id = ? AND job_id = ?""",
                 (event_id, db_id),
             ).fetchone()
 
         self.set_metadata("last_job_status_change_at", datetime.utcnow().isoformat())
-        return self._application_event_to_legacy_dict(row) if row is not None else None
+        return self._application_event_to_api_dict(row) if row is not None else None
 
     def update_application_event_date(self, db_id: int, event_id: int, created_at: str) -> dict | None:
         """Backward-compatible wrapper for date-only timeline edits."""
@@ -905,6 +936,42 @@ class Store:
         if existing is None:
             return None
         return self.update_application_event(db_id, event_id, created_at, existing.get("note"))
+
+    def add_application_event(
+        self,
+        db_id: int,
+        *,
+        canonical_phase: str,
+        stage_label: str,
+        note: str | None,
+        occurred_at: str,
+        created_by: str = "user",
+    ) -> dict | None:
+        """Create a new timeline event and sync derived job fields."""
+        with self._connect() as conn:
+            job = conn.execute("SELECT id FROM jobs WHERE id = ?", (db_id,)).fetchone()
+            if job is None:
+                return None
+
+            event_id = self._insert_application_event(
+                conn,
+                db_id=db_id,
+                canonical_phase=canonical_phase,
+                stage_label=stage_label,
+                note=note,
+                occurred_at=occurred_at,
+                created_by=created_by,
+            )
+            self._sync_job_tracker_fields_from_timeline(conn, db_id)
+            row = conn.execute(
+                """SELECT id, job_id, event_type, canonical_phase, stage_label, note, occurred_at
+                   FROM application_events
+                   WHERE id = ? AND job_id = ?""",
+                (event_id, db_id),
+            ).fetchone()
+
+        self.set_metadata("last_job_status_change_at", datetime.utcnow().isoformat())
+        return self._application_event_to_api_dict(row) if row is not None else None
 
     def delete_application_event(self, db_id: int, event_id: int) -> bool:
         """Delete a tracker event and sync derived job fields."""
@@ -1407,7 +1474,7 @@ class Store:
         """Return tracker timeline events for a job."""
         with self._connect() as conn:
             rows = self._get_application_events(conn, db_id)
-        return [self._application_event_to_legacy_dict(row) for row in rows]
+        return [self._application_event_to_api_dict(row) for row in rows]
 
     def get_application_stats(self) -> dict:
         """Aggregate tracker stats for the applications page."""
@@ -1655,13 +1722,14 @@ class Store:
                 ),
             )
             new_id = int(cursor.lastrowid)
-            sort_order = self._next_sort_order(conn, new_id, normalized_applied_at)
-            conn.execute(
-                """INSERT INTO application_events (
-                       job_id, event_type, canonical_phase, stage_label, note, occurred_at, sort_order, created_by
-                   )
-                   VALUES (?, 'stage', 'applied', 'Applied', ?, ?, ?, 'import')""",
-                (new_id, initial_event_note, normalized_applied_at, sort_order),
+            self._insert_application_event(
+                conn,
+                db_id=new_id,
+                canonical_phase="applied",
+                stage_label="Applied",
+                note=initial_event_note,
+                occurred_at=normalized_applied_at,
+                created_by="import",
             )
             self._sync_job_tracker_fields_from_timeline(conn, new_id)
             created = conn.execute("SELECT * FROM jobs WHERE id = ?", (new_id,)).fetchone()

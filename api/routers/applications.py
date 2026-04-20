@@ -24,6 +24,7 @@ from api.models import (
     NextStepUpdate,
     NotesUpdate,
     ResponseDateUpdate,
+    TimelineEventCreate,
     TimelineEventDateUpdate,
     TimelineResponse,
 )
@@ -180,6 +181,17 @@ def _maybe_track_company(
 def _normalize_iso_datetime(value: str) -> datetime:
     normalized = value[:-1] + "+00:00" if value.endswith("Z") else value
     return datetime.fromisoformat(normalized)
+
+
+def _resolve_timeline_timestamp(*, created_at: str | None, occurred_at: str | None) -> str:
+    return occurred_at or created_at or ""
+
+
+def _normalize_stage_label(value: str | None) -> str | None:
+    if value is None:
+        return None
+    normalized = value.strip()
+    return normalized or None
 
 
 def _build_application_list_payload(
@@ -373,6 +385,48 @@ def get_timeline(job_id: int, profile: str = Query("default")):
     return TimelineResponse(events=store.get_application_timeline(job_id))
 
 
+@router.post("/jobs/{job_id}/timeline", response_model=ApplicationEventResponse)
+def create_timeline_event(
+    job_id: int,
+    body: TimelineEventCreate,
+    profile: str = Query("default"),
+):
+    store = get_store(profile)
+    existing = store.get_job_detail(job_id)
+    if not existing:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    occurred_at = _resolve_timeline_timestamp(created_at=body.created_at, occurred_at=body.occurred_at)
+    if not occurred_at:
+        raise HTTPException(status_code=422, detail="Timeline event date is required")
+
+    label = _normalize_stage_label(body.stage_label)
+    if not label:
+        raise HTTPException(status_code=422, detail="Stage label is required")
+
+    try:
+        _normalize_iso_datetime(occurred_at)
+    except ValueError:
+        raise HTTPException(status_code=422, detail="Invalid timeline event date") from None
+
+    timeline = store.get_application_timeline(job_id)
+    if not timeline and body.canonical_phase != "applied":
+        raise HTTPException(status_code=422, detail="The first timeline event must be an applied stage")
+    if timeline and not any(item["status"] == "applied" for item in timeline) and body.canonical_phase != "applied":
+        raise HTTPException(status_code=422, detail="A tracked job must have an applied stage")
+
+    created = store.add_application_event(
+        job_id,
+        canonical_phase=body.canonical_phase,
+        stage_label=label,
+        note=body.note,
+        occurred_at=occurred_at,
+    )
+    if not created:
+        raise HTTPException(status_code=404, detail="Job not found")
+    return ApplicationEventResponse(**created)
+
+
 @router.patch("/jobs/{job_id}/timeline/{event_id}", response_model=ApplicationEventResponse)
 def update_timeline_event(
     job_id: int,
@@ -392,8 +446,24 @@ def update_timeline_event(
     if not event:
         raise HTTPException(status_code=404, detail="Timeline event not found")
 
+    if not body.model_fields_set:
+        raise HTTPException(status_code=422, detail="At least one timeline event field must be provided")
+
+    next_created_at = _resolve_timeline_timestamp(
+        created_at=body.created_at,
+        occurred_at=body.occurred_at,
+    ) or str(event.get("occurred_at") or event["created_at"])
+    next_phase = body.canonical_phase or str(event.get("canonical_phase") or event["status"])
+    next_label = (
+        _normalize_stage_label(body.stage_label)
+        if "stage_label" in body.model_fields_set
+        else None
+    )
+    if "stage_label" in body.model_fields_set and next_label is None:
+        raise HTTPException(status_code=422, detail="Stage label cannot be empty")
+
     try:
-        updated_dt = _normalize_iso_datetime(body.created_at)
+        updated_dt = _normalize_iso_datetime(next_created_at)
     except ValueError:
         raise HTTPException(status_code=422, detail="Invalid timeline event date") from None
 
@@ -411,7 +481,24 @@ def update_timeline_event(
         if updated_dt > next_dt:
             raise HTTPException(status_code=422, detail="Event date cannot be later than the next stage")
 
-    updated = store.update_application_event(job_id, event_id, body.created_at, body.note)
+    applied_events = [
+        item
+        for item in timeline
+        if str(item.get("canonical_phase") or item["status"]) == "applied"
+    ]
+    current_phase = str(event.get("canonical_phase") or event["status"])
+    if current_phase == "applied" and next_phase != "applied" and len(applied_events) <= 1:
+        raise HTTPException(status_code=422, detail="Cannot remove the only applied stage")
+
+    next_note = body.note if "note" in body.model_fields_set else event.get("note")
+    updated = store.update_application_event(
+        job_id,
+        event_id,
+        next_created_at,
+        next_note,
+        canonical_phase=next_phase,
+        stage_label=next_label,
+    )
     if not updated:
         raise HTTPException(status_code=404, detail="Timeline event not found")
     return ApplicationEventResponse(**updated)

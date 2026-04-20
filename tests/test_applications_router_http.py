@@ -229,6 +229,109 @@ def test_timeline_cannot_delete_only_applied_event(monkeypatch):
     assert delete_response.json()["detail"] == "Cannot delete the only timeline event"
 
 
+def test_timeline_can_create_custom_stage_and_update_projection(monkeypatch):
+    store = _build_store()
+    ids = _seed_jobs(store)
+    job_id = ids["job-1"]
+    monkeypatch.setattr(applications_router, "get_store", lambda profile="default": store)
+    monkeypatch.setattr(jobs_router, "get_store", lambda profile="default": store)
+
+    with TestClient(app) as client:
+        client.patch(
+            f"/api/jobs/{job_id}/application-status",
+            json={"application_status": "applied"},
+        )
+        client.patch(
+            f"/api/jobs/{job_id}/applied-at",
+            json={"applied_at": "2026-04-10"},
+        )
+        create_response = client.post(
+            f"/api/jobs/{job_id}/timeline",
+            json={
+                "canonical_phase": "interviewing",
+                "stage_label": "Technical Interview",
+                "occurred_at": "2026-04-11",
+                "note": "System design round",
+            },
+        )
+        timeline_response = client.get(f"/api/jobs/{job_id}/timeline")
+        job_response = client.get(f"/api/jobs/{job_id}")
+
+    assert create_response.status_code == 200
+    created = create_response.json()
+    assert created["status"] == "interviewing"
+    assert created["canonical_phase"] == "interviewing"
+    assert created["stage_label"] == "Technical Interview"
+    assert created["occurred_at"] == "2026-04-11"
+    assert created["created_at"] == "2026-04-11"
+    assert created["note"] == "System design round"
+
+    assert timeline_response.status_code == 200
+    events = timeline_response.json()["events"]
+    assert [event["status"] for event in events] == ["applied", "interviewing"]
+    assert events[-1]["stage_label"] == "Technical Interview"
+
+    assert job_response.status_code == 200
+    assert job_response.json()["application_status"] == "interviewing"
+    assert job_response.json()["applied_at"] is not None
+
+
+def test_timeline_patch_can_edit_phase_label_date_and_note(monkeypatch):
+    store = _build_store()
+    ids = _seed_jobs(store)
+    job_id = ids["job-1"]
+    monkeypatch.setattr(applications_router, "get_store", lambda profile="default": store)
+    monkeypatch.setattr(jobs_router, "get_store", lambda profile="default": store)
+
+    with TestClient(app) as client:
+        client.patch(
+            f"/api/jobs/{job_id}/application-status",
+            json={"application_status": "applied"},
+        )
+        client.patch(
+            f"/api/jobs/{job_id}/applied-at",
+            json={"applied_at": "2026-04-10"},
+        )
+        created = client.post(
+            f"/api/jobs/{job_id}/timeline",
+            json={
+                "canonical_phase": "screening",
+                "stage_label": "Recruiter Screen",
+                "occurred_at": "2026-04-11",
+                "note": "Initial call",
+            },
+        )
+        event_id = created.json()["id"]
+        update_response = client.patch(
+            f"/api/jobs/{job_id}/timeline/{event_id}",
+            json={
+                "canonical_phase": "interviewing",
+                "stage_label": "Culture Interview",
+                "occurred_at": "2026-04-12",
+                "note": "Hiring manager and PM",
+            },
+        )
+        timeline_response = client.get(f"/api/jobs/{job_id}/timeline")
+        job_response = client.get(f"/api/jobs/{job_id}")
+
+    assert update_response.status_code == 200
+    updated = update_response.json()
+    assert updated["status"] == "interviewing"
+    assert updated["canonical_phase"] == "interviewing"
+    assert updated["stage_label"] == "Culture Interview"
+    assert updated["occurred_at"] == "2026-04-12"
+    assert updated["created_at"] == "2026-04-12"
+    assert updated["note"] == "Hiring manager and PM"
+
+    assert timeline_response.status_code == 200
+    events = timeline_response.json()["events"]
+    assert [event["status"] for event in events] == ["applied", "interviewing"]
+    assert events[-1]["stage_label"] == "Culture Interview"
+
+    assert job_response.status_code == 200
+    assert job_response.json()["application_status"] == "interviewing"
+
+
 def test_application_import_endpoint_handles_fetch_duplicates_and_manual_fallback(monkeypatch):
     store = _build_store()
     monkeypatch.setattr(applications_router, "get_store", lambda profile="default": store)
