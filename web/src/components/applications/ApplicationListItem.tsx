@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
 import { ScoreRing } from '@/components/score/ScoreRing'
+import { getApplicationStageLabel, getApplicationStageMeta } from '@/lib/applications/stages'
 import { Building2, CalendarDays, ChevronRight, FileText, MapPin } from 'lucide-react'
 import { formatDate } from '@/lib/utils/format'
 import { formatJobLocation } from '@/lib/jobs/location'
@@ -16,6 +17,7 @@ interface ApplicationJob {
   raw_location?: string | null
   status: string
   application_status: string
+  latest_stage_label?: string | null
   applied_at?: string | null
   next_step?: string | null
   next_step_date?: string | null
@@ -28,51 +30,11 @@ interface ApplicationJob {
   } | null
 }
 
-const STATUS_META: Record<string, { label: string; badge: string; dot: string }> = {
-  applied: {
-    label: 'Applied',
-    badge: 'border-sky-500/20 bg-sky-500/10 text-sky-700 dark:text-sky-300',
-    dot: 'bg-sky-500',
-  },
-  screening: {
-    label: 'Screening',
-    badge: 'border-cyan-500/20 bg-cyan-500/10 text-cyan-700 dark:text-cyan-300',
-    dot: 'bg-cyan-500',
-  },
-  interviewing: {
-    label: 'Interviewing',
-    badge: 'border-indigo-500/20 bg-indigo-500/10 text-indigo-700 dark:text-indigo-300',
-    dot: 'bg-indigo-500',
-  },
-  offer: {
-    label: 'Offer',
-    badge: 'border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300',
-    dot: 'bg-emerald-500',
-  },
-  accepted: {
-    label: 'Accepted',
-    badge: 'border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300',
-    dot: 'bg-emerald-600',
-  },
-  rejected_by_company: {
-    label: 'Rejected',
-    badge: 'border-rose-500/20 bg-rose-500/10 text-rose-700 dark:text-rose-300',
-    dot: 'bg-rose-500',
-  },
-  rejected_by_user: {
-    label: 'Withdrawn',
-    badge: 'border-orange-500/20 bg-orange-500/10 text-orange-700 dark:text-orange-300',
-    dot: 'bg-orange-500',
-  },
-  ghosted: {
-    label: 'Ghosted',
-    badge: 'border-slate-500/20 bg-slate-500/10 text-slate-700 dark:text-slate-300',
-    dot: 'bg-slate-500',
-  },
-}
-
 export function ApplicationListItem({ job }: { job: ApplicationJob }) {
-  const meta = STATUS_META[job.application_status] ?? STATUS_META.applied
+  const meta = getApplicationStageMeta(job.application_status)
+  const canonicalLabel = getApplicationStageLabel(job.application_status)
+  const latestStageLabel = job.latest_stage_label?.trim() || canonicalLabel
+  const showLatestStageLabel = latestStageLabel !== canonicalLabel
   const sourceLabel = job.source === 'manual' ? 'Manual' : 'Pipeline'
   const appliedLabel = job.applied_at ? `Applied ${formatDate(job.applied_at)}` : 'Applied date unavailable'
   const nextStepLabel = job.next_step_date ? `${job.next_step || 'Next step'} · ${formatDate(job.next_step_date)}` : (job.next_step || 'No upcoming steps')
@@ -102,7 +64,7 @@ export function ApplicationListItem({ job }: { job: ApplicationJob }) {
             <div className="min-w-0 space-y-3">
               <div className="flex flex-wrap items-center gap-2">
                 <Badge variant="outline" className={`px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest ${meta.badge}`}>
-                  {meta.label}
+                  {canonicalLabel}
                 </Badge>
                 <Badge variant="outline" className="border-border/50 bg-background/50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/80">
                   {sourceLabel}
@@ -116,6 +78,11 @@ export function ApplicationListItem({ job }: { job: ApplicationJob }) {
                 <h3 className="truncate text-xl font-black tracking-tight text-foreground transition-colors group-hover:text-primary">
                   {job.title}
                 </h3>
+                {showLatestStageLabel && (
+                  <p className="mt-1 text-sm font-medium text-muted-foreground">
+                    Latest stage: <span className="text-foreground/85">{latestStageLabel}</span>
+                  </p>
+                )}
                 <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
                   <span className="inline-flex items-center gap-1.5">
                     <Building2 className="h-4 w-4" />

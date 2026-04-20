@@ -1330,6 +1330,10 @@ class Store:
             "location, company_metadata, url, posted_at, first_seen_at, last_seen_at, "
             "fit_score, score_reasoning, score_breakdown, scored_at, status, application_status, "
             "applied_at, notes, next_step, next_step_date, source, dismissal_reason, match_tier, "
+            "(SELECT ev.stage_label FROM application_events ev "
+            " WHERE ev.job_id = jobs.id "
+            " ORDER BY ev.occurred_at DESC, ev.sort_order DESC, ev.id DESC "
+            " LIMIT 1) AS latest_stage_label, "
             "salary, salary_min, salary_max, salary_currency, is_sparse"
         )
         
@@ -1428,6 +1432,10 @@ class Store:
             "location, company_metadata, url, posted_at, first_seen_at, last_seen_at, "
             "fit_score, score_reasoning, score_breakdown, scored_at, status, application_status, "
             "applied_at, notes, next_step, next_step_date, source, dismissal_reason, match_tier, "
+            "(SELECT ev.stage_label FROM application_events ev "
+            " WHERE ev.job_id = jobs.id "
+            " ORDER BY ev.occurred_at DESC, ev.sort_order DESC, ev.id DESC "
+            " LIMIT 1) AS latest_stage_label, "
             "salary, salary_min, salary_max, salary_currency, is_sparse"
         )
 
@@ -1487,8 +1495,9 @@ class Store:
             event_rows = conn.execute(
                 f"""SELECT
                         job_id,
-                        canonical_phase AS status,
-                        occurred_at AS created_at
+                        canonical_phase,
+                        stage_label,
+                        occurred_at
                    FROM application_events
                    ORDER BY {APPLICATION_EVENT_ORDER_SQL}"""
             ).fetchall()
@@ -1513,6 +1522,7 @@ class Store:
             events_by_job.setdefault(event["job_id"], []).append(event)
 
         response_deltas: list[float] = []
+        responded_jobs = 0
         weekly_velocity: dict[str, int] = {}
         outcome_breakdown = {
             "offer": 0,
@@ -1567,38 +1577,44 @@ class Store:
             if stage_order.get(app_status, 0) > stage_order.get(current_best, 0):
                 company_stats["furthest_stage"] = app_status
 
-            applied_at_raw = row["applied_at"]
-            if applied_at_raw:
-                try:
-                    applied_at = datetime.fromisoformat(str(applied_at_raw))
-                except ValueError:
-                    applied_at = None
-                if applied_at is not None:
-                    week_bucket = f"{applied_at.isocalendar().year}-W{applied_at.isocalendar().week:02d}"
-                    weekly_velocity[week_bucket] = weekly_velocity.get(week_bucket, 0) + 1
-
-                    events = events_by_job.get(row["id"], [])
-                    for event in events:
-                        if event["status"] != "applied":
-                            try:
-                                event_time = datetime.fromisoformat(str(event["created_at"]))
-                            except ValueError:
-                                continue
-                            response_deltas.append((event_time - applied_at).total_seconds() / 86400)
-                            break
-
             events = events_by_job.get(row["id"], [])
-            seen_statuses = {event["status"] for event in events}
+            first_applied_time: datetime | None = None
+            first_response_time: datetime | None = None
+            seen_statuses: set[str] = set()
+
+            for event in events:
+                canonical_phase = str(event["canonical_phase"])
+                seen_statuses.add(canonical_phase)
+                try:
+                    event_time = datetime.fromisoformat(str(event["occurred_at"]))
+                except ValueError:
+                    continue
+
+                if canonical_phase == "applied" and first_applied_time is None:
+                    first_applied_time = event_time
+                elif canonical_phase != "applied" and first_response_time is None:
+                    first_response_time = event_time
+
+            if first_applied_time is None and row["applied_at"]:
+                try:
+                    first_applied_time = datetime.fromisoformat(str(row["applied_at"]))
+                except ValueError:
+                    first_applied_time = None
+
+            if first_applied_time is not None:
+                week_bucket = f"{first_applied_time.isocalendar().year}-W{first_applied_time.isocalendar().week:02d}"
+                weekly_velocity[week_bucket] = weekly_velocity.get(week_bucket, 0) + 1
+
+            if first_applied_time is not None and first_response_time is not None:
+                responded_jobs += 1
+                response_deltas.append((first_response_time - first_applied_time).total_seconds() / 86400)
+
             for key in funnel:
                 if key in seen_statuses or app_status == key:
                     funnel[key] += 1
 
-        response_numerator = sum(
-            status_counts[key]
-            for key in ("screening", "interviewing", "offer", "accepted", "rejected_by_company")
-        )
         total = len(app_rows)
-        response_rate = round((response_numerator / total) * 100, 1) if total else 0.0
+        response_rate = round((responded_jobs / total) * 100, 1) if total else 0.0
         avg_time = round(sum(response_deltas) / len(response_deltas), 1) if response_deltas else None
 
         top_company_rows: list[dict[str, object]] = []

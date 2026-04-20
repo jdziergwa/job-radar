@@ -17,6 +17,7 @@ interface ApplicationJob {
   location: string
   status: string
   application_status: string
+  latest_stage_label?: string | null
   applied_at?: string | null
   next_step?: string | null
   next_step_date?: string | null

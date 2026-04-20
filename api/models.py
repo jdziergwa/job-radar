@@ -185,6 +185,7 @@ def _parse_iso_datetime(value: str | None) -> datetime | None:
 
 class ApplicationJobResponse(JobResponse):
     days_since_applied: Optional[int] = None
+    latest_stage_label: Optional[str] = None
 
     @classmethod
     def from_row(cls, row: dict) -> "ApplicationJobResponse":
@@ -194,7 +195,11 @@ class ApplicationJobResponse(JobResponse):
         if applied_at is not None:
             now = datetime.utcnow() if applied_at.tzinfo is None else datetime.now(tz=applied_at.tzinfo)
             days_since_applied = max(0, (now.date() - applied_at.date()).days)
-        return cls(**base.model_dump(), days_since_applied=days_since_applied)
+        return cls(
+            **base.model_dump(),
+            days_since_applied=days_since_applied,
+            latest_stage_label=row.get("latest_stage_label"),
+        )
 
 
 class ApplicationListResponse(BaseModel):

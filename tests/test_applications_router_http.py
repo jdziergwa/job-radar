@@ -332,6 +332,81 @@ def test_timeline_patch_can_edit_phase_label_date_and_note(monkeypatch):
     assert job_response.json()["application_status"] == "interviewing"
 
 
+def test_applications_list_exposes_latest_custom_stage_label(monkeypatch):
+    store = _build_store()
+    ids = _seed_jobs(store)
+    job_id = ids["job-1"]
+    monkeypatch.setattr(applications_router, "get_store", lambda profile="default": store)
+    monkeypatch.setattr(jobs_router, "get_store", lambda profile="default": store)
+
+    with TestClient(app) as client:
+        client.patch(
+            f"/api/jobs/{job_id}/application-status",
+            json={"application_status": "applied"},
+        )
+        client.patch(
+            f"/api/jobs/{job_id}/applied-at",
+            json={"applied_at": "2026-04-10"},
+        )
+        client.post(
+            f"/api/jobs/{job_id}/timeline",
+            json={
+                "canonical_phase": "interviewing",
+                "stage_label": "Technical Interview",
+                "occurred_at": "2026-04-12",
+            },
+        )
+
+        list_response = client.get("/api/applications", params={"status": "interviewing"})
+
+    assert list_response.status_code == 200
+    payload = list_response.json()
+    assert payload["total"] == 1
+    listed_job = payload["jobs"][0]
+    assert listed_job["application_status"] == "interviewing"
+    assert listed_job["latest_stage_label"] == "Technical Interview"
+
+
+def test_application_stats_use_timeline_history_for_response_metrics(monkeypatch):
+    store = _build_store()
+    ids = _seed_jobs(store)
+    job_id = ids["job-1"]
+    monkeypatch.setattr(applications_router, "get_store", lambda profile="default": store)
+    monkeypatch.setattr(jobs_router, "get_store", lambda profile="default": store)
+
+    with TestClient(app) as client:
+        client.patch(
+            f"/api/jobs/{job_id}/application-status",
+            json={"application_status": "applied"},
+        )
+        client.patch(
+            f"/api/jobs/{job_id}/applied-at",
+            json={"applied_at": "2026-04-10"},
+        )
+        client.patch(
+            f"/api/jobs/{job_id}/application-status",
+            json={"application_status": "screening"},
+        )
+        client.patch(
+            f"/api/jobs/{job_id}/response-date",
+            json={"response_date": "2026-04-12"},
+        )
+        client.patch(
+            f"/api/jobs/{job_id}/application-status",
+            json={"application_status": "rejected_by_user"},
+        )
+
+        stats_response = client.get("/api/applications/stats")
+
+    assert stats_response.status_code == 200
+    payload = stats_response.json()
+    assert payload["total"] == 1
+    assert payload["status_counts"]["rejected_by_user"] == 1
+    assert payload["response_rate"] == 100.0
+    assert payload["avg_time_to_response_days"] == 2.0
+    assert payload["funnel"]["screening"] == 1
+
+
 def test_application_import_endpoint_handles_fetch_duplicates_and_manual_fallback(monkeypatch):
     store = _build_store()
     monkeypatch.setattr(applications_router, "get_store", lambda profile="default": store)

@@ -920,6 +920,8 @@ export interface components {
             raw_location?: string | null;
             /** Days Since Applied */
             days_since_applied?: number | null;
+            /** Latest Stage Label */
+            latest_stage_label?: string | null;
         };
         /** ApplicationListResponse */
         ApplicationListResponse: {
