@@ -245,6 +245,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/jobs/{job_id}/timeline/{event_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Timeline Event */
+        delete: operations["delete_timeline_event_api_jobs__job_id__timeline__event_id__delete"];
+        options?: never;
+        head?: never;
+        /** Update Timeline Event */
+        patch: operations["update_timeline_event_api_jobs__job_id__timeline__event_id__patch"];
+        trace?: never;
+    };
     "/api/applications/import": {
         parameters: {
             query?: never;
@@ -1863,6 +1881,13 @@ export interface components {
              */
             status: "new" | "scored" | "dismissed";
         };
+        /** TimelineEventDateUpdate */
+        TimelineEventDateUpdate: {
+            /** Created At */
+            created_at: string;
+            /** Note */
+            note?: string | null;
+        };
         /** TimelineResponse */
         TimelineResponse: {
             /**
@@ -2561,6 +2586,78 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TimelineResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_timeline_event_api_jobs__job_id__timeline__event_id__delete: {
+        parameters: {
+            query?: {
+                profile?: string;
+            };
+            header?: never;
+            path: {
+                job_id: number;
+                event_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TimelineResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_timeline_event_api_jobs__job_id__timeline__event_id__patch: {
+        parameters: {
+            query?: {
+                profile?: string;
+            };
+            header?: never;
+            path: {
+                job_id: number;
+                event_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TimelineEventDateUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApplicationEventResponse"];
                 };
             };
             /** @description Validation Error */

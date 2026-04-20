@@ -101,7 +101,7 @@ export function StatusTransitionButtons({
           className="gap-2 text-muted-foreground hover:text-destructive"
         >
           <Trash2 className="h-3.5 w-3.5" />
-          Remove from Tracker
+          Delete Tracker History
         </Button>
       </div>
 

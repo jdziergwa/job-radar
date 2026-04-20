@@ -23,6 +23,17 @@ from src.score_normalization import normalize_persisted_priority
 logger = logging.getLogger(__name__)
 UpsertProgressCallback = Callable[[str, int, int], None]
 UPSERT_WRITE_CHUNK_SIZE = 5000
+APPLICATION_EVENT_ORDER_SQL = "occurred_at ASC, sort_order ASC, id ASC"
+APPLICATION_EVENT_LABELS = {
+    "applied": "Applied",
+    "screening": "Screening",
+    "interviewing": "Interviewing",
+    "offer": "Offer",
+    "accepted": "Accepted",
+    "rejected_by_company": "Rejected",
+    "rejected_by_user": "Withdrawn",
+    "ghosted": "Ghosted",
+}
 SALARY_BUCKET_ORDER = [
     "Undisclosed",
     "< 60k",
@@ -65,6 +76,14 @@ def _salary_bucket_sort_key(currency: str | None, salary_range: str) -> tuple[in
         bucket_index = len(SALARY_BUCKET_ORDER)
 
     return (1, currency or "Unknown", bucket_index)
+
+
+def _default_stage_label(canonical_phase: str) -> str:
+    """Return the default display label for a canonical tracker phase."""
+    return APPLICATION_EVENT_LABELS.get(
+        canonical_phase,
+        canonical_phase.replace("_", " ").title(),
+    )
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS jobs (
@@ -115,9 +134,13 @@ CREATE INDEX IF NOT EXISTS idx_last_seen ON jobs(last_seen_at);
 CREATE TABLE IF NOT EXISTS application_events (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     job_id INTEGER NOT NULL REFERENCES jobs(id),
-    status TEXT NOT NULL,
+    event_type TEXT NOT NULL DEFAULT 'stage',
+    canonical_phase TEXT NOT NULL,
+    stage_label TEXT NOT NULL,
     note TEXT,
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    occurred_at TEXT NOT NULL DEFAULT (datetime('now')),
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    created_by TEXT NOT NULL DEFAULT 'system',
     FOREIGN KEY (job_id) REFERENCES jobs(id) ON DELETE CASCADE
 );
 CREATE INDEX IF NOT EXISTS idx_app_events_job ON application_events(job_id);
@@ -185,6 +208,23 @@ class Store:
                 conn.execute(f"ALTER TABLE jobs ADD COLUMN {col} {col_type}")
                 logger.debug("Migrated DB: Added '%s' column", col)
 
+            event_columns = {
+                str(row[1])
+                for row in conn.execute("PRAGMA table_info(application_events)").fetchall()
+            }
+            for col, col_type in [
+                ("event_type", "TEXT DEFAULT 'stage'"),
+                ("canonical_phase", "TEXT"),
+                ("stage_label", "TEXT"),
+                ("occurred_at", "TEXT"),
+                ("sort_order", "INTEGER"),
+                ("created_by", "TEXT DEFAULT 'system'"),
+            ]:
+                if col in event_columns:
+                    continue
+                conn.execute(f"ALTER TABLE application_events ADD COLUMN {col} {col_type}")
+                logger.debug("Migrated DB: Added application_events.%s column", col)
+
             # Migrate legacy status='applied' rows to the tracker-specific application_status field.
             conn.execute(
                 """UPDATE jobs
@@ -198,25 +238,83 @@ class Store:
             )
             conn.execute("UPDATE jobs SET source = 'pipeline' WHERE source IS NULL")
             conn.execute(
-                """INSERT INTO application_events (job_id, status, note, created_at)
+                """INSERT INTO application_events (
+                       job_id, event_type, canonical_phase, stage_label, note, occurred_at, sort_order, created_by
+                   )
                    SELECT jobs.id,
+                          'stage',
                           'applied',
+                          'Applied',
                           'Migrated from existing application status',
-                          COALESCE(jobs.applied_at, jobs.first_seen_at)
+                          COALESCE(jobs.applied_at, jobs.first_seen_at),
+                          0,
+                          'migration'
                    FROM jobs
                    WHERE jobs.application_status = 'applied'
                      AND NOT EXISTS (
                          SELECT 1 FROM application_events ev WHERE ev.job_id = jobs.id
                      )"""
             )
+            if "status" in event_columns:
+                conn.execute(
+                    """UPDATE application_events
+                       SET canonical_phase = COALESCE(canonical_phase, status)
+                       WHERE canonical_phase IS NULL"""
+                )
+            conn.execute(
+                f"""UPDATE application_events
+                    SET stage_label = CASE COALESCE(canonical_phase, '')
+                        WHEN 'applied' THEN 'Applied'
+                        WHEN 'screening' THEN 'Screening'
+                        WHEN 'interviewing' THEN 'Interviewing'
+                        WHEN 'offer' THEN 'Offer'
+                        WHEN 'accepted' THEN 'Accepted'
+                        WHEN 'rejected_by_company' THEN 'Rejected'
+                        WHEN 'rejected_by_user' THEN 'Withdrawn'
+                        WHEN 'ghosted' THEN 'Ghosted'
+                        ELSE COALESCE(stage_label, canonical_phase)
+                    END
+                    WHERE stage_label IS NULL"""
+            )
+            if "created_at" in event_columns:
+                conn.execute(
+                    """UPDATE application_events
+                       SET occurred_at = COALESCE(occurred_at, created_at)
+                       WHERE occurred_at IS NULL"""
+                )
             conn.execute(
                 """UPDATE application_events
-                   SET created_at = (
+                   SET event_type = COALESCE(event_type, 'stage')
+                   WHERE event_type IS NULL"""
+            )
+            conn.execute(
+                """UPDATE application_events
+                   SET created_by = CASE
+                       WHEN created_by IS NOT NULL THEN created_by
+                       WHEN note = 'Migrated from existing application status' THEN 'migration'
+                       ELSE 'system'
+                   END
+                   WHERE created_by IS NULL"""
+            )
+            conn.execute(
+                """UPDATE application_events AS ev
+                   SET sort_order = (
+                       SELECT COUNT(*)
+                       FROM application_events AS prev
+                       WHERE prev.job_id = ev.job_id
+                         AND prev.occurred_at = ev.occurred_at
+                         AND prev.id < ev.id
+                   )
+                   WHERE sort_order IS NULL"""
+            )
+            conn.execute(
+                """UPDATE application_events
+                   SET occurred_at = (
                        SELECT jobs.applied_at
                        FROM jobs
                        WHERE jobs.id = application_events.job_id
                    )
-                   WHERE status = 'applied'
+                   WHERE canonical_phase = 'applied'
                      AND EXISTS (
                          SELECT 1
                          FROM jobs
@@ -227,8 +325,8 @@ class Store:
                          SELECT ev.id
                          FROM application_events ev
                          WHERE ev.job_id = application_events.job_id
-                           AND ev.status = 'applied'
-                         ORDER BY ev.created_at ASC, ev.id ASC
+                           AND ev.canonical_phase = 'applied'
+                         ORDER BY ev.occurred_at ASC, ev.sort_order ASC, ev.id ASC
                          LIMIT 1
                      )"""
             )
@@ -238,15 +336,23 @@ class Store:
                        SELECT ev.id
                        FROM application_events ev
                        JOIN (
-                           SELECT job_id, status, COALESCE(note, '') AS note_key, created_at, MIN(id) AS keep_id, COUNT(*) AS cnt
+                           SELECT
+                               job_id,
+                               canonical_phase,
+                               stage_label,
+                               COALESCE(note, '') AS note_key,
+                               occurred_at,
+                               MIN(id) AS keep_id,
+                               COUNT(*) AS cnt
                            FROM application_events
-                           GROUP BY job_id, status, COALESCE(note, ''), created_at
+                           GROUP BY job_id, canonical_phase, stage_label, COALESCE(note, ''), occurred_at
                            HAVING COUNT(*) > 1
                        ) dup
                          ON dup.job_id = ev.job_id
-                        AND dup.status = ev.status
+                        AND dup.canonical_phase = ev.canonical_phase
+                        AND dup.stage_label = ev.stage_label
                         AND dup.note_key = COALESCE(ev.note, '')
-                        AND dup.created_at = ev.created_at
+                        AND dup.occurred_at = ev.occurred_at
                        WHERE ev.id != dup.keep_id
                    )"""
             )
@@ -258,7 +364,34 @@ class Store:
                    END
                    WHERE status = 'applied'"""
             )
+            conn.execute(
+                """UPDATE jobs
+                   SET applied_at = NULL,
+                       notes = NULL,
+                       next_step = NULL,
+                       next_step_date = NULL
+                   WHERE application_status IS NULL
+                     AND EXISTS (
+                         SELECT 1 FROM application_events ev WHERE ev.job_id = jobs.id
+                     )"""
+            )
+            conn.execute(
+                """DELETE FROM application_events
+                   WHERE job_id IN (
+                       SELECT id FROM jobs WHERE application_status IS NULL
+                   )"""
+            )
             conn.execute("CREATE INDEX IF NOT EXISTS idx_application_status ON jobs(application_status)")
+            conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_app_events_job_time ON application_events(job_id, occurred_at, sort_order, id)"
+            )
+
+            job_ids = [
+                int(row["id"])
+                for row in conn.execute("SELECT id FROM jobs").fetchall()
+            ]
+            for job_id in job_ids:
+                self._sync_job_tracker_fields_from_timeline(conn, job_id)
 
             logger.debug("Database initialized at %s", self.db_path)
 
@@ -277,6 +410,70 @@ class Store:
             raise
         finally:
             conn.close()
+
+    @staticmethod
+    def _application_event_to_legacy_dict(row: sqlite3.Row | dict) -> dict:
+        """Map the canonical event schema back to the legacy API response shape."""
+        return {
+            "id": int(row["id"]),
+            "job_id": int(row["job_id"]),
+            "status": str(row["canonical_phase"]),
+            "note": row["note"],
+            "created_at": str(row["occurred_at"]),
+        }
+
+    @staticmethod
+    def _derive_application_projection(events: list[sqlite3.Row | dict]) -> tuple[str | None, str | None]:
+        """Compute current tracker status and applied date from canonical timeline events."""
+        if not events:
+            return None, None
+
+        current_status = str(events[-1]["canonical_phase"])
+        first_applied = next(
+            (event for event in events if event["canonical_phase"] == "applied"),
+            None,
+        )
+        applied_at = str(first_applied["occurred_at"]) if first_applied is not None else None
+        return current_status, applied_at
+
+    def _get_application_events(
+        self,
+        conn: sqlite3.Connection,
+        db_id: int,
+    ) -> list[sqlite3.Row]:
+        """Return canonical application events ordered for projection and timeline use."""
+        return conn.execute(
+            f"""SELECT
+                    id,
+                    job_id,
+                    event_type,
+                    canonical_phase,
+                    stage_label,
+                    note,
+                    occurred_at,
+                    sort_order,
+                    created_by
+                FROM application_events
+                WHERE job_id = ?
+                ORDER BY {APPLICATION_EVENT_ORDER_SQL}""",
+            (db_id,),
+        ).fetchall()
+
+    def _next_sort_order(
+        self,
+        conn: sqlite3.Connection,
+        db_id: int,
+        occurred_at: str,
+    ) -> int:
+        """Return the next deterministic sort_order for a timestamp bucket."""
+        row = conn.execute(
+            """SELECT COALESCE(MAX(sort_order), -1) AS max_sort_order
+               FROM application_events
+               WHERE job_id = ? AND occurred_at = ?""",
+            (db_id, occurred_at),
+        ).fetchone()
+        max_sort_order = int(row["max_sort_order"]) if row is not None else -1
+        return max_sort_order + 1
 
     # ── Upsert ──────────────────────────────────────────────────────
 
@@ -526,43 +723,27 @@ class Store:
             if current_status == application_status:
                 return True
 
-            event_created_at = now
-            should_insert_event = True
-            if current_status is None and application_status == "applied" and not row["applied_at"]:
-                conn.execute(
-                    """UPDATE jobs
-                       SET application_status = ?, applied_at = ?
-                       WHERE id = ?""",
-                    (application_status, now, db_id),
-                )
-            elif current_status is None and application_status == "applied" and row["applied_at"]:
-                conn.execute(
-                    "UPDATE jobs SET application_status = ? WHERE id = ?",
-                    (application_status, db_id),
-                )
-                event_created_at = str(row["applied_at"])
-                existing_applied_event = conn.execute(
-                    """SELECT id
-                       FROM application_events
-                       WHERE job_id = ? AND status = 'applied'
-                       ORDER BY created_at ASC, id ASC
-                       LIMIT 1""",
-                    (db_id,),
-                ).fetchone()
-                if existing_applied_event is not None:
-                    should_insert_event = False
-            else:
-                conn.execute(
-                    "UPDATE jobs SET application_status = ? WHERE id = ?",
-                    (application_status, db_id),
-                )
-
-            if should_insert_event:
-                conn.execute(
-                    """INSERT INTO application_events (job_id, status, note, created_at)
-                       VALUES (?, ?, ?, ?)""",
-                    (db_id, application_status, note, event_created_at),
-                )
+            occurred_at = (
+                str(row["applied_at"])
+                if current_status is None and application_status == "applied" and row["applied_at"]
+                else now
+            )
+            sort_order = self._next_sort_order(conn, db_id, occurred_at)
+            conn.execute(
+                """INSERT INTO application_events (
+                       job_id, event_type, canonical_phase, stage_label, note, occurred_at, sort_order, created_by
+                   )
+                   VALUES (?, 'stage', ?, ?, ?, ?, ?, 'user')""",
+                (
+                    db_id,
+                    application_status,
+                    _default_stage_label(application_status),
+                    note,
+                    occurred_at,
+                    sort_order,
+                ),
+            )
+            self._sync_job_tracker_fields_from_timeline(conn, db_id)
 
         self.set_metadata("last_job_status_change_at", now)
         logger.debug("Job %d application_status → %s", db_id, application_status)
@@ -570,24 +751,36 @@ class Store:
 
     def update_applied_at(self, db_id: int, applied_at: str | None) -> bool:
         """Update the applied date without mutating tracker history."""
+        if applied_at is None:
+            logger.warning("Applied date cannot be cleared for job %d", db_id)
+            return False
+
         with self._connect() as conn:
-            cursor = conn.execute(
-                "UPDATE jobs SET applied_at = ? WHERE id = ?",
-                (applied_at, db_id),
+            applied_event = conn.execute(
+                f"""SELECT id, occurred_at, sort_order
+                    FROM application_events
+                    WHERE job_id = ? AND canonical_phase = 'applied'
+                    ORDER BY {APPLICATION_EVENT_ORDER_SQL}
+                    LIMIT 1""",
+                (db_id,),
+            ).fetchone()
+            if applied_event is None:
+                logger.warning("No applied event found for job %d", db_id)
+                return False
+
+            sort_order = (
+                int(applied_event["sort_order"])
+                if applied_event["occurred_at"] == applied_at and "sort_order" in applied_event.keys()
+                else self._next_sort_order(conn, db_id, applied_at)
             )
-            if applied_at:
-                conn.execute(
-                    """UPDATE application_events
-                       SET created_at = ?
-                       WHERE id = (
-                           SELECT id
-                           FROM application_events
-                           WHERE job_id = ? AND status = 'applied'
-                           ORDER BY created_at ASC, id ASC
-                           LIMIT 1
-                       )""",
-                    (applied_at, db_id),
-                )
+            cursor = conn.execute(
+                """UPDATE application_events
+                   SET occurred_at = ?, sort_order = ?
+                   WHERE id = ? AND job_id = ?""",
+                (applied_at, sort_order, int(applied_event["id"]), db_id),
+            )
+            if cursor.rowcount > 0:
+                self._sync_job_tracker_fields_from_timeline(conn, db_id)
         if cursor.rowcount > 0:
             self.set_metadata("last_job_status_change_at", datetime.utcnow().isoformat())
             logger.debug("Job %d applied_at updated", db_id)
@@ -599,14 +792,14 @@ class Store:
         """Return the first non-applied tracker event for a job."""
         with self._connect() as conn:
             row = conn.execute(
-                """SELECT id, job_id, status, note, created_at
+                f"""SELECT id, job_id, canonical_phase, note, occurred_at
                    FROM application_events
-                   WHERE job_id = ? AND status != 'applied'
-                   ORDER BY created_at ASC, id ASC
+                   WHERE job_id = ? AND canonical_phase != 'applied'
+                   ORDER BY {APPLICATION_EVENT_ORDER_SQL}
                    LIMIT 1""",
                 (db_id,),
             ).fetchone()
-        return dict(row) if row is not None else None
+        return self._application_event_to_legacy_dict(row) if row is not None else None
 
     def update_first_response_date(self, db_id: int, response_date: str) -> dict | None:
         """Update the first non-applied tracker event date for a job."""
@@ -615,25 +808,136 @@ class Store:
             return None
 
         with self._connect() as conn:
+            sort_order = self._next_sort_order(conn, db_id, response_date)
             conn.execute(
-                "UPDATE application_events SET created_at = ? WHERE id = ?",
-                (response_date, first_response["id"]),
+                "UPDATE application_events SET occurred_at = ?, sort_order = ? WHERE id = ?",
+                (response_date, sort_order, first_response["id"]),
             )
+            self._sync_job_tracker_fields_from_timeline(conn, db_id)
             row = conn.execute(
-                """SELECT id, job_id, status, note, created_at
+                """SELECT id, job_id, canonical_phase, note, occurred_at
                    FROM application_events
                    WHERE id = ?""",
                 (first_response["id"],),
             ).fetchone()
         self.set_metadata("last_job_status_change_at", datetime.utcnow().isoformat())
-        return dict(row) if row is not None else None
+        return self._application_event_to_legacy_dict(row) if row is not None else None
+
+    def get_application_event(self, db_id: int, event_id: int) -> dict | None:
+        """Return a specific tracker timeline event for a job."""
+        with self._connect() as conn:
+            row = conn.execute(
+                """SELECT id, job_id, canonical_phase, note, occurred_at
+                   FROM application_events
+                   WHERE job_id = ? AND id = ?""",
+                (db_id, event_id),
+            ).fetchone()
+        return self._application_event_to_legacy_dict(row) if row is not None else None
+
+    def _sync_job_tracker_fields_from_timeline(self, conn: sqlite3.Connection, db_id: int) -> None:
+        rows = self._get_application_events(conn, db_id)
+
+        if not rows:
+            conn.execute(
+                """UPDATE jobs
+                   SET application_status = NULL,
+                       applied_at = NULL
+                   WHERE id = ?""",
+                (db_id,),
+            )
+            return
+
+        current_status, applied_at = self._derive_application_projection(rows)
+
+        conn.execute(
+            """UPDATE jobs
+               SET application_status = ?, applied_at = ?
+               WHERE id = ?""",
+            (current_status, applied_at, db_id),
+        )
+
+    def update_application_event(
+        self,
+        db_id: int,
+        event_id: int,
+        created_at: str,
+        note: str | None,
+    ) -> dict | None:
+        """Update a specific tracker event and sync derived job fields."""
+        with self._connect() as conn:
+            existing = conn.execute(
+                """SELECT id, occurred_at, sort_order
+                   FROM application_events
+                   WHERE job_id = ? AND id = ?""",
+                (db_id, event_id),
+            ).fetchone()
+            if existing is None:
+                return None
+
+            sort_order = (
+                int(existing["sort_order"])
+                if existing["occurred_at"] == created_at and "sort_order" in existing.keys()
+                else self._next_sort_order(conn, db_id, created_at)
+            )
+            cursor = conn.execute(
+                """UPDATE application_events
+                   SET occurred_at = ?, note = ?, sort_order = ?
+                   WHERE job_id = ? AND id = ?""",
+                (created_at, note, sort_order, db_id, event_id),
+            )
+            if cursor.rowcount <= 0:
+                return None
+
+            self._sync_job_tracker_fields_from_timeline(conn, db_id)
+            row = conn.execute(
+                """SELECT id, job_id, canonical_phase, note, occurred_at
+                   FROM application_events
+                   WHERE id = ? AND job_id = ?""",
+                (event_id, db_id),
+            ).fetchone()
+
+        self.set_metadata("last_job_status_change_at", datetime.utcnow().isoformat())
+        return self._application_event_to_legacy_dict(row) if row is not None else None
+
+    def update_application_event_date(self, db_id: int, event_id: int, created_at: str) -> dict | None:
+        """Backward-compatible wrapper for date-only timeline edits."""
+        existing = self.get_application_event(db_id, event_id)
+        if existing is None:
+            return None
+        return self.update_application_event(db_id, event_id, created_at, existing.get("note"))
+
+    def delete_application_event(self, db_id: int, event_id: int) -> bool:
+        """Delete a tracker event and sync derived job fields."""
+        with self._connect() as conn:
+            cursor = conn.execute(
+                "DELETE FROM application_events WHERE job_id = ? AND id = ?",
+                (db_id, event_id),
+            )
+            if cursor.rowcount <= 0:
+                return False
+
+            self._sync_job_tracker_fields_from_timeline(conn, db_id)
+
+        self.set_metadata("last_job_status_change_at", datetime.utcnow().isoformat())
+        return True
 
     def remove_from_tracker(self, db_id: int) -> bool:
-        """Clear tracker-only state while preserving application history."""
+        """Delete all tracker history and clear tracker-specific fields."""
         with self._connect() as conn:
+            job_exists = conn.execute(
+                "SELECT 1 FROM jobs WHERE id = ?",
+                (db_id,),
+            ).fetchone()
+            if job_exists is None:
+                logger.warning("Job %d not found for tracker removal", db_id)
+                return False
+
+            conn.execute("DELETE FROM application_events WHERE job_id = ?", (db_id,))
             cursor = conn.execute(
                 """UPDATE jobs
                    SET application_status = NULL,
+                       applied_at = NULL,
+                       notes = NULL,
                        next_step = NULL,
                        next_step_date = NULL
                    WHERE id = ?""",
@@ -1102,14 +1406,8 @@ class Store:
     def get_application_timeline(self, db_id: int) -> list[dict]:
         """Return tracker timeline events for a job."""
         with self._connect() as conn:
-            rows = conn.execute(
-                """SELECT id, job_id, status, note, created_at
-                   FROM application_events
-                   WHERE job_id = ?
-                   ORDER BY created_at ASC, id ASC""",
-                (db_id,),
-            ).fetchall()
-        return [dict(row) for row in rows]
+            rows = self._get_application_events(conn, db_id)
+        return [self._application_event_to_legacy_dict(row) for row in rows]
 
     def get_application_stats(self) -> dict:
         """Aggregate tracker stats for the applications page."""
@@ -1120,9 +1418,12 @@ class Store:
                    WHERE application_status IS NOT NULL"""
             ).fetchall()
             event_rows = conn.execute(
-                """SELECT job_id, status, created_at
+                f"""SELECT
+                        job_id,
+                        canonical_phase AS status,
+                        occurred_at AS created_at
                    FROM application_events
-                   ORDER BY created_at ASC, id ASC"""
+                   ORDER BY {APPLICATION_EVENT_ORDER_SQL}"""
             ).fetchall()
 
         status_counts = {
@@ -1343,8 +1644,8 @@ class Store:
                     now,
                     now,
                     "new",
-                    "applied",
-                    normalized_applied_at,
+                    None,
+                    None,
                     notes,
                     source,
                     salary,
@@ -1354,11 +1655,15 @@ class Store:
                 ),
             )
             new_id = int(cursor.lastrowid)
+            sort_order = self._next_sort_order(conn, new_id, normalized_applied_at)
             conn.execute(
-                """INSERT INTO application_events (job_id, status, note, created_at)
-                   VALUES (?, 'applied', ?, ?)""",
-                (new_id, initial_event_note, normalized_applied_at),
+                """INSERT INTO application_events (
+                       job_id, event_type, canonical_phase, stage_label, note, occurred_at, sort_order, created_by
+                   )
+                   VALUES (?, 'stage', 'applied', 'Applied', ?, ?, ?, 'import')""",
+                (new_id, initial_event_note, normalized_applied_at, sort_order),
             )
+            self._sync_job_tracker_fields_from_timeline(conn, new_id)
             created = conn.execute("SELECT * FROM jobs WHERE id = ?", (new_id,)).fetchone()
 
         self.set_metadata("last_job_status_change_at", now)

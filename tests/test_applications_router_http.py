@@ -8,6 +8,7 @@ import yaml
 from api.main import app
 from api.routers import applications as applications_router
 from api.routers import companies as companies_router
+from api.routers import jobs as jobs_router
 from src.models import RawJob
 from src.store import Store
 
@@ -153,9 +154,79 @@ def test_application_endpoints_lifecycle_stats_and_timeline(monkeypatch):
     assert remove_response.status_code == 200
     assert remove_response.json()["application_status"] is None
     assert remove_response.json()["next_step"] is None
-    assert remove_response.json()["notes"] == "Strong referral from previous teammate."
+    assert remove_response.json()["notes"] is None
     assert timeline_after_remove.status_code == 200
-    assert [event["status"] for event in timeline_after_remove.json()["events"]] == ["applied", "screening"]
+    assert timeline_after_remove.json()["events"] == []
+
+
+def test_timeline_events_can_be_retimed_and_deleted(monkeypatch):
+    store = _build_store()
+    ids = _seed_jobs(store)
+    job_id = ids["job-1"]
+    monkeypatch.setattr(applications_router, "get_store", lambda profile="default": store)
+    monkeypatch.setattr(jobs_router, "get_store", lambda profile="default": store)
+
+    with TestClient(app) as client:
+        client.patch(
+            f"/api/jobs/{job_id}/application-status",
+            json={"application_status": "applied", "note": "Sent application"},
+        )
+        client.patch(
+            f"/api/jobs/{job_id}/application-status",
+            json={"application_status": "screening", "note": "Recruiter replied"},
+        )
+
+        timeline_response = client.get(f"/api/jobs/{job_id}/timeline")
+        assert timeline_response.status_code == 200
+        applied_event_id = timeline_response.json()["events"][0]["id"]
+        screening_event_id = timeline_response.json()["events"][1]["id"]
+
+        retime_response = client.patch(
+            f"/api/jobs/{job_id}/timeline/{applied_event_id}",
+            json={
+                "created_at": "2026-04-09",
+                "note": "Applied after recruiter follow-up",
+            },
+        )
+        updated_job_response = client.get(f"/api/jobs/{job_id}")
+        delete_response = client.delete(f"/api/jobs/{job_id}/timeline/{screening_event_id}")
+        final_job_response = client.get(f"/api/jobs/{job_id}")
+
+    assert retime_response.status_code == 200
+    assert retime_response.json()["created_at"] == "2026-04-09"
+    assert retime_response.json()["note"] == "Applied after recruiter follow-up"
+
+    assert updated_job_response.status_code == 200
+    assert updated_job_response.json()["applied_at"] == "2026-04-09"
+    assert updated_job_response.json()["application_status"] == "screening"
+
+    assert delete_response.status_code == 200
+    assert [event["status"] for event in delete_response.json()["events"]] == ["applied"]
+
+    assert final_job_response.status_code == 200
+    assert final_job_response.json()["application_status"] == "applied"
+    assert final_job_response.json()["applied_at"] == "2026-04-09"
+
+
+def test_timeline_cannot_delete_only_applied_event(monkeypatch):
+    store = _build_store()
+    ids = _seed_jobs(store)
+    job_id = ids["job-1"]
+    monkeypatch.setattr(applications_router, "get_store", lambda profile="default": store)
+
+    with TestClient(app) as client:
+        client.patch(
+            f"/api/jobs/{job_id}/application-status",
+            json={"application_status": "applied"},
+        )
+        timeline_response = client.get(f"/api/jobs/{job_id}/timeline")
+        assert timeline_response.status_code == 200
+        applied_event_id = timeline_response.json()["events"][0]["id"]
+
+        delete_response = client.delete(f"/api/jobs/{job_id}/timeline/{applied_event_id}")
+
+    assert delete_response.status_code == 422
+    assert delete_response.json()["detail"] == "Cannot delete the only timeline event"
 
 
 def test_application_import_endpoint_handles_fetch_duplicates_and_manual_fallback(monkeypatch):
@@ -336,7 +407,7 @@ def test_application_import_retracks_existing_identity_after_tracker_removal(mon
 
     assert timeline_response.status_code == 200
     assert [event["status"] for event in timeline_response.json()["events"]] == ["applied"]
-    assert timeline_response.json()["events"][0]["created_at"] == "2026-04-05"
+    assert timeline_response.json()["events"][0]["created_at"] != "2026-04-05"
 
 
 def test_manual_application_import_persists_manual_identity_and_salary(monkeypatch):

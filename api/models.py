@@ -149,6 +149,11 @@ class ApplicationEventResponse(BaseModel):
     created_at: str
 
 
+class TimelineEventDateUpdate(BaseModel):
+    created_at: str
+    note: Optional[str] = None
+
+
 def _parse_iso_datetime(value: str | None) -> datetime | None:
     if not value:
         return None

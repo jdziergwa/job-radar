@@ -130,7 +130,8 @@ def test_store_migrates_legacy_applied_status_into_application_tracking():
                    FROM jobs WHERE job_id = 'legacy-job'"""
             ).fetchone()
             events = migrated_conn.execute(
-                """SELECT status, note FROM application_events
+                """SELECT canonical_phase, stage_label, note, occurred_at, event_type, created_by
+                   FROM application_events
                    WHERE job_id = (SELECT id FROM jobs WHERE job_id = 'legacy-job')"""
             ).fetchall()
 
@@ -140,8 +141,12 @@ def test_store_migrates_legacy_applied_status_into_application_tracking():
         assert row["applied_at"] == "2026-04-09T10:00:00"
         assert row["source"] == "pipeline"
         assert len(events) == 1
-        assert events[0]["status"] == "applied"
+        assert events[0]["canonical_phase"] == "applied"
+        assert events[0]["stage_label"] == "Applied"
         assert events[0]["note"] == "Migrated from existing application status"
+        assert events[0]["occurred_at"] == "2026-04-09T10:00:00"
+        assert events[0]["event_type"] == "stage"
+        assert events[0]["created_by"] == "migration"
 
 
 def test_store_repairs_mismatched_legacy_applied_event_date():
@@ -233,13 +238,13 @@ def test_store_repairs_mismatched_legacy_applied_event_date():
 
         with store._connect() as migrated_conn:
             event = migrated_conn.execute(
-                """SELECT created_at FROM application_events
+                """SELECT occurred_at FROM application_events
                    WHERE job_id = (SELECT id FROM jobs WHERE job_id = 'legacy-tracked-job')
-                     AND status = 'applied'"""
+                     AND canonical_phase = 'applied'"""
             ).fetchone()
 
         assert event is not None
-        assert event["created_at"] == "2026-04-15"
+        assert event["occurred_at"] == "2026-04-15"
 
 
 def test_refresh_job_from_imported_fetch_updates_cache_invalidation_metadata():
@@ -376,13 +381,15 @@ def test_store_dedupes_exact_duplicate_application_events_on_init():
 
         with store._connect() as repaired_conn:
             rows = repaired_conn.execute(
-                """SELECT status, note, created_at
+                """SELECT canonical_phase, stage_label, note, occurred_at, event_type
                    FROM application_events
                    WHERE job_id = (SELECT id FROM jobs WHERE job_id = '155')
                    ORDER BY id ASC"""
             ).fetchall()
 
         assert len(rows) == 1
-        assert rows[0]["status"] == "applied"
+        assert rows[0]["canonical_phase"] == "applied"
+        assert rows[0]["stage_label"] == "Applied"
         assert rows[0]["note"] == "Re-added from URL import"
-        assert rows[0]["created_at"] == "2026-04-13"
+        assert rows[0]["occurred_at"] == "2026-04-13"
+        assert rows[0]["event_type"] == "stage"

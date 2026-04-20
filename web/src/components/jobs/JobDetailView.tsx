@@ -20,6 +20,7 @@ import { Button, buttonVariants } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { JobDescription } from '@/components/jobs/JobDescription'
 import { cn } from '@/lib/utils'
 import {
@@ -81,10 +82,16 @@ export function JobDetailView({
   const [savingNextStep, setSavingNextStep] = useState(false)
   const [savingAppliedAt, setSavingAppliedAt] = useState(false)
   const [savingResponseDate, setSavingResponseDate] = useState(false)
+  const [savingTimelineEventDate, setSavingTimelineEventDate] = useState(false)
+  const [deletingTimelineEventId, setDeletingTimelineEventId] = useState<number | null>(null)
   const [appliedDateDialogOpen, setAppliedDateDialogOpen] = useState(false)
   const [appliedDateDraft, setAppliedDateDraft] = useState('')
   const [responseDateDialogOpen, setResponseDateDialogOpen] = useState(false)
   const [responseDateDraft, setResponseDateDraft] = useState('')
+  const [timelineEventDialogOpen, setTimelineEventDialogOpen] = useState(false)
+  const [timelineEventDraft, setTimelineEventDraft] = useState('')
+  const [timelineEventNoteDraft, setTimelineEventNoteDraft] = useState('')
+  const [editingTimelineEvent, setEditingTimelineEvent] = useState<ApplicationEventResponse | null>(null)
   const [statusDialogOpen, setStatusDialogOpen] = useState(false)
   const [nextStepDialogOpen, setNextStepDialogOpen] = useState(false)
   const [nextStepDraft, setNextStepDraft] = useState('')
@@ -194,6 +201,12 @@ export function JobDetailView({
 
   const removeFromTracker = async () => {
     if (!jobId) return
+    if (typeof window !== 'undefined') {
+      const confirmed = window.confirm(
+        'Delete this tracker history permanently? This will remove the timeline, notes, and reminders for this job.'
+      )
+      if (!confirmed) return
+    }
 
     setUpdating(true)
     try {
@@ -205,7 +218,7 @@ export function JobDetailView({
       setJob((prev) => prev ? { ...prev, ...(data ?? {}), application_status: null, next_step: null, next_step_date: null } : prev)
       setTimeline([])
       router.refresh()
-      toast.success('Removed from tracker')
+      toast.success('Tracker history deleted')
     } catch (err: any) {
       toast.error(err.message)
     } finally {
@@ -333,6 +346,68 @@ export function JobDetailView({
     const firstResponseEvent = timeline.find((event) => event.status !== 'applied')
     setResponseDateDraft(normalizeAppliedDateForInput(firstResponseEvent?.created_at))
     setResponseDateDialogOpen(true)
+  }
+
+  const openTimelineEventDialog = (event: ApplicationEventResponse) => {
+    setEditingTimelineEvent(event)
+    setTimelineEventDraft(normalizeAppliedDateForInput(event.created_at))
+    setTimelineEventNoteDraft(event.note ?? '')
+    setTimelineEventDialogOpen(true)
+  }
+
+  const saveTimelineEventDate = async () => {
+    if (!jobId || !editingTimelineEvent || !timelineEventDraft) return
+
+    setSavingTimelineEventDate(true)
+    try {
+      const { error: patchError } = await api.PATCH('/api/jobs/{job_id}/timeline/{event_id}', {
+        params: {
+          path: { job_id: jobId, event_id: editingTimelineEvent.id },
+        },
+        body: {
+          created_at: timelineEventDraft,
+          note: timelineEventNoteDraft.trim() || null,
+        },
+      })
+      if (patchError) throw new Error('Failed to update timeline event')
+
+      await Promise.all([fetchTimeline(), fetchJob()])
+      setTimelineEventDialogOpen(false)
+      setEditingTimelineEvent(null)
+      setTimelineEventNoteDraft('')
+      toast.success('Timeline event updated')
+    } catch (err: any) {
+      toast.error(err.message)
+    } finally {
+      setSavingTimelineEventDate(false)
+    }
+  }
+
+  const deleteTimelineEvent = async (event: ApplicationEventResponse) => {
+    if (!jobId) return
+    if (typeof window !== 'undefined') {
+      const confirmed = window.confirm(
+        `Delete the "${event.status.replaceAll('_', ' ')}" timeline stage?`
+      )
+      if (!confirmed) return
+    }
+
+    setDeletingTimelineEventId(event.id)
+    try {
+      const { error: deleteError } = await api.DELETE('/api/jobs/{job_id}/timeline/{event_id}', {
+        params: {
+          path: { job_id: jobId, event_id: event.id },
+        },
+      })
+      if (deleteError) throw new Error('Failed to delete timeline event')
+
+      await Promise.all([fetchTimeline(), fetchJob()])
+      toast.success('Timeline stage removed')
+    } catch (err: any) {
+      toast.error(err.message)
+    } finally {
+      setDeletingTimelineEventId(null)
+    }
   }
 
   const openNextStepDialog = () => {
@@ -876,7 +951,14 @@ export function JobDetailView({
                   <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Status Timeline</p>
                 </div>
                 <div className="flex-1 pt-3">
-                  <StatusTimeline events={timeline} loading={timelineLoading} />
+                  <StatusTimeline
+                    events={timeline}
+                    loading={timelineLoading}
+                    onEditEvent={openTimelineEventDialog}
+                    onDeleteEvent={deleteTimelineEvent}
+                    editingEventId={savingTimelineEventDate ? editingTimelineEvent?.id ?? null : null}
+                    deletingEventId={deletingTimelineEventId}
+                  />
                 </div>
               </CardContent>
             </Card>
@@ -1010,6 +1092,83 @@ export function JobDetailView({
             >
               {savingAppliedAt ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <PencilLine className="h-3.5 w-3.5" />}
               Save Date
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={timelineEventDialogOpen}
+        onOpenChange={(open) => {
+          setTimelineEventDialogOpen(open)
+          if (!open) {
+            setEditingTimelineEvent(null)
+            setTimelineEventNoteDraft('')
+          }
+        }}
+      >
+        <DialogContent className="max-w-md rounded-3xl border border-border/60 bg-popover/95 shadow-2xl backdrop-blur-xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold">Edit Timeline Stage</DialogTitle>
+            <DialogDescription>
+              Update the date or note for this stage while keeping the tracker summary and timeline aligned.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3">
+            <div className="rounded-2xl border border-border/40 bg-background/40 px-4 py-3">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70">
+                Stage
+              </p>
+              <p className="mt-1 text-sm font-medium capitalize text-foreground/90">
+                {editingTimelineEvent?.status.replaceAll('_', ' ')}
+              </p>
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                Date
+              </label>
+              <Input
+                type="date"
+                value={timelineEventDraft}
+                onChange={(event) => setTimelineEventDraft(event.target.value)}
+                className="h-12 rounded-2xl"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                Note
+              </label>
+              <Textarea
+                value={timelineEventNoteDraft}
+                onChange={(event) => setTimelineEventNoteDraft(event.target.value)}
+                placeholder="Optional note for this stage..."
+                className="min-h-28 rounded-2xl resize-none"
+              />
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button
+              variant="ghost"
+              onClick={() => setTimelineEventDialogOpen(false)}
+              disabled={savingTimelineEventDate}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={saveTimelineEventDate}
+              disabled={
+                savingTimelineEventDate
+                || !timelineEventDraft
+                || (
+                  timelineEventDraft === normalizeAppliedDateForInput(editingTimelineEvent?.created_at)
+                  && timelineEventNoteDraft === (editingTimelineEvent?.note ?? '')
+                )
+              }
+            >
+              {savingTimelineEventDate ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Save Changes
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -2,7 +2,9 @@
 
 import type { components } from '@/lib/api/types'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { formatDate } from '@/lib/utils/format'
+import { PencilLine, Trash2 } from 'lucide-react'
 
 type ApplicationEventResponse = components['schemas']['ApplicationEventResponse']
 
@@ -52,9 +54,17 @@ const STATUS_META: Record<string, { label: string; badge: string; dot: string }>
 export function StatusTimeline({
   events,
   loading = false,
+  onEditEvent,
+  onDeleteEvent,
+  editingEventId,
+  deletingEventId,
 }: {
   events: ApplicationEventResponse[]
   loading?: boolean
+  onEditEvent?: (event: ApplicationEventResponse) => void
+  onDeleteEvent?: (event: ApplicationEventResponse) => void
+  editingEventId?: number | null
+  deletingEventId?: number | null
 }) {
   if (loading) {
     return (
@@ -96,6 +106,34 @@ export function StatusTimeline({
                   {meta.label}
                 </Badge>
                 <span className="text-xs text-muted-foreground">{formatDate(event.created_at)}</span>
+                {(onEditEvent || onDeleteEvent) && (
+                  <div className="ml-auto flex items-center gap-1">
+                    {onEditEvent && (
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={() => onEditEvent(event)}
+                        className="rounded-full text-muted-foreground/70 hover:bg-primary/10 hover:text-primary"
+                        aria-label={`Edit ${meta.label} timeline event`}
+                        disabled={editingEventId === event.id}
+                      >
+                        <PencilLine className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
+                    {onDeleteEvent && (
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={() => onDeleteEvent(event)}
+                        className="rounded-full text-muted-foreground/70 hover:bg-destructive/10 hover:text-destructive"
+                        aria-label={`Delete ${meta.label} timeline event`}
+                        disabled={deletingEventId === event.id}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
+                  </div>
+                )}
               </div>
               {event.note && (
                 <p className="mt-1.5 text-sm leading-relaxed text-foreground/85">{event.note}</p>

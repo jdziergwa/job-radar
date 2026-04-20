@@ -24,6 +24,7 @@ from api.models import (
     NextStepUpdate,
     NotesUpdate,
     ResponseDateUpdate,
+    TimelineEventDateUpdate,
     TimelineResponse,
 )
 from api.routers.companies import ensure_company
@@ -174,6 +175,11 @@ def _maybe_track_company(
         slug=company_slug,
         name=company_name or company_slug,
     )
+
+
+def _normalize_iso_datetime(value: str) -> datetime:
+    normalized = value[:-1] + "+00:00" if value.endswith("Z") else value
+    return datetime.fromisoformat(normalized)
 
 
 def _build_application_list_payload(
@@ -364,6 +370,75 @@ def get_timeline(job_id: int, profile: str = Query("default")):
     store = get_store(profile)
     if not store.get_job_detail(job_id):
         raise HTTPException(status_code=404, detail="Job not found")
+    return TimelineResponse(events=store.get_application_timeline(job_id))
+
+
+@router.patch("/jobs/{job_id}/timeline/{event_id}", response_model=ApplicationEventResponse)
+def update_timeline_event(
+    job_id: int,
+    event_id: int,
+    body: TimelineEventDateUpdate,
+    profile: str = Query("default"),
+):
+    store = get_store(profile)
+    existing = store.get_job_detail(job_id)
+    if not existing:
+        raise HTTPException(status_code=404, detail="Job not found")
+    if existing.get("application_status") is None:
+        raise HTTPException(status_code=422, detail="Timeline can only be edited for tracked jobs")
+
+    timeline = store.get_application_timeline(job_id)
+    event = next((item for item in timeline if item["id"] == event_id), None)
+    if not event:
+        raise HTTPException(status_code=404, detail="Timeline event not found")
+
+    try:
+        updated_dt = _normalize_iso_datetime(body.created_at)
+    except ValueError:
+        raise HTTPException(status_code=422, detail="Invalid timeline event date") from None
+
+    event_index = next((index for index, item in enumerate(timeline) if item["id"] == event_id), None)
+    if event_index is None:
+        raise HTTPException(status_code=404, detail="Timeline event not found")
+
+    if event_index > 0:
+        prev_dt = _normalize_iso_datetime(str(timeline[event_index - 1]["created_at"]))
+        if updated_dt < prev_dt:
+            raise HTTPException(status_code=422, detail="Event date cannot be earlier than the previous stage")
+
+    if event_index < len(timeline) - 1:
+        next_dt = _normalize_iso_datetime(str(timeline[event_index + 1]["created_at"]))
+        if updated_dt > next_dt:
+            raise HTTPException(status_code=422, detail="Event date cannot be later than the next stage")
+
+    updated = store.update_application_event(job_id, event_id, body.created_at, body.note)
+    if not updated:
+        raise HTTPException(status_code=404, detail="Timeline event not found")
+    return ApplicationEventResponse(**updated)
+
+
+@router.delete("/jobs/{job_id}/timeline/{event_id}", response_model=TimelineResponse)
+def delete_timeline_event(job_id: int, event_id: int, profile: str = Query("default")):
+    store = get_store(profile)
+    existing = store.get_job_detail(job_id)
+    if not existing:
+        raise HTTPException(status_code=404, detail="Job not found")
+    if existing.get("application_status") is None:
+        raise HTTPException(status_code=422, detail="Timeline can only be edited for tracked jobs")
+
+    timeline = store.get_application_timeline(job_id)
+    event = next((item for item in timeline if item["id"] == event_id), None)
+    if not event:
+        raise HTTPException(status_code=404, detail="Timeline event not found")
+    if len(timeline) <= 1:
+        raise HTTPException(status_code=422, detail="Cannot delete the only timeline event")
+
+    applied_events = [item for item in timeline if item["status"] == "applied"]
+    if event["status"] == "applied" and len(applied_events) <= 1:
+        raise HTTPException(status_code=422, detail="Cannot remove the only applied event")
+
+    if not store.delete_application_event(job_id, event_id):
+        raise HTTPException(status_code=404, detail="Timeline event not found")
     return TimelineResponse(events=store.get_application_timeline(job_id))
 
 
