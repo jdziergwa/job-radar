@@ -19,6 +19,8 @@ interface ApplicationJob {
   application_status: string
   latest_stage_label?: string | null
   latest_activity_at?: string | null
+  first_screen_at?: string | null
+  first_interview_at?: string | null
   applied_at?: string | null
   next_stage_label?: string | null
   next_stage_date?: string | null
@@ -39,6 +41,15 @@ interface ApplicationStatsPayload {
   offers_count: number
   response_rate: number
   avg_time_to_response_days: number | null
+  screen_rate: number
+  avg_days_to_screen: number | null
+  pending_replies_count: number
+  avg_days_from_screen_to_interview: number | null
+  avg_days_to_reject: number | null
+  needs_attention_count: number
+  interview_conversion: number
+  offer_conversion: number
+  avg_process_days: number | null
   source_breakdown: Record<string, number>
 }
 
@@ -58,7 +69,7 @@ export default function ApplicationsPage() {
   const [importDialogOpen, setImportDialogOpen] = useState(false)
   const [group, setGroup] = useState<ApplicationGroup>('active')
   const [status, setStatus] = useState('')
-  const [sort, setSort] = useState('next_stage_date')
+  const [sort, setSort] = useState('status')
   const [searchTerm, setSearchTerm] = useState('')
   const [search, setSearch] = useState('')
 
@@ -184,7 +195,15 @@ export default function ApplicationsPage() {
             </div>
           </div>
         ) : (
-          jobs.map((job) => <ApplicationListItem key={job.id} job={job} />)
+          jobs.map((job) => (
+            <ApplicationListItem
+              key={job.id}
+              job={job}
+              avgDaysToScreen={stats?.avg_days_to_screen}
+              avgDaysToReject={stats?.avg_days_to_reject}
+              avgDaysFromScreenToInterview={stats?.avg_days_from_screen_to_interview}
+            />
+          ))
         )}
       </section>
 

@@ -95,7 +95,7 @@ export function ApplicationFilters({
           <option value="next_stage_date">Sort: Next Stage</option>
           <option value="applied_date">Sort: Applied Date</option>
           <option value="company">Sort: Company</option>
-          <option value="status">Sort: Status</option>
+          <option value="status">Sort: Stage</option>
         </select>
       </div>
     </div>

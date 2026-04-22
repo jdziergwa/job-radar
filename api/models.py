@@ -200,6 +200,8 @@ class ApplicationJobResponse(JobResponse):
     days_since_applied: Optional[int] = None
     latest_stage_label: Optional[str] = None
     latest_activity_at: Optional[str] = None
+    first_screen_at: Optional[str] = None
+    first_interview_at: Optional[str] = None
 
     @classmethod
     def from_row(cls, row: dict) -> "ApplicationJobResponse":
@@ -214,6 +216,8 @@ class ApplicationJobResponse(JobResponse):
             days_since_applied=days_since_applied,
             latest_stage_label=row.get("latest_stage_label"),
             latest_activity_at=row.get("latest_activity_at"),
+            first_screen_at=row.get("first_screen_at"),
+            first_interview_at=row.get("first_interview_at"),
         )
 
 
@@ -251,6 +255,15 @@ class ApplicationStatsResponse(BaseModel):
     offers_count: int = 0
     response_rate: float = 0
     avg_time_to_response_days: Optional[float] = None
+    screen_rate: float = 0
+    avg_days_to_screen: Optional[float] = None
+    avg_days_from_screen_to_interview: Optional[float] = None
+    pending_replies_count: int = 0
+    avg_days_to_reject: Optional[float] = None
+    needs_attention_count: int = 0
+    interview_conversion: float = 0
+    offer_conversion: float = 0
+    avg_process_days: Optional[float] = None
     status_counts: dict[str, int] = {}
     weekly_velocity: list[ApplicationWeeklyVelocityPoint] = []
     funnel: ApplicationFunnelStats = ApplicationFunnelStats()

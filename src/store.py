@@ -1957,6 +1957,18 @@ class Store:
             "   AND ev.lifecycle_state = 'scheduled' "
             " ORDER BY ev.scheduled_for ASC, ev.sort_order ASC, ev.id ASC "
             " LIMIT 1) AS next_stage_note, "
+            "(SELECT ev.occurred_at FROM application_events ev "
+            " WHERE ev.job_id = jobs.id "
+            "   AND ev.canonical_phase = 'screening' "
+            "   AND ev.lifecycle_state = 'completed' "
+            " ORDER BY ev.occurred_at ASC "
+            " LIMIT 1) AS first_screen_at, "
+            "(SELECT ev.occurred_at FROM application_events ev "
+            " WHERE ev.job_id = jobs.id "
+            "   AND ev.canonical_phase = 'interviewing' "
+            "   AND ev.lifecycle_state = 'completed' "
+            " ORDER BY ev.occurred_at ASC "
+            " LIMIT 1) AS first_interview_at, "
             "salary, salary_min, salary_max, salary_currency, is_sparse"
         )
 
@@ -1978,20 +1990,42 @@ class Store:
         sort_map = {
             "applied_date": "applied_at",
             "company": "company_name",
-            "status": "application_status",
+            "status": """CASE application_status
+                    WHEN 'accepted' THEN 60
+                    WHEN 'offer' THEN 50
+                    WHEN 'interviewing' THEN 40
+                    WHEN 'screening' THEN 30
+                    WHEN 'applied' THEN 20
+                    WHEN 'rejected_by_user' THEN 10
+                    WHEN 'rejected_by_company' THEN 5
+                    WHEN 'ghosted' THEN 0
+                    ELSE -1
+                END""",
             "next_stage_date": "next_stage_date",
             "next_step_date": "next_stage_date",
         }
         sort_col = sort_map.get(sort, "next_stage_date")
         order_sql = "DESC" if order.lower() == "desc" else "ASC"
+        
+        # When sorting by status (stage), we want a hardcoded secondary sort by date
+        secondary_sort = "applied_at DESC NULLS LAST" if sort == "status" else f"{sort_col} {order_sql} NULLS LAST" # default fallback
+        
         where_sql = " AND ".join(where_clauses)
 
         with self._connect() as conn:
+            # For status sort, we ignore the 'order' param for the weighted column and always use DESC (highest weight first)
+            # but we allow 'order' to influence other columns if needed.
+            final_sort_col = sort_col
+            final_order = order_sql
+            if sort == "status":
+                final_order = "DESC"
+                secondary_sort = "applied_at DESC NULLS LAST"
+
             rows = conn.execute(
                 f"""SELECT {columns}
                     FROM jobs
                     WHERE {where_sql}
-                    ORDER BY {sort_col} {order_sql} NULLS LAST, applied_at DESC NULLS LAST""",
+                    ORDER BY {final_sort_col} {final_order} NULLS LAST, {secondary_sort}""",
                 params,
             ).fetchall()
             result = [dict(row) for row in rows]
@@ -2047,7 +2081,17 @@ class Store:
             events_by_job.setdefault(event["job_id"], []).append(event)
 
         response_deltas: list[float] = []
+        screen_deltas: list[float] = []
+        interview_wait_deltas: list[float] = []
+        process_durations: list[float] = []
         responded_jobs = 0
+        screened_jobs = 0
+        interviewed_jobs = 0
+        offers_count = 0
+        pending_replies_count = 0
+        needs_attention_count = 0
+        now = datetime.utcnow()
+        stale_threshold = timedelta(days=14)
         weekly_velocity: dict[str, int] = {}
         outcome_breakdown = {
             "offer": 0,
@@ -2063,6 +2107,7 @@ class Store:
             "offer": 0,
             "accepted": 0,
         }
+        terminal_phases = {"rejected_by_company", "rejected_by_user", "ghosted", "accepted"}
 
         for row in app_rows:
             app_status = row["application_status"]
@@ -2072,6 +2117,8 @@ class Store:
                 active_count += 1
             if app_status in {"offer", "accepted"}:
                 offers_count += 1
+            if app_status == "applied":
+                pending_replies_count += 1
             if app_status in outcome_breakdown:
                 outcome_breakdown[app_status] += 1
 
@@ -2106,6 +2153,10 @@ class Store:
             first_applied_time: datetime | None = None
             explicit_response_time: datetime | None = None
             first_response_time: datetime | None = None
+            first_screen_time: datetime | None = None
+            first_interview_time: datetime | None = None
+            latest_completed_time: datetime | None = None
+            final_outcome_time: datetime | None = None
             seen_statuses: set[str] = set()
 
             for event in events:
@@ -2119,6 +2170,9 @@ class Store:
                 except ValueError:
                     continue
 
+                if latest_completed_time is None or event_time > latest_completed_time:
+                    latest_completed_time = event_time
+
                 if event_type == "response_received":
                     if explicit_response_time is None:
                         explicit_response_time = event_time
@@ -2131,6 +2185,13 @@ class Store:
                 elif canonical_phase != "applied" and first_response_time is None:
                     first_response_time = event_time
 
+                if canonical_phase == "screening" and first_screen_time is None:
+                    first_screen_time = event_time
+                if canonical_phase == "interviewing" and first_interview_time is None:
+                    first_interview_time = event_time
+                if canonical_phase in terminal_phases and final_outcome_time is None:
+                    final_outcome_time = event_time
+
             if first_applied_time is None and row["applied_at"]:
                 try:
                     first_applied_time = datetime.fromisoformat(str(row["applied_at"]))
@@ -2141,18 +2202,112 @@ class Store:
                 week_bucket = f"{first_applied_time.isocalendar().year}-W{first_applied_time.isocalendar().week:02d}"
                 weekly_velocity[week_bucket] = weekly_velocity.get(week_bucket, 0) + 1
 
+            # Legacy response rate (any response)
             response_anchor = explicit_response_time or first_response_time
             if first_applied_time is not None and response_anchor is not None:
                 responded_jobs += 1
                 response_deltas.append((response_anchor - first_applied_time).total_seconds() / 86400)
 
-            for key in funnel:
-                if key in seen_statuses or app_status == key:
-                    funnel[key] += 1
+            # Screen rate: reached screening or beyond (positive progress)
+            reached_screen = bool(
+                seen_statuses & {"screening", "interviewing", "offer", "accepted"}
+            )
+            if reached_screen:
+                screened_jobs += 1
+                positive_anchor = explicit_response_time or first_screen_time or first_response_time
+                if first_applied_time is not None and positive_anchor is not None:
+                    screen_deltas.append((positive_anchor - first_applied_time).total_seconds() / 86400)
+
+            # Interview conversion
+            reached_interview = bool(
+                seen_statuses & {"interviewing", "offer", "accepted"}
+            )
+            if reached_interview:
+                interviewed_jobs += 1
+
+            # Decision duration (applied → definitive outcome EXCEPT ghosting)
+            if first_applied_time is not None and final_outcome_time is not None and app_status != "ghosted":
+                process_durations.append((final_outcome_time - first_applied_time).total_seconds() / 86400)
+
+            if first_screen_time is not None and first_interview_time is not None:
+                interview_wait_deltas.append((first_interview_time - first_screen_time).total_seconds() / 86400)
 
         total = len(app_rows)
         response_rate = round((responded_jobs / total) * 100, 1) if total else 0.0
         avg_time = round(sum(response_deltas) / len(response_deltas), 1) if response_deltas else None
+        screen_rate = round((screened_jobs / total) * 100, 1) if total else 0.0
+        avg_days_to_screen = round(sum(screen_deltas) / len(screen_deltas), 1) if screen_deltas else None
+        avg_days_from_screen_to_interview = round(sum(interview_wait_deltas) / len(interview_wait_deltas), 1) if interview_wait_deltas else None
+        interview_conversion = round((interviewed_jobs / screened_jobs) * 100, 1) if screened_jobs else 0.0
+        offer_conversion = round((offers_count / interviewed_jobs) * 100, 1) if interviewed_jobs else 0.0
+        avg_process_days = round(sum(process_durations) / len(process_durations), 1) if process_durations else None
+
+        # Calculate avg_days_to_reject specifically (only for top-of-funnel rejections)
+        reject_durations = []
+        for row in app_rows:
+            row_id = row["id"]
+            row_events = events_by_job.get(row_id, [])
+            if not row_events:
+                continue
+
+            phases = {e["canonical_phase"] for e in row_events if e["lifecycle_state"] == "completed"}
+            # Only count if it was rejected but NEVER reached screening or beyond
+            if "rejected_by_company" in phases and not (phases & {"screening", "interviewing", "offer", "accepted"}):
+                first_applied = next((datetime.fromisoformat(params["occurred_at"]) for params in row_events if params["canonical_phase"] == "applied" and params["lifecycle_state"] == "completed"), None)
+                final_reject = next((datetime.fromisoformat(params["occurred_at"]) for params in reversed(row_events) if params["canonical_phase"] == "rejected_by_company" and params["lifecycle_state"] == "completed"), None)
+                if first_applied and final_reject:
+                    reject_durations.append((final_reject - first_applied).total_seconds() / 86400)
+
+        avg_days_to_reject = round(sum(reject_durations) / len(reject_durations), 1) if reject_durations else None
+
+        # Calculate stalled applications in a second pass using the FINAL calculated benchmarks
+        needs_attention_count = 0
+        for row in app_rows:
+            app_status = row["application_status"]
+            stalled = False
+            
+            if app_status == "ghosted":
+                stalled = True
+            elif app_status in {"applied", "screening", "interviewing"}:
+                row_events = events_by_job.get(row["id"], [])
+                has_scheduled = any(str(e["lifecycle_state"]) == "scheduled" for e in row_events)
+                
+                if not has_scheduled:
+                    app_events = [e for e in row_events if e["lifecycle_state"] == "completed"]
+                    app_events.sort(key=lambda x: str(x["occurred_at"]))
+                    
+                    latest_event = app_events[-1] if app_events else None
+                    anchor_time = None
+                    if latest_event:
+                        try:
+                            anchor_time = datetime.fromisoformat(str(latest_event["occurred_at"]))
+                        except ValueError:
+                            pass
+                    
+                    if anchor_time is None and row["applied_at"]:
+                        try:
+                            anchor_time = datetime.fromisoformat(str(row["applied_at"]))
+                        except ValueError:
+                            pass
+                            
+                    if anchor_time:
+                        days_since = (now - anchor_time).total_seconds() / 86400
+                        
+                        if app_status == "applied":
+                            screenT = avg_days_to_screen or 5.0
+                            rejectT = avg_days_to_reject or 10.0
+                            if days_since > rejectT or days_since > screenT:
+                                stalled = True
+                        elif app_status == "screening":
+                            interviewT = avg_days_from_screen_to_interview or 7.0
+                            if days_since > interviewT:
+                                stalled = True
+                        elif app_status == "interviewing":
+                            if days_since > 7.0:
+                                stalled = True
+            
+            if stalled:
+                needs_attention_count += 1
 
         top_company_rows: list[dict[str, object]] = []
         for data in top_companies.values():
@@ -2173,8 +2328,17 @@ class Store:
             "total": total,
             "active_count": active_count,
             "offers_count": offers_count,
+            "pending_replies_count": pending_replies_count,
             "response_rate": response_rate,
             "avg_time_to_response_days": avg_time,
+            "screen_rate": screen_rate,
+            "avg_days_to_screen": avg_days_to_screen,
+            "avg_days_from_screen_to_interview": avg_days_from_screen_to_interview,
+            "avg_days_to_reject": avg_days_to_reject,
+            "needs_attention_count": needs_attention_count,
+            "interview_conversion": interview_conversion,
+            "offer_conversion": offer_conversion,
+            "avg_process_days": avg_process_days,
             "status_counts": status_counts,
             "weekly_velocity": [
                 {"week": week, "applications": weekly_velocity[week]}

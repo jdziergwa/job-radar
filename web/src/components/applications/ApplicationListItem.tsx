@@ -25,6 +25,8 @@ interface ApplicationJob {
   latest_stage_label?: string | null
   latest_activity_at?: string | null
   applied_at?: string | null
+  first_screen_at?: string | null
+  first_interview_at?: string | null
   next_stage_label?: string | null
   next_stage_date?: string | null
   next_stage_canonical_phase?: string | null
@@ -38,7 +40,19 @@ interface ApplicationJob {
   } | null
 }
 
-export function ApplicationListItem({ job }: { job: ApplicationJob }) {
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+
+export function ApplicationListItem({
+  job,
+  avgDaysToScreen = 5,
+  avgDaysToReject = 10,
+  avgDaysFromScreenToInterview = 7,
+}: {
+  job: ApplicationJob
+  avgDaysToScreen?: number | null
+  avgDaysToReject?: number | null
+  avgDaysFromScreenToInterview?: number | null
+}) {
   const meta = getApplicationStageMeta(job.application_status)
   const canonicalLabel = getApplicationStageLabel(job.application_status)
   const latestStageLabel = job.latest_stage_label?.trim() || canonicalLabel
@@ -55,6 +69,49 @@ export function ApplicationListItem({ job }: { job: ApplicationJob }) {
   )
   const stalledLabel = stalledInfo ? `No activity for ${stalledInfo.daysWithoutActivity} days` : null
 
+  // Health / Momentum Analysis
+  const now = Date.now()
+  const daysSinceApplied = job.applied_at ? Math.floor((now - new Date(job.applied_at).getTime()) / 86400000) : 0
+  const daysSinceScreen = job.first_screen_at ? Math.floor((now - new Date(job.first_screen_at).getTime()) / 86400000) : 0
+  const daysSinceActivity = job.latest_activity_at ? Math.floor((now - new Date(job.latest_activity_at).getTime()) / 86400000) : daysSinceApplied
+
+  let health: { color: string; label: string; tooltip: string } = {
+    color: 'bg-emerald-500',
+    label: 'Healthy',
+    tooltip: `Application has good momentum. (${daysSinceActivity}d since last activity)`
+  }
+
+  // Override: If a stage is already scheduled, health is always Good
+  const isScheduled = hasUpcomingStage
+  const status = job.application_status
+  
+  if (!isScheduled) {
+    if (status === 'applied' && job.applied_at) {
+      const screenT = avgDaysToScreen || 5
+      const rejectT = avgDaysToReject || 10
+      if (daysSinceApplied > rejectT) {
+        health = { color: 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.4)]', label: 'Critical', tooltip: `Critical: Applied ${daysSinceApplied}d ago. Past your typical ${rejectT}d rejection window.` }
+      } else if (daysSinceApplied > screenT) {
+        health = { color: 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.4)]', label: 'Stale', tooltip: `Stale: Applied ${daysSinceApplied}d ago. Past typical ${screenT}d screen window.` }
+      }
+    } else if (status === 'screening' && job.first_screen_at) {
+      const interviewT = avgDaysFromScreenToInterview || 7
+      if (daysSinceScreen > interviewT + 7) {
+        health = { color: 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.4)]', label: 'Critical', tooltip: `Critical: ${daysSinceScreen}d since screen. Significantly past typical ${interviewT}d follow-up.` }
+      } else if (daysSinceScreen > interviewT) {
+        health = { color: 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.4)]', label: 'Stale', tooltip: `Stale: ${daysSinceScreen}d since screen. Past typical ${interviewT}d follow-up window.` }
+      }
+    } else if (status === 'interviewing') {
+      if (daysSinceActivity > 14) {
+        health = { color: 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.4)]', label: 'Critical', tooltip: `Critical: No activity for ${daysSinceActivity} days. Process may have stalled.` }
+      } else if (daysSinceActivity > 7) {
+        health = { color: 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.4)]', label: 'Stale', tooltip: `Stale: No activity for ${daysSinceActivity} days. Consider a follow-up.` }
+      }
+    }
+  } else {
+    health.tooltip = "Healthy: Next stage is already scheduled!"
+  }
+
   return (
     <Link
       href={`/jobs/detail?id=${job.id}&from=${encodeURIComponent('/applications')}`}
@@ -65,7 +122,6 @@ export function ApplicationListItem({ job }: { job: ApplicationJob }) {
         <div className="flex flex-col gap-5 lg:grid lg:grid-cols-[minmax(0,1fr)_18rem_auto] lg:items-center lg:gap-5">
           <div className="flex min-w-0 items-start gap-4">
             <div className="mt-1 flex items-center gap-3">
-              <span className={`h-3 w-3 rounded-full shadow-sm ${meta.dot}`} />
               {job.fit_score != null ? (
                 <ScoreRing score={job.fit_score} size={56} strokeWidth={5} />
               ) : (
@@ -77,15 +133,20 @@ export function ApplicationListItem({ job }: { job: ApplicationJob }) {
 
             <div className="min-w-0 space-y-3">
               <div className="flex flex-wrap items-center gap-2">
-                <Badge variant="outline" className={`px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest ${meta.badge}`}>
-                  {canonicalLabel}
-                </Badge>
-                <Badge variant="outline" className="border-border/50 bg-background/50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/80">
-                  {sourceLabel}
-                </Badge>
-                <Badge variant="outline" className="border-border/50 bg-background/50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/80">
-                  Board: {job.status}
-                </Badge>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Badge variant="outline" className={`inline-flex cursor-help items-center gap-1.5 px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest transition-colors ${meta.badge}`}>
+                        <span className={`block h-1.5 w-1.5 shrink-0 rounded-full ${health.color.split(' ')[0]}`} />
+                        {canonicalLabel}
+                      </Badge>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">
+                      <p className="text-[11px]">{health.tooltip}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+
                 {stalledInfo && (
                   <Badge variant="outline" className="border-amber-500/20 bg-amber-500/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-amber-700 dark:text-amber-300">
                     Stalled
@@ -94,19 +155,19 @@ export function ApplicationListItem({ job }: { job: ApplicationJob }) {
               </div>
 
               <div>
-                <h3 className="truncate text-xl font-black tracking-tight text-foreground transition-colors group-hover:text-primary">
+                <h3 className="truncate text-2xl font-black tracking-tight text-foreground transition-colors group-hover:text-primary">
                   {job.title}
                 </h3>
+                <div className="mt-0.5 flex items-center gap-2 text-lg font-bold text-muted-foreground/90">
+                  <Building2 className="h-4.5 w-4.5" />
+                  {job.company_name}
+                </div>
                 {showLatestStageLabel && (
                   <p className="mt-1 text-sm font-medium text-muted-foreground">
                     Latest step: <span className="text-foreground/85">{latestStageLabel}</span>
                   </p>
                 )}
-                <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
-                  <span className="inline-flex items-center gap-1.5">
-                    <Building2 className="h-4 w-4" />
-                    {job.company_name}
-                  </span>
+                <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
                   <span className="inline-flex items-center gap-1.5">
                     <MapPin className="h-4 w-4" />
                     {displayLocation}

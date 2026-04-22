@@ -242,8 +242,8 @@ def list_applications(
     profile: str = Query("default"),
     status: str | None = Query(None),
     search: str | None = Query(None),
-    sort: str = Query("next_stage_date"),
-    order: str = Query("asc"),
+    sort: str = Query("status"),
+    order: str = Query("desc"),
     page: int = Query(1, ge=1),
     per_page: int = Query(50, ge=1, le=200),
 ):
