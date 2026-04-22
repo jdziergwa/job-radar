@@ -35,6 +35,14 @@
   },
   "scored_at": "2026-04-11T18:48:22.294197",
   "status": "scored",
+  "application_status": null,
+  "applied_at": null,
+  "notes": null,
+  "next_stage_label": null,
+  "next_stage_date": null,
+  "next_stage_canonical_phase": null,
+  "next_stage_note": null,
+  "source": "pipeline",
   "dismissal_reason": null,
   "match_tier": "signal_match",
   "salary": null,
@@ -43,5 +51,7 @@
   "salary_currency": null,
   "is_sparse": false,
   "company_quality_signals": [],
+  "workplace_type": null,
+  "raw_location": null,
   "description": "<div><span style=\"font-size: 10.5pt;\">Spotify’s Audiobooks Mission is transforming how creators and listeners experience long-form storytelling. We’re building the foundation that enables audiobook content to flow seamlessly from publishers to listeners — including the systems that power ingestion, processing, and delivery across a rapidly growing global catalog.</span></div>\n<div>&nbsp;</div>\n<div><span style=\"font-size: 10.5pt;\">We’re looking for a Senior Backend Engineer to join a small, high-impact team within the Audiobooks Pipeline area. This team is responsible for building and scaling systems that ingest, process, and transform audiobook and eBook content, metadata, and royalties — ensuring the right content reaches listeners efficiently and with the highest quality.</span></div>\n<div>&nbsp;</div>\n<div><span style=\"font-size: 10.5pt;\">While this role is full stack in scope, the majority of work will lean toward backend and data-focused development. We’re looking for someone who thrives in ambiguity, loves to learn, and is eager to stretch beyond their comfort zone to solve challenging problems across the stack.</span></div>"
 }

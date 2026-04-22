@@ -35,6 +35,14 @@
   },
   "scored_at": "2026-04-11T18:48:14.419259",
   "status": "scored",
+  "application_status": null,
+  "applied_at": null,
+  "notes": null,
+  "next_stage_label": null,
+  "next_stage_date": null,
+  "next_stage_canonical_phase": null,
+  "next_stage_note": null,
+  "source": "pipeline",
   "dismissal_reason": null,
   "match_tier": "signal_match",
   "salary": null,
@@ -43,5 +51,7 @@
   "salary_currency": null,
   "is_sparse": true,
   "company_quality_signals": [],
+  "workplace_type": null,
+  "raw_location": null,
   "description": "<div>The Subscriptions Mission team builds and evolves the systems that help listeners discover, try, and subscribe to Spotify. From awareness to activation, retention, and conversion, we create seamless experiences that connect users with the value of Spotify at every step of their journey.</div>\n<div>&nbsp;</div>\n<div>You’ll join a team within the Subscriptions R&amp;D organization, focused on shaping the full user journey at Spotify. We work on how people discover Spotify, understand its value, and ultimately become long-term listeners. By bringing together engineering, product, design, research, and marketing, we move quickly to build meaningful, scalable experiences that reach millions of users worldwide.</div>"
 }

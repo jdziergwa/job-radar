@@ -35,6 +35,14 @@
   },
   "scored_at": "2026-04-11T18:48:22.290793",
   "status": "scored",
+  "application_status": null,
+  "applied_at": null,
+  "notes": null,
+  "next_stage_label": null,
+  "next_stage_date": null,
+  "next_stage_canonical_phase": null,
+  "next_stage_note": null,
+  "source": "pipeline",
   "dismissal_reason": null,
   "match_tier": "signal_match",
   "salary": null,
@@ -43,5 +51,7 @@
   "salary_currency": null,
   "is_sparse": false,
   "company_quality_signals": [],
+  "workplace_type": null,
+  "raw_location": null,
   "description": "<div>In the Music Mission, we build the tools and services that enable creators to express themselves, promote their work, and connect with fans.&nbsp; Discovery Mode is a key promotional tool that helps artists, labels, and licensors grow their audience while maintaining a high-quality listener experience.</div>\n<div>&nbsp;</div>\n<div>\n<p>We are looking for a Backend focused engineer to join the OASIS team.&nbsp; OASIS builds and operates the systems that power promotion delivery and optimization within Discovery Mode.&nbsp; Our work ensures that promotional content isn’t just \"surfaced\", but is intelligently allocated by balancing complex, competing objectives across our entire ecosystem.</p>\n<p>The team is distributed and highly collaborative, working closely with Personalization (PZN) to serve high-quality promotion signals. You’ll be part of a small, impactful group of engineers across data and machine learning, owning a core piece of infrastructure that enables promotion delivery at scale.</p>\n</div>"
 }

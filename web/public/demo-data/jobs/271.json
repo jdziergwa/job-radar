@@ -36,6 +36,14 @@
   },
   "scored_at": "2026-04-10T13:59:00.365130",
   "status": "scored",
+  "application_status": null,
+  "applied_at": null,
+  "notes": null,
+  "next_stage_label": null,
+  "next_stage_date": null,
+  "next_stage_canonical_phase": null,
+  "next_stage_note": null,
+  "source": "pipeline",
   "dismissal_reason": null,
   "match_tier": "high_confidence",
   "salary": null,
@@ -44,5 +52,7 @@
   "salary_currency": null,
   "is_sparse": true,
   "company_quality_signals": [],
+  "workplace_type": null,
+  "raw_location": null,
   "description": "<div><span style=\"font-size: 18px\"><b>At Anchorage Digital, we are building the world’s most advanced digital asset platform for institutions to participate in crypto.</b></span></div><div><br></div><div>Anchorage Digital is a crypto platform that enables institutions to participate in digital assets through custody, staking, trading, governance, settlement, and the industry's leading security infrastructure. Home to Anchorage Digital Bank N.A., the first federally chartered crypto bank in the U.S., Anchorage Digital also serves institutions through Anchorage Digital Singapore, Porto by Anchorage Digital<span style=\"font-size: 15px\">, and other offerings.</span></div><div><br></div><div>The company is funded by leading institutions including Andreessen Horowitz, GIC, Goldman Sachs, KKR, and Visa, with its Series D valuation over $3 billion. Founded in 2017 in San Francisco, California, Anchorage Digital has offices in New York, New York; Porto, Portugal; Singapore; and Sioux Falls, South Dakota. Learn more at anchorage.com, on X @Anchorage, and on LinkedIn.&nbsp;</div><div><br></div><div>Core Experience builds foundations that other teams can use, but we also use those foundations ourselves by having a vertical integration into the system. Being part of our team means you can improve any part of our system, and you have impact across every team.</div><div><br></div><div>You will work with the Engineering Manager, Product Manager and the rest of the engineering team to plan, build, release and maintain high quality software. You will be the primary driver of the system architecture, technical direction and  team member’s technical skill development. At Anchorage Digital, we believe the product is never \"done,\" we can always do better! When you join Anchorage, we expect you to drive our products forward by developing novel solutions for our institutional clients. As a team, we are constantly striving to innovate in order to build the future of cryptocurrency and the digital asset ecosystem.</div><div><br></div><div>We have created the Factors of Growth &amp; Impact to help Villagers better measure impact and articulate coaching, feedback, and the rich and rewarding learning that happens while exploring, developing, and mastering the capabilities and contributions within and outside of the Tech Lead role:</div>"
 }

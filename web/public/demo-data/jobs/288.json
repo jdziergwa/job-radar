@@ -36,6 +36,14 @@
   },
   "scored_at": "2026-04-10T13:59:47.755480",
   "status": "scored",
+  "application_status": null,
+  "applied_at": null,
+  "notes": null,
+  "next_stage_label": null,
+  "next_stage_date": null,
+  "next_stage_canonical_phase": null,
+  "next_stage_note": null,
+  "source": "pipeline",
   "dismissal_reason": null,
   "match_tier": "high_confidence",
   "salary": null,
@@ -44,5 +52,7 @@
   "salary_currency": null,
   "is_sparse": true,
   "company_quality_signals": [],
+  "workplace_type": null,
+  "raw_location": null,
   "description": "<div><span style=\"font-size: 16px;\">Sword Health is shifting healthcare from human-first to AI-first through its AI Care platform, making world-class healthcare available anytime, anywhere, while significantly reducing costs for payers, self-insured employers, national health systems, and other healthcare organizations. Sword began by reinventing pain care with AI at its core, and has since expanded into women’s health, movement health, and more recently mental health. Since 2020, more than 700,000 members across three continents have completed 10 million AI sessions, helping Sword's 1,000+ enterprise clients avoid over $1 billion in unnecessary healthcare costs. Backed by 42 clinical studies and over 44 patents, Sword Health has raised more than $500 million from leading investors, including Khosla Ventures, General Catalyst, Transformation Capital, and Founders Fund. Learn more at </span><a href=\"http://www.swordhealth.com\"><span style=\"font-size: 16px;\">www.swordhealth.com</span></a><span style=\"font-size: 16px;\">.</span></div><div><br></div><div><span style=\"font-size: 16px;\">At Sword, data powers our mission to build a pain-free world. The Platform Team is building the infrastructure that makes this possible, high-performance APIs enabling self-service data access for clinical, operations, and AI teams. We're moving from a traditional data warehouse to an end-to-end platform, and this role is central to that transformation.</span></div>\n<div>&nbsp;</div>\n<div><span style=\"font-size: 16px;\">Design and build the APIs that make data accessible across Sword. You'll own critical platform services, implement resilient workflows, and collaborate with Data Engineers to define contracts that scale. Requires production API experience and comfort working in regulated environments.</span></div>"
 }

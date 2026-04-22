@@ -36,6 +36,14 @@
   },
   "scored_at": "2026-04-10T13:59:49.419991",
   "status": "scored",
+  "application_status": null,
+  "applied_at": null,
+  "notes": null,
+  "next_stage_label": null,
+  "next_stage_date": null,
+  "next_stage_canonical_phase": null,
+  "next_stage_note": null,
+  "source": "pipeline",
   "dismissal_reason": null,
   "match_tier": "signal_match",
   "salary": null,
@@ -44,5 +52,7 @@
   "salary_currency": null,
   "is_sparse": false,
   "company_quality_signals": [],
+  "workplace_type": null,
+  "raw_location": null,
   "description": "<div><b style=\"font-size: 18px\">About Outreach</b></div><div><br></div><div><span style=\"font-size: 16px\">Outreach, founded in 2014, is the only complete </span><u><a style=\"font-size: 16px\" href=\"https://www.outreach.io/ai-agents\"><b>agentic AI</b></a></u><span style=\"font-size: 16px\"> platform for revenue teams. Outreach infuses agentic AI, conversation intelligence, and assistive AI to power hundreds of use cases across revenue motions. From new logo prospecting to expansions, deal acceleration, driving retention, and forecasting, Outreach AI automates workflows and frees sellers to focus on more strategic conversations and actions. Revenue leaders benefit from connected account visibility, performance insights, and higher forecasting accuracy across every GTM team. World leading enterprise organizations use Outreach to power their revenue teams, including Databricks, SAP, Siemens, and Verizon to name a few.&nbsp; </span></div><div><br></div><div><b style=\"font-size: 18px\">About the Team</b></div><div><br></div><div><span style=\"font-size: 11pt;\">The mission of the Commit Backend team is to build and scale the distributed platform that powers Outreach’s forecasting and opportunity management systems. From opportunity lifecycle management and forecasting rollups to goal tracking. Our services directly&nbsp;impact&nbsp;revenue predictability and customer trust.&nbsp;</span></div><div><span style=\"font-size: 11pt;\">We&nbsp;operate&nbsp;in a cloud-native, service-oriented architecture at scale. The problems are complex, the expectations are high, and the impact is real.&nbsp;</span></div><div><br></div><div><b style=\"font-size: 18px\">The Role</b></div><div><br></div><div><span style=\"font-size: 11pt;\">We are hiring a Senior Staff Software Engineer, driving architectural direction, leading cross-team initiatives, and ensuring predictable delivery of high-impact programs.&nbsp;</span></div><div><span style=\"font-size: 11pt;\">This role requires deep technical&nbsp;expertise&nbsp;combined with strong cross-functional leadership. You will create clarity in ambiguous environments, proactively remove blockers, and consistently drive initiatives to a measurable path to green.&nbsp;</span></div><div><span style=\"font-size: 11pt;\">Location: Remote-friendly, with planned in-office collaborations in Hyderabad.&nbsp;</span></div>"
 }

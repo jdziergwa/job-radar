@@ -8,7 +8,7 @@
   {
     "name": "local",
     "display_name": "Targeted Boards",
-    "description": "Direct Source: Scans your curated company list via direct API (Supports Greenhouse, Lever, Ashby, Workable).",
+    "description": "Direct Source: Scans your curated company list via direct API (Supports Greenhouse, Lever, Ashby, Workable, BambooHR, SmartRecruiters).",
     "shows_aggregator_badge": false
   },
   {
@@ -45,6 +45,18 @@
     "name": "adzuna",
     "display_name": "Adzuna",
     "description": "Official Adzuna API source. Requires ADZUNA_APP_ID and ADZUNA_APP_KEY.",
+    "shows_aggregator_badge": false
+  },
+  {
+    "name": "himalayas",
+    "display_name": "Himalayas",
+    "description": "Remote jobs from Himalayas' public API.",
+    "shows_aggregator_badge": false
+  },
+  {
+    "name": "jobicy",
+    "display_name": "Jobicy",
+    "description": "Remote jobs aggregator with EU coverage from Jobicy's public API.",
     "shows_aggregator_badge": false
   }
 ]

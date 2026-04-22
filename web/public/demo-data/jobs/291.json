@@ -37,6 +37,14 @@
   },
   "scored_at": "2026-04-10T13:58:59.859608",
   "status": "scored",
+  "application_status": null,
+  "applied_at": null,
+  "notes": null,
+  "next_stage_label": null,
+  "next_stage_date": null,
+  "next_stage_canonical_phase": null,
+  "next_stage_note": null,
+  "source": "pipeline",
   "dismissal_reason": null,
   "match_tier": "high_confidence",
   "salary": "$120K–$160K + Equity",
@@ -45,5 +53,7 @@
   "salary_currency": "USD",
   "is_sparse": false,
   "company_quality_signals": [],
+  "workplace_type": null,
+  "raw_location": null,
   "description": "<div>Thank you for your interest in Uncountable Engineering!</div><div><br></div><div><b style=\"font-size: 18px\">Description</b></div><div><span style=\"font-size: 11pt\">‍Uncountable is seeking driven software engineers with a focus on Generative AI deployment in software.&nbsp;</span></div><div><br></div><div><span style=\"font-size: 11pt\">Uncountable’s software platform is used by scientists in leading scientific R&amp;D organizations to structure and analyze experimental data. Uncountable’s users are solving critical problems in materials science, chemistry, biotech, and other scientific fields, and our goal is to help them solve those problems faster.</span></div><div><br></div><div><span style=\"font-size: 11pt\">Your role will be to bring the full power of ongoing advances in LLMs to bear on real-world problems and friction faced by scientists every day. You’ll be building AI-powered search and visualization tools, next-generation UX that use multimodal LLMs as the UI, intelligent research assistants, and more. This is a unique opportunity to join the front-line effort to accelerate scientific progress using LLMs and generative AI.</span></div><div><br></div><div><b style=\"font-size: 18px\">Primary Responsibility</b></div><div><span style=\"font-size: 11pt\">You will be responsible for:</span></div><div><span style=\"font-size: 11pt\">- Building specific LLM powered features end-to-end, including both LLM-specific tasks (prompting, optimizing latency, tuning/testing behavior) and traditional fullstack development tasks (coding frontends/backends, designing APIs and databases)</span></div><div><span style=\"font-size: 11pt\">- Developing a great in-house LLM stack to serve the evolving needs of our product (API integration, testing, observability, caching, infrastructure for fine-tuning and inference, etc)</span></div><div><br></div><div><span style=\"font-size: 11pt\">Uncountable has a strong culture of continuous deployment and fast iteration cycles. You’ll expect to ship your work early and often to Uncountable’s users and iterate based on their feedback.&nbsp;</span></div><div><br></div><div><span style=\"font-size: 11pt\">Many of the features you build will represent new and unprecedented ways to use software, so you’ll wear various hats as a designer, researcher, engineer, product manager, and whatever else is needed to create an amazing product. This is a great role for someone who is looking to grow their skills and perspective quickly, or who wants to found their own company in the future.</span></div><div><br></div><div><b style=\"font-size: 18px\">Salary Range: $120K-$160K + Equity</b></div>"
 }

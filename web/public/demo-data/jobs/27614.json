@@ -34,6 +34,14 @@
   },
   "scored_at": "2026-04-11T18:48:16.507780",
   "status": "scored",
+  "application_status": null,
+  "applied_at": null,
+  "notes": null,
+  "next_stage_label": null,
+  "next_stage_date": null,
+  "next_stage_canonical_phase": null,
+  "next_stage_note": null,
+  "source": "pipeline",
   "dismissal_reason": null,
   "match_tier": "signal_match",
   "salary": null,
@@ -42,5 +50,7 @@
   "salary_currency": null,
   "is_sparse": false,
   "company_quality_signals": [],
+  "workplace_type": null,
+  "raw_location": null,
   "description": "<div><span style=\"font-size: 16px;\">Aircall is a unicorn, AI-powered customer communications platform used by 22,000+ companies worldwide to drive revenue, resolve issues faster, and scale customer-facing teams. We’re redefining customer communications by bringing voice, SMS, WhatsApp, and AI together into one seamless workspace.</span></div><div><br></div><div><span style=\"font-size: 16px;\">Our momentum comes from a simple idea: help teams work smarter, not harder. Aircall’s AI Voice Agent automates routine calls, AI Assist streamlines post-call work, and AI Assist Pro delivers real-time guidance so people can do their best work. The result is higher revenue, faster resolutions, and teams that scale with confidence.</span></div><div><br></div><div><span style=\"font-size: 16px;\">Aircall is headquartered in Paris, our European HQ, with a strong North American presence anchored in Seattle, our North American HQ, and teams across Madrid, London, Berlin, San Francisco, New York City, Sydney, and Mexico City. We’ve built a product customers love and a business that’s scaling quickly, backed by world-class investors and driven by rapid AI innovation across multiple product lines.</span></div><div><span style=\"font-size: 16px;\">At Aircall, you’ll join a company in motion. We’re ambitious, product-driven, and execution-focused, with visible impact, fast decisions, and real growth.</span></div><div><br></div><div><span style=\"font-size: 16px;\"><b>How we work at Aircall: </b>We’re customer-obsessed, data-driven, and focused on delivering meaningful outcomes. We value ownership, continuous learning, and thoughtful speed. If you thrive in a collaborative, fast-moving environment where trust and impact matter, you’ll feel at home here.</span></div><div><br></div><div><strong style=\"font-size: 11pt;\">About the Role: </strong><span style=\"font-size: 11pt;\">We are looking for a </span><strong style=\"font-size: 11pt;\">Database Engineer</strong><span style=\"font-size: 11pt;\"> with a platform mindset to join our Infrastructure department.In this role, you will not simply \"manage tickets\" or manually tune SQL queries. Instead, you will be a </span><strong style=\"font-size: 11pt;\">force multiplier</strong><span style=\"font-size: 11pt;\"> and an </span><strong style=\"font-size: 11pt;\">enabler</strong><span style=\"font-size: 11pt;\">, constantly mindful of </span><strong style=\"font-size: 11pt;\">reliability</strong><span style=\"font-size: 11pt;\"> and </span><strong style=\"font-size: 11pt;\">scalability</strong><span style=\"font-size: 11pt;\">. </span></div>\n<div><span style=\"font-size: 11pt;\">Your mission is to codify your deep database expertise into tools, modules, and platforms that make database management and observability </span><strong style=\"font-size: 11pt;\">effortless</strong><span style=\"font-size: 11pt;\"> for our product engineers. You will build the \"Golden Paths\" that allow developers to spin up, scale, and monitor databases autonomously, ensuring that safety, security, and best practices are baked in by default. </span></div>\n<div><strong style=\"font-size: 11pt;\">The Mission: Make \"The Right Way\" the \"Easy Way\"</strong><span style=\"font-size: 11pt;\"> You will abstract the complexity of our data layer. When a developer needs a database, they shouldn't need to be an expert in AWS parameter groups or replication lag—your tools should handle that complexity for them.</span></div>"
 }

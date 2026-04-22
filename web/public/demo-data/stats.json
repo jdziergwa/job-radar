@@ -7,7 +7,7 @@
   "last_pipeline_run_at": "2026-04-11T18:48:22.312253",
   "scored": 308,
   "pending": 0,
-  "applied": 0,
+  "applied": 1,
   "dismissed": 28322,
   "closed": 0,
   "score_distribution": {

@@ -38,6 +38,14 @@
   },
   "scored_at": "2026-04-10T13:59:49.418750",
   "status": "scored",
+  "application_status": null,
+  "applied_at": null,
+  "notes": null,
+  "next_stage_label": null,
+  "next_stage_date": null,
+  "next_stage_canonical_phase": null,
+  "next_stage_note": null,
+  "source": "pipeline",
   "dismissal_reason": null,
   "match_tier": "signal_match",
   "salary": null,
@@ -46,5 +54,7 @@
   "salary_currency": null,
   "is_sparse": false,
   "company_quality_signals": [],
+  "workplace_type": null,
+  "raw_location": null,
   "description": "<div><b style=\"font-size: 18px\">About Outreach</b></div><div><br></div><div><span style=\"font-size: 16px\">Outreach, founded in 2014, is the only complete </span><u><a style=\"font-size: 16px\" href=\"https://www.outreach.io/ai-agents\"><b>agentic AI</b></a></u><span style=\"font-size: 16px\"> platform for revenue teams. Outreach infuses agentic AI, conversation intelligence, and assistive AI to power hundreds of use cases across revenue motions. From new logo prospecting to expansions, deal acceleration, driving retention, and forecasting, Outreach AI automates workflows and frees sellers to focus on more strategic conversations and actions. Revenue leaders benefit from connected account visibility, performance insights, and higher forecasting accuracy across every GTM team. World leading enterprise organizations use Outreach to power their revenue teams, including Databricks, SAP, Siemens, and Verizon to name a few.&nbsp; </span></div><div><br></div><div><b style=\"font-size: 18px\">About the Team</b></div><div><br></div><div><span style=\"font-size: 16px\">Compute, Observability and Reliability (COR) is focused on providing reliable, scalable and cost-efficient infrastructure platform services that enable Outreach engineering teams to deploy and operate enterprise grade cloud services. We are one of the squads in the Foundations organization, which is a collection of squads dedicated to engineering enablement: infrastructure, services, storage, tooling, documentation, processes, and more. COR works closely with many other squads across the company for everything from optimizing our infrastructure costs &amp; engineering efficiency to providing systems to scale our application platform to multiple geographies.&nbsp;</span></div><div><span style=\"font-size: 10.5pt\">&nbsp;</span></div><div><b style=\"font-size: 18px\">The Role</b><span style=\"font-size: 18px\">&nbsp;</span></div><div><br></div><div><span style=\"font-size: 16px\">A Site Reliability Engineer (SRE) in the COR team is responsible for creating and maintaining our Kubernetes platform as well as cloud configuration and most of Outreach’s infrastructure. Every SRE in our team is expected to be empathetic to our customers (other engineers) and focused on overall performance and reliability of systems we own. </span></div><div><br></div><div><span style=\"font-size: 16px\">A Senior Staff SRE, specifically, is expected to be fully self-reliant and able to independently drive medium sized technical projects.&nbsp;</span></div><div><span style=\"font-size: 16px\">&nbsp;</span></div><div><b style=\"font-size: 18px\">Location</b><span style=\"font-size: 18px\">&nbsp;</span></div><div><br></div><div><span style=\"font-size: 16px\">While our main office is in </span><b style=\"font-size: 16px\">Prague</b><span style=\"font-size: 16px\">, this position is remote friendly (within the Czech Republic). </span></div><div><span style=\"font-size: 16px\">To support in-person team chemistry, we organize team meetups every month at the main office. If you are local to Prague, we also encourage you to come into the office more regularly to build relationships with the other teams using the COR platform.&nbsp;</span></div><div><span style=\"font-size: 11pt\">&nbsp;</span></div>"
 }

@@ -35,6 +35,14 @@
   },
   "scored_at": "2026-04-11T18:48:14.417194",
   "status": "scored",
+  "application_status": null,
+  "applied_at": null,
+  "notes": null,
+  "next_stage_label": null,
+  "next_stage_date": null,
+  "next_stage_canonical_phase": null,
+  "next_stage_note": null,
+  "source": "pipeline",
   "dismissal_reason": null,
   "match_tier": "high_confidence",
   "salary": null,
@@ -43,5 +51,7 @@
   "salary_currency": null,
   "is_sparse": false,
   "company_quality_signals": [],
+  "workplace_type": null,
+  "raw_location": null,
   "description": "<div><span style=\"font-size: 16px;\">The CI Experience squad owns the client continuous integration (CI) infrastructure at Spotify. Our mission is to ensure smooth, reliable, and fast integration of code changes across all client repositories. We provide the tooling, documentation, and support that empower client engineers to build, test, and ship confidently.</span></div><div><br></div><div><span style=\"font-size: 16px;\">We are looking for a Backend Infrastructure Engineer with strong experience in building and maintaining backend services that power developer infrastructure. While our current systems handle relatively low traffic, the focus is on reliability, testability, observability, and migration readiness.</span></div><div><br></div><div><span style=\"font-size: 16px;\">A key part of this role is to help migrate existing Python-based services to Java, ensuring better alignment with Spotify’s monorepo and future automation strategies.</span></div>"
 }

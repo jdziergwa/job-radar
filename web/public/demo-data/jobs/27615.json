@@ -33,6 +33,14 @@
   },
   "scored_at": "2026-04-11T18:48:16.509836",
   "status": "scored",
+  "application_status": null,
+  "applied_at": null,
+  "notes": null,
+  "next_stage_label": null,
+  "next_stage_date": null,
+  "next_stage_canonical_phase": null,
+  "next_stage_note": null,
+  "source": "pipeline",
   "dismissal_reason": null,
   "match_tier": "high_confidence",
   "salary": null,
@@ -41,5 +49,7 @@
   "salary_currency": null,
   "is_sparse": false,
   "company_quality_signals": [],
+  "workplace_type": null,
+  "raw_location": null,
   "description": "<div><span style=\"font-size: 16px\">Aircall is a unicorn, AI-powered customer communications platform used by 22,000+ companies worldwide to drive revenue, resolve issues faster, and scale customer-facing teams. We’re redefining customer communications by bringing voice, SMS, WhatsApp, and AI together into one seamless workspace.</span></div><div><br></div><div><span style=\"font-size: 16px\">Our momentum comes from a simple idea: help teams work smarter, not harder. Aircall’s AI Voice Agent automates routine calls, AI Assist streamlines post-call work, and AI Assist Pro delivers real-time guidance so people can do their best work. The result is higher revenue, faster resolutions, and teams that scale with confidence.</span></div><div><br></div><div><span style=\"font-size: 16px\">Aircall is headquartered in Paris, our European HQ, with a strong North American presence anchored in Seattle, our North American HQ, and teams across Madrid, London, Berlin, San Francisco, New York City, Sydney, and Mexico City. We’ve built a product customers love and a business that’s scaling quickly, backed by world-class investors and driven by rapid AI innovation across multiple product lines.</span></div><div><span style=\"font-size: 16px\">At Aircall, you’ll join a company in motion. We’re ambitious, product-driven, and execution-focused, with visible impact, fast decisions, and real growth.</span></div><div><br></div><div><b><span style=\"font-size: 16px;\">How we work at Aircall: </span></b><span style=\"font-size: 16px\">We’re customer-obsessed, data-driven, and focused on delivering meaningful outcomes. We value ownership, continuous learning, and thoughtful speed. If you thrive in a collaborative, fast-moving environment where trust and impact matter, you’ll feel at home here.</span></div><div><br></div><div><b style=\"font-size: 11pt;\">About the role :</b></div><div><span style=\"font-size: 11pt;\">As a Senior Backend Software Engineer, you will be responsible for the design, development, deployment, and operation of business-critical features that add customer value on top of voice.</span></div><div><span style=\"font-size: 11pt;\">Best practices, evangelization, and mentoring in your team and across the whole of Engineering will be part of your day to day job.</span></div><div><br></div><div><span style=\"font-size: 11pt;\">Quality, excellence, and agility drive our delivery processes and you will help us level these up.</span></div><div><br></div><div><span style=\"font-size: 11pt;\">Using a variety of back-end stacks, appropriate for each requirement, but always hosted on AWS, we build added value and resilient services on top of voice and fully integrate with our customers’ business critical tools (CRM, Helpdesk, E-Commerce, ...).</span></div>"
 }

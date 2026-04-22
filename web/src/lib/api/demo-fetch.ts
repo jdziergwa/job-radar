@@ -4,6 +4,11 @@ import type { components } from './types'
 type JobListResponse = components['schemas']['JobListResponse']
 type JobDetailResponse = components['schemas']['JobDetailResponse']
 type JobResponse = components['schemas']['JobResponse']
+type ApplicationJobResponse = components['schemas']['ApplicationJobResponse']
+type ApplicationListResponse = components['schemas']['ApplicationListResponse']
+type ApplicationStatsResponse = components['schemas']['ApplicationStatsResponse']
+type ApplicationEventResponse = components['schemas']['ApplicationEventResponse']
+type TimelineResponse = components['schemas']['TimelineResponse']
 type StatsOverviewResponse = components['schemas']['StatsOverview'] & {
   last_pipeline_run_at?: string | null
 }
@@ -31,6 +36,16 @@ type DemoWizardStateResponse = {
 
 const jsonCache = new Map<string, Promise<unknown>>()
 const textCache = new Map<string, Promise<string>>()
+const APPLICATION_STATUS_LABELS: Record<string, string> = {
+  applied: 'Applied',
+  screening: 'Screening',
+  interviewing: 'Interviewing',
+  offer: 'Offer',
+  accepted: 'Accepted',
+  rejected_by_company: 'Rejected',
+  rejected_by_user: 'Withdrawn',
+  ghosted: 'Ghosted',
+}
 
 function isDateOnly(value: string): boolean {
   return /^\d{4}-\d{2}-\d{2}$/.test(value)
@@ -57,6 +72,15 @@ function shiftDateValue(value: string | null | undefined, deltaMs: number): stri
   return new Date(timestamp + deltaMs).toISOString()
 }
 
+function parseDemoTimestamp(value: string | null | undefined): number | null {
+  if (!value) {
+    return null
+  }
+
+  const timestamp = Date.parse(isDateOnly(value) ? `${value}T00:00:00.000Z` : value)
+  return Number.isNaN(timestamp) ? null : timestamp
+}
+
 function rebaseJob<T extends JobResponse | JobDetailResponse>(job: T, deltaMs: number): T {
   return {
     ...job,
@@ -64,6 +88,229 @@ function rebaseJob<T extends JobResponse | JobDetailResponse>(job: T, deltaMs: n
     first_seen_at: shiftDateValue(job.first_seen_at, deltaMs) ?? job.first_seen_at,
     last_seen_at: shiftDateValue(job.last_seen_at, deltaMs),
     scored_at: shiftDateValue(job.scored_at, deltaMs),
+    applied_at: shiftDateValue(job.applied_at, deltaMs) ?? job.applied_at,
+    next_stage_date: shiftDateValue(job.next_stage_date, deltaMs) ?? job.next_stage_date,
+  }
+}
+
+function rebaseApplicationEvent(event: ApplicationEventResponse, deltaMs: number): ApplicationEventResponse {
+  return {
+    ...event,
+    occurred_at: shiftDateValue(event.occurred_at, deltaMs) ?? event.occurred_at,
+    scheduled_for: shiftDateValue(event.scheduled_for, deltaMs) ?? event.scheduled_for,
+    created_at: shiftDateValue(event.created_at, deltaMs) ?? event.created_at,
+  }
+}
+
+function getApplicationStageLabel(status: string | null | undefined): string {
+  if (!status) {
+    return ''
+  }
+
+  return APPLICATION_STATUS_LABELS[status] ?? status.replaceAll('_', ' ').replace(/\b\w/g, (match) => match.toUpperCase())
+}
+
+function daysSince(value: string | null | undefined): number | null {
+  const timestamp = parseDemoTimestamp(value)
+  if (timestamp === null) {
+    return null
+  }
+
+  const now = new Date()
+  const applied = new Date(timestamp)
+  const diffMs = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())
+    - Date.UTC(applied.getUTCFullYear(), applied.getUTCMonth(), applied.getUTCDate())
+
+  return Math.max(0, Math.floor(diffMs / (24 * 60 * 60 * 1000)))
+}
+
+function buildApplicationJob(job: JobResponse | JobDetailResponse): ApplicationJobResponse | null {
+  if (!job.application_status) {
+    return null
+  }
+
+  return {
+    ...job,
+    latest_stage_label: getApplicationStageLabel(job.application_status),
+    days_since_applied: daysSince(job.applied_at),
+  }
+}
+
+function buildApplicationTimeline(job: JobDetailResponse): TimelineResponse {
+  if (!job.application_status) {
+    return { events: [] }
+  }
+
+  const appliedAt = job.applied_at || job.first_seen_at
+  const events: ApplicationEventResponse[] = [
+    {
+      id: job.id * 1000 + 1,
+      job_id: job.id,
+      event_type: 'stage',
+      lifecycle_state: 'completed',
+      canonical_phase: 'applied',
+      stage_label: 'Applied',
+      occurred_at: appliedAt,
+      scheduled_for: null,
+      status: 'applied',
+      note: null,
+      created_at: appliedAt,
+    },
+  ]
+
+  if (job.next_stage_label || job.next_stage_date || job.next_stage_canonical_phase) {
+    const scheduledFor = job.next_stage_date || appliedAt
+    events.push({
+      id: job.id * 1000 + 2,
+      job_id: job.id,
+      event_type: 'stage',
+      lifecycle_state: 'scheduled',
+      canonical_phase: (job.next_stage_canonical_phase as ApplicationEventResponse['canonical_phase'] | null) ?? 'screening',
+      stage_label: job.next_stage_label || getApplicationStageLabel(job.next_stage_canonical_phase || 'screening'),
+      occurred_at: null,
+      scheduled_for: scheduledFor,
+      status: job.next_stage_canonical_phase || 'screening',
+      note: job.next_stage_note || null,
+      created_at: scheduledFor,
+    })
+  }
+
+  return { events }
+}
+
+function filterApplicationJobs(
+  jobs: ApplicationJobResponse[],
+  params: URLSearchParams,
+): ApplicationListResponse {
+  let filteredJobs = [...jobs]
+  const status = params.get('status')
+  const search = params.get('search')?.toLowerCase().trim()
+  const sort = params.get('sort') || 'next_stage_date'
+  const order = params.get('order') === 'desc' ? 'desc' : 'asc'
+  const page = Math.max(1, parseOptionalInt(params.get('page')) || 1)
+  const perPage = Math.max(1, parseOptionalInt(params.get('per_page')) || 50)
+
+  if (status) {
+    const allowed = new Set(status.split(',').map((value) => value.trim()).filter(Boolean))
+    filteredJobs = filteredJobs.filter((job) => job.application_status && allowed.has(job.application_status))
+  }
+
+  if (search) {
+    filteredJobs = filteredJobs.filter((job) =>
+      [job.title, job.company_name, job.notes || '']
+        .join(' ')
+        .toLowerCase()
+        .includes(search)
+    )
+  }
+
+  const sortMap: Record<string, keyof ApplicationJobResponse> = {
+    applied_date: 'applied_at',
+    company: 'company_name',
+    status: 'application_status',
+    next_stage_date: 'next_stage_date',
+    next_step_date: 'next_stage_date',
+  }
+  const sortField = sortMap[sort] ?? 'next_stage_date'
+
+  filteredJobs.sort((left, right) => compareNullable(
+    left[sortField] as string | number | null | undefined,
+    right[sortField] as string | number | null | undefined,
+    order,
+  ))
+
+  const total = filteredJobs.length
+  const pages = Math.max(1, Math.ceil(total / perPage))
+  const offset = (page - 1) * perPage
+
+  return {
+    jobs: filteredJobs.slice(offset, offset + perPage),
+    total,
+    page,
+    pages,
+    per_page: perPage,
+  }
+}
+
+function buildApplicationStats(jobs: ApplicationJobResponse[]): ApplicationStatsResponse {
+  const statusCounts: Record<string, number> = {
+    applied: 0,
+    screening: 0,
+    interviewing: 0,
+    offer: 0,
+    accepted: 0,
+    rejected_by_company: 0,
+    rejected_by_user: 0,
+    ghosted: 0,
+  }
+  const companyStats = new Map<string, { applications: number; furthest_stage: string; avg_scores: number[] }>()
+
+  for (const job of jobs) {
+    if (job.application_status && job.application_status in statusCounts) {
+      statusCounts[job.application_status] += 1
+    }
+
+    const existing = companyStats.get(job.company_name) ?? {
+      applications: 0,
+      furthest_stage: getApplicationStageLabel(job.application_status),
+      avg_scores: [],
+    }
+    existing.applications += 1
+    existing.furthest_stage = getApplicationStageLabel(job.application_status)
+    if (typeof job.fit_score === 'number') {
+      existing.avg_scores.push(job.fit_score)
+    }
+    companyStats.set(job.company_name, existing)
+  }
+
+  const activeCount = jobs.filter((job) => ['applied', 'screening', 'interviewing'].includes(job.application_status || '')).length
+  const offersCount = jobs.filter((job) => ['offer', 'accepted'].includes(job.application_status || '')).length
+  const pipelineCount = jobs.filter((job) => job.source !== 'manual').length
+  const manualCount = jobs.filter((job) => job.source === 'manual').length
+  const topCompanies = [...companyStats.entries()]
+    .map(([company_name, data]) => ({
+      company_name,
+      applications: data.applications,
+      furthest_stage: data.furthest_stage,
+      avg_score: data.avg_scores.length > 0
+        ? Number((data.avg_scores.reduce((sum, score) => sum + score, 0) / data.avg_scores.length).toFixed(1))
+        : null,
+    }))
+    .sort((left, right) => {
+      const scoreDelta = (right.avg_score ?? -1) - (left.avg_score ?? -1)
+      return right.applications - left.applications || scoreDelta
+    })
+    .slice(0, 5)
+
+  return {
+    total: jobs.length,
+    active_count: activeCount,
+    offers_count: offersCount,
+    response_rate: jobs.length > 0
+      ? Number(((jobs.filter((job) => (job.application_status || '') !== 'applied').length / jobs.length) * 100).toFixed(1))
+      : 0,
+    avg_time_to_response_days: null,
+    status_counts: statusCounts,
+    weekly_velocity: [],
+    funnel: {
+      applied: statusCounts.applied,
+      screening: statusCounts.screening,
+      interviewing: statusCounts.interviewing,
+      offer: statusCounts.offer,
+      accepted: statusCounts.accepted,
+    },
+    outcome_breakdown: {
+      offer: statusCounts.offer,
+      accepted: statusCounts.accepted,
+      rejected_by_company: statusCounts.rejected_by_company,
+      rejected_by_user: statusCounts.rejected_by_user,
+      ghosted: statusCounts.ghosted,
+    },
+    source_breakdown: {
+      pipeline: pipelineCount,
+      manual: manualCount,
+    },
+    top_companies: topCompanies,
   }
 }
 
@@ -78,6 +325,108 @@ function rebaseStatsResponse(data: StatsOverviewResponse, deltaMs: number): Stat
   return {
     ...data,
     last_pipeline_run_at: shiftDateValue(data.last_pipeline_run_at, deltaMs),
+  }
+}
+
+function buildDemoStatsResponse(data: StatsOverviewResponse, jobs: JobResponse[], deltaMs: number): StatsOverviewResponse {
+  const todayThreshold = Date.UTC(
+    new Date().getUTCFullYear(),
+    new Date().getUTCMonth(),
+    new Date().getUTCDate(),
+  )
+  const weekAgoThreshold = Date.now() - 7 * 24 * 60 * 60 * 1000
+
+  let newToday = 0
+  let totalNewToday = 0
+  let highPriorityToday = 0
+  let newThisWeek = 0
+  let scored = 0
+  let applied = 0
+  let dismissed = 0
+  let pending = 0
+  let closed = 0
+
+  const scoreDistribution: StatsOverviewResponse['score_distribution'] = {
+    '90-100': 0,
+    '80-89': 0,
+    '70-79': 0,
+    '60-69': 0,
+    '50-59': 0,
+    'below-50': 0,
+  }
+  const applyPriorityCounts: StatsOverviewResponse['apply_priority_counts'] = {
+    high: 0,
+    medium: 0,
+    low: 0,
+    skip: 0,
+  }
+
+  for (const job of jobs) {
+    const firstSeenTimestamp = parseDemoTimestamp(job.first_seen_at)
+    const isNewToday = firstSeenTimestamp !== null && firstSeenTimestamp >= todayThreshold
+    const isNewThisWeek = firstSeenTimestamp !== null && firstSeenTimestamp >= weekAgoThreshold
+    const applyPriority = job.score_breakdown?.apply_priority
+    const fitScore = job.fit_score
+
+    if (isNewToday) {
+      totalNewToday += 1
+      if (job.status !== 'dismissed') {
+        newToday += 1
+      }
+      if (applyPriority === 'high') {
+        highPriorityToday += 1
+      }
+    }
+
+    if (isNewThisWeek && job.status !== 'dismissed') {
+      newThisWeek += 1
+    }
+
+    if (job.scored_at) {
+      scored += 1
+    }
+    if (job.application_status) {
+      applied += 1
+    }
+    if (job.status === 'dismissed') {
+      dismissed += 1
+    }
+    if (job.status === 'new') {
+      pending += 1
+    }
+    if (job.status === 'closed') {
+      closed += 1
+    }
+
+    if (typeof fitScore === 'number') {
+      if (fitScore >= 90) scoreDistribution['90-100'] += 1
+      else if (fitScore >= 80) scoreDistribution['80-89'] += 1
+      else if (fitScore >= 70) scoreDistribution['70-79'] += 1
+      else if (fitScore >= 60) scoreDistribution['60-69'] += 1
+      else if (fitScore >= 50) scoreDistribution['50-59'] += 1
+      else scoreDistribution['below-50'] += 1
+    }
+
+    if (applyPriority && applyPriority in applyPriorityCounts) {
+      applyPriorityCounts[applyPriority] += 1
+    }
+  }
+
+  return {
+    ...data,
+    total_jobs: jobs.length,
+    new_today: newToday,
+    total_new_today: totalNewToday,
+    high_priority_today: highPriorityToday,
+    new_this_week: newThisWeek,
+    last_pipeline_run_at: shiftDateValue(data.last_pipeline_run_at, deltaMs),
+    scored,
+    applied,
+    dismissed,
+    pending,
+    closed,
+    score_distribution: scoreDistribution,
+    apply_priority_counts: applyPriorityCounts,
   }
 }
 
@@ -173,7 +522,28 @@ async function loadProfileContent(path: string): Promise<Response> {
   return json({ content: await loadText(path) })
 }
 
+function getLatestDemoDatasetTimestamp(data: JobListResponse): number | null {
+  let latestTimestamp: number | null = null
+
+  for (const job of data.jobs) {
+    for (const value of [job.first_seen_at, job.last_seen_at, job.scored_at, job.applied_at, job.next_stage_date]) {
+      const timestamp = parseDemoTimestamp(value)
+      if (timestamp !== null && (latestTimestamp === null || timestamp > latestTimestamp)) {
+        latestTimestamp = timestamp
+      }
+    }
+  }
+
+  return latestTimestamp
+}
+
 async function getDemoSnapshotDeltaMs(): Promise<number> {
+  const dataset = await loadJson<JobListResponse>('jobs.json')
+  const latestTimestamp = getLatestDemoDatasetTimestamp(dataset)
+  if (latestTimestamp !== null) {
+    return Date.now() - latestTimestamp
+  }
+
   const snapshot = await loadJson<SnapshotResponse>('snapshot.json')
   const generatedAt = Date.parse(snapshot.generated_at)
   if (Number.isNaN(generatedAt)) {
@@ -387,12 +757,51 @@ async function handleRead(url: URL): Promise<Response | null> {
     return json(rebaseJob(job, deltaMs))
   }
 
+  const jobTimelineMatch = url.pathname.match(/^\/api\/jobs\/(\d+)\/timeline$/)
+  if (jobTimelineMatch) {
+    const [job, deltaMs] = await Promise.all([
+      loadJson<JobDetailResponse>(`jobs/${jobTimelineMatch[1]}.json`),
+      getDemoSnapshotDeltaMs(),
+    ])
+    const rebasedJob = rebaseJob(job, deltaMs)
+    const timeline = buildApplicationTimeline(rebasedJob)
+    return json({
+      events: timeline.events.map((event) => rebaseApplicationEvent(event, 0)),
+    })
+  }
+
   if (url.pathname === '/api/jobs') {
     const [dataset, deltaMs] = await Promise.all([
       loadJson<JobListResponse>('jobs.json'),
       getDemoSnapshotDeltaMs(),
     ])
     return json(await applyJobFilters(rebaseJobListResponse(dataset, deltaMs), url.searchParams))
+  }
+
+  if (url.pathname === '/api/applications') {
+    const [dataset, deltaMs] = await Promise.all([
+      loadJson<JobListResponse>('jobs.json'),
+      getDemoSnapshotDeltaMs(),
+    ])
+    const rebasedJobs = rebaseJobListResponse(dataset, deltaMs)
+    const trackedJobs = rebasedJobs.jobs
+      .map((job) => buildApplicationJob(job))
+      .filter((job): job is ApplicationJobResponse => job !== null)
+
+    return json(filterApplicationJobs(trackedJobs, url.searchParams))
+  }
+
+  if (url.pathname === '/api/applications/stats') {
+    const [dataset, deltaMs] = await Promise.all([
+      loadJson<JobListResponse>('jobs.json'),
+      getDemoSnapshotDeltaMs(),
+    ])
+    const rebasedJobs = rebaseJobListResponse(dataset, deltaMs)
+    const trackedJobs = rebasedJobs.jobs
+      .map((job) => buildApplicationJob(job))
+      .filter((job): job is ApplicationJobResponse => job !== null)
+
+    return json(buildApplicationStats(trackedJobs))
   }
 
   if (url.pathname === '/api/stats/trends') {
@@ -420,11 +829,13 @@ async function handleRead(url: URL): Promise<Response | null> {
   }
 
   if (url.pathname === '/api/stats') {
-    const [stats, deltaMs] = await Promise.all([
+    const [stats, dataset, deltaMs] = await Promise.all([
       loadJson<StatsOverviewResponse>('stats.json'),
+      loadJson<JobListResponse>('jobs.json'),
       getDemoSnapshotDeltaMs(),
     ])
-    return json(rebaseStatsResponse(stats, deltaMs))
+    const rebasedJobs = rebaseJobListResponse(dataset, deltaMs)
+    return json(buildDemoStatsResponse(stats, rebasedJobs.jobs, deltaMs))
   }
 
   if (url.pathname === '/api/pipeline/providers') {

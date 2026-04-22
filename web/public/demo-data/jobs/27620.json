@@ -36,6 +36,14 @@
   },
   "scored_at": "2026-04-11T18:48:05.657628",
   "status": "scored",
+  "application_status": null,
+  "applied_at": null,
+  "notes": null,
+  "next_stage_label": null,
+  "next_stage_date": null,
+  "next_stage_canonical_phase": null,
+  "next_stage_note": null,
+  "source": "pipeline",
   "dismissal_reason": null,
   "match_tier": "signal_match",
   "salary": null,
@@ -44,5 +52,7 @@
   "salary_currency": null,
   "is_sparse": false,
   "company_quality_signals": [],
+  "workplace_type": null,
+  "raw_location": null,
   "description": "<div>Cprime brings business into a new light—illuminating possibilities that once seemed hidden. For more than two decades, we’ve partnered with 2,500+ organizations worldwide, including over 300 of the Fortune 500, to help leaders see complexity with new clarity and rewire it into intelligent flow. With 800+ experts across 30 countries, we shine a brighter path toward platform modernization, AI-first operating models, and enterprise transformation that scales with confidence. We help organizations adapt and grow by orchestrating systems, teams, and decisions into harmony. Guided by experience, energized by innovation, and backed by Goldman Sachs and Everstone Capital, Cprime is trusted globally to make transformation clearer, faster, and more human.&nbsp;</div><div><br></div><div><strong>Role Summary:</strong></div>\n<div>&nbsp;</div>\n<div>\n<p style=\"line-height: normal; margin: 0cm 0cm 8pt; font-size: 12pt; font-family: Aptos, sans-serif;\"><span style=\"font-size: 10.0pt; font-family: Arial, sans-serif;\">We are looking for a <strong>Senior Cloud/DevOps Engineer</strong> to design, build, and operate secure, scalable, and highly available platforms on <strong>Amazon Web Services (AWS).</strong></span></p>\n<p style=\"line-height: normal; margin: 0cm 0cm 8pt; font-size: 12pt; font-family: Aptos, sans-serif;\"><span style=\"font-size: 10.0pt; font-family: Arial, sans-serif;\">This role combines <strong>cloud architecture, DevOps engineering, and production operations</strong>, with a strong focus on automation, reliability, and scalable delivery of enterprise applications.</span></p>\n<p style=\"line-height: normal; margin: 0cm 0cm 8pt; font-size: 12pt; font-family: Aptos, sans-serif;\"><span style=\"font-size: 10.0pt; font-family: Arial, sans-serif;\">The ideal candidate brings deep hands-on expertise in <strong>AWS, Infrastructure as Code, CI/CD, and cloud operations</strong>, and collaborates effectively with engineering, security, and business teams to deliver <strong>resilient and cost-efficient solutions.</strong></span></p>\n</div>"
 }

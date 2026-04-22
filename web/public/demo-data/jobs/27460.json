@@ -35,6 +35,14 @@
   },
   "scored_at": "2026-04-11T18:48:14.421838",
   "status": "scored",
+  "application_status": null,
+  "applied_at": null,
+  "notes": null,
+  "next_stage_label": null,
+  "next_stage_date": null,
+  "next_stage_canonical_phase": null,
+  "next_stage_note": null,
+  "source": "pipeline",
   "dismissal_reason": null,
   "match_tier": "signal_match",
   "salary": null,
@@ -43,5 +51,7 @@
   "salary_currency": null,
   "is_sparse": true,
   "company_quality_signals": [],
+  "workplace_type": null,
+  "raw_location": null,
   "description": "<div>\n<p data-start=\"215\" data-end=\"564\">The Subscriptions Mission builds and scales the products, platforms, and business models that convert free listeners into lifelong Premium subscribers. We focus on driving acquisition, optimizing conversion, improving retention, and delivering seamless commerce experiences that fuel Spotify’s growth and bring fans closer to the creators they love.</p>\n<p data-start=\"586\" data-end=\"991\">At Spotify, our Subscriptions data powers the decision engines and experiences behind our 700M+ Monthly Active Users and 290M+ Premium subscribers. You’ll join a collaborative, cross-functional team focused on building the systems that power merchandising, personalization, and seamless subscription experiences at global scale. Together, we shape how users discover value and choose to stay with Spotify.</p>\n<h2 data-section-id=\"guiid5\" data-start=\"993\" data-end=\"1014\">&nbsp;</h2>\n</div>"
 }

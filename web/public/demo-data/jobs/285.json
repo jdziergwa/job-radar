@@ -35,6 +35,14 @@
   },
   "scored_at": "2026-04-10T13:58:12.791375",
   "status": "scored",
+  "application_status": null,
+  "applied_at": null,
+  "notes": null,
+  "next_stage_label": null,
+  "next_stage_date": null,
+  "next_stage_canonical_phase": null,
+  "next_stage_note": null,
+  "source": "pipeline",
   "dismissal_reason": null,
   "match_tier": "high_confidence",
   "salary": null,
@@ -43,5 +51,7 @@
   "salary_currency": null,
   "is_sparse": false,
   "company_quality_signals": [],
+  "workplace_type": null,
+  "raw_location": null,
   "description": "<div>At Sword, we’re building AI to heal billions and unlock humanity’s full potential. In doing so, we’re pioneering AI Care, a fundamentally new approach to healthcare built for medical reasoning, safety, and real-time treatment, not generic technology applied after the fact. As both a clinical-centric frontier AI lab and an applied AI platform, Sword is reimagining how care is delivered at scale, removing traditional barriers like appointments, waiting rooms, and stigma so more people can access the care they need—and ultimately get back to lives lived in full.<br><br>Since 2020, Sword has expanded across physical therapy, women’s health, cardiometabolic, and mental health, and is now moving beyond the session to a fully AI-native, 24/7 care program that brings physical activity, therapeutic exercise, psychotherapy, nutrition, and behavior change into one connected experience. More than 700,000 members across three continents have completed over 10 million AI sessions, helping 1,000+ enterprise clients avoid more than $1 billion in unnecessary healthcare costs. Backed by 42 clinical studies, 44+ patents, and more than $500 million raised from leading investors including Khosla Ventures, General Catalyst, and Founders Fund, Sword is defining a new standard for healthcare.</div><div><br></div><div>\n<p>As a Backend Tech Lead, you will establish the technical vision and scale the AI-driven infrastructure powering Bloom’s real-time clinical care. You will lead and mentor a high-performance engineering team, ensuring excellence through automated pipelines, robust architecture, and continuous skill development. By partnering with Product and Infrastructure teams, you will drive the software lifecycles necessary to expand our care categories across every life stage. Your role balances hands-on technical leadership with a focus on team motivation, performance monitoring, and the recruitment of top-tier talent. Ultimately, you will bridge technical innovation with operational success to keep Bloom at the forefront of accessible health technology.</p>\n<p>&nbsp;</p>\n<p>Today, 1 in every 3 women suffer from a pelvic-health disorder and Bloom is here to change that.</p>\n<p>Sword Health developed Bloom to connect millions of women with accessible pelvic-health care, using the most innovative technology available today. Bloom includes customized guidance from Pelvic Health Specialists, an intra-vaginal biofeedback device, and a mobile app to track real-time results and progress. Women meet with Pelvic Health Specialists remotely and progress through the program from the comfort of home, on their own time.</p>\n<p>Starting with pelvic health and now expanding into menopause, fertility, pregnancy, and postpartum care, Bloom is powered by the same AI Care model driving Sword's platform: a continuous interaction between the member, an AI health specialist (Phoenix), and a human clinician.</p>\n<p><br>To get to know more about our Tech Stack, check <a href=\"https://stackshare.io/sword-health/sword-health\">here</a>.</p>\n</div>"
 }

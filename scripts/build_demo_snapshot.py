@@ -6,7 +6,7 @@ import argparse
 import json
 import shutil
 import sys
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -29,6 +29,7 @@ from api.models import (
     TrendsResponse,
 )
 from src.providers import get_all_info
+from src.score_normalization import normalize_persisted_priority
 
 
 def _now_iso() -> str:
@@ -92,6 +93,82 @@ def _load_json_or_none(path: Path) -> Any:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def _parse_iso(value: str | None) -> datetime | None:
+    if not value:
+        return None
+    normalized = value[:-1] + "+00:00" if value.endswith("Z") else value
+    try:
+        parsed = datetime.fromisoformat(normalized)
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        return parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
+
+
+def _build_demo_stats(store: Any) -> StatsOverview:
+    base_stats = StatsOverview(**store.get_stats())
+
+    with store._connect() as conn:  # internal helper is fine for snapshot generation
+        rows = conn.execute(
+            """SELECT first_seen_at, status, fit_score, score_breakdown
+               FROM jobs"""
+        ).fetchall()
+
+    parsed_rows: list[tuple[datetime | None, str, int | None, str | None]] = [
+        (_parse_iso(row["first_seen_at"]), str(row["status"] or ""), row["fit_score"], row["score_breakdown"])
+        for row in rows
+    ]
+    anchor = max((row[0] for row in parsed_rows if row[0] is not None), default=None)
+    if anchor is None:
+        return base_stats
+
+    today_floor = datetime(anchor.year, anchor.month, anchor.day, tzinfo=timezone.utc)
+    week_ago = today_floor - timedelta(days=7)
+
+    new_today = 0
+    total_new_today = 0
+    high_priority_today = 0
+    new_this_week = 0
+
+    for first_seen_at, status, fit_score, score_breakdown_raw in parsed_rows:
+        if first_seen_at is None:
+            continue
+
+        if first_seen_at >= today_floor:
+            total_new_today += 1
+            if status != "dismissed":
+                new_today += 1
+
+            if score_breakdown_raw:
+                try:
+                    payload = json.loads(score_breakdown_raw)
+                except json.JSONDecodeError:
+                    payload = {}
+                breakdown = payload.get("dimensions", {}) if isinstance(payload, dict) else {}
+                apply_priority, skip_reason = normalize_persisted_priority(
+                    fit_score,
+                    breakdown if isinstance(breakdown, dict) else {},
+                    payload.get("apply_priority", "skip") if isinstance(payload, dict) else "skip",
+                    payload.get("skip_reason", "none") if isinstance(payload, dict) else "none",
+                )
+                if apply_priority == "high" and skip_reason == "none":
+                    high_priority_today += 1
+
+        if first_seen_at >= week_ago and status != "dismissed":
+            new_this_week += 1
+
+    return StatsOverview(
+        **{
+            **base_stats.model_dump(),
+            "new_today": new_today,
+            "total_new_today": total_new_today,
+            "high_priority_today": high_priority_today,
+            "new_this_week": new_this_week,
+        }
+    )
+
+
 def build_snapshot(profile: str, out_dir: Path, max_jobs: int, days: int) -> None:
     profile_dir = get_profile_dir(profile)
     example_dir = get_profile_dir("example")
@@ -129,7 +206,7 @@ def build_snapshot(profile: str, out_dir: Path, max_jobs: int, days: int) -> Non
             JobDetailResponse.from_row(detail_row),
         )
 
-    _write_model(out_dir / "stats.json", StatsOverview(**store.get_stats()))
+    _write_model(out_dir / "stats.json", _build_demo_stats(store))
     _write_model(out_dir / "stats-trends.json", TrendsResponse(**store.get_trends(days=days)))
 
     market_data = store.get_market_intelligence(days=days)

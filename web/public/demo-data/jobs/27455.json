@@ -35,6 +35,14 @@
   },
   "scored_at": "2026-04-11T18:48:22.292497",
   "status": "scored",
+  "application_status": null,
+  "applied_at": null,
+  "notes": null,
+  "next_stage_label": null,
+  "next_stage_date": null,
+  "next_stage_canonical_phase": null,
+  "next_stage_note": null,
+  "source": "pipeline",
   "dismissal_reason": null,
   "match_tier": "signal_match",
   "salary": null,
@@ -43,5 +51,7 @@
   "salary_currency": null,
   "is_sparse": false,
   "company_quality_signals": [],
+  "workplace_type": null,
+  "raw_location": null,
   "description": "<div>\n<p data-start=\"249\" data-end=\"759\">The Podcast Mission develops strategies and builds products that serve creators and listeners interested in podcast and video content. As the #1 podcast platform in the world, we look to continue improving and scaling the experience of podcasts on Spotify. We build and maintain products like Spotify for Podcasters, Megaphone, and Chartable, and are always eager to provide creators with easy ways to increase their audiences on Spotify and give them new innovative means for monetization.</p>\n<p data-start=\"249\" data-end=\"759\">Mission Control is a team within Spotify’s Podcast Platform product area, building the core infrastructure that powers how podcasts and other creator content are processed, uploaded, transformed, and distributed across Spotify. As the creator ecosystem evolves, we are expanding the systems that enable new content formats and experiences, helping creators and partners reach audiences in new ways.</p>\n<p data-start=\"1178\" data-end=\"1646\">At the center of this work is our Distribution API — a platform that allows creators and partners to manage, distribute, and monetize content on Spotify regardless of where it is hosted. This API is becoming a key integration point for some of the world’s largest creator platforms. The team is also exploring how advances in AI can shape the next generation of creator and listener experiences, building the APIs and infrastructure that make those possibilities real.</p>\n</div>"
 }

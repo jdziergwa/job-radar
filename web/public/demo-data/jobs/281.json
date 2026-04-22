@@ -36,6 +36,14 @@
   },
   "scored_at": "2026-04-10T13:58:12.783239",
   "status": "scored",
+  "application_status": null,
+  "applied_at": null,
+  "notes": null,
+  "next_stage_label": null,
+  "next_stage_date": null,
+  "next_stage_canonical_phase": null,
+  "next_stage_note": null,
+  "source": "pipeline",
   "dismissal_reason": null,
   "match_tier": "broad_match",
   "salary": null,
@@ -44,5 +52,7 @@
   "salary_currency": null,
   "is_sparse": false,
   "company_quality_signals": [],
+  "workplace_type": null,
+  "raw_location": null,
   "description": "<div><b><span style=\"font-size: 18px\">A World-Changing Company</span></b></div><div><br></div><div>Palantir builds the world’s leading software for data-driven decisions and operations. By bringing the right data to the people who need it, our platforms empower our partners to develop lifesaving drugs, forecast supply chain disruptions, locate missing children, and more.</div><div><br></div><div><strong style=\"font-size: 18px;\">The Role</strong></div>\n<div>&nbsp;</div>\n<div>We’re looking for Forward Deployed Infrastructure Engineers who can help us build, operate, and maintain high-performance, scalable, and reliable services for Palantir platforms, products, and deployments. You'll get to use your creativity to develop novel solutions to evolving challenges and automate processes wherever possible, using whichever tools are best for the job including industry-leading LLM and AI technology!</div>\n<div>&nbsp;</div>\n<div>As a Forward Deployed Infrastructure Engineer, every day is different! You will be developing software and providing high-quality support for software systems that are critical to solving our government’s greatest challenges. We strongly believe in engineering teams being responsible for the operations of their services in production. As such, you’ll work closely with forward deployed teams and product teams to participate in sensible, scalable, systems design and share responsibility with them in diagnosing, resolving, and preventing production issues.</div>"
 }

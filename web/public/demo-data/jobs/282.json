@@ -36,6 +36,14 @@
   },
   "scored_at": "2026-04-10T13:58:12.786220",
   "status": "scored",
+  "application_status": null,
+  "applied_at": null,
+  "notes": null,
+  "next_stage_label": null,
+  "next_stage_date": null,
+  "next_stage_canonical_phase": null,
+  "next_stage_note": null,
+  "source": "pipeline",
   "dismissal_reason": null,
   "match_tier": "high_confidence",
   "salary": null,
@@ -44,5 +52,7 @@
   "salary_currency": null,
   "is_sparse": false,
   "company_quality_signals": [],
+  "workplace_type": null,
+  "raw_location": null,
   "description": "<div><b><span style=\"font-size: 18px\">A World-Changing Company</span></b></div><div><br></div><div>Palantir builds the world’s leading software for data-driven decisions and operations. By bringing the right data to the people who need it, our platforms empower our partners to develop lifesaving drugs, forecast supply chain disruptions, locate missing children, and more.</div><div><br></div><div><strong style=\"font-size: 18px;\">The Role</strong></div>\n<div>&nbsp;</div>\n<div>As a Platform Engineer on Palantir's Identity Security team, you will design, build, and operate secure-by-design identity infrastructure and tooling. You will make it easier — and more secure — to implement identity governance and access management for Palantirians and customers worldwide. As part of Palantir's best-in-class Information Security organisation, you will research, implement, and scale innovative solutions that help Palantir stay ahead of a dynamic threat landscape.&nbsp;The Identity team is made up of engineers who are passionate about reducing risk and friction, and eliminating toil. <br><br>The team's primary focus is the development and management of identity platforms across both corporate and production (customer-facing) infrastructure. You will build purpose-built web services that help Palantirians stay compliant while minimising impact on their day-to-day productivity. Your work will directly strengthen the resilience of critical Palantir infrastructure that enables a globally distributed workforce.</div>"
 }
