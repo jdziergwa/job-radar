@@ -92,7 +92,7 @@ export function ApplicationFilters({
           onChange={(event) => onSortChange(event.target.value)}
           className="h-12 rounded-2xl border border-border/50 bg-background/60 px-4 text-sm font-medium outline-none transition-all focus:border-primary/40 focus:ring-4 focus:ring-primary/5"
         >
-          <option value="next_step_date">Sort: Next Step</option>
+          <option value="next_stage_date">Sort: Next Stage</option>
           <option value="applied_date">Sort: Applied Date</option>
           <option value="company">Sort: Company</option>
           <option value="status">Sort: Status</option>

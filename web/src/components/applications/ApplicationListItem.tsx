@@ -19,8 +19,10 @@ interface ApplicationJob {
   application_status: string
   latest_stage_label?: string | null
   applied_at?: string | null
-  next_step?: string | null
-  next_step_date?: string | null
+  next_stage_label?: string | null
+  next_stage_date?: string | null
+  next_stage_canonical_phase?: string | null
+  next_stage_note?: string | null
   fit_score?: number | null
   source?: string | null
   notes?: string | null
@@ -37,9 +39,9 @@ export function ApplicationListItem({ job }: { job: ApplicationJob }) {
   const showLatestStageLabel = latestStageLabel !== canonicalLabel
   const sourceLabel = job.source === 'manual' ? 'Manual' : 'Pipeline'
   const appliedLabel = job.applied_at ? `Applied ${formatDate(job.applied_at)}` : 'Applied date unavailable'
-  const nextStepLabel = job.next_step_date ? `${job.next_step || 'Next step'} · ${formatDate(job.next_step_date)}` : (job.next_step || 'No upcoming steps')
+  const nextStageLabel = job.next_stage_date ? `${job.next_stage_label || 'Next stage'} · ${formatDate(job.next_stage_date)}` : (job.next_stage_label || 'No next stage scheduled')
   const displayLocation = formatJobLocation(job)
-  const hasUpcomingStep = Boolean(job.next_step || job.next_step_date)
+  const hasUpcomingStage = Boolean(job.next_stage_label || job.next_stage_date)
 
   return (
     <Link
@@ -80,7 +82,7 @@ export function ApplicationListItem({ job }: { job: ApplicationJob }) {
                 </h3>
                 {showLatestStageLabel && (
                   <p className="mt-1 text-sm font-medium text-muted-foreground">
-                    Latest stage: <span className="text-foreground/85">{latestStageLabel}</span>
+                    Latest step: <span className="text-foreground/85">{latestStageLabel}</span>
                   </p>
                 )}
                 <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
@@ -103,9 +105,9 @@ export function ApplicationListItem({ job }: { job: ApplicationJob }) {
 
           <div className="min-w-0 lg:w-[18rem] lg:border-l lg:border-border/40 lg:pl-5">
             <div className="space-y-1.5">
-              <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/65">Next Step</div>
-              <p className={`text-sm leading-relaxed ${hasUpcomingStep ? 'font-medium text-foreground' : 'text-muted-foreground'}`}>
-                {nextStepLabel}
+              <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/65">Next Stage</div>
+              <p className={`text-sm leading-relaxed ${hasUpcomingStage ? 'font-medium text-foreground' : 'text-muted-foreground'}`}>
+                {nextStageLabel}
               </p>
               {job.notes && (
                 <div className="inline-flex items-center gap-2 pt-1 text-xs text-muted-foreground">

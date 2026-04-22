@@ -393,3 +393,116 @@ def test_store_dedupes_exact_duplicate_application_events_on_init():
         assert rows[0]["note"] == "Re-added from URL import"
         assert rows[0]["occurred_at"] == "2026-04-13"
         assert rows[0]["event_type"] == "stage"
+
+
+def test_store_migrates_legacy_next_step_into_scheduled_event_with_old_event_schema():
+    with tempfile.TemporaryDirectory() as tmpdir:
+        db_path = Path(tmpdir) / "jobs.db"
+        conn = sqlite3.connect(db_path)
+        try:
+            conn.executescript(
+                """
+                CREATE TABLE jobs (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    ats_platform TEXT NOT NULL,
+                    company_slug TEXT NOT NULL,
+                    job_id TEXT NOT NULL,
+                    company_name TEXT,
+                    title TEXT NOT NULL,
+                    location TEXT,
+                    url TEXT NOT NULL,
+                    description TEXT,
+                    posted_at TEXT,
+                    first_seen_at TEXT NOT NULL,
+                    last_seen_at TEXT,
+                    fit_score INTEGER,
+                    score_reasoning TEXT,
+                    score_breakdown TEXT,
+                    scored_at TEXT,
+                    status TEXT DEFAULT 'new',
+                    application_status TEXT,
+                    applied_at TEXT,
+                    notes TEXT,
+                    next_step TEXT,
+                    next_step_date TEXT,
+                    dismissal_reason TEXT,
+                    match_tier TEXT,
+                    salary TEXT,
+                    salary_min INTEGER,
+                    salary_max INTEGER,
+                    salary_currency TEXT,
+                    is_sparse INTEGER DEFAULT 0,
+                    source TEXT DEFAULT 'pipeline',
+                    UNIQUE(ats_platform, company_slug, job_id)
+                );
+                CREATE TABLE application_events (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    job_id INTEGER NOT NULL,
+                    status TEXT NOT NULL,
+                    note TEXT,
+                    created_at TEXT NOT NULL
+                );
+                CREATE TABLE metadata (
+                    key TEXT PRIMARY KEY,
+                    value TEXT
+                );
+                """
+            )
+            conn.execute(
+                """INSERT INTO jobs (
+                       ats_platform, company_slug, job_id, company_name, title, location, url,
+                       description, posted_at, first_seen_at, last_seen_at, status, application_status, applied_at,
+                       next_step, next_step_date
+                   ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (
+                    "greenhouse",
+                    "example-team",
+                    "legacy-next-stage",
+                    "Example Team",
+                    "QA Engineer",
+                    "Remote",
+                    "https://example.com/jobs/legacy-next-stage",
+                    "Legacy role",
+                    None,
+                    "2026-04-10T10:00:00",
+                    "2026-04-10T10:00:00",
+                    "new",
+                    "applied",
+                    "2026-04-13",
+                    "Recruiter Screen",
+                    "2026-04-20",
+                ),
+            )
+            conn.execute(
+                """INSERT INTO application_events (job_id, status, note, created_at)
+                   VALUES (
+                     (SELECT id FROM jobs WHERE job_id = 'legacy-next-stage'),
+                     'applied',
+                     'Imported from old tracker schema',
+                     '2026-04-13'
+                   )"""
+            )
+            conn.commit()
+        finally:
+            conn.close()
+
+        store = Store(str(db_path))
+
+        with store._connect() as migrated_conn:
+            rows = migrated_conn.execute(
+                """SELECT canonical_phase, lifecycle_state, stage_label, occurred_at, scheduled_for, status, created_at
+                   FROM application_events
+                   WHERE job_id = (SELECT id FROM jobs WHERE job_id = 'legacy-next-stage')
+                   ORDER BY id ASC"""
+            ).fetchall()
+
+        assert len(rows) == 2
+        assert rows[0]["canonical_phase"] == "applied"
+        assert rows[0]["lifecycle_state"] == "completed"
+        assert rows[1]["canonical_phase"] == "screening"
+        assert rows[1]["lifecycle_state"] == "scheduled"
+        assert rows[1]["stage_label"] == "Recruiter Screen"
+        assert rows[1]["occurred_at"] == "2026-04-20"
+        assert rows[1]["scheduled_for"] == "2026-04-20"
+        assert rows[1]["status"] == "screening"
+        assert rows[1]["created_at"] == "2026-04-20"

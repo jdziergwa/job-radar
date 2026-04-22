@@ -21,7 +21,7 @@ from api.models import (
     ImportJobResponse,
     JobResponse,
     ManualImportRequest,
-    NextStepUpdate,
+    NextStageUpdate,
     NotesUpdate,
     ResponseDateUpdate,
     TimelineEventCreate,
@@ -187,11 +187,25 @@ def _resolve_timeline_timestamp(*, created_at: str | None, occurred_at: str | No
     return occurred_at or created_at or ""
 
 
+def _resolve_event_timestamp(*, created_at: str | None, occurred_at: str | None, scheduled_for: str | None) -> str:
+    return scheduled_for or occurred_at or created_at or ""
+
+
 def _normalize_stage_label(value: str | None) -> str | None:
     if value is None:
         return None
     normalized = value.strip()
     return normalized or None
+
+
+def _timeline_event_timestamp(event: dict) -> str:
+    return str(event.get("scheduled_for") or event.get("occurred_at") or event.get("created_at") or "")
+
+
+def _timeline_comparison_events(timeline: list[dict], *, event_type: str) -> list[dict]:
+    if event_type != "stage":
+        return timeline
+    return [item for item in timeline if item.get("event_type") == "stage"]
 
 
 def _build_application_list_payload(
@@ -228,7 +242,7 @@ def list_applications(
     profile: str = Query("default"),
     status: str | None = Query(None),
     search: str | None = Query(None),
-    sort: str = Query("next_step_date"),
+    sort: str = Query("next_stage_date"),
     order: str = Query("asc"),
     page: int = Query(1, ge=1),
     per_page: int = Query(50, ge=1, le=200),
@@ -286,7 +300,13 @@ def update_application_status(
             detail=f"Invalid application status transition: {current_status!r} -> {next_status!r}",
         )
 
-    if not store.update_application_status(job_id, next_status, body.note):
+    if body.occurred_at:
+        try:
+            _normalize_iso_datetime(body.occurred_at)
+        except ValueError:
+            raise HTTPException(status_code=422, detail="Invalid application status date") from None
+
+    if not store.update_application_status(job_id, next_status, body.note, body.occurred_at):
         raise HTTPException(status_code=404, detail="Job not found")
 
     updated = store.get_job_detail(job_id)
@@ -323,15 +343,11 @@ def update_response_date(job_id: int, body: ResponseDateUpdate, profile: str = Q
     if existing.get("application_status") is None:
         raise HTTPException(status_code=422, detail="Response date can only be set for tracked jobs")
 
-    first_response = store.get_first_response_event(job_id)
-    if not first_response:
-        raise HTTPException(status_code=422, detail="No response event exists for this job yet")
-
     applied_at = existing.get("applied_at")
     if applied_at and body.response_date < str(applied_at)[:10]:
         raise HTTPException(status_code=422, detail="Response date cannot be earlier than applied date")
 
-    updated = store.update_first_response_date(job_id, body.response_date)
+    updated = store.upsert_response_milestone(job_id, body.response_date)
     if not updated:
         raise HTTPException(status_code=404, detail="Response event not found")
     return ApplicationEventResponse(**updated)
@@ -365,10 +381,31 @@ def update_notes(job_id: int, body: NotesUpdate, profile: str = Query("default")
     return JobResponse.from_row(updated)
 
 
-@router.patch("/jobs/{job_id}/next-step", response_model=JobResponse)
-def update_next_step(job_id: int, body: NextStepUpdate, profile: str = Query("default")):
+@router.patch("/jobs/{job_id}/next-stage", response_model=JobResponse)
+def update_next_stage(job_id: int, body: NextStageUpdate, profile: str = Query("default")):
     store = get_store(profile)
-    if not store.update_next_step(job_id, body.next_step, body.next_step_date):
+    existing = store.get_job_detail(job_id)
+    if not existing:
+        raise HTTPException(status_code=404, detail="Job not found")
+    if existing.get("application_status") is None:
+        raise HTTPException(status_code=422, detail="Next stage can only be set for tracked jobs")
+
+    should_mark_responded = bool(body.mark_responded or body.response_date)
+    if should_mark_responded and not body.response_date:
+        raise HTTPException(status_code=422, detail="Response date is required when marking the application as responded")
+    applied_at = existing.get("applied_at")
+    if body.response_date and applied_at and body.response_date < str(applied_at)[:10]:
+        raise HTTPException(status_code=422, detail="Response date cannot be earlier than applied date")
+
+    if not store.update_next_stage(
+        job_id,
+        body.stage_label,
+        body.scheduled_for,
+        canonical_phase=body.canonical_phase,
+        note=body.note,
+        mark_responded=should_mark_responded,
+        response_date=body.response_date,
+    ):
         raise HTTPException(status_code=404, detail="Job not found")
 
     updated = store.get_job_detail(job_id)
@@ -410,9 +447,10 @@ def create_timeline_event(
         raise HTTPException(status_code=422, detail="Invalid timeline event date") from None
 
     timeline = store.get_application_timeline(job_id)
-    if not timeline and body.canonical_phase != "applied":
+    completed_timeline = [item for item in timeline if item.get("lifecycle_state") != "scheduled"]
+    if not completed_timeline and body.canonical_phase != "applied":
         raise HTTPException(status_code=422, detail="The first timeline event must be an applied stage")
-    if timeline and not any(item["status"] == "applied" for item in timeline) and body.canonical_phase != "applied":
+    if completed_timeline and not any(item["status"] == "applied" for item in completed_timeline) and body.canonical_phase != "applied":
         raise HTTPException(status_code=422, detail="A tracked job must have an applied stage")
 
     created = store.add_application_event(
@@ -449,10 +487,12 @@ def update_timeline_event(
     if not body.model_fields_set:
         raise HTTPException(status_code=422, detail="At least one timeline event field must be provided")
 
-    next_created_at = _resolve_timeline_timestamp(
+    is_scheduled = event.get("lifecycle_state") == "scheduled"
+    next_created_at = _resolve_event_timestamp(
         created_at=body.created_at,
         occurred_at=body.occurred_at,
-    ) or str(event.get("occurred_at") or event["created_at"])
+        scheduled_for=body.scheduled_for,
+    ) or _timeline_event_timestamp(event)
     next_phase = body.canonical_phase or str(event.get("canonical_phase") or event["status"])
     next_label = (
         _normalize_stage_label(body.stage_label)
@@ -462,29 +502,38 @@ def update_timeline_event(
     if "stage_label" in body.model_fields_set and next_label is None:
         raise HTTPException(status_code=422, detail="Stage label cannot be empty")
 
-    try:
-        updated_dt = _normalize_iso_datetime(next_created_at)
-    except ValueError:
-        raise HTTPException(status_code=422, detail="Invalid timeline event date") from None
+    updated_dt = None
+    if next_created_at:
+        try:
+            updated_dt = _normalize_iso_datetime(next_created_at)
+        except ValueError:
+            raise HTTPException(status_code=422, detail="Invalid timeline event date") from None
 
-    event_index = next((index for index, item in enumerate(timeline) if item["id"] == event_id), None)
+    comparison_events = _timeline_comparison_events(timeline, event_type=str(event.get("event_type") or "stage"))
+    event_index = next((index for index, item in enumerate(comparison_events) if item["id"] == event_id), None)
     if event_index is None:
         raise HTTPException(status_code=404, detail="Timeline event not found")
 
-    if event_index > 0:
-        prev_dt = _normalize_iso_datetime(str(timeline[event_index - 1]["created_at"]))
-        if updated_dt < prev_dt:
-            raise HTTPException(status_code=422, detail="Event date cannot be earlier than the previous stage")
+    if updated_dt is not None:
+        if event_index > 0:
+            previous_time = _timeline_event_timestamp(comparison_events[event_index - 1])
+            if previous_time:
+                prev_dt = _normalize_iso_datetime(previous_time)
+                if prev_dt is not None and updated_dt < prev_dt:
+                    raise HTTPException(status_code=422, detail="Event date cannot be earlier than the previous stage")
 
-    if event_index < len(timeline) - 1:
-        next_dt = _normalize_iso_datetime(str(timeline[event_index + 1]["created_at"]))
-        if updated_dt > next_dt:
-            raise HTTPException(status_code=422, detail="Event date cannot be later than the next stage")
+        if event_index < len(comparison_events) - 1:
+            upcoming_time = _timeline_event_timestamp(comparison_events[event_index + 1])
+            if upcoming_time:
+                next_dt = _normalize_iso_datetime(upcoming_time)
+                if next_dt is not None and updated_dt > next_dt:
+                    raise HTTPException(status_code=422, detail="Event date cannot be later than the next stage")
 
     applied_events = [
         item
         for item in timeline
-        if str(item.get("canonical_phase") or item["status"]) == "applied"
+        if item.get("lifecycle_state") != "scheduled"
+        and str(item.get("canonical_phase") or item["status"]) == "applied"
     ]
     current_phase = str(event.get("canonical_phase") or event["status"])
     if current_phase == "applied" and next_phase != "applied" and len(applied_events) <= 1:
@@ -517,11 +566,16 @@ def delete_timeline_event(job_id: int, event_id: int, profile: str = Query("defa
     event = next((item for item in timeline if item["id"] == event_id), None)
     if not event:
         raise HTTPException(status_code=404, detail="Timeline event not found")
-    if len(timeline) <= 1:
+    completed_events = [item for item in timeline if item.get("lifecycle_state") != "scheduled"]
+    if event.get("lifecycle_state") != "scheduled" and len(completed_events) <= 1:
         raise HTTPException(status_code=422, detail="Cannot delete the only timeline event")
 
-    applied_events = [item for item in timeline if item["status"] == "applied"]
-    if event["status"] == "applied" and len(applied_events) <= 1:
+    applied_events = [
+        item
+        for item in completed_events
+        if item["status"] == "applied"
+    ]
+    if event.get("lifecycle_state") != "scheduled" and event["status"] == "applied" and len(applied_events) <= 1:
         raise HTTPException(status_code=422, detail="Cannot remove the only applied event")
 
     if not store.delete_application_event(job_id, event_id):

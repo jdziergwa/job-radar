@@ -4,16 +4,21 @@ import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Textarea } from '@/components/ui/textarea'
+import { cn } from '@/lib/utils'
 import { Expand, Loader2, Save } from 'lucide-react'
 
 export function NotesEditor({
   notes,
   saving = false,
   onSave,
+  className,
+  textareaClassName,
 }: {
   notes?: string | null
   saving?: boolean
   onSave: (notes: string) => Promise<void> | void
+  className?: string
+  textareaClassName?: string
 }) {
   const [draft, setDraft] = useState(notes ?? '')
   const [expanded, setExpanded] = useState(false)
@@ -30,12 +35,15 @@ export function NotesEditor({
 
   return (
     <>
-      <div className="space-y-2.5">
+      <div className={cn('flex h-full min-h-0 flex-col gap-2.5', className)}>
         <Textarea
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
           placeholder="Add recruiter context, interview prep notes, follow-up reminders, or anything else worth keeping with this application."
-          className="h-32 resize-none overflow-y-auto rounded-2xl border-border/40 bg-background/35 px-4 py-3 text-sm leading-relaxed"
+          className={cn(
+            'min-h-[12rem] flex-1 resize-none overflow-y-auto rounded-2xl border-border/40 bg-background/35 px-4 py-3 text-sm leading-relaxed',
+            textareaClassName
+          )}
         />
         <div className="flex items-center justify-between gap-3">
           <p className="text-[11px] text-muted-foreground">Use this for recruiter context, prep notes, or follow-ups.</p>

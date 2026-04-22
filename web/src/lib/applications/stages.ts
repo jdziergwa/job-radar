@@ -85,11 +85,22 @@ export function getApplicationStageMeta(status: string | null | undefined): Appl
 }
 
 export function getNextApplicationStage(status: ApplicationStatus): ApplicationStatus {
-  return APPLICATION_STAGE_TRANSITIONS[status]?.[0] ?? 'screening'
+  const suggestedNextStage: Record<ApplicationStatus, ApplicationStatus> = {
+    applied: 'screening',
+    screening: 'interviewing',
+    interviewing: 'offer',
+    offer: 'accepted',
+    accepted: 'accepted',
+    rejected_by_company: 'applied',
+    rejected_by_user: 'applied',
+    ghosted: 'screening',
+  }
+
+  return suggestedNextStage[status] ?? 'screening'
 }
 
-export function getApplicationEventDate(event: Pick<ApplicationEventResponse, 'occurred_at' | 'created_at'>): string {
-  return event.occurred_at || event.created_at
+export function getApplicationEventDate(event: Pick<ApplicationEventResponse, 'occurred_at' | 'scheduled_for' | 'created_at'>): string {
+  return event.occurred_at || event.scheduled_for || event.created_at
 }
 
 export function normalizeTrackerDateForInput(value?: string | null): string {

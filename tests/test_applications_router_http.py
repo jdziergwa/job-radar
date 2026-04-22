@@ -98,9 +98,9 @@ def test_application_endpoints_lifecycle_stats_and_timeline(monkeypatch):
             f"/api/jobs/{job_id}/notes",
             json={"notes": "Strong referral from previous teammate."},
         )
-        next_step_response = client.patch(
-            f"/api/jobs/{job_id}/next-step",
-            json={"next_step": "Recruiter call", "next_step_date": "2026-04-20"},
+        next_stage_response = client.patch(
+            f"/api/jobs/{job_id}/next-stage",
+            json={"stage_label": "Recruiter call", "scheduled_for": "2026-04-20"},
         )
         applied_at_response = client.patch(
             f"/api/jobs/{job_id}/applied-at",
@@ -120,20 +120,23 @@ def test_application_endpoints_lifecycle_stats_and_timeline(monkeypatch):
 
         assert notes_response.status_code == 200
         assert notes_response.json()["notes"] == "Strong referral from previous teammate."
-        assert next_step_response.status_code == 200
-        assert next_step_response.json()["next_step"] == "Recruiter call"
+        assert next_stage_response.status_code == 200
+        assert next_stage_response.json()["next_stage_label"] == "Recruiter call"
+        assert next_stage_response.json()["next_stage_date"] == "2026-04-20"
         assert applied_at_response.status_code == 200
         assert applied_at_response.json()["applied_at"] == "2026-04-10"
         assert screening_response.status_code == 200
         assert screening_response.json()["application_status"] == "screening"
         assert response_date_response.status_code == 200
+        assert response_date_response.json()["event_type"] == "response_received"
         assert response_date_response.json()["created_at"] == "2026-04-12"
 
         assert timeline_response.status_code == 200
         timeline_events = timeline_response.json()["events"]
-        assert [event["status"] for event in timeline_events] == ["applied", "screening"]
+        assert [event["status"] for event in timeline_events] == ["applied", "response_received", "screening"]
+        assert timeline_events[1]["event_type"] == "response_received"
         assert timeline_events[-1]["note"] == "Recruiter replied"
-        assert timeline_events[-1]["created_at"] == "2026-04-12"
+        assert timeline_events[1]["created_at"] == "2026-04-12"
 
         assert list_response.status_code == 200
         assert list_response.json()["total"] == 1
@@ -153,10 +156,178 @@ def test_application_endpoints_lifecycle_stats_and_timeline(monkeypatch):
 
     assert remove_response.status_code == 200
     assert remove_response.json()["application_status"] is None
-    assert remove_response.json()["next_step"] is None
+    assert remove_response.json()["next_stage_label"] is None
+    assert remove_response.json()["next_stage_date"] is None
     assert remove_response.json()["notes"] is None
     assert timeline_after_remove.status_code == 200
     assert timeline_after_remove.json()["events"] == []
+
+
+def test_scheduling_next_stage_can_record_response_milestone_without_advancing_stage(monkeypatch):
+    store = _build_store()
+    ids = _seed_jobs(store)
+    job_id = ids["job-1"]
+    monkeypatch.setattr(applications_router, "get_store", lambda profile="default": store)
+    monkeypatch.setattr(jobs_router, "get_store", lambda profile="default": store)
+
+    with TestClient(app) as client:
+        client.patch(
+            f"/api/jobs/{job_id}/application-status",
+            json={"application_status": "applied"},
+        )
+        client.patch(
+            f"/api/jobs/{job_id}/applied-at",
+            json={"applied_at": "2026-04-10"},
+        )
+        schedule_response = client.patch(
+            f"/api/jobs/{job_id}/next-stage",
+            json={
+                "canonical_phase": "screening",
+                "stage_label": "Recruiter Call",
+                "scheduled_for": "2026-04-20",
+                "note": "Booked with recruiter",
+                "mark_responded": True,
+                "response_date": "2026-04-12",
+            },
+        )
+        timeline_response = client.get(f"/api/jobs/{job_id}/timeline")
+        stats_before_complete = client.get("/api/applications/stats")
+        list_before_complete = client.get("/api/applications", params={"status": "applied"})
+        complete_response = client.patch(
+            f"/api/jobs/{job_id}/application-status",
+            json={"application_status": "screening"},
+        )
+        timeline_after_complete = client.get(f"/api/jobs/{job_id}/timeline")
+        job_after_complete = client.get(f"/api/jobs/{job_id}")
+
+    assert schedule_response.status_code == 200
+    scheduled_job = schedule_response.json()
+    assert scheduled_job["application_status"] == "applied"
+    assert scheduled_job["next_stage_label"] == "Recruiter Call"
+    assert scheduled_job["next_stage_date"] == "2026-04-20"
+    assert scheduled_job["next_stage_canonical_phase"] == "screening"
+
+    assert timeline_response.status_code == 200
+    scheduled_events = timeline_response.json()["events"]
+    assert [event["status"] for event in scheduled_events] == ["applied", "response_received", "screening"]
+    assert [event["event_type"] for event in scheduled_events] == ["stage", "response_received", "stage"]
+    assert [event["lifecycle_state"] for event in scheduled_events] == ["completed", "completed", "scheduled"]
+    assert scheduled_events[1]["stage_label"] == "Response received"
+    assert scheduled_events[1]["created_at"] == "2026-04-12"
+    assert scheduled_events[-1]["stage_label"] == "Recruiter Call"
+    assert scheduled_events[-1]["scheduled_for"] == "2026-04-20"
+    assert scheduled_events[-1]["occurred_at"] is None
+    assert scheduled_events[-1]["note"] == "Booked with recruiter"
+
+    assert stats_before_complete.status_code == 200
+    stats_payload = stats_before_complete.json()
+    assert stats_payload["status_counts"]["applied"] == 1
+    assert stats_payload["funnel"]["screening"] == 0
+    assert stats_payload["response_rate"] == 100.0
+    assert stats_payload["avg_time_to_response_days"] == 2.0
+
+    assert list_before_complete.status_code == 200
+    listed_job = list_before_complete.json()["jobs"][0]
+    assert listed_job["application_status"] == "applied"
+    assert listed_job["latest_stage_label"] == "Applied"
+
+    assert complete_response.status_code == 200
+    assert complete_response.json()["application_status"] == "screening"
+    assert complete_response.json()["next_stage_label"] is None
+    assert complete_response.json()["next_stage_date"] is None
+
+    assert timeline_after_complete.status_code == 200
+    completed_events = timeline_after_complete.json()["events"]
+    assert [event["status"] for event in completed_events] == ["applied", "response_received", "screening"]
+    assert [event["event_type"] for event in completed_events] == ["stage", "response_received", "stage"]
+    assert [event["lifecycle_state"] for event in completed_events] == ["completed", "completed", "completed"]
+    assert completed_events[-1]["stage_label"] == "Recruiter Call"
+    assert completed_events[-1]["scheduled_for"] is None
+    assert completed_events[-1]["occurred_at"] is not None
+
+    assert job_after_complete.status_code == 200
+    assert job_after_complete.json()["application_status"] == "screening"
+    assert job_after_complete.json()["next_stage_label"] is None
+
+
+def test_response_date_updates_explicit_response_milestone_when_present(monkeypatch):
+    store = _build_store()
+    ids = _seed_jobs(store)
+    job_id = ids["job-1"]
+    monkeypatch.setattr(applications_router, "get_store", lambda profile="default": store)
+
+    with TestClient(app) as client:
+        client.patch(
+            f"/api/jobs/{job_id}/application-status",
+            json={"application_status": "applied"},
+        )
+        client.patch(
+            f"/api/jobs/{job_id}/applied-at",
+            json={"applied_at": "2026-04-10"},
+        )
+        client.patch(
+            f"/api/jobs/{job_id}/next-stage",
+            json={
+                "canonical_phase": "screening",
+                "stage_label": "Recruiter Call",
+                "scheduled_for": "2026-04-20",
+                "mark_responded": True,
+                "response_date": "2026-04-12",
+            },
+        )
+
+        response_date_response = client.patch(
+            f"/api/jobs/{job_id}/response-date",
+            json={"response_date": "2026-04-13"},
+        )
+        timeline_response = client.get(f"/api/jobs/{job_id}/timeline")
+
+    assert response_date_response.status_code == 200
+    updated = response_date_response.json()
+    assert updated["event_type"] == "response_received"
+    assert updated["created_at"] == "2026-04-13"
+
+    assert timeline_response.status_code == 200
+    events = timeline_response.json()["events"]
+    assert [event["status"] for event in events] == ["applied", "response_received", "screening"]
+    assert events[1]["created_at"] == "2026-04-13"
+
+
+def test_application_status_update_accepts_explicit_occurred_at(monkeypatch):
+    store = _build_store()
+    ids = _seed_jobs(store)
+    job_id = ids["job-1"]
+    monkeypatch.setattr(applications_router, "get_store", lambda profile="default": store)
+
+    with TestClient(app) as client:
+        client.patch(
+            f"/api/jobs/{job_id}/application-status",
+            json={"application_status": "applied"},
+        )
+        client.patch(
+            f"/api/jobs/{job_id}/applied-at",
+            json={"applied_at": "2026-04-10"},
+        )
+
+        rejected_response = client.patch(
+            f"/api/jobs/{job_id}/application-status",
+            json={
+                "application_status": "rejected_by_company",
+                "note": "Closed after final review",
+                "occurred_at": "2026-04-18",
+            },
+        )
+        timeline_response = client.get(f"/api/jobs/{job_id}/timeline")
+
+    assert rejected_response.status_code == 200
+    assert rejected_response.json()["application_status"] == "rejected_by_company"
+
+    assert timeline_response.status_code == 200
+    events = timeline_response.json()["events"]
+    assert [event["status"] for event in events] == ["applied", "rejected_by_company"]
+    assert events[-1]["created_at"] == "2026-04-18"
+    assert events[-1]["occurred_at"] == "2026-04-18"
+    assert events[-1]["note"] == "Closed after final review"
 
 
 def test_timeline_events_can_be_retimed_and_deleted(monkeypatch):
@@ -206,6 +377,47 @@ def test_timeline_events_can_be_retimed_and_deleted(monkeypatch):
     assert final_job_response.status_code == 200
     assert final_job_response.json()["application_status"] == "applied"
     assert final_job_response.json()["applied_at"] == "2026-04-09"
+
+
+def test_stage_retime_ignores_explicit_response_milestone_for_ordering(monkeypatch):
+    store = _build_store()
+    ids = _seed_jobs(store)
+    job_id = ids["job-1"]
+    monkeypatch.setattr(applications_router, "get_store", lambda profile="default": store)
+
+    with TestClient(app) as client:
+        client.patch(
+            f"/api/jobs/{job_id}/application-status",
+            json={"application_status": "applied"},
+        )
+        client.patch(
+            f"/api/jobs/{job_id}/applied-at",
+            json={"applied_at": "2026-04-10"},
+        )
+        client.patch(
+            f"/api/jobs/{job_id}/response-date",
+            json={"response_date": "2026-04-12"},
+        )
+        client.patch(
+            f"/api/jobs/{job_id}/application-status",
+            json={"application_status": "screening", "note": "Recruiter replied"},
+        )
+
+        timeline_response = client.get(f"/api/jobs/{job_id}/timeline")
+        assert timeline_response.status_code == 200
+        screening_event_id = timeline_response.json()["events"][-1]["id"]
+
+        retime_response = client.patch(
+            f"/api/jobs/{job_id}/timeline/{screening_event_id}",
+            json={"created_at": "2026-04-11"},
+        )
+        updated_timeline = client.get(f"/api/jobs/{job_id}/timeline")
+
+    assert retime_response.status_code == 200
+    assert retime_response.json()["created_at"] == "2026-04-11"
+
+    assert updated_timeline.status_code == 200
+    assert [event["status"] for event in updated_timeline.json()["events"]] == ["applied", "screening", "response_received"]
 
 
 def test_timeline_cannot_delete_only_applied_event(monkeypatch):

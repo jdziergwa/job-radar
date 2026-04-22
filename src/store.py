@@ -24,6 +24,7 @@ logger = logging.getLogger(__name__)
 UpsertProgressCallback = Callable[[str, int, int], None]
 UPSERT_WRITE_CHUNK_SIZE = 5000
 APPLICATION_EVENT_ORDER_SQL = "occurred_at ASC, sort_order ASC, id ASC"
+APPLICATION_SCHEDULED_EVENT_ORDER_SQL = "CASE WHEN scheduled_for IS NULL OR scheduled_for = '' THEN 1 ELSE 0 END ASC, scheduled_for ASC, id ASC"
 APPLICATION_EVENT_LABELS = {
     "applied": "Applied",
     "screening": "Screening",
@@ -85,6 +86,33 @@ def _default_stage_label(canonical_phase: str) -> str:
         canonical_phase.replace("_", " ").title(),
     )
 
+
+def _is_stage_event(event: sqlite3.Row | dict) -> bool:
+    return str(event["event_type"]) == "stage"
+
+
+def _is_completed_event(event: sqlite3.Row | dict) -> bool:
+    return str(event["lifecycle_state"]) != "scheduled"
+
+
+def _is_completed_stage_event(event: sqlite3.Row | dict) -> bool:
+    return _is_completed_event(event) and _is_stage_event(event)
+
+
+def _default_scheduled_phase(current_status: str | None) -> str:
+    """Return the default canonical phase for the next scheduled stage."""
+    suggested_next_stage = {
+        "applied": "screening",
+        "screening": "interviewing",
+        "interviewing": "interviewing",
+        "offer": "accepted",
+        "accepted": "accepted",
+        "rejected_by_company": "applied",
+        "rejected_by_user": "applied",
+        "ghosted": "screening",
+    }
+    return suggested_next_stage.get(current_status, "screening")
+
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS jobs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -135,10 +163,12 @@ CREATE TABLE IF NOT EXISTS application_events (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     job_id INTEGER NOT NULL REFERENCES jobs(id),
     event_type TEXT NOT NULL DEFAULT 'stage',
+    lifecycle_state TEXT NOT NULL DEFAULT 'completed',
     canonical_phase TEXT NOT NULL,
     stage_label TEXT NOT NULL,
     note TEXT,
     occurred_at TEXT NOT NULL DEFAULT (datetime('now')),
+    scheduled_for TEXT,
     sort_order INTEGER NOT NULL DEFAULT 0,
     created_by TEXT NOT NULL DEFAULT 'system',
     FOREIGN KEY (job_id) REFERENCES jobs(id) ON DELETE CASCADE
@@ -214,9 +244,11 @@ class Store:
             }
             for col, col_type in [
                 ("event_type", "TEXT DEFAULT 'stage'"),
+                ("lifecycle_state", "TEXT DEFAULT 'completed'"),
                 ("canonical_phase", "TEXT"),
                 ("stage_label", "TEXT"),
                 ("occurred_at", "TEXT"),
+                ("scheduled_for", "TEXT"),
                 ("sort_order", "INTEGER"),
                 ("created_by", "TEXT DEFAULT 'system'"),
             ]:
@@ -237,29 +269,71 @@ class Store:
                    WHERE status = 'applied' AND applied_at IS NULL"""
             )
             conn.execute("UPDATE jobs SET source = 'pipeline' WHERE source IS NULL")
-            conn.execute(
-                """INSERT INTO application_events (
-                       job_id, event_type, canonical_phase, stage_label, note, occurred_at, sort_order, created_by
-                   )
-                   SELECT jobs.id,
-                          'stage',
-                          'applied',
-                          'Applied',
-                          'Migrated from existing application status',
-                          COALESCE(jobs.applied_at, jobs.first_seen_at),
-                          0,
-                          'migration'
-                   FROM jobs
-                   WHERE jobs.application_status = 'applied'
-                     AND NOT EXISTS (
-                         SELECT 1 FROM application_events ev WHERE ev.job_id = jobs.id
-                     )"""
-            )
+            if "status" in event_columns or "created_at" in event_columns:
+                insert_columns = ["job_id"]
+                insert_select = ["jobs.id"]
+                if "status" in event_columns:
+                    insert_columns.append("status")
+                    insert_select.append("'applied'")
+                if "created_at" in event_columns:
+                    insert_columns.append("created_at")
+                    insert_select.append("COALESCE(jobs.applied_at, jobs.first_seen_at)")
+                insert_columns.extend([
+                    "event_type",
+                    "canonical_phase",
+                    "stage_label",
+                    "note",
+                    "occurred_at",
+                    "sort_order",
+                    "created_by",
+                ])
+                insert_select.extend([
+                    "'stage'",
+                    "'applied'",
+                    "'Applied'",
+                    "'Migrated from existing application status'",
+                    "COALESCE(jobs.applied_at, jobs.first_seen_at)",
+                    "0",
+                    "'migration'",
+                ])
+                conn.execute(
+                    f"""INSERT INTO application_events ({", ".join(insert_columns)})
+                        SELECT {", ".join(insert_select)}
+                        FROM jobs
+                        WHERE jobs.application_status = 'applied'
+                          AND NOT EXISTS (
+                              SELECT 1 FROM application_events ev WHERE ev.job_id = jobs.id
+                          )"""
+                )
+            else:
+                conn.execute(
+                    """INSERT INTO application_events (
+                           job_id, event_type, canonical_phase, stage_label, note, occurred_at, sort_order, created_by
+                       )
+                       SELECT jobs.id,
+                              'stage',
+                              'applied',
+                              'Applied',
+                              'Migrated from existing application status',
+                              COALESCE(jobs.applied_at, jobs.first_seen_at),
+                              0,
+                              'migration'
+                       FROM jobs
+                       WHERE jobs.application_status = 'applied'
+                         AND NOT EXISTS (
+                             SELECT 1 FROM application_events ev WHERE ev.job_id = jobs.id
+                         )"""
+                )
             if "status" in event_columns:
                 conn.execute(
                     """UPDATE application_events
                        SET canonical_phase = COALESCE(canonical_phase, status)
                        WHERE canonical_phase IS NULL"""
+                )
+                conn.execute(
+                    """UPDATE application_events
+                       SET status = COALESCE(status, canonical_phase)
+                       WHERE status IS NULL"""
                 )
             conn.execute(
                 f"""UPDATE application_events
@@ -282,10 +356,20 @@ class Store:
                        SET occurred_at = COALESCE(occurred_at, created_at)
                        WHERE occurred_at IS NULL"""
                 )
+                conn.execute(
+                    """UPDATE application_events
+                       SET created_at = COALESCE(created_at, occurred_at)
+                       WHERE created_at IS NULL"""
+                )
             conn.execute(
                 """UPDATE application_events
                    SET event_type = COALESCE(event_type, 'stage')
                    WHERE event_type IS NULL"""
+            )
+            conn.execute(
+                """UPDATE application_events
+                   SET lifecycle_state = COALESCE(lifecycle_state, 'completed')
+                   WHERE lifecycle_state IS NULL"""
             )
             conn.execute(
                 """UPDATE application_events
@@ -386,6 +470,38 @@ class Store:
                 "CREATE INDEX IF NOT EXISTS idx_app_events_job_time ON application_events(job_id, occurred_at, sort_order, id)"
             )
 
+            staged_next_steps = conn.execute(
+                """SELECT id, application_status, next_step, next_step_date
+                   FROM jobs
+                   WHERE application_status IS NOT NULL
+                     AND (next_step IS NOT NULL OR next_step_date IS NOT NULL)"""
+            ).fetchall()
+            for row in staged_next_steps:
+                existing_scheduled = conn.execute(
+                    """SELECT 1
+                       FROM application_events
+                       WHERE job_id = ? AND lifecycle_state = 'scheduled'
+                       LIMIT 1""",
+                    (int(row["id"]),),
+                ).fetchone()
+                if existing_scheduled is not None:
+                    continue
+
+                canonical_phase = _default_scheduled_phase(str(row["application_status"]))
+                stage_label = str(row["next_step"] or _default_stage_label(canonical_phase))
+                scheduled_for = str(row["next_step_date"]) if row["next_step_date"] else None
+                self._insert_application_event(
+                    conn,
+                    db_id=int(row["id"]),
+                    canonical_phase=canonical_phase,
+                    stage_label=stage_label,
+                    note=None,
+                    occurred_at=scheduled_for or "",
+                    scheduled_for=scheduled_for,
+                    lifecycle_state="scheduled",
+                    created_by="migration",
+                )
+
             job_ids = [
                 int(row["id"])
                 for row in conn.execute("SELECT id FROM jobs").fetchall()
@@ -412,29 +528,50 @@ class Store:
             conn.close()
 
     @staticmethod
+    def _application_event_columns(conn: sqlite3.Connection) -> set[str]:
+        """Return current application_events columns for legacy-compatible writes."""
+        return {
+            str(row[1])
+            for row in conn.execute("PRAGMA table_info(application_events)").fetchall()
+        }
+
+    @staticmethod
     def _application_event_to_api_dict(row: sqlite3.Row | dict) -> dict:
         """Map the canonical event schema to the public API response shape."""
+        lifecycle_state = str(row["lifecycle_state"])
+        occurred_at = row["occurred_at"]
+        scheduled_for = row["scheduled_for"]
+        normalized_occurred_at = None if lifecycle_state == "scheduled" else (str(occurred_at) if occurred_at else None)
+        normalized_scheduled_for = str(scheduled_for) if scheduled_for else None
+        created_at = normalized_occurred_at or normalized_scheduled_for or str(occurred_at or "")
         return {
             "id": int(row["id"]),
             "job_id": int(row["job_id"]),
             "event_type": str(row["event_type"]),
+            "lifecycle_state": lifecycle_state,
             "canonical_phase": str(row["canonical_phase"]),
             "stage_label": str(row["stage_label"]),
-            "occurred_at": str(row["occurred_at"]),
-            "status": str(row["canonical_phase"]),
+            "occurred_at": normalized_occurred_at,
+            "scheduled_for": normalized_scheduled_for,
+            "status": str(row["canonical_phase"]) if str(row["event_type"]) == "stage" else str(row["event_type"]),
             "note": row["note"],
-            "created_at": str(row["occurred_at"]),
+            "created_at": created_at,
         }
 
     @staticmethod
     def _derive_application_projection(events: list[sqlite3.Row | dict]) -> tuple[str | None, str | None]:
         """Compute current tracker status and applied date from canonical timeline events."""
-        if not events:
+        completed_events = [
+            event
+            for event in events
+            if _is_completed_stage_event(event)
+        ]
+        if not completed_events:
             return None, None
 
-        current_status = str(events[-1]["canonical_phase"])
+        current_status = str(completed_events[-1]["canonical_phase"])
         first_applied = next(
-            (event for event in events if event["canonical_phase"] == "applied"),
+            (event for event in completed_events if event["canonical_phase"] == "applied"),
             None,
         )
         applied_at = str(first_applied["occurred_at"]) if first_applied is not None else None
@@ -451,15 +588,24 @@ class Store:
                     id,
                     job_id,
                     event_type,
+                    lifecycle_state,
                     canonical_phase,
                     stage_label,
                     note,
                     occurred_at,
+                    scheduled_for,
                     sort_order,
                     created_by
                 FROM application_events
                 WHERE job_id = ?
-                ORDER BY {APPLICATION_EVENT_ORDER_SQL}""",
+                ORDER BY CASE WHEN lifecycle_state = 'scheduled' THEN 1 ELSE 0 END ASC,
+                         CASE
+                             WHEN lifecycle_state = 'scheduled'
+                                 THEN COALESCE(scheduled_for, '9999-12-31T23:59:59')
+                             ELSE occurred_at
+                         END ASC,
+                         sort_order ASC,
+                         id ASC""",
             (db_id,),
         ).fetchall()
 
@@ -488,18 +634,155 @@ class Store:
         stage_label: str,
         note: str | None,
         occurred_at: str,
+        scheduled_for: str | None = None,
+        lifecycle_state: str = "completed",
         created_by: str,
+        event_type: str = "stage",
     ) -> int:
         """Insert a canonical timeline event and return its row id."""
         sort_order = self._next_sort_order(conn, db_id, occurred_at)
+        event_columns = self._application_event_columns(conn)
+        insert_columns = ["job_id"]
+        insert_values: list[object] = [db_id]
+        if "status" in event_columns:
+            insert_columns.append("status")
+            insert_values.append(canonical_phase)
+        if "created_at" in event_columns:
+            insert_columns.append("created_at")
+            insert_values.append(scheduled_for or occurred_at)
+        insert_columns.extend([
+            "event_type",
+            "lifecycle_state",
+            "canonical_phase",
+            "stage_label",
+            "note",
+            "occurred_at",
+            "scheduled_for",
+            "sort_order",
+            "created_by",
+        ])
+        insert_values.extend([
+            event_type,
+            lifecycle_state,
+            canonical_phase,
+            stage_label,
+            note,
+            occurred_at,
+            scheduled_for,
+            sort_order,
+            created_by,
+        ])
+        placeholders = ", ".join("?" for _ in insert_columns)
         cursor = conn.execute(
-            """INSERT INTO application_events (
-                   job_id, event_type, canonical_phase, stage_label, note, occurred_at, sort_order, created_by
-               )
-               VALUES (?, 'stage', ?, ?, ?, ?, ?, ?)""",
-            (db_id, canonical_phase, stage_label, note, occurred_at, sort_order, created_by),
+            f"""INSERT INTO application_events ({", ".join(insert_columns)})
+                VALUES ({placeholders})""",
+            insert_values,
         )
         return int(cursor.lastrowid)
+
+    @staticmethod
+    def _get_next_scheduled_event(events: list[sqlite3.Row | dict]) -> sqlite3.Row | dict | None:
+        """Return the earliest scheduled stage for projection/UI purposes."""
+        scheduled_events = [
+            event
+            for event in events
+            if str(event["lifecycle_state"]) == "scheduled" and _is_stage_event(event)
+        ]
+        if not scheduled_events:
+            return None
+
+        def _scheduled_sort_key(event: sqlite3.Row | dict) -> tuple[int, str, int]:
+            scheduled_for = str(event["scheduled_for"]) if event["scheduled_for"] else ""
+            return (
+                1 if not scheduled_for else 0,
+                scheduled_for or "9999-12-31T23:59:59",
+                int(event["id"]),
+            )
+
+        return sorted(scheduled_events, key=_scheduled_sort_key)[0]
+
+    def _complete_matching_scheduled_event(
+        self,
+        conn: sqlite3.Connection,
+        *,
+        db_id: int,
+        canonical_phase: str,
+        stage_label: str | None,
+        note: str | None,
+        occurred_at: str,
+    ) -> int | None:
+        """Convert the matching scheduled stage into a completed event when possible."""
+        scheduled_event = conn.execute(
+            f"""SELECT id, sort_order, stage_label, note
+                FROM application_events
+                WHERE job_id = ?
+                  AND lifecycle_state = 'scheduled'
+                  AND event_type = 'stage'
+                  AND canonical_phase = ?
+                ORDER BY {APPLICATION_SCHEDULED_EVENT_ORDER_SQL}
+                LIMIT 1""",
+            (db_id, canonical_phase),
+        ).fetchone()
+        if scheduled_event is None:
+            return None
+
+        sort_order = self._next_sort_order(conn, db_id, occurred_at)
+        next_stage_label = stage_label or str(scheduled_event["stage_label"])
+        next_note = note if note is not None else scheduled_event["note"]
+        event_columns = self._application_event_columns(conn)
+        update_sql = [
+            "lifecycle_state = 'completed'",
+            "stage_label = ?",
+            "note = ?",
+            "occurred_at = ?",
+            "scheduled_for = NULL",
+            "sort_order = ?",
+        ]
+        update_values: list[object] = [next_stage_label, next_note, occurred_at, sort_order]
+        if "created_at" in event_columns:
+            update_sql.append("created_at = ?")
+            update_values.append(occurred_at)
+        conn.execute(
+            f"""UPDATE application_events
+                SET {", ".join(update_sql)}
+                WHERE id = ? AND job_id = ?""",
+            [*update_values, int(scheduled_event["id"]), db_id],
+        )
+        return int(scheduled_event["id"])
+
+    def _ensure_response_received_event(
+        self,
+        conn: sqlite3.Connection,
+        *,
+        db_id: int,
+        occurred_at: str,
+        created_by: str,
+    ) -> int:
+        """Create an explicit completed response milestone if one does not already exist."""
+        existing = conn.execute(
+            f"""SELECT id
+                FROM application_events
+                WHERE job_id = ?
+                  AND lifecycle_state = 'completed'
+                  AND event_type = 'response_received'
+                ORDER BY {APPLICATION_EVENT_ORDER_SQL}
+                LIMIT 1""",
+            (db_id,),
+        ).fetchone()
+        if existing is not None:
+            return int(existing["id"])
+
+        return self._insert_application_event(
+            conn,
+            db_id=db_id,
+            canonical_phase="applied",
+            stage_label="Response received",
+            note=None,
+            occurred_at=occurred_at,
+            lifecycle_state="completed",
+            created_by=created_by,
+            event_type="response_received",
+        )
 
     # ── Upsert ──────────────────────────────────────────────────────
 
@@ -733,6 +1016,7 @@ class Store:
         db_id: int,
         application_status: str,
         note: str | None = None,
+        occurred_at_override: str | None = None,
     ) -> bool:
         """Update tracker status and append a timeline event."""
         now = datetime.utcnow().isoformat()
@@ -752,17 +1036,26 @@ class Store:
             occurred_at = (
                 str(row["applied_at"])
                 if current_status is None and application_status == "applied" and row["applied_at"]
-                else now
+                else occurred_at_override or now
             )
-            self._insert_application_event(
+            completed_event_id = self._complete_matching_scheduled_event(
                 conn,
                 db_id=db_id,
                 canonical_phase=application_status,
-                stage_label=_default_stage_label(application_status),
+                stage_label=None,
                 note=note,
                 occurred_at=occurred_at,
-                created_by="user",
             )
+            if completed_event_id is None:
+                self._insert_application_event(
+                    conn,
+                    db_id=db_id,
+                    canonical_phase=application_status,
+                    stage_label=_default_stage_label(application_status),
+                    note=note,
+                    occurred_at=occurred_at,
+                    created_by="user",
+                )
             self._sync_job_tracker_fields_from_timeline(conn, db_id)
 
         self.set_metadata("last_job_status_change_at", now)
@@ -779,7 +1072,7 @@ class Store:
             applied_event = conn.execute(
                 f"""SELECT id, occurred_at, sort_order
                     FROM application_events
-                    WHERE job_id = ? AND canonical_phase = 'applied'
+                    WHERE job_id = ? AND lifecycle_state = 'completed' AND canonical_phase = 'applied'
                     ORDER BY {APPLICATION_EVENT_ORDER_SQL}
                     LIMIT 1""",
                 (db_id,),
@@ -793,11 +1086,17 @@ class Store:
                 if applied_event["occurred_at"] == applied_at and "sort_order" in applied_event.keys()
                 else self._next_sort_order(conn, db_id, applied_at)
             )
+            event_columns = self._application_event_columns(conn)
+            update_sql = ["occurred_at = ?", "sort_order = ?"]
+            update_values: list[object] = [applied_at, sort_order]
+            if "created_at" in event_columns:
+                update_sql.append("created_at = ?")
+                update_values.append(applied_at)
             cursor = conn.execute(
-                """UPDATE application_events
-                   SET occurred_at = ?, sort_order = ?
-                   WHERE id = ? AND job_id = ?""",
-                (applied_at, sort_order, int(applied_event["id"]), db_id),
+                f"""UPDATE application_events
+                    SET {", ".join(update_sql)}
+                    WHERE id = ? AND job_id = ?""",
+                [*update_values, int(applied_event["id"]), db_id],
             )
             if cursor.rowcount > 0:
                 self._sync_job_tracker_fields_from_timeline(conn, db_id)
@@ -812,42 +1111,91 @@ class Store:
         """Return the first non-applied tracker event for a job."""
         with self._connect() as conn:
             row = conn.execute(
-                f"""SELECT id, job_id, event_type, canonical_phase, stage_label, note, occurred_at
+                f"""SELECT id, job_id, event_type, lifecycle_state, canonical_phase, stage_label, note, occurred_at, scheduled_for
                    FROM application_events
-                   WHERE job_id = ? AND canonical_phase != 'applied'
+                   WHERE job_id = ? AND lifecycle_state = 'completed' AND event_type = 'response_received'
+                   ORDER BY {APPLICATION_EVENT_ORDER_SQL}
+                   LIMIT 1""",
+                (db_id,),
+            ).fetchone()
+            if row is None:
+                row = conn.execute(
+                f"""SELECT id, job_id, event_type, lifecycle_state, canonical_phase, stage_label, note, occurred_at, scheduled_for
+                   FROM application_events
+                   WHERE job_id = ? AND lifecycle_state = 'completed' AND event_type = 'stage' AND canonical_phase != 'applied'
                    ORDER BY {APPLICATION_EVENT_ORDER_SQL}
                    LIMIT 1""",
                 (db_id,),
             ).fetchone()
         return self._application_event_to_api_dict(row) if row is not None else None
 
-    def update_first_response_date(self, db_id: int, response_date: str) -> dict | None:
-        """Update the first non-applied tracker event date for a job."""
-        first_response = self.get_first_response_event(db_id)
-        if first_response is None:
-            return None
-
+    def upsert_response_milestone(self, db_id: int, response_date: str) -> dict | None:
+        """Create or update the explicit completed response milestone for a tracked job."""
         with self._connect() as conn:
-            sort_order = self._next_sort_order(conn, db_id, response_date)
-            conn.execute(
-                "UPDATE application_events SET occurred_at = ?, sort_order = ? WHERE id = ?",
-                (response_date, sort_order, first_response["id"]),
-            )
+            job = conn.execute(
+                "SELECT id FROM jobs WHERE id = ?",
+                (db_id,),
+            ).fetchone()
+            if job is None:
+                return None
+
+            response_event = conn.execute(
+                f"""SELECT id, occurred_at, sort_order
+                    FROM application_events
+                    WHERE job_id = ?
+                      AND lifecycle_state = 'completed'
+                      AND event_type = 'response_received'
+                    ORDER BY {APPLICATION_EVENT_ORDER_SQL}
+                    LIMIT 1""",
+                (db_id,),
+            ).fetchone()
+
+            if response_event is None:
+                event_id = self._ensure_response_received_event(
+                    conn,
+                    db_id=db_id,
+                    occurred_at=response_date,
+                    created_by="user",
+                )
+            else:
+                sort_order = (
+                    int(response_event["sort_order"])
+                    if response_event["occurred_at"] == response_date and "sort_order" in response_event.keys()
+                    else self._next_sort_order(conn, db_id, response_date)
+                )
+                event_columns = self._application_event_columns(conn)
+                update_sql = ["occurred_at = ?", "sort_order = ?"]
+                update_values: list[object] = [response_date, sort_order]
+                if "created_at" in event_columns:
+                    update_sql.append("created_at = ?")
+                    update_values.append(response_date)
+                conn.execute(
+                    f"""UPDATE application_events
+                        SET {', '.join(update_sql)}
+                        WHERE id = ? AND job_id = ?""",
+                    [*update_values, int(response_event["id"]), db_id],
+                )
+                event_id = int(response_event["id"])
+
             self._sync_job_tracker_fields_from_timeline(conn, db_id)
             row = conn.execute(
-                """SELECT id, job_id, event_type, canonical_phase, stage_label, note, occurred_at
+                """SELECT id, job_id, event_type, lifecycle_state, canonical_phase, stage_label, note, occurred_at, scheduled_for
                    FROM application_events
-                   WHERE id = ?""",
-                (first_response["id"],),
+                   WHERE id = ? AND job_id = ?""",
+                (event_id, db_id),
             ).fetchone()
         self.set_metadata("last_job_status_change_at", datetime.utcnow().isoformat())
         return self._application_event_to_api_dict(row) if row is not None else None
+
+    def update_first_response_date(self, db_id: int, response_date: str) -> dict | None:
+        """Backward-compatible alias for response milestone creation/update."""
+        return self.upsert_response_milestone(db_id, response_date)
 
     def get_application_event(self, db_id: int, event_id: int) -> dict | None:
         """Return a specific tracker timeline event for a job."""
         with self._connect() as conn:
             row = conn.execute(
-                """SELECT id, job_id, event_type, canonical_phase, stage_label, note, occurred_at
+                """SELECT id, job_id, event_type, lifecycle_state, canonical_phase, stage_label, note, occurred_at, scheduled_for
                    FROM application_events
                    WHERE job_id = ? AND id = ?""",
                 (db_id, event_id),
@@ -861,19 +1209,28 @@ class Store:
             conn.execute(
                 """UPDATE jobs
                    SET application_status = NULL,
-                       applied_at = NULL
+                       applied_at = NULL,
+                       next_step = NULL,
+                       next_step_date = NULL
                    WHERE id = ?""",
                 (db_id,),
             )
             return
 
         current_status, applied_at = self._derive_application_projection(rows)
+        next_scheduled_event = self._get_next_scheduled_event(rows)
+        next_step = str(next_scheduled_event["stage_label"]) if next_scheduled_event is not None else None
+        next_step_date = (
+            str(next_scheduled_event["scheduled_for"])
+            if next_scheduled_event is not None and next_scheduled_event["scheduled_for"]
+            else None
+        )
 
         conn.execute(
             """UPDATE jobs
-               SET application_status = ?, applied_at = ?
+               SET application_status = ?, applied_at = ?, next_step = ?, next_step_date = ?
                WHERE id = ?""",
-            (current_status, applied_at, db_id),
+            (current_status, applied_at, next_step, next_step_date, db_id),
         )
 
     def update_application_event(
@@ -888,7 +1245,7 @@ class Store:
         """Update a specific tracker event and sync derived job fields."""
         with self._connect() as conn:
             existing = conn.execute(
-                """SELECT id, event_type, canonical_phase, stage_label, occurred_at, sort_order
+                """SELECT id, event_type, lifecycle_state, canonical_phase, stage_label, occurred_at, scheduled_for, sort_order
                    FROM application_events
                    WHERE job_id = ? AND id = ?""",
                 (db_id, event_id),
@@ -905,23 +1262,46 @@ class Store:
                     if canonical_phase and existing_label == _default_stage_label(str(existing["canonical_phase"]))
                     else existing_label
                 )
+            is_scheduled = str(existing["lifecycle_state"]) == "scheduled"
+            stored_time = created_at if not is_scheduled else ""
+            scheduled_for = created_at if is_scheduled and created_at else None
+            legacy_created_at = scheduled_for or stored_time
             sort_order = (
                 int(existing["sort_order"])
-                if existing["occurred_at"] == created_at and "sort_order" in existing.keys()
-                else self._next_sort_order(conn, db_id, created_at)
+                if (
+                    (not is_scheduled and existing["occurred_at"] == created_at)
+                    or (is_scheduled and (str(existing["scheduled_for"] or "") == str(created_at or "")))
+                ) and "sort_order" in existing.keys()
+                else self._next_sort_order(conn, db_id, stored_time)
             )
+            event_columns = self._application_event_columns(conn)
+            update_sql = [
+                "canonical_phase = ?",
+                "stage_label = ?",
+                "occurred_at = ?",
+                "scheduled_for = ?",
+                "note = ?",
+                "sort_order = ?",
+            ]
+            update_values: list[object] = [next_phase, next_label, stored_time, scheduled_for, note, sort_order]
+            if "status" in event_columns:
+                update_sql.append("status = ?")
+                update_values.append(next_phase)
+            if "created_at" in event_columns:
+                update_sql.append("created_at = ?")
+                update_values.append(legacy_created_at)
             cursor = conn.execute(
-                """UPDATE application_events
-                   SET canonical_phase = ?, stage_label = ?, occurred_at = ?, note = ?, sort_order = ?
-                   WHERE job_id = ? AND id = ?""",
-                (next_phase, next_label, created_at, note, sort_order, db_id, event_id),
+                f"""UPDATE application_events
+                    SET {", ".join(update_sql)}
+                    WHERE job_id = ? AND id = ?""",
+                [*update_values, db_id, event_id],
             )
             if cursor.rowcount <= 0:
                 return None
 
             self._sync_job_tracker_fields_from_timeline(conn, db_id)
             row = conn.execute(
-                """SELECT id, job_id, event_type, canonical_phase, stage_label, note, occurred_at
+                """SELECT id, job_id, event_type, lifecycle_state, canonical_phase, stage_label, note, occurred_at, scheduled_for
                    FROM application_events
                    WHERE id = ? AND job_id = ?""",
                 (event_id, db_id),
@@ -953,18 +1333,27 @@ class Store:
             if job is None:
                 return None
 
-            event_id = self._insert_application_event(
+            event_id = self._complete_matching_scheduled_event(
                 conn,
                 db_id=db_id,
                 canonical_phase=canonical_phase,
                 stage_label=stage_label,
                 note=note,
                 occurred_at=occurred_at,
-                created_by=created_by,
             )
+            if event_id is None:
+                event_id = self._insert_application_event(
+                    conn,
+                    db_id=db_id,
+                    canonical_phase=canonical_phase,
+                    stage_label=stage_label,
+                    note=note,
+                    occurred_at=occurred_at,
+                    created_by=created_by,
+                )
             self._sync_job_tracker_fields_from_timeline(conn, db_id)
             row = conn.execute(
-                """SELECT id, job_id, event_type, canonical_phase, stage_label, note, occurred_at
+                """SELECT id, job_id, event_type, lifecycle_state, canonical_phase, stage_label, note, occurred_at, scheduled_for
                    FROM application_events
                    WHERE id = ? AND job_id = ?""",
                 (event_id, db_id),
@@ -1031,26 +1420,100 @@ class Store:
         logger.warning("Job %d not found for notes update", db_id)
         return False
 
-    def update_next_step(
+    def update_next_stage(
         self,
         db_id: int,
-        next_step: str | None,
-        next_step_date: str | None,
+        stage_label: str | None,
+        scheduled_for: str | None,
+        canonical_phase: str | None = None,
+        note: str | None = None,
+        mark_responded: bool = False,
+        response_date: str | None = None,
     ) -> bool:
-        """Update next-step tracker metadata."""
+        """Upsert the next scheduled stage and sync derived tracker fields."""
         with self._connect() as conn:
-            cursor = conn.execute(
-                """UPDATE jobs
-                   SET next_step = ?, next_step_date = ?
-                   WHERE id = ?""",
-                (next_step, next_step_date, db_id),
-            )
-        if cursor.rowcount > 0:
-            self.set_metadata("last_job_status_change_at", datetime.utcnow().isoformat())
-            logger.debug("Job %d next-step updated", db_id)
-            return True
-        logger.warning("Job %d not found for next-step update", db_id)
-        return False
+            job = conn.execute(
+                "SELECT id, application_status FROM jobs WHERE id = ?",
+                (db_id,),
+            ).fetchone()
+            if job is None:
+                logger.warning("Job %d not found for next-stage update", db_id)
+                return False
+
+            scheduled_events = conn.execute(
+                f"""SELECT id
+                    FROM application_events
+                    WHERE job_id = ? AND lifecycle_state = 'scheduled' AND event_type = 'stage'
+                    ORDER BY {APPLICATION_SCHEDULED_EVENT_ORDER_SQL}""",
+                (db_id,),
+            ).fetchall()
+
+            normalized_label = stage_label.strip() if stage_label else None
+            normalized_date = scheduled_for or None
+
+            if not normalized_label and not normalized_date:
+                if scheduled_events:
+                    conn.execute(
+                        "DELETE FROM application_events WHERE job_id = ? AND lifecycle_state = 'scheduled' AND event_type = 'stage'",
+                        (db_id,),
+                    )
+                self._sync_job_tracker_fields_from_timeline(conn, db_id)
+            else:
+                phase = canonical_phase or _default_scheduled_phase(str(job["application_status"]))
+                label = normalized_label or _default_stage_label(phase)
+                stored_time = normalized_date or ""
+                if scheduled_events:
+                    primary_event_id = int(scheduled_events[0]["id"])
+                    event_columns = self._application_event_columns(conn)
+                    update_sql = [
+                        "canonical_phase = ?",
+                        "stage_label = ?",
+                        "note = ?",
+                        "lifecycle_state = 'scheduled'",
+                        "occurred_at = ?",
+                        "scheduled_for = ?",
+                    ]
+                    update_values: list[object] = [phase, label, note, stored_time, normalized_date]
+                    if "status" in event_columns:
+                        update_sql.append("status = ?")
+                        update_values.append(phase)
+                    if "created_at" in event_columns:
+                        update_sql.append("created_at = ?")
+                        update_values.append(normalized_date or stored_time)
+                    conn.execute(
+                        f"""UPDATE application_events
+                            SET {", ".join(update_sql)}
+                            WHERE id = ? AND job_id = ?""",
+                        [*update_values, primary_event_id, db_id],
+                    )
+                    if len(scheduled_events) > 1:
+                        conn.execute(
+                            "DELETE FROM application_events WHERE job_id = ? AND lifecycle_state = 'scheduled' AND event_type = 'stage' AND id != ?",
+                            (db_id, primary_event_id),
+                        )
+                else:
+                    self._insert_application_event(
+                        conn,
+                        db_id=db_id,
+                        canonical_phase=phase,
+                        stage_label=label,
+                        note=note,
+                        occurred_at=stored_time,
+                        scheduled_for=normalized_date,
+                        lifecycle_state="scheduled",
+                        created_by="user",
+                    )
+                if mark_responded and response_date:
+                    self._ensure_response_received_event(
+                        conn,
+                        db_id=db_id,
+                        occurred_at=response_date,
+                        created_by="user",
+                    )
+                self._sync_job_tracker_fields_from_timeline(conn, db_id)
+        self.set_metadata("last_job_status_change_at", datetime.utcnow().isoformat())
+        logger.debug("Job %d next-stage updated", db_id)
+        return True
 
     def update_job_description(self, db_id: int, description: str) -> bool:
         """Update job description. Returns True if found."""
@@ -1329,11 +1792,37 @@ class Store:
             "id, ats_platform, company_slug, company_name, job_id, title, "
             "location, company_metadata, url, posted_at, first_seen_at, last_seen_at, "
             "fit_score, score_reasoning, score_breakdown, scored_at, status, application_status, "
-            "applied_at, notes, next_step, next_step_date, source, dismissal_reason, match_tier, "
+            "applied_at, notes, source, dismissal_reason, match_tier, "
             "(SELECT ev.stage_label FROM application_events ev "
             " WHERE ev.job_id = jobs.id "
+            "   AND ev.event_type = 'stage' "
+            "   AND ev.lifecycle_state = 'completed' "
             " ORDER BY ev.occurred_at DESC, ev.sort_order DESC, ev.id DESC "
             " LIMIT 1) AS latest_stage_label, "
+            "(SELECT ev.stage_label FROM application_events ev "
+            " WHERE ev.job_id = jobs.id "
+            "   AND ev.event_type = 'stage' "
+            "   AND ev.lifecycle_state = 'scheduled' "
+            " ORDER BY ev.scheduled_for ASC, ev.sort_order ASC, ev.id ASC "
+            " LIMIT 1) AS next_stage_label, "
+            "(SELECT ev.scheduled_for FROM application_events ev "
+            " WHERE ev.job_id = jobs.id "
+            "   AND ev.event_type = 'stage' "
+            "   AND ev.lifecycle_state = 'scheduled' "
+            " ORDER BY ev.scheduled_for ASC, ev.sort_order ASC, ev.id ASC "
+            " LIMIT 1) AS next_stage_date, "
+            "(SELECT ev.canonical_phase FROM application_events ev "
+            " WHERE ev.job_id = jobs.id "
+            "   AND ev.event_type = 'stage' "
+            "   AND ev.lifecycle_state = 'scheduled' "
+            " ORDER BY ev.scheduled_for ASC, ev.sort_order ASC, ev.id ASC "
+            " LIMIT 1) AS next_stage_canonical_phase, "
+            "(SELECT ev.note FROM application_events ev "
+            " WHERE ev.job_id = jobs.id "
+            "   AND ev.event_type = 'stage' "
+            "   AND ev.lifecycle_state = 'scheduled' "
+            " ORDER BY ev.scheduled_for ASC, ev.sort_order ASC, ev.id ASC "
+            " LIMIT 1) AS next_stage_note, "
             "salary, salary_min, salary_max, salary_currency, is_sparse"
         )
         
@@ -1421,7 +1910,7 @@ class Store:
         self,
         application_statuses: list[str] | None = None,
         search: str | None = None,
-        sort: str = "next_step_date",
+        sort: str = "next_stage_date",
         order: str = "asc",
         page: int = 1,
         per_page: int = 50,
@@ -1431,11 +1920,37 @@ class Store:
             "id, ats_platform, company_slug, company_name, job_id, title, "
             "location, company_metadata, url, posted_at, first_seen_at, last_seen_at, "
             "fit_score, score_reasoning, score_breakdown, scored_at, status, application_status, "
-            "applied_at, notes, next_step, next_step_date, source, dismissal_reason, match_tier, "
+            "applied_at, notes, source, dismissal_reason, match_tier, "
             "(SELECT ev.stage_label FROM application_events ev "
             " WHERE ev.job_id = jobs.id "
+            "   AND ev.event_type = 'stage' "
+            "   AND ev.lifecycle_state = 'completed' "
             " ORDER BY ev.occurred_at DESC, ev.sort_order DESC, ev.id DESC "
             " LIMIT 1) AS latest_stage_label, "
+            "(SELECT ev.stage_label FROM application_events ev "
+            " WHERE ev.job_id = jobs.id "
+            "   AND ev.event_type = 'stage' "
+            "   AND ev.lifecycle_state = 'scheduled' "
+            " ORDER BY ev.scheduled_for ASC, ev.sort_order ASC, ev.id ASC "
+            " LIMIT 1) AS next_stage_label, "
+            "(SELECT ev.scheduled_for FROM application_events ev "
+            " WHERE ev.job_id = jobs.id "
+            "   AND ev.event_type = 'stage' "
+            "   AND ev.lifecycle_state = 'scheduled' "
+            " ORDER BY ev.scheduled_for ASC, ev.sort_order ASC, ev.id ASC "
+            " LIMIT 1) AS next_stage_date, "
+            "(SELECT ev.canonical_phase FROM application_events ev "
+            " WHERE ev.job_id = jobs.id "
+            "   AND ev.event_type = 'stage' "
+            "   AND ev.lifecycle_state = 'scheduled' "
+            " ORDER BY ev.scheduled_for ASC, ev.sort_order ASC, ev.id ASC "
+            " LIMIT 1) AS next_stage_canonical_phase, "
+            "(SELECT ev.note FROM application_events ev "
+            " WHERE ev.job_id = jobs.id "
+            "   AND ev.event_type = 'stage' "
+            "   AND ev.lifecycle_state = 'scheduled' "
+            " ORDER BY ev.scheduled_for ASC, ev.sort_order ASC, ev.id ASC "
+            " LIMIT 1) AS next_stage_note, "
             "salary, salary_min, salary_max, salary_currency, is_sparse"
         )
 
@@ -1458,9 +1973,10 @@ class Store:
             "applied_date": "applied_at",
             "company": "company_name",
             "status": "application_status",
-            "next_step_date": "next_step_date",
+            "next_stage_date": "next_stage_date",
+            "next_step_date": "next_stage_date",
         }
-        sort_col = sort_map.get(sort, "next_step_date")
+        sort_col = sort_map.get(sort, "next_stage_date")
         order_sql = "DESC" if order.lower() == "desc" else "ASC"
         where_sql = " AND ".join(where_clauses)
 
@@ -1495,9 +2011,12 @@ class Store:
             event_rows = conn.execute(
                 f"""SELECT
                         job_id,
+                        event_type,
+                        lifecycle_state,
                         canonical_phase,
                         stage_label,
-                        occurred_at
+                        occurred_at,
+                        scheduled_for
                    FROM application_events
                    ORDER BY {APPLICATION_EVENT_ORDER_SQL}"""
             ).fetchall()
@@ -1579,16 +2098,27 @@ class Store:
 
             events = events_by_job.get(row["id"], [])
             first_applied_time: datetime | None = None
+            explicit_response_time: datetime | None = None
             first_response_time: datetime | None = None
             seen_statuses: set[str] = set()
 
             for event in events:
+                if str(event["lifecycle_state"]) == "scheduled":
+                    continue
+
+                event_type = str(event["event_type"])
                 canonical_phase = str(event["canonical_phase"])
-                seen_statuses.add(canonical_phase)
                 try:
                     event_time = datetime.fromisoformat(str(event["occurred_at"]))
                 except ValueError:
                     continue
+
+                if event_type == "response_received":
+                    if explicit_response_time is None:
+                        explicit_response_time = event_time
+                    continue
+
+                seen_statuses.add(canonical_phase)
 
                 if canonical_phase == "applied" and first_applied_time is None:
                     first_applied_time = event_time
@@ -1605,9 +2135,10 @@ class Store:
                 week_bucket = f"{first_applied_time.isocalendar().year}-W{first_applied_time.isocalendar().week:02d}"
                 weekly_velocity[week_bucket] = weekly_velocity.get(week_bucket, 0) + 1
 
-            if first_applied_time is not None and first_response_time is not None:
+            response_anchor = explicit_response_time or first_response_time
+            if first_applied_time is not None and response_anchor is not None:
                 responded_jobs += 1
-                response_deltas.append((first_response_time - first_applied_time).total_seconds() / 86400)
+                response_deltas.append((response_anchor - first_applied_time).total_seconds() / 86400)
 
             for key in funnel:
                 if key in seen_statuses or app_status == key:
@@ -1757,7 +2288,34 @@ class Store:
         """Get a single job by ID, including description."""
         with self._connect() as conn:
             row = conn.execute(
-                "SELECT * FROM jobs WHERE id = ?", (db_id,)
+                """SELECT jobs.*,
+                          (SELECT ev.stage_label FROM application_events ev
+                           WHERE ev.job_id = jobs.id
+                             AND ev.event_type = 'stage'
+                             AND ev.lifecycle_state = 'scheduled'
+                           ORDER BY ev.scheduled_for ASC, ev.sort_order ASC, ev.id ASC
+                           LIMIT 1) AS next_stage_label,
+                          (SELECT ev.scheduled_for FROM application_events ev
+                           WHERE ev.job_id = jobs.id
+                             AND ev.event_type = 'stage'
+                             AND ev.lifecycle_state = 'scheduled'
+                           ORDER BY ev.scheduled_for ASC, ev.sort_order ASC, ev.id ASC
+                           LIMIT 1) AS next_stage_date,
+                          (SELECT ev.canonical_phase FROM application_events ev
+                           WHERE ev.job_id = jobs.id
+                             AND ev.event_type = 'stage'
+                             AND ev.lifecycle_state = 'scheduled'
+                           ORDER BY ev.scheduled_for ASC, ev.sort_order ASC, ev.id ASC
+                           LIMIT 1) AS next_stage_canonical_phase,
+                          (SELECT ev.note FROM application_events ev
+                           WHERE ev.job_id = jobs.id
+                             AND ev.event_type = 'stage'
+                             AND ev.lifecycle_state = 'scheduled'
+                           ORDER BY ev.scheduled_for ASC, ev.sort_order ASC, ev.id ASC
+                           LIMIT 1) AS next_stage_note
+                   FROM jobs
+                   WHERE id = ?""",
+                (db_id,),
             ).fetchone()
         if row is None:
             return None

@@ -211,7 +211,7 @@ export interface paths {
         patch: operations["update_notes_api_jobs__job_id__notes_patch"];
         trace?: never;
     };
-    "/api/jobs/{job_id}/next-step": {
+    "/api/jobs/{job_id}/next-stage": {
         parameters: {
             query?: never;
             header?: never;
@@ -224,8 +224,8 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        /** Update Next Step */
-        patch: operations["update_next_step_api_jobs__job_id__next_step_patch"];
+        /** Update Next Stage */
+        patch: operations["update_next_stage_api_jobs__job_id__next_stage_patch"];
         trace?: never;
     };
     "/api/jobs/{job_id}/timeline": {
@@ -803,6 +803,12 @@ export interface components {
              */
             event_type: string;
             /**
+             * Lifecycle State
+             * @default completed
+             * @enum {string}
+             */
+            lifecycle_state: "completed" | "scheduled";
+            /**
              * Canonical Phase
              * @enum {string}
              */
@@ -810,7 +816,9 @@ export interface components {
             /** Stage Label */
             stage_label: string;
             /** Occurred At */
-            occurred_at: string;
+            occurred_at?: string | null;
+            /** Scheduled For */
+            scheduled_for?: string | null;
             /** Status */
             status: string;
             /** Note */
@@ -886,10 +894,14 @@ export interface components {
             applied_at?: string | null;
             /** Notes */
             notes?: string | null;
-            /** Next Step */
-            next_step?: string | null;
-            /** Next Step Date */
-            next_step_date?: string | null;
+            /** Next Stage Label */
+            next_stage_label?: string | null;
+            /** Next Stage Date */
+            next_stage_date?: string | null;
+            /** Next Stage Canonical Phase */
+            next_stage_canonical_phase?: string | null;
+            /** Next Stage Note */
+            next_stage_note?: string | null;
             /** Source */
             source?: string | null;
             /** Dismissal Reason */
@@ -1011,6 +1023,8 @@ export interface components {
             application_status: "applied" | "screening" | "interviewing" | "offer" | "accepted" | "rejected_by_company" | "rejected_by_user" | "ghosted";
             /** Note */
             note?: string | null;
+            /** Occurred At */
+            occurred_at?: string | null;
         };
         /** ApplicationTopCompanyResponse */
         ApplicationTopCompanyResponse: {
@@ -1355,10 +1369,14 @@ export interface components {
             applied_at?: string | null;
             /** Notes */
             notes?: string | null;
-            /** Next Step */
-            next_step?: string | null;
-            /** Next Step Date */
-            next_step_date?: string | null;
+            /** Next Stage Label */
+            next_stage_label?: string | null;
+            /** Next Stage Date */
+            next_stage_date?: string | null;
+            /** Next Stage Canonical Phase */
+            next_stage_canonical_phase?: string | null;
+            /** Next Stage Note */
+            next_stage_note?: string | null;
             /** Source */
             source?: string | null;
             /** Dismissal Reason */
@@ -1443,10 +1461,14 @@ export interface components {
             applied_at?: string | null;
             /** Notes */
             notes?: string | null;
-            /** Next Step */
-            next_step?: string | null;
-            /** Next Step Date */
-            next_step_date?: string | null;
+            /** Next Stage Label */
+            next_stage_label?: string | null;
+            /** Next Stage Date */
+            next_stage_date?: string | null;
+            /** Next Stage Canonical Phase */
+            next_stage_canonical_phase?: string | null;
+            /** Next Stage Note */
+            next_stage_note?: string | null;
             /** Source */
             source?: string | null;
             /** Dismissal Reason */
@@ -1535,12 +1557,20 @@ export interface components {
              */
             salary_distribution: components["schemas"]["SalaryStat"][];
         };
-        /** NextStepUpdate */
-        NextStepUpdate: {
-            /** Next Step */
-            next_step?: string | null;
-            /** Next Step Date */
-            next_step_date?: string | null;
+        /** NextStageUpdate */
+        NextStageUpdate: {
+            /** Canonical Phase */
+            canonical_phase?: ("applied" | "screening" | "interviewing" | "offer" | "accepted" | "rejected_by_company" | "rejected_by_user" | "ghosted") | null;
+            /** Stage Label */
+            stage_label?: string | null;
+            /** Scheduled For */
+            scheduled_for?: string | null;
+            /** Note */
+            note?: string | null;
+            /** Mark Responded */
+            mark_responded?: boolean | null;
+            /** Response Date */
+            response_date?: string | null;
         };
         /** NotesUpdate */
         NotesUpdate: {
@@ -1922,6 +1952,8 @@ export interface components {
             stage_label?: string | null;
             /** Occurred At */
             occurred_at?: string | null;
+            /** Scheduled For */
+            scheduled_for?: string | null;
             /** Created At */
             created_at?: string | null;
             /** Note */
@@ -2568,7 +2600,7 @@ export interface operations {
             };
         };
     };
-    update_next_step_api_jobs__job_id__next_step_patch: {
+    update_next_stage_api_jobs__job_id__next_stage_patch: {
         parameters: {
             query?: {
                 profile?: string;
@@ -2581,7 +2613,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["NextStepUpdate"];
+                "application/json": components["schemas"]["NextStageUpdate"];
             };
         };
         responses: {

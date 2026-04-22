@@ -4,49 +4,56 @@ import { useEffect, useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import {
-  areStageDraftsEqual,
   buildCreateStageDraft,
-  buildStageDraftFromEvent,
   normalizeStageEditorPayload,
   StageEditorFields,
   type StageEditorDraft,
 } from '@/components/applications/StageEditorFields'
-import type { ApplicationEventResponse, ApplicationStatus } from '@/lib/applications/stages'
-import { Loader2, PencilLine, Plus } from 'lucide-react'
+import { normalizeTrackerDateForInput, type ApplicationStatus } from '@/lib/applications/stages'
+import { CheckCircle2, Loader2 } from 'lucide-react'
 
-type StageEditorMode = 'create' | 'edit'
-
-export function StageEditorDialog({
+export function CompleteStageDialog({
   open,
   onOpenChange,
-  mode,
   saving = false,
-  event,
   defaultPhase,
+  initialStage,
+  title = 'Record Stage',
+  description = 'Record the latest hiring stage that already happened. This updates the current stage and adds it to the journey.',
+  submitLabel = 'Record Stage',
   onSubmit,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
-  mode: StageEditorMode
   saving?: boolean
-  event?: ApplicationEventResponse | null
   defaultPhase: ApplicationStatus
+  initialStage?: {
+    canonical_phase: ApplicationStatus
+    stage_label: string
+    occurred_at: string
+    note?: string | null
+  } | null
+  title?: string
+  description?: string
+  submitLabel?: string
   onSubmit: (payload: { canonical_phase: ApplicationStatus; stage_label: string; occurred_at: string; note: string | null }) => Promise<void> | void
 }) {
   const initialDraft = useMemo<StageEditorDraft>(() => {
-    if (mode === 'edit' && event) {
-      return buildStageDraftFromEvent(event)
+    if (initialStage) {
+      return {
+        canonical_phase: initialStage.canonical_phase,
+        stage_label: initialStage.stage_label,
+        occurred_at: normalizeTrackerDateForInput(initialStage.occurred_at),
+        note: initialStage.note ?? '',
+      }
     }
-
     return buildCreateStageDraft(defaultPhase)
-  }, [defaultPhase, event, mode])
-
+  }, [defaultPhase, initialStage])
   const [draft, setDraft] = useState<StageEditorDraft>(initialDraft)
 
   useEffect(() => {
     setDraft(initialDraft)
-  }, [event, initialDraft, mode])
-  const isUnchanged = areStageDraftsEqual(draft, initialDraft)
+  }, [initialDraft, open])
 
   const submit = async () => {
     const payload = normalizeStageEditorPayload(draft)
@@ -59,25 +66,21 @@ export function StageEditorDialog({
       <DialogContent className="max-w-lg rounded-3xl border border-border/60 bg-popover/95 shadow-2xl backdrop-blur-xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl font-bold">
-            {mode === 'create' ? <Plus className="h-4 w-4 text-primary" /> : <PencilLine className="h-4 w-4 text-primary" />}
-            {mode === 'create' ? 'Add Stage' : 'Edit Stage'}
+            <CheckCircle2 className="h-4 w-4 text-primary" />
+            {title}
           </DialogTitle>
-          <DialogDescription>
-            {mode === 'create'
-              ? 'Add the next meaningful step in the process. Choose how this stage should count in the tracker, then give it a specific label if you want.'
-              : 'Edit how this stage should count in the tracker, along with its label, date, or note.'}
-          </DialogDescription>
+          <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
 
-        <StageEditorFields draft={draft} onChange={setDraft} />
+        <StageEditorFields draft={draft} onChange={setDraft} fieldPrefix="complete-stage" />
 
         <DialogFooter className="gap-2">
           <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={saving}>
             Cancel
           </Button>
-          <Button onClick={() => void submit()} disabled={saving || !draft.occurred_at || !draft.stage_label.trim() || (mode === 'edit' && isUnchanged)}>
-            {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : mode === 'create' ? <Plus className="mr-2 h-4 w-4" /> : <PencilLine className="mr-2 h-4 w-4" />}
-            {mode === 'create' ? 'Add Stage' : 'Save Changes'}
+          <Button onClick={() => void submit()} disabled={saving || !draft.occurred_at || !draft.stage_label.trim()}>
+            {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-2 h-4 w-4" />}
+            {submitLabel}
           </Button>
         </DialogFooter>
       </DialogContent>

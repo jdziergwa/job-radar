@@ -40,8 +40,10 @@ class JobResponse(BaseModel):
     application_status: Optional[str] = None
     applied_at: Optional[str] = None
     notes: Optional[str] = None
-    next_step: Optional[str] = None
-    next_step_date: Optional[str] = None
+    next_stage_label: Optional[str] = None
+    next_stage_date: Optional[str] = None
+    next_stage_canonical_phase: Optional[str] = None
+    next_stage_note: Optional[str] = None
     source: Optional[str] = None
     dismissal_reason: Optional[str] = None
     match_tier: Optional[str] = None
@@ -57,16 +59,21 @@ class JobResponse(BaseModel):
     @classmethod
     def from_row(cls, row: dict) -> "JobResponse":
         """Parse a SQLite row dict into a JobResponse."""
+        row_data = dict(row)
+        row_data.setdefault("next_stage_label", row_data.get("next_step"))
+        row_data.setdefault("next_stage_date", row_data.get("next_step_date"))
+        row_data.setdefault("next_stage_canonical_phase", row_data.get("next_stage_canonical_phase"))
+        row_data.setdefault("next_stage_note", row_data.get("next_stage_note"))
         breakdown = None
         company_quality_signals: list[str] = []
         workplace_type: str | None = None
         raw_location: str | None = None
-        if row.get("score_breakdown"):
+        if row_data.get("score_breakdown"):
             try:
-                raw = json.loads(row["score_breakdown"])
+                raw = json.loads(row_data["score_breakdown"])
                 dimensions = raw.get("dimensions", {}) if isinstance(raw, dict) else {}
                 apply_priority, _ = normalize_persisted_priority(
-                    row.get("fit_score", 0),
+                    row_data.get("fit_score", 0),
                     dimensions if isinstance(dimensions, dict) else {},
                     raw.get("apply_priority", "skip") if isinstance(raw, dict) else "skip",
                     raw.get("skip_reason", "none") if isinstance(raw, dict) else "none",
@@ -76,9 +83,9 @@ class JobResponse(BaseModel):
                 breakdown = ScoreBreakdown(**raw)
             except (json.JSONDecodeError, Exception):
                 pass
-        if row.get("company_metadata"):
+        if row_data.get("company_metadata"):
             try:
-                company_metadata = json.loads(row["company_metadata"])
+                company_metadata = json.loads(row_data["company_metadata"])
                 raw_signals = company_metadata.get("quality_signals", []) if isinstance(company_metadata, dict) else []
                 if isinstance(raw_signals, list):
                     company_quality_signals = [
@@ -88,9 +95,9 @@ class JobResponse(BaseModel):
                     ]
             except (json.JSONDecodeError, Exception):
                 pass
-        if row.get("location_metadata"):
+        if row_data.get("location_metadata"):
             try:
-                location_metadata = json.loads(row["location_metadata"])
+                location_metadata = json.loads(row_data["location_metadata"])
                 if isinstance(location_metadata, dict):
                     raw_workplace = location_metadata.get("workplace_type")
                     raw_location_value = location_metadata.get("raw_location")
@@ -102,7 +109,7 @@ class JobResponse(BaseModel):
                 pass
         return cls(
             **{
-                **row,
+                **row_data,
                 "score_breakdown": breakdown,
                 "company_quality_signals": company_quality_signals,
                 "workplace_type": workplace_type,
@@ -139,6 +146,7 @@ class ApplicationStatusUpdate(BaseModel):
         "ghosted",
     ]
     note: Optional[str] = None
+    occurred_at: Optional[str] = None
 
 
 ApplicationCanonicalPhase = Literal[
@@ -152,14 +160,18 @@ ApplicationCanonicalPhase = Literal[
     "ghosted",
 ]
 
+ApplicationEventLifecycleState = Literal["completed", "scheduled"]
+
 
 class ApplicationEventResponse(BaseModel):
     id: int
     job_id: int
     event_type: str = "stage"
+    lifecycle_state: ApplicationEventLifecycleState = "completed"
     canonical_phase: ApplicationCanonicalPhase
     stage_label: str
-    occurred_at: str
+    occurred_at: Optional[str] = None
+    scheduled_for: Optional[str] = None
     status: str
     note: Optional[str] = None
     created_at: str
@@ -169,6 +181,7 @@ class TimelineEventDateUpdate(BaseModel):
     canonical_phase: Optional[ApplicationCanonicalPhase] = None
     stage_label: Optional[str] = None
     occurred_at: Optional[str] = None
+    scheduled_for: Optional[str] = None
     created_at: Optional[str] = None
     note: Optional[str] = None
 
@@ -278,9 +291,13 @@ class NotesUpdate(BaseModel):
     notes: str
 
 
-class NextStepUpdate(BaseModel):
-    next_step: Optional[str] = None
-    next_step_date: Optional[str] = None
+class NextStageUpdate(BaseModel):
+    canonical_phase: Optional[ApplicationCanonicalPhase] = None
+    stage_label: Optional[str] = None
+    scheduled_for: Optional[str] = None
+    note: Optional[str] = None
+    mark_responded: Optional[bool] = None
+    response_date: Optional[str] = None
 
 
 class AppliedAtUpdate(BaseModel):

@@ -19,8 +19,10 @@ interface ApplicationJob {
   application_status: string
   latest_stage_label?: string | null
   applied_at?: string | null
-  next_step?: string | null
-  next_step_date?: string | null
+  next_stage_label?: string | null
+  next_stage_date?: string | null
+  next_stage_canonical_phase?: string | null
+  next_stage_note?: string | null
   fit_score?: number | null
   source?: string | null
   notes?: string | null
@@ -55,7 +57,7 @@ export default function ApplicationsPage() {
   const [importDialogOpen, setImportDialogOpen] = useState(false)
   const [group, setGroup] = useState<ApplicationGroup>('active')
   const [status, setStatus] = useState('')
-  const [sort, setSort] = useState('next_step_date')
+  const [sort, setSort] = useState('next_stage_date')
   const [searchTerm, setSearchTerm] = useState('')
   const [search, setSearch] = useState('')
 
@@ -117,7 +119,7 @@ export default function ApplicationsPage() {
           </div>
           <h1 className="text-3xl font-bold tracking-tight">Track Your Applications</h1>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-            Monitor every application from submission to outcome, keep upcoming steps visible, and separate active processes from the broader board.
+            Monitor every application from submission to outcome, keep current and upcoming stages visible, and separate active processes from the broader board.
           </p>
         </div>
 
