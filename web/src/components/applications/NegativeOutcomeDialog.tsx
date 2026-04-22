@@ -16,6 +16,7 @@ import {
 import { Loader2, XCircle } from 'lucide-react'
 
 const NEGATIVE_OUTCOME_OPTIONS: ApplicationStatus[] = ['rejected_by_company', 'rejected_by_user', 'ghosted']
+const DEFAULT_NEGATIVE_OUTCOME: ApplicationStatus = 'rejected_by_company'
 
 export function NegativeOutcomeDialog({
   open,
@@ -30,18 +31,18 @@ export function NegativeOutcomeDialog({
   currentStatus: ApplicationStatus | null
   onSubmit: (payload: { status: ApplicationStatus; note?: string; occurred_at: string }) => Promise<void> | void
 }) {
-  const availableOptions = useMemo(() => {
+  const availableOptions = useMemo<ApplicationStatus[]>(() => {
     const transitions = currentStatus ? APPLICATION_STAGE_TRANSITIONS[currentStatus] ?? [] : []
     const filtered = transitions.filter((status): status is ApplicationStatus => NEGATIVE_OUTCOME_OPTIONS.includes(status))
-    return filtered.length > 0 ? filtered : ['rejected_by_company']
+    return filtered.length > 0 ? filtered : [DEFAULT_NEGATIVE_OUTCOME]
   }, [currentStatus])
 
-  const [selectedStatus, setSelectedStatus] = useState<ApplicationStatus>(availableOptions[0])
+  const [selectedStatus, setSelectedStatus] = useState<ApplicationStatus>(availableOptions[0] ?? DEFAULT_NEGATIVE_OUTCOME)
   const [occurredAt, setOccurredAt] = useState(getTodayDateInputValue())
   const [note, setNote] = useState('')
 
   useEffect(() => {
-    setSelectedStatus(availableOptions[0])
+    setSelectedStatus(availableOptions[0] ?? DEFAULT_NEGATIVE_OUTCOME)
     setOccurredAt(getTodayDateInputValue())
     setNote('')
   }, [availableOptions, open])
