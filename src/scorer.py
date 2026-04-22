@@ -511,6 +511,21 @@ def _parse_numeric_score(val: Any) -> int:
         return 0
 
 
+def _parse_optional_int(val: Any) -> int | None:
+    """Best-effort integer parsing for non-score metadata such as salary bounds."""
+    if val is None:
+        return None
+    try:
+        if isinstance(val, str):
+            cleaned = "".join(c for c in val if c.isdigit() or c in {".", "-"})
+            if not cleaned or cleaned in {"-", ".", "-."}:
+                return None
+            return int(round(float(cleaned)))
+        return int(round(float(val)))
+    except (ValueError, TypeError):
+        return None
+
+
 def _get_score_from_dict(data: dict) -> int:
     """Extract overall fit_score from dict, handling common LLM key variations."""
     variants = ["fit_score", "score", "fitScore", "overall_fit_score", "fit score", "overall fit score"]
@@ -608,8 +623,8 @@ def _extract_metadata(data: dict) -> dict[str, Any]:
         "skip_reason": skip_reason,
         "missing_skills": missing_skills,
         "salary": salary_str,
-        "salary_min": _parse_numeric_score(s_min) if s_min is not None else None,
-        "salary_max": _parse_numeric_score(s_max) if s_max is not None else None,
+        "salary_min": _parse_optional_int(s_min),
+        "salary_max": _parse_optional_int(s_max),
         "salary_currency": str(s_cur) if s_cur else None,
         "is_sparse": bool(get_field("is_sparse", False)),
     }

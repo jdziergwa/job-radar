@@ -15,8 +15,14 @@ from src.providers.ats_resolvers import SINGLE_JOB_FETCHERS, fetch_supported_job
 from src.providers.utils import strip_html
 from src.models import RawJob
 from src.providers.utils import slugify
+from src.salary import parse_salary_string
 
 logger = logging.getLogger(__name__)
+
+_ADZUNA_SALARY_PATTERN = re.compile(
+    r'<div[^>]+class=["\'][^"\']*\bui-salary\b[^"\']*["\'][^>]*>(.*?)</div>',
+    re.IGNORECASE | re.DOTALL,
+)
 
 def _humanize_slug(value: str) -> str:
     return " ".join(part.capitalize() for part in str(value or "").split("-") if part).strip()
@@ -47,15 +53,18 @@ async def fetch_job_from_url(url: str) -> RawJob | None:
         company_slug=ref.company_slug,
         company_name=_humanize_slug(ref.company_slug) or ref.company_slug,
     )
-    sem = asyncio.Semaphore(1)
-
     async with httpx.AsyncClient(verify=certifi.where()) as client:
         resolved_job = await fetch_supported_job(client, ref)
         if resolved_job:
             return resolved_job
 
-        description = await fetch_description(client, sem, temp_job)
+        details = await _fetch_job_details_via_fallback_scrape(
+            client,
+            url=url,
+            company_name=temp_job.company_name,
+        )
 
+    description = details.get("description") if details else None
     if not description:
         return None
 
@@ -70,6 +79,10 @@ async def fetch_job_from_url(url: str) -> RawJob | None:
         description=description,
         posted_at=None,
         fetched_at=datetime.now(timezone.utc).isoformat(),
+        salary=details.get("salary") if details else None,
+        salary_min=details.get("salary_min") if details else None,
+        salary_max=details.get("salary_max") if details else None,
+        salary_currency=details.get("salary_currency") if details else None,
     )
 
 def extract_json_ld(html: str) -> Optional[str]:
@@ -157,6 +170,65 @@ async def _fetch_description_via_fallback_scrape(
     url: str,
     company_name: str,
 ) -> str | None:
+    details = await _fetch_job_details_via_fallback_scrape(
+        client,
+        url=url,
+        company_name=company_name,
+    )
+    return details.get("description") if details else None
+
+
+def _extract_adzuna_salary(html: str) -> str | None:
+    match = _ADZUNA_SALARY_PATTERN.search(html or "")
+    if not match:
+        return None
+
+    salary_text = " ".join(strip_html(match.group(1)).split()).strip()
+    return salary_text or None
+
+
+def _extract_salary_details(url: str, html: str) -> dict[str, object]:
+    host = urlparse(url).netloc.lower()
+    salary_text: str | None = None
+
+    if "adzuna." in host:
+        salary_text = _extract_adzuna_salary(html)
+
+    if not salary_text:
+        return {}
+
+    salary_min, salary_max, salary_currency = parse_salary_string(salary_text)
+    return {
+        "salary": salary_text,
+        "salary_min": salary_min,
+        "salary_max": salary_max,
+        "salary_currency": salary_currency,
+    }
+
+
+def _apply_fallback_job_details(job_obj: Any, details: dict[str, object]) -> None:
+    description = details.get("description")
+    if isinstance(description, str) and description:
+        job_obj.description = description
+
+    for attr in ("salary", "salary_currency"):
+        value = details.get(attr)
+        if value is not None:
+            setattr(job_obj, attr, value)
+
+    for attr in ("salary_min", "salary_max"):
+        value = details.get(attr)
+        if isinstance(value, int):
+            setattr(job_obj, attr, value)
+
+
+async def _fetch_job_details_via_fallback_scrape(
+    client: httpx.AsyncClient,
+    *,
+    url: str,
+    company_name: str,
+) -> dict[str, object] | None:
+    details: dict[str, object] = {}
     headers = {
         "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
@@ -171,9 +243,11 @@ async def _fetch_description_via_fallback_scrape(
             return None
 
         html = resp.text
+        details = _extract_salary_details(url, html)
         json_ld_desc = extract_json_ld(html)
         if json_ld_desc:
-            return json_ld_desc
+            details["description"] = json_ld_desc
+            return details
 
         for selector in [
             r'class=["\'][^"\']*(?:job-description|description|posting-content|job-detail-description)[^"\']*["\'][^>]*>(.*?)</div>',
@@ -185,14 +259,16 @@ async def _fetch_description_via_fallback_scrape(
             if match:
                 content_piece = match.group(1)
                 if len(strip_html(content_piece)) > 200:
-                    return content_piece
+                    details["description"] = content_piece
+                    return details
 
         content = strip_html(html)
         if len(content) > 300:
-            return content
+            details["description"] = content
+            return details
     except Exception as e:
         logger.debug("Scraper fallback failed for %s (%s): %s", company_name, url, e)
-    return None
+    return details or None
 
 
 async def fetch_description(client: httpx.AsyncClient, sem: asyncio.Semaphore, job: Any) -> Optional[str]:
@@ -249,13 +325,13 @@ async def populate_descriptions(
                     _apply_resolved_job_details(job_obj, resolved_job)
                     return job_obj
 
-                desc = await _fetch_description_via_fallback_scrape(
+                details = await _fetch_job_details_via_fallback_scrape(
                     client,
                     url=url,
                     company_name=str(getattr(job_obj, "company_name", "") or ""),
                 )
-                if desc:
-                    job_obj.description = desc
+                if details:
+                    _apply_fallback_job_details(job_obj, details)
             return job_obj
 
         wrapped_tasks = [fetch_and_assign(j) for j in jobs]

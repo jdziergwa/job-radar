@@ -10,10 +10,21 @@ PAY_PERIOD_MULTIPLIERS = {
     "year": 1,
 }
 
+CURRENCY_PATTERNS = (
+    ("USD", (r"\$", r"\busd\b")),
+    ("EUR", (r"€", r"\beur\b")),
+    ("GBP", (r"£", r"\bgbp\b")),
+    ("PLN", (r"\bpln\b", r"\bzl\b", r"\bzł\b")),
+    ("CHF", (r"\bchf\b",)),
+    ("CAD", (r"\bcad\b",)),
+)
+
 PAY_PERIOD_PATTERNS = {
     "hour": [
+        r"/h\b",
         r"/hr\b",
         r"/hour\b",
+        r"\bper hr\b",
         r"\bper hour\b",
         r"\bhourly\b",
     ],
@@ -45,6 +56,9 @@ PAY_PERIOD_PATTERNS = {
     ],
 }
 
+_DASH_PATTERN = re.compile(r"[–—−]")
+_THOUSANDS_SPACE_PATTERN = re.compile(r"(?<=\d)[\s\u00a0](?=\d{3}(?:\D|$))")
+
 
 def _detect_pay_period(text: str) -> str | None:
     for period, patterns in PAY_PERIOD_PATTERNS.items():
@@ -53,24 +67,39 @@ def _detect_pay_period(text: str) -> str | None:
     return None
 
 
+def _detect_currency(text: str) -> str | None:
+    for currency, patterns in CURRENCY_PATTERNS:
+        if any(re.search(pattern, text) for pattern in patterns):
+            return currency
+    return None
+
+
+def _normalize_salary_text(text: str) -> str:
+    normalized = _DASH_PATTERN.sub("-", text.lower().replace("\xa0", " "))
+    while True:
+        collapsed = _THOUSANDS_SPACE_PATTERN.sub("", normalized)
+        if collapsed == normalized:
+            break
+        normalized = collapsed
+    normalized = normalized.replace(",", "")
+    normalized = re.sub(r"\b\d+(?:\.\d+)?\s*%", "", normalized)
+    return normalized
+
+
 def parse_salary_string(salary_str: str | None) -> tuple[int | None, int | None, str | None]:
     """Extract annualized min/max salary values and a best-effort currency code."""
     if not salary_str or not isinstance(salary_str, str):
         return None, None, None
 
-    s = salary_str.lower().replace(",", "")
-    s = re.sub(r"\b\d+(?:\.\d+)?\s*%", "", s)
-    pay_period = _detect_pay_period(s)
+    s = _normalize_salary_text(salary_str)
+    primary_segment = s.split("(", 1)[0].strip() or s
 
-    cur = None
-    if "$" in s:
-        cur = "USD"
-    elif "€" in s or "eur" in s:
-        cur = "EUR"
-    elif "£" in s or "gbp" in s:
-        cur = "GBP"
+    pay_period = _detect_pay_period(primary_segment) or _detect_pay_period(s)
+    cur = _detect_currency(primary_segment) or _detect_currency(s)
 
-    patterns = re.findall(r"(\d+(?:\.\d+)?)(k?)", s)
+    patterns = re.findall(r"(\d+(?:\.\d+)?)(k?)", primary_segment)
+    if not patterns:
+        patterns = re.findall(r"(\d+(?:\.\d+)?)(k?)", s)
     nums: list[float] = []
     for val, k in patterns:
         try:
