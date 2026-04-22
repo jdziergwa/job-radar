@@ -17,7 +17,7 @@ class _FakeApplicationsStore:
                 "company_name": "Example Manual Company",
                 "title": "QA Lead",
                 "location": "Berlin",
-                "url": "manual://example-manual-company/job-1",
+                "url": "",
                 "posted_at": None,
                 "first_seen_at": "2026-04-18T10:00:00",
                 "last_seen_at": "2026-04-18T10:00:00",

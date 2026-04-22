@@ -269,6 +269,7 @@ class Store:
                    WHERE status = 'applied' AND applied_at IS NULL"""
             )
             conn.execute("UPDATE jobs SET source = 'pipeline' WHERE source IS NULL")
+            conn.execute("UPDATE jobs SET url = '' WHERE source = 'manual' AND url LIKE 'manual://%'")
             if "status" in event_columns or "created_at" in event_columns:
                 insert_columns = ["job_id"]
                 insert_select = ["jobs.id"]

@@ -71,6 +71,17 @@ interface JobDetailViewProps {
   onClose?: () => void
 }
 
+function hasExternalJobUrl(value: string | null | undefined) {
+  if (!value?.trim()) return false
+
+  try {
+    const parsed = new URL(value)
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:'
+  } catch {
+    return false
+  }
+}
+
 export function JobDetailView({
   jobId,
   boardHref = '/jobs',
@@ -558,6 +569,7 @@ export function JobDetailView({
   const companySignals = Array.isArray(job.company_quality_signals) ? job.company_quality_signals : []
   const matchQualityLabel = job.is_sparse ? 'Manual Review Required' : getMatchQualityLabel(job.score_breakdown?.apply_priority)
   const scoreReasoning = job.score_reasoning || 'No detailed reasoning provided.'
+  const hasJobUrl = hasExternalJobUrl(job.url)
   const trackerStatusLabel = job.application_status ? getApplicationStageLabel(job.application_status) : null
   const trackerStatus = job.application_status as ApplicationStatus | null
   const completedTimeline = timeline.filter((event) => event.lifecycle_state !== 'scheduled')
@@ -610,16 +622,18 @@ export function JobDetailView({
             <ArrowLeft className="h-4 w-4" /> {backLabel}
           </Button>
         )}
-        <div className="flex w-full items-center gap-3 sm:w-auto">
-          <a
-            href={job.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={cn(buttonVariants({ variant: 'outline' }), 'w-full justify-center gap-2 sm:w-auto')}
-          >
-            Open in ATS <ExternalLink className="h-4 w-4" />
-          </a>
-        </div>
+        {hasJobUrl && (
+          <div className="flex w-full items-center gap-3 sm:w-auto">
+            <a
+              href={job.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={cn(buttonVariants({ variant: 'outline' }), 'w-full justify-center gap-2 sm:w-auto')}
+            >
+              Open in ATS <ExternalLink className="h-4 w-4" />
+            </a>
+          </div>
+        )}
       </header>
 
       <section className="flex flex-col items-start gap-6 lg:flex-row lg:gap-8">
@@ -786,14 +800,16 @@ export function JobDetailView({
           <Card className="border-border/50 bg-card/60 backdrop-blur-xl shadow-2xl overflow-hidden">
             <CardContent className="p-5 space-y-3">
               <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground pb-1">Board Status</p>
-              <a
-                href={job.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={cn(buttonVariants({ variant: 'default' }), 'w-full gap-2 font-bold h-11 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20')}
-              >
-                Apply Now <ExternalLink className="h-4 w-4" />
-              </a>
+              {hasJobUrl && (
+                <a
+                  href={job.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={cn(buttonVariants({ variant: 'default' }), 'w-full gap-2 font-bold h-11 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20')}
+                >
+                  Apply Now <ExternalLink className="h-4 w-4" />
+                </a>
+              )}
               {!job.application_status && (
                 <Button
                   variant="outline"
@@ -1015,14 +1031,16 @@ export function JobDetailView({
             <h2 className="text-2xl font-bold tracking-tight underline decoration-primary/30 decoration-4 underline-offset-8">Job Description</h2>
             <JobDescription content={job.description ?? undefined} isSparse={job.is_sparse} />
             <div className="flex flex-col items-stretch gap-2 pt-2 sm:items-center">
-              <a
-                href={job.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={cn(buttonVariants({ variant: 'outline' }), 'h-12 w-full justify-center gap-2 rounded-2xl border-primary/20 px-8 transition-all hover:border-primary/40 hover:bg-primary/5 sm:w-auto')}
-              >
-                View Original Posting on {getPlatformName(job.ats_platform)} <ExternalLink className="h-4 w-4" />
-              </a>
+              {hasJobUrl && (
+                <a
+                  href={job.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={cn(buttonVariants({ variant: 'outline' }), 'h-12 w-full justify-center gap-2 rounded-2xl border-primary/20 px-8 transition-all hover:border-primary/40 hover:bg-primary/5 sm:w-auto')}
+                >
+                  View Original Posting on {getPlatformName(job.ats_platform)} <ExternalLink className="h-4 w-4" />
+                </a>
+              )}
               {job.ats_platform === 'remotive' && (
                 <p className="mt-2 text-center text-[10px] text-muted-foreground opacity-60">
                   Source: {getPlatformName(job.ats_platform)}

@@ -826,7 +826,7 @@ def test_manual_application_import_persists_manual_identity_and_salary(monkeypat
     assert payload["job"]["application_status"] == "applied"
     assert payload["job"]["applied_at"] == "2026-04-01"
     assert payload["job"]["salary"] == "$150k"
-    assert payload["job"]["url"].startswith("manual://example-manual-company/")
+    assert payload["job"]["url"] == ""
 
 
 def test_application_import_can_add_company_to_pipeline(monkeypatch):
