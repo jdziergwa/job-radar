@@ -984,11 +984,20 @@ async def fetch_workday_job(
     host = parsed.netloc.lower()
     path_parts = [part for part in parsed.path.split("/") if part]
 
-    if not host or len(path_parts) < 4 or path_parts[2] != "job":
+    if not host or len(path_parts) < 3:
         return None
 
-    site = path_parts[1]
-    detail_path = "/".join(path_parts[2:])
+    job_index = -1
+    for index, part in enumerate(path_parts):
+        if part == "job":
+            job_index = index
+            break
+
+    if job_index <= 0:
+        return None
+
+    site = path_parts[job_index - 1]
+    detail_path = "/".join(path_parts[job_index:])
     if not site or not detail_path:
         return None
 

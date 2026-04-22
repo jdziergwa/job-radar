@@ -702,6 +702,70 @@ def test_fetch_job_from_url_uses_workday_resolver_for_normalized_raw_job():
     )
 
 
+def test_fetch_job_from_url_uses_workday_resolver_for_ext_style_workday_url():
+    class _FakeResponse:
+        def __init__(self, *, status_code: int, payload: dict):
+            self.status_code = status_code
+            self._payload = payload
+
+        def json(self):
+            return self._payload
+
+    class _FakeAsyncClient:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc, tb):
+            return False
+
+        async def get(self, url: str, params=None, timeout=None):
+            assert (
+                url
+                == "https://exampleco.wd1.myworkdayjobs.com/wday/cxs/exampleco/Ext/job/Example-City-CTY/Senior-Quality-Engineer_R-56789-1"
+            )
+            return _FakeResponse(
+                status_code=200,
+                payload={
+                    "jobPostingInfo": {
+                        "title": "Senior Quality Engineer",
+                        "jobDescription": "<p>Build resilient quality systems for platform services.</p>",
+                        "location": "Example City, CTY",
+                        "externalUrl": "https://exampleco.wd1.myworkdayjobs.com/Ext/job/Example-City-CTY/Senior-Quality-Engineer_R-56789-1",
+                    },
+                    "hiringOrganization": {
+                        "name": "Example Co",
+                    },
+                },
+            )
+
+    async def _run():
+        with mock.patch("src.fetcher.httpx.AsyncClient", _FakeAsyncClient):
+            return await fetcher.fetch_job_from_url(
+                "https://exampleco.wd1.myworkdayjobs.com/Ext/job/Example-City-CTY/Senior-Quality-Engineer_R-56789-1"
+            )
+
+    result = asyncio.run(_run())
+
+    assert result == RawJob(
+        ats_platform="workday",
+        company_slug="exampleco",
+        company_name="Example Co",
+        job_id="Senior-Quality-Engineer_R-56789-1",
+        title="Senior Quality Engineer",
+        location="Example City, CTY",
+        url="https://exampleco.wd1.myworkdayjobs.com/Ext/job/Example-City-CTY/Senior-Quality-Engineer_R-56789-1",
+        description="<p>Build resilient quality systems for platform services.</p>",
+        posted_at=None,
+        fetched_at=result.fetched_at,
+        location_metadata={
+            "raw_location": "Example City, CTY",
+        },
+    )
+
+
 def test_populate_descriptions_applies_supported_ats_richer_fields():
     class _FakeResponse:
         def __init__(self, *, status_code: int, text: str):
