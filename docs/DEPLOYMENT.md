@@ -40,6 +40,19 @@ python src/main.py
 
 ---
 
+## Demo Snapshot Behavior
+
+The hosted demo is a static export, but it now includes application-tracker data in addition to board data.
+
+Current behavior:
+- `make demo-snapshot` exports tracker fields and tracker-aware stats from `data/demo.db` into `web/public/demo-data`
+- the demo frontend serves `/api/applications`, `/api/applications/stats`, and `/api/jobs/{id}/timeline` from that snapshot
+- “today” counters and relative dates are rebased from the latest demo dataset timestamp so the snapshot stays presentation-current
+
+If you want mocked applications to persist across future snapshot rebuilds, seed them in `data/demo.db` before running `make demo-snapshot`. Manual edits to generated JSON files are overwritten the next time the snapshot is rebuilt.
+
+---
+
 ## Local Production Mode
 
 Single uvicorn process serves both the API and the Next.js static build. Useful for running as a background service.

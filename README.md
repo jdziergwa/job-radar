@@ -6,7 +6,7 @@
   </picture>
 </p>
 
-Job Radar scans curated ATS boards, public remote-job APIs, hiring feeds, and an optional large job aggregator for roles that match your profile. It collects, hydrates, filters, and scores job listings against your profile using Claude, then presents the results in a web dashboard.
+Job Radar scans curated ATS boards, public remote-job APIs, hiring feeds, and an optional large job aggregator for roles that match your profile. It collects, hydrates, filters, and scores job listings against your profile using Claude, then presents the results in a web dashboard with a built-in application tracker for managing the full journey from applied to outcome.
 
 Try the live demo: [https://jdziergwa.github.io/job-radar/](https://jdziergwa.github.io/job-radar/)
 
@@ -24,6 +24,8 @@ Try the live demo: [https://jdziergwa.github.io/job-radar/](https://jdziergwa.gi
 -   **📝 Hydration**: Fills in missing or sparse job descriptions before filtering and scoring.
 -   **🧠 AI Scoring**: Analysis of job descriptions for Match, Seniority, and Tech Stack fit.
 -   **🖥️ Dashboard**: Next.js interface to manage jobs and track trends.
+-   **🗂️ Application Tracker**: Move jobs into a dedicated tracker, keep a timeline of completed and upcoming steps, save notes, and close out applications with explicit outcomes.
+-   **📥 Application Imports**: Import already-applied jobs from ATS URLs or add them manually when they were not discovered by the pipeline.
 -   **🛰️ Aggregator**: Optional broad remote-job scan alongside targeted direct sources.
 -   **🎭 Profiles**: Support for multiple career profiles with separate CVs and keywords.
 -   **🛠️ Import Tooling**: Generate mergeable `companies.yaml` fragments from external JSON datasets.
@@ -228,7 +230,7 @@ graph TD
 | `make types` | Regenerate TypeScript types from the API spec. |
 | `make test` | Run the Python test suite. |
 | `make test-cov` | Run the Python test suite with coverage for `src/` and `api/`. |
-| `make demo-snapshot` | Export static demo files from the current contents of `data/demo.db` into `web/public/demo-data`. Run `.venv/bin/python -m src.main --profile demo --source local` first if you want fresh demo data. |
+| `make demo-snapshot` | Export static demo files from the current contents of `data/demo.db` into `web/public/demo-data`. The snapshot now includes application tracker state, applications-page payloads, and demo stats anchored to the latest dataset date. Run `.venv/bin/python -m src.main --profile demo --source local` first if you want fresh demo data. |
 | `make readme-header` | Regenerate the README header PNG from its HTML source. |
 | `make clean-web`| Remove the frontend node_modules and .next cache. |
 | `make clean-db`| Wipe local databases and, if Docker is running, remove `/app/data/*.db` inside the API container. |

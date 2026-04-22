@@ -1,520 +1,338 @@
 # Frontend — Job Radar
 
-Next.js 16 App Router application (`output: 'export'`). All API calls go through `lib/api/client.ts`. Components never call `fetch` directly.
+Job Radar uses Next.js App Router with a typed API client. All network calls go through `web/src/lib/api/client.ts` or demo-mode equivalents in `web/src/lib/api/demo-fetch.ts`.
 
----
+## Stack
 
-## Tech Stack
+| Tool | Purpose |
+|---|---|
+| Next.js 16 | App Router, static export |
+| React 19 | UI runtime |
+| TypeScript | Type safety |
+| openapi-fetch | Typed REST client |
+| Tailwind CSS 4 | Styling |
+| shadcn/ui | Dialogs, buttons, cards, menus, fields |
+| lucide-react | Icons |
+| Recharts | Stats page charts |
+| sonner | Toasts |
 
-| Tool | Version | Purpose |
-|------|---------|---------|
-| Next.js | 16 | React framework, App Router, static export |
-| React | 19 | UI library |
-| TypeScript | 5 | Type safety |
-| openapi-fetch | 0.17 | Type-safe REST API client |
-| Tailwind CSS | 4 | Utility-first styling (`@theme` directive, no config file) |
-| shadcn/ui | 4 | Component primitives (Button, Badge, Dialog, Card, Switch...) |
-| Recharts | 3.x | Charts (activity, skills, score distribution) |
-| lucide-react | latest | Icons |
-| next-themes | 0.4 | Dark/light mode |
-| sonner | 2.x | Toast notifications |
-| marked | 17 | Markdown → HTML (profile_doc.md preview in Settings) |
+## Frontend Structure
 
-## Design
-
-- **Glassmorphism**: `bg-background/80 backdrop-blur-md` for panels and navbars
-- **Micro-animations**: hover transitions on all interactive elements, animated `ScoreRing` on mount
-- **Typography**: Inter for layout text, JetBrains Mono for data/tags/IDs
-- **Dark mode default**: stark contrasts, subtle `border-white/10` card borders
-
-### Fonts
-
-- **UI text**: Inter Variable — headings, body, labels
-- **Scores and code**: JetBrains Mono — score numbers, YAML editor, IDs
-
-### Color Palette
-
-Defined as CSS custom properties in `globals.css`, swapped per theme.
-
-```css
-/* globals.css */
-:root {
-  --background: 0 0% 100%;
-  --foreground: 240 10% 3.9%;
-  --card: 0 0% 100%;
-  --card-foreground: 240 10% 3.9%;
-  --border: 240 5.9% 90%;
-  --input: 240 5.9% 90%;
-  --primary: 262.1 83.3% 57.8%;    /* violet-600 — brand accent */
-  --primary-foreground: 210 20% 98%;
-  --muted: 240 4.8% 95.9%;
-  --muted-foreground: 240 3.8% 46.1%;
-  --radius: 0.5rem;
-}
-
-.dark {
-  --background: 240 10% 3.9%;
-  --foreground: 0 0% 98%;
-  --card: 240 10% 3.9%;
-  --card-foreground: 0 0% 98%;
-  --border: 240 3.7% 15.9%;
-  --input: 240 3.7% 15.9%;
-  --primary: 263.4 70% 50.4%;
-  --primary-foreground: 210 20% 98%;
-  --muted: 240 3.7% 15.9%;
-  --muted-foreground: 240 5% 64.9%;
-}
-
-/* Score tier colors — not from shadcn, defined separately */
-:root {
-  --score-high: 142 71% 45%;      /* green-500 */
-  --score-medium: 38 92% 50%;     /* amber-500 */
-  --score-low: 0 84% 60%;         /* red-500 */
-}
+```text
+web/src/
+├── app/
+│   ├── page.tsx                 # Dashboard
+│   ├── jobs/
+│   ├── applications/
+│   ├── stats/
+│   ├── companies/
+│   └── settings/
+├── components/
+│   ├── applications/           # Tracker UI, dialogs, list items
+│   ├── jobs/                   # Job board + job detail views
+│   ├── score/                  # Score-specific presentation
+│   ├── wizard/                 # Guided onboarding/edit flow
+│   └── ui/                     # shadcn/ui primitives
+└── lib/
+    ├── api/
+    ├── applications/
+    ├── jobs/
+    └── utils/
 ```
 
-### Score Tiers
+## Shared UI Patterns
 
-```typescript
-// web/src/lib/utils/score.ts
-export function scoreToColor(score: number): string {
-  if (score >= 80) return 'text-green-500'
-  if (score >= 60) return 'text-amber-500'
-  return 'text-red-500'
-}
+These are worth documenting because they are reused across multiple surfaces and encode stable presentation rules.
 
-export function scoreToRingColor(score: number): string {
-  if (score >= 80) return '#22c55e'   // green-500
-  if (score >= 60) return '#f59e0b'   // amber-500
-  return '#ef4444'                     // red-500
-}
+### Score presentation
 
-export function scoreToBadge(score: number): 'default' | 'secondary' | 'destructive' {
-  if (score >= 80) return 'default'     // green variant
-  if (score >= 60) return 'secondary'   // amber variant
-  return 'destructive'                  // red variant
-}
+Score-related components live under `web/src/components/score/`.
 
-export function priorityToColor(priority: string): string {
-  const map = {
-    high: 'bg-violet-500/20 text-violet-400 border-violet-500/30',
-    medium: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
-    low: 'bg-slate-500/20 text-slate-400 border-slate-500/30',
-    skip: 'bg-red-500/20 text-red-400 border-red-500/30',
-  }
-  return map[priority as keyof typeof map] ?? map.low
-}
-```
+Common patterns:
+- `ScoreRing` is the primary compact score treatment for job cards and application items
+- score color semantics stay consistent across the app: high is green, medium is amber, low is red
+- score reasoning and key matches stay secondary to the numeric score and title
 
-### Layout
+### Status and priority presentation
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│ ┌──────────┐ ┌─────────────────────────────────────────────┐   │
-│ │          │ │                                              │   │
-│ │  Sidebar │ │  Main content area                           │   │
-│ │  240px   │ │  max-w-7xl mx-auto px-6                     │   │
-│ │          │ │                                              │   │
-│ │  nav     │ │                                              │   │
-│ │  items   │ │                                              │   │
-│ │          │ │                                              │   │
-│ └──────────┘ └─────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────────┘
-```
+There are two separate status systems in the UI:
+- board status: discovery workflow state such as `new`, `scored`, `dismissed`
+- tracker status: application lifecycle state such as `applied`, `screening`, `offer`, `rejected_by_company`
 
-- Sidebar: `w-60` fixed on desktop, collapses to `w-16` icon-only on `< lg`
-- On mobile: sidebar becomes a drawer (shadcn Sheet component)
-- Content: `flex-1 overflow-auto`
+Priority styling comes from score-derived `apply_priority` and should not be conflated with tracker stage or board status.
 
----
+### Detail-page card pattern
 
-## Component Catalogue
+Large detail surfaces follow a repeatable structure:
+- compact uppercase eyebrow label
+- card body with the main action surface
+- secondary actions in overflow menus when they are not part of the primary path
 
-### ScoreRing
-
-SVG circle with animated stroke-dashoffset. The signature UX detail of the app.
-
-```
-Props:
-  score: number       (0-100)
-  size?: 'sm' | 'md' (48px or 80px)
-  animated?: boolean  (default true)
-```
-
-Implementation:
-- SVG `<circle>` with `stroke-dasharray` and animated `stroke-dashoffset`
-- `dasharray = 2π × r` (full circumference)
-- `dashoffset = dasharray × (1 - score/100)` (empty portion)
-- CSS transition: `transition: stroke-dashoffset 0.6s ease-out`
-- Trigger via `useEffect` with `requestAnimationFrame` to start from 0
-
-```
- ╭──────╮
-│  82%  │   ← JetBrains Mono, score color
- ╰──────╯
-```
-
-### ScoreBar
-
-Horizontal progress bar for dimension breakdown.
-
-```
-Props:
-  label: string       e.g. "Tech Stack Match"
-  value: number       0-100
-  animated?: boolean
-```
-
-```
-Tech Stack Match    ████████████████████░░░░ 90
-Seniority Match     ████████████████░░░░░░░░ 75
-Remote Fit          ██████████████████░░░░░░ 82
-Growth Potential    ████████████░░░░░░░░░░░░ 60
-```
-
-### PriorityBadge
-
-```
-Props:
-  priority: 'high' | 'medium' | 'low' | 'skip'
-```
-
-Renders: `HIGH` / `MED` / `LOW` / `SKIP` with matching background/text colors.
-
-### JobListItem
-
-```
-Props:
-  job: Job
-```
-
-Layout:
-┌─────────────────────────────────────────────────────────────────────────────┐
-│  ╭────╮  [LV] [SCORED]                                                      │
-│  │ 88 │  Senior SDET — Automation Platform                 3 days ago  (>)  │
-│  ╰────╯  Datadog · Remote EU                                                │
-│  [HIGH]  ✓ Playwright  ✓ CI/CD  ✓ Python                                    │
-│          “Strong match for automation...”                                   │
-└─────────────────────────────────────────────────────────────────────────────┘
-
-Tags: `key_matches` → green pill badges (max 3 shown, `+N more`)
-Reasoning: `score_reasoning` → italicized snippet below the title.
-ATS badge: small monospace label (`GH` / `LV` / `AS` / `WK`)
-
-### FilterPanel
-
-```
-Props:
-  filters: FilterState
-  onChange: (filters: FilterState) => void
-```
-
-Sections (all collapsible):
-- **Score**: dual-handle range slider (0–100), `min_score` and `max_score`
-- **Status**: checkboxes (New / Scored / Applied / Dismissed / Closed)
-- **Priority**: checkboxes with colored dots (High / Medium / Low / Skip)
-- **Search**: keyword text input for filtering jobs by description, title, or company (debounce 300ms)
-- **Date**: select (Any / Last 7 days / Last 14 days / Last 30 days)
-- **Platform**: checkboxes (Greenhouse / Lever / Ashby / Workable)
-
-Filter state is serialized to URL search params so filters are bookmarkable.
-
-### PipelineDialog
-
-```
-State machine:
-  idle → running → done | error | cancelled | not_found
-```
-
-- **Idle**: "Fetch New Results" button in sidebar triggers dialog open
-- **Dialog contents**: Profile selector, Source strategy (Comprehensive Scan, Global Aggregator only, Targeted Boards only), Dry run toggle, Run button. Incorporates data freshness badging.
-- **Running**: Step indicators (dots), step name, elapsed time
-- **Done**: Stats summary (N new jobs, N scored), "View New Jobs" link
-- **Error / Cancelled**: Terminal feedback plus close action
-
-Current implementation details:
-- the same dialog component is reused for both pipeline runs and bulk rescoring
-- while a run is starting or actively running, the dialog is intentionally non-dismissible
-- terminal failures, cancellations, and missing-status responses surface toast notifications
-- users can cancel an active run directly from the dialog
-
-Step indicators:
-```
-● ● ○ ○ ○   Collecting...
-● ● ● ○ ○   Pre-filtering...
-● ● ● ● ○   Scoring with Claude...
-● ● ● ● ●   Done — 4 new matches
-```
-
-### Guided Wizard
-
-The guided setup flow lives under `web/src/components/wizard/` and is reused in two places:
-- first-run onboarding
-- Settings-driven guided edit
-
-Main modes:
-- `onboarding`: full flow from CV upload to save
-- `edit_preferences`: reopen saved wizard state and start directly from location/preferences
-- `update_cv`: upload a new CV and rebuild from the beginning
-
-Primary component:
-- `QuickStartWizard.tsx` orchestrates steps, branching, and draft persistence
-
-Main step flow:
-- `ChoosePath`
-- `UploadCV`
-- `AIAnalysis`
-- `ReviewProfile`
-- `SearchLocation`
-- `PreferencesGoals`
-- `ReviewGenerate`
-- `Done`
-
-Key UX details:
-- onboarding drafts persist in localStorage so accidental refreshes do not wipe progress
-- Settings guided edits reopen from server-saved `cv_analysis.json` and `preferences.json`
-- the preview step keeps `AI Refined` as the editable primary version and `Starter Draft` as read-only reference
-- guided edit offers two entry points from Settings:
-  - `Edit Saved Preferences`
-  - `Start Fresh`
-
-### StatsCard
-
-```
-Props:
-  label: string
-  value: number | string
-  trend?: number    (positive = up, negative = down, for color coding)
-  icon?: LucideIcon
-```
-
----
-
-## Pages
-
-### Dashboard (`/`)
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────────────┐  │
-│  │ New Today│ │This Week │ │ Applied  │ │   Avg Score      │  │
-│  │    12    │ │    47    │ │    3     │ │      74          │  │
-│  └──────────┘ └──────────┘ └──────────┘ └──────────────────┘  │
-│                                                                  │
-│  [Jobs per day — 7 day sparkline chart]                         │
-│                                                                  │
-│  Top Matches This Week                                           │
-│  [HighPriorityTable]                                             │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-Data: `GET /api/stats` + `GET /api/stats/trends?days=7` + `GET /api/jobs?days=7&sort=score&per_page=5`
-
-### Settings (`/settings`)
-
-Settings exposes both raw file editing and guided profile regeneration.
-
-Raw editing tabs:
-- `profile_doc.md`
-- `search_config.yaml`
-- `scoring_philosophy.md`
-
-Guided actions:
-- `Guided Edit`: load saved wizard state and choose between preference-only regeneration and full CV refresh
-- raw editing remains available when you close the guided flow
-
-### Job Board (`/jobs`)
-
-```
-┌────────────────────┬────────────────────────────────────────────┐
-│  Filters           │  Sort: Score ▼    47 jobs                  │
-│                    │                                             │
-│  Score: 60 — 100   │  [JobListItem]                              │
-│  ☑ Scored          │  [JobListItem]                              │
-│  ☑ New             │  [JobListItem]                              │
-│  ☐ Applied         │                                             │
-│  ☐ Dismissed       │  ← 1  2  3 →                                │
-│                    │                                             │
-│  Priority          │                                             │
-│  ● High            │                                             │
-│  ● Medium          │                                             │
-│                    │                                             │
-│  Company: _____    │                                             │
-└────────────────────┴────────────────────────────────────────────┘
-```
-
-The filter panel acts as a sticky left column on desktop, and a sheet/drawer on mobile.
-Also includes global actions like `RescoreAllButton` for batch re-evaluating jobs.
-URL: `/jobs?search=engineer&status=scored,new&min_score=60&sort=score` — fully bookmarkable.
-
-### Job Detail (`/jobs/[id]`)
-
-```
-┌──────────────────────────────────┬─────────────────────────────┐
-│  ← Back to jobs                  │                             │
-│                                  │  Metadata                   │
-│  Senior SDET — Automation Plt    │  Platform: Greenhouse       │
-│  Datadog · Remote EU             │  First seen: 3 days ago     │
-│  [Applied ✓] [View on ATS ↗] [x] │  Scored: 2 days ago         │
-│                                  │  Status: Scored             │
-│  ╭────╮  88/100 — Strong match   │                             │
-│  │ 88 │  "Mobile automation..."  │  [Mark Applied]             │
-│  ╰────╯                          │  [Dismiss]                  │
-│                                  │  [View on ATS ↗]            │
-│  Tech Stack Match  ████████ 90   │                             │
-│  Seniority Match   ██████   75   │                             │
-│  Remote Fit        ████████ 82   │                             │
-│  Growth Potential  █████    60   │                             │
-│                                  │                             │
-│  ✓ Playwright  ✓ Python  ✓ CI/CD │                             │
-│  ⚠ No Kubernetes experience      │                             │
-│                                  │                             │
-│  ─── Full Description ───────    │                             │
-│  [prose text scrollable]         │                             │
-└──────────────────────────────────┴─────────────────────────────┘
-```
-
-### Stats & Trends (`/stats`)
-
-Four chart sections stacked vertically:
-
-1. **Jobs per Day** — Recharts LineChart, 30 days, two lines (new jobs + scored jobs), area fill with low opacity
-2. **Top Skills** — Recharts HorizontalBarChart, top 20 skills from key_matches aggregation, colored bars (violet)
-3. **Score Distribution** — Recharts BarChart, 6 buckets (90-100, 80-89, ..., below-50)
-4. **Company Activity** — Sortable table (job count / avg score), company name + counts
-
-### Companies (`/companies`)
-
-```
-Tabs: [Greenhouse] [Lever] [Ashby] [Workable]
-
-Add Company
-Platform: [Greenhouse ▼]  Slug: [_______]  Name: [_______]  [Add]
-
-─────────────────────────────────────────────────────────────────
-Name          Slug           # Jobs   Last Seen    Action
-─────────────────────────────────────────────────────────────────
-Datadog       datadog        47       2 days ago   [Remove]
-Stripe        stripe         12       5 days ago   [Remove]
-...
-```
-
-### Settings (`/settings`)
-
-Two side-by-side sections:
-
-```
-┌──────────────────────────────┬──────────────────────────────────┐
-│  search_config.yaml          │  profile_doc.md                  │
-│                              │  [Edit] [Preview]                │
-│  ┌────────────────────────┐  │                                  │
-│  │ keywords:              │  │  [Markdown preview or textarea]  │
-│  │   title_patterns:      │  │                                  │
-│  │     - "\\bsdet\\b"     │  │                                  │
-│  │   ...                  │  │                                  │
-│  └────────────────────────┘  │                                  │
-│                              │                                  │
-│  [Save]  ✓ Saved 2 min ago   │  [Save]                          │
-│  ⚠ Invalid YAML (on error)   │                                  │
-└──────────────────────────────┴──────────────────────────────────┘
-```
-
-YAML editor: monospace textarea, inline error message on invalid YAML.
-Markdown editor: textarea with "Preview" toggle (renders via `marked`).
-
----
+The application tracker now follows this pattern with `Application Journey` and `Notes` as paired cards.
 
 ## URL Structure
 
-```
-/                           Dashboard
-/jobs                       Job board (with filter query params)
-/jobs?status=scored         Scored jobs only
-/jobs?min_score=80          High matches only
-/jobs?days=7                Jobs from last 7 days
-/jobs/42                    Job detail
-/stats                      Stats & trends
-/companies                  Company management
-/settings                   Profile settings
-```
+Main routes:
+- `/` dashboard
+- `/jobs` job board
+- `/jobs/detail?id=123` job detail
+- `/applications` application tracker
+- `/stats` analytics
+- `/companies` tracked ATS companies
+- `/settings` profile editing and guided edit
 
----
+Common board query params:
+- `status`
+- `tracked_mode`
+- `min_score`
+- `max_score`
+- `priority`
+- `company`
+- `search`
+- `sort`
+- `order`
+- `page`
+- `per_page`
+- `days`
 
-## State Management
+The applications page currently uses query-driven API fetches for:
+- `status`
+- `search`
+- `sort`
+- `order`
+- `page`
+- `per_page`
 
-No global state library. State is managed at three levels:
+## Page Surface
 
-1. **URL params** — filter state in `/jobs` (bookmarkable, shareable)
-2. **React state** — component-local UI state (dialog open/closed, form values)
-3. **Server state** — data from API, refreshed on route navigation or after mutations
+### Dashboard `/`
 
-Pattern for the job board:
-```typescript
-// Read filters from URL
-const searchParams = useSearchParams()
-const minScore = Number(searchParams.get('min_score') ?? '0')
-const status = searchParams.get('status')?.split(',') ?? []
+Primary overview page for pipeline freshness and top-level stats.
 
-// Write filters to URL (triggers re-render + refetch)
-const router = useRouter()
-function updateFilter(key: string, value: string) {
-  const params = new URLSearchParams(searchParams)
-  params.set(key, value)
-  router.push(`/jobs?${params.toString()}`)
-}
-```
+Main data:
+- `GET /api/stats`
+- `GET /api/stats/trends`
+- `GET /api/jobs` for top matches
 
----
+### Job Board `/jobs`
 
-## Next.js Configuration
+Discovery workflow for fetched jobs.
 
-```typescript
-// next.config.ts
-import type { NextConfig } from 'next'
+Key behaviors:
+- filter by board status, score, company, search term, days, and tracking mode
+- trigger rescoring
+- move into the tracker from job detail
+- keep filters bookmarkable via URL params
 
-const config: NextConfig = {
-  output: 'export',   // Static HTML export → web/out/ served by FastAPI
+### Job Detail `/jobs/detail?id=...`
 
-  // Dev: proxy /api/* to FastAPI. Not needed in production (FastAPI handles /api).
-  // Note: rewrites() does not work with output: 'export' for production,
-  // but is applied during `next dev` only.
-  async rewrites() {
-    return [
-      {
-        source: '/api/:path*',
-        destination: `${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'}/api/:path*`,
-      },
-    ]
-  },
-}
+This page now combines:
+- job metadata
+- score explanation
+- board actions
+- application tracker
 
-export default config
-```
+Tracker UI in the detail view:
+- `Application Journey` card
+- `Notes` card
+- overflow menu for secondary actions
+- timeline edit mode
 
----
+Current tracker interaction model:
+- `Update Outcome` appears inline on the latest relevant completed step
+- `Add Step` opens a chooser for `Completed` vs `Upcoming`
+- `Close Application` is a first-class action from the overflow menu
+- response-date editing is done from the `Responded` timeline row in edit mode
+- destructive removal of tracker history stays inside the overflow menu
 
-## Environment Variables
+The journey and notes panels are sized together on desktop, with the journey panel capped and internally scrollable.
 
-```bash
-# web/.env.development.local  (development — gitignored)
-NEXT_PUBLIC_API_URL=http://localhost:8000
+### Applications `/applications`
 
-# web/.env.production.local   (production — gitignored)
-NEXT_PUBLIC_API_URL=            # empty = same origin
-```
+Dedicated application-tracking page backed by:
+- `GET /api/applications`
+- `GET /api/applications/stats`
 
-The `NEXT_PUBLIC_` prefix makes the variable available in browser code.
-`client.ts` reads it: `const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? ''`
+Page responsibilities:
+- separate active applications, offers, and closed outcomes
+- search tracked applications
+- sort by next stage, applied date, company, or status
+- show tracker-focused KPI cards
+- launch URL/manual import
 
----
+### Stats `/stats`
+
+Analytics and reporting page for:
+- daily activity
+- score trends
+- top skills
+- company activity
+- dismissed reasons
+- market intelligence
+- optional LLM-generated insights
+
+### Companies `/companies`
+
+Curated ATS source management for the `local` provider.
+
+### Settings `/settings`
+
+Two modes:
+- raw editing of profile files
+- guided edit flow that reuses saved wizard state
+
+## Tracker Components
+
+The application tracker UI now lives primarily under `web/src/components/applications/`.
+
+Core list and detail components:
+- `ApplicationFilters.tsx`
+- `ApplicationListItem.tsx`
+- `ApplicationStats.tsx`
+- `StatusTimeline.tsx`
+- `NotesEditor.tsx`
+
+Tracker dialogs and editors:
+- `ImportJobDialog.tsx`
+- `AddStepDialog.tsx`
+- `CompleteStageDialog.tsx`
+- `ScheduleNextStageDialog.tsx`
+- `AppliedResponseDialog.tsx`
+- `NegativeOutcomeDialog.tsx`
+- `ResponseMilestoneDialog.tsx`
+- `StageEditorDialog.tsx`
+- `StageEditorFields.tsx`
+
+Job-detail integration:
+- `JobDetailView.tsx` owns tracker fetches, mutations, dialog state, and layout
+
+## Applications Page UX
+
+### `ApplicationFilters`
+
+Controls:
+- group chips: `Active`, `Offers`, `Closed`, `All`
+- free-text search across title, company, and notes
+- status dropdown
+- sort dropdown
+
+### `ApplicationStats`
+
+Top summary cards:
+- active applications
+- offers
+- response rate
+- average time to response
+
+Secondary summary:
+- total tracked applications
+- pipeline vs manual source split
+
+### `ApplicationListItem`
+
+Each item shows:
+- tracker status badge
+- source badge (`Pipeline` or `Manual`)
+- board status badge
+- title, company, location
+- applied date
+- latest step when it differs from canonical status
+- next scheduled step summary
+- score ring when scoring data exists
+
+## Job Detail Tracker UX
+
+### `Application Journey`
+
+The timeline is now the primary tracker surface.
+
+Current rules:
+- canonical phase badges were removed from the read view
+- only contextual pills like `Latest` and `Next` remain
+- `Update Outcome` is the shortcut for positive/negative progression
+- scheduled items are visually labeled as upcoming
+- timeline rows can expand notes when present
+
+### Edit mode
+
+When `Edit Timeline` is enabled:
+- a visible toolbar appears inside the card
+- `Add Step` and `Done` are side by side
+- edit actions are available directly on rows
+- response-date editing lives on the `Responded` row instead of a separate header action
+
+### Notes
+
+`NotesEditor` supports:
+- inline notes editing on desktop
+- dialog editing on narrow viewports
+- dedicated save action
+
+## Demo Mode
+
+The static demo emulates selected API responses in the browser.
+
+Current demo coverage includes:
+- `/api/jobs`
+- `/api/jobs/{id}`
+- `/api/jobs/{id}/timeline`
+- `/api/applications`
+- `/api/applications/stats`
+- `/api/stats` and related stats payloads
+
+Demo-specific behavior:
+- dates are rebased relative to the latest demo dataset timestamp
+- tracker fields from snapshot job payloads are converted into applications and timeline responses
+- dashboard “today” counters are recalculated from the rebased dataset, not just replayed from stale raw values
+
+## State and Data Flow
+
+General rules:
+- page-level containers fetch data
+- reusable components stay mostly presentational
+- typed API responses come from generated OpenAPI types
+- refresh events such as pipeline completion fan out through window events and local state refreshes
+
+Tracker-specific flow in job detail:
+- fetch job detail
+- fetch timeline
+- mutate timeline or tracker projection endpoints
+- refresh detail and timeline state
+- reflect derived tracker summaries back into board and applications views
+
+## Next.js Configuration and Env
+
+The frontend is built as a static export and served by FastAPI in production.
+
+Key configuration points:
+- Next.js uses App Router
+- production output is exported statically
+- local development proxies API traffic to FastAPI
+- demo mode swaps normal API fetches for `demo-fetch.ts` lookups
+
+Important env shape:
+- `NEXT_PUBLIC_API_URL`
+  - in local development this usually points to `http://localhost:8000`
+  - in production it can be empty so the app uses same-origin API calls
+
+The typed client should remain the default integration path. Components should not call `fetch` directly unless there is a very specific need.
 
 ## Development Commands
 
-```bash
-cd web
+From the repo root:
+- `make dev` starts FastAPI and Next.js together
+- `make build` builds the frontend static export
+- `make lint` runs frontend lint and TypeScript checks
+- `make types` regenerates frontend API types from OpenAPI
 
-npm run dev       # Start dev server at localhost:3000
-npm run build     # Static export to web/out/
-npm run lint      # ESLint
-npx tsc --noEmit  # Type check without emitting files
-```
+From `web/` directly:
+- `npm run dev`
+- `npm run build`
+- `npm run lint`
+- `npx tsc --noEmit`
+
+## Maintenance Notes
+
+1. If backend tracker models or endpoints change, regenerate types with `make types`.
+2. When demo behavior changes, update both `scripts/build_demo_snapshot.py` and `web/src/lib/api/demo-fetch.ts`.
+3. Keep board status language separate from tracker status language in the UI.

@@ -1,165 +1,215 @@
 # Backend — Job Radar FastAPI
 
-FastAPI is a thin REST layer over the existing Python pipeline and SQLite store. It lives in `api/` and treats `src/` as an external subprocess-driven system rather than importing pipeline internals directly.
-
----
+FastAPI is the REST layer over the SQLite-backed store and the existing Python job pipeline. It lives in `api/` and treats the collector/scoring pipeline in `src/` as a subprocess-driven runtime rather than an imported service layer.
 
 ## Directory Structure
 
-```
+```text
 api/
-├── main.py           # FastAPI app factory, router registration, static file mount
-├── deps.py           # Shared FastAPI dependencies (store, profile paths)
+├── main.py           # FastAPI app setup, router registration, static export mount
+├── deps.py           # Shared dependencies (store, profile paths)
 ├── models.py         # Pydantic request/response models
 ├── background.py     # Pipeline subprocess launcher + in-memory run state
 └── routers/
-    ├── jobs.py       # GET /api/jobs, GET /api/jobs/{id}, PATCH /api/jobs/{id}/status
-    ├── stats.py      # GET /api/stats, GET /api/stats/trends
-    ├── pipeline.py   # POST /api/pipeline/run, GET status/{id}, GET active, GET providers
-    ├── profile.py    # GET/PUT /api/profile/{name}/yaml|doc, GET /api/profiles
-    ├── wizard.py     # Guided CV analysis + profile generation/refinement/save flow
-    └── companies.py  # GET/POST/DELETE /api/companies/{profile}/{platform}/{slug}
+    ├── jobs.py         # Job board list/detail/status/rescore endpoints
+    ├── applications.py # Application tracker, timeline, notes, imports
+    ├── stats.py        # Dashboard, trends, dismissed, market, insights
+    ├── pipeline.py     # Run/cancel/status/provider endpoints
+    ├── profile.py      # Raw profile file editing endpoints
+    ├── wizard.py       # Guided onboarding / guided edit flow
+    └── companies.py    # Curated ATS company management
 ```
 
----
+## Router Responsibilities
 
-## Key Design Decisions
+### `jobs.py`
 
-### Store usage
+Board-oriented job discovery endpoints:
+- list jobs with filtering and pagination
+- fetch a single job detail
+- update board-level status (`new`, `scored`, `dismissed`)
+- delete manually imported jobs
+- trigger rescoring for one job or all jobs
 
-Routers call `Store` only through public methods and the `get_store` dependency. They do not touch the SQLite connection directly.
+### `applications.py`
 
-### Static file serving
+Application tracker endpoints:
+- `/api/applications` and `/api/applications/stats`
+- tracker state transitions through `/application-status`
+- application date, response date, notes, and next-stage updates
+- full timeline CRUD
+- URL import and manual import flows
 
-In production (`make start`), FastAPI serves the Next.js static export from `web/out/`. `/api/*` routes are mounted first, so API traffic is never shadowed by the frontend.
+This router is the main bridge between job discovery and post-application workflow.
 
-### Pipeline subprocess
+### `stats.py`
 
-`api/background.py` launches the CLI roughly as:
+Read-only analytics endpoints:
+- dashboard counters
+- trends and chart payloads
+- dismissal reason breakdown
+- market intelligence payload
+- optional LLM-generated insights report with caching
+
+### `pipeline.py`
+
+Subprocess control plane for collection and scoring:
+- provider metadata
+- run launch
+- run status polling
+- cancellation
+- aggregator freshness
+
+### `profile.py`
+
+Raw file CRUD for:
+- `search_config.yaml`
+- `profile_doc.md`
+- `scoring_philosophy.md`
+
+### `wizard.py`
+
+Guided onboarding and guided edit flow:
+- CV analysis
+- profile generation
+- iterative refinement
+- persisted wizard state
+- template loading
+
+### `companies.py`
+
+Direct ATS company watchlist CRUD for `companies.yaml`.
+
+## Key Models
+
+Tracker-related models added in `api/models.py`:
+- `ApplicationStatusUpdate`
+- `ApplicationEventResponse`
+- `TimelineEventDateUpdate`
+- `TimelineEventCreate`
+- `TimelineResponse`
+- `ApplicationJobResponse`
+- `ApplicationListResponse`
+- `ApplicationStatsResponse`
+- `ImportJobRequest`
+- `ManualImportRequest`
+- `ImportJobResponse`
+- `NextStageUpdate`
+- `AppliedAtUpdate`
+- `ResponseDateUpdate`
+- `NotesUpdate`
+
+Important model split:
+- `StatusUpdate` is for board-level job state only
+- `ApplicationStatusUpdate` is for tracker progression and outcomes
+
+`JobResponse` and `JobDetailResponse` now include derived tracker fields:
+- `application_status`
+- `applied_at`
+- `notes`
+- `next_stage_label`
+- `next_stage_date`
+- `next_stage_canonical_phase`
+- `next_stage_note`
+
+## Store Contract
+
+The API depends on higher-level `Store` methods rather than touching SQLite directly from routers.
+
+Board and analytics methods:
+- `get_jobs_filtered(...)`
+- `get_job_detail(job_id)`
+- `update_status(job_id, status)`
+- `delete_job(job_id)`
+- `get_stats()`
+- `get_trends(days=...)`
+- `get_dismissal_stats()`
+- `get_market_intelligence(days=...)`
+- `get_jobs_for_rescore()`
+
+Tracker methods:
+- `get_applications_filtered(...)`
+- `get_application_stats()`
+- `update_application_status(...)`
+- `update_applied_at(...)`
+- `upsert_response_milestone(...)`
+- `update_notes(...)`
+- `update_next_stage(...)`
+- `get_application_timeline(job_id)`
+- `add_application_event(...)`
+- `update_application_event(...)`
+- `delete_application_event(...)`
+- `remove_from_tracker(job_id)`
+- `get_job_by_identity(...)`
+
+The tracker data model is projection-based:
+- `application_events` is the canonical timeline/history
+- job-level tracker fields on `jobs` are derived summary fields used by list and detail UIs
+- timeline mutations re-sync those derived job fields
+
+## Pipeline Integration
+
+`api/background.py` launches the CLI instead of importing pipeline code directly:
 
 ```bash
 python -m src.main --profile <name> --json-progress --source aggregator local
 ```
 
-It appends `--dry-run` when requested. Output is parsed line by line, and structured JSON progress events drive the pipeline status endpoint that the frontend polls every 2 seconds.
-
-Current API behavior:
-- the API accepts multiple provider names through `sources`
-- the API exposes provider metadata dynamically from the registry
-- CLI-only flags such as `--slow` are not yet exposed through `POST /api/pipeline/run`
-
-### Guided wizard flow
-
-`api/routers/wizard.py` owns the profile-setup workflow used during onboarding and guided edit from Settings.
-
 Current behavior:
-- `POST /api/wizard/analyze-cv` extracts PDF text with PyMuPDF and falls back to image-based vision analysis when extraction quality is poor
-- `POST /api/wizard/generate-profile` builds first-draft `profile_doc.md` and `search_config.yaml` from structured CV analysis plus wizard preferences
-- `POST /api/wizard/refine-profile` sends only editable profile sections and editable keyword blocks to the LLM, then merges the response back into the original drafts
-- `POST /api/wizard/save-profile` persists generated files and stores `cv_analysis.json` plus `preferences.json` for future guided edits
-- `GET /api/wizard/state` reloads saved structured wizard state
-- `GET /api/wizard/template` returns the example template for the manual path
+- supports multiple provider names
+- supports `dry_run`
+- supports single-job and bulk rescore launch modes
+- parses structured progress events for the polling API
+- does not expose every CLI-only runtime flag in the web API
 
----
+## Analytics Caching
 
-## Pydantic Models (`api/models.py`)
+`stats.py` and `applications.py` cache derived payloads in store metadata.
 
-| Model | Purpose |
-|-------|---------|
-| `JobResponse` | Single job summary |
-| `JobDetailResponse` | Single job including full description |
-| `JobListResponse` | Paginated job list + paging metadata |
-| `ScoreBreakdown` | Parsed `score_breakdown` JSON |
-| `StatusUpdate` | PATCH body for job status changes |
-| `StatsOverview` | Dashboard metrics |
-| `TrendsResponse` | Daily counts, skills, company stats |
-| `ProviderInfo` | Provider metadata for the UI |
-| `PipelineRunRequest` | POST body (`profile`, `sources`, `dry_run`) |
-| `PipelineRunResponse` | `run_id` wrapper |
-| `PipelineStatusResponse` | Polling response (`status`, `step`, `step_name`, `detail`, `duration`, `stats`, `error`) |
-| `ProfileContent` | Raw `search_config.yaml` or `profile_doc.md` content |
-| `CVAnalysisResponse` | Structured CV extraction used by the wizard |
-| `UserPreferences` | Structured guided-wizard preferences |
-| `ProfileGenerateRequest` | Wizard first-pass profile generation request |
-| `ProfileRefineRequest` | Wizard second-pass refinement request |
-| `ProfileRefinementContext` | Incremental-edit context for refinement |
-| `WizardStateResponse` | Saved wizard state for guided edit flows |
-| `CompanyEntry` | One tracked ATS company |
+Current cache behavior:
+- short TTL caches avoid rebuilding heavy aggregates on every page load
+- cache fingerprints include data-changing markers such as pipeline runs and status-change timestamps
+- cached payloads are safe to rebuild because all analytics derive from persisted DB state
 
-`PipelineRunRequest.sources` accepts any registered provider name, for example:
-- `aggregator`
-- `local`
-- `remotive`
-- `remoteok`
-- `hackernews`
-- `arbeitnow`
-- `weworkremotely`
-- `adzuna`
+## Demo Support
 
-To discover the live set, call `GET /api/pipeline/providers`.
+The backend serves the same OpenAPI contract in normal mode, while the static demo uses frontend-side emulation for selected endpoints.
 
----
+Current demo behavior:
+- `scripts/build_demo_snapshot.py` exports `jobs.json`, job details, stats payloads, companies, wizard state, and profile files from `data/demo.db`
+- the snapshot now includes tracker state because `JobResponse` exports tracker fields
+- demo-specific application list, tracker stats, and timeline responses are implemented in `web/src/lib/api/demo-fetch.ts`
+- demo “today” counters are rebased relative to the latest dataset timestamp rather than raw wall-clock build time
 
-## Store Methods (`src/store.py`)
-
-The API depends on these higher-level store methods:
-
-| Method | Returns | Purpose |
-|--------|---------|---------|
-| `get_jobs_filtered(...)` | `(list[dict], int)` | Dynamic filters + pagination for the job board |
-| `get_job_detail(db_id)` | `dict \| None` | One job row including description |
-| `get_stats()` | `dict` | Dashboard totals and distributions |
-| `get_trends(days=30)` | `dict` | Daily counts, skill frequency, company stats |
-| `get_jobs_for_rescore()` | `list[CandidateJob]` | Bulk rescore input, including previously scored jobs plus persisted `new` jobs that were saved earlier but never scored |
-
-`get_jobs_filtered()` uses a sort-column allowlist to avoid SQL injection.
-
-Priority filtering and API serialization normalize persisted priority metadata on read. This keeps UI/API behavior consistent even when older `score_breakdown` rows contain stale `apply_priority` values.
-
----
-
-## Environment Variables
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `PROFILES_DIR` | `profiles` | Profiles directory |
-| `DATA_DIR` | `data` | SQLite database directory |
-| `ANTHROPIC_API_KEY` | — | Required for scoring runs |
-| `ADZUNA_APP_ID` | — | Required only for the Adzuna provider |
-| `ADZUNA_APP_KEY` | — | Required only for the Adzuna provider |
-
----
-
-## Running the API
+## Running
 
 ```bash
 # Development
 make dev
 
-# Standalone FastAPI
+# Standalone API
 source .venv/bin/activate
 uvicorn api.main:app --reload --port 8000
 
-# Production
+# Production-style single server
 make start
 ```
 
-Useful companion commands:
-- `make test` to run the Python test suite
-- `make test-cov` to run the Python test suite with coverage output
-- `make types` to regenerate `web/src/lib/api/types.ts`
+Useful companions:
+- `make test`
+- `make test-cov`
+- `make types`
 
-Interactive API docs:
+Interactive docs:
 - Swagger UI: `http://localhost:8000/docs`
 - ReDoc: `http://localhost:8000/redoc`
 - OpenAPI JSON: `http://localhost:8000/openapi.json`
 
----
+## Adding or Changing Endpoints
 
-## Adding New Endpoints
-
-1. Add or update a Pydantic model in `api/models.py`.
-2. Implement the handler in the appropriate router under `api/routers/`.
-3. Register the router in `api/main.py` if needed.
-4. Run `make types` to refresh frontend API types.
-5. Consume the endpoint from the frontend through the typed API client.
+1. Add or update models in `api/models.py`.
+2. Implement the handler in the appropriate router.
+3. Register the router in `api/main.py` if it is new.
+4. Update store methods or pipeline integration as needed.
+5. Run `make types`.
+6. Update the frontend API usage and docs.
