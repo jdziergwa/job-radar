@@ -3,7 +3,12 @@
 import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
 import { ScoreRing } from '@/components/score/ScoreRing'
-import { getApplicationStageLabel, getApplicationStageMeta } from '@/lib/applications/stages'
+import {
+  getApplicationStageLabel,
+  getApplicationStageMeta,
+  getStalledApplicationInfo,
+  type ApplicationStatus,
+} from '@/lib/applications/stages'
 import { Building2, CalendarDays, ChevronRight, FileText, MapPin } from 'lucide-react'
 import { formatDate } from '@/lib/utils/format'
 import { formatJobLocation } from '@/lib/jobs/location'
@@ -18,6 +23,7 @@ interface ApplicationJob {
   status: string
   application_status: string
   latest_stage_label?: string | null
+  latest_activity_at?: string | null
   applied_at?: string | null
   next_stage_label?: string | null
   next_stage_date?: string | null
@@ -42,6 +48,12 @@ export function ApplicationListItem({ job }: { job: ApplicationJob }) {
   const nextStageLabel = job.next_stage_date ? `${job.next_stage_label || 'Next stage'} · ${formatDate(job.next_stage_date)}` : (job.next_stage_label || 'No next stage scheduled')
   const displayLocation = formatJobLocation(job)
   const hasUpcomingStage = Boolean(job.next_stage_label || job.next_stage_date)
+  const stalledInfo = getStalledApplicationInfo(
+    job.application_status as ApplicationStatus,
+    job.latest_activity_at || job.applied_at,
+    hasUpcomingStage,
+  )
+  const stalledLabel = stalledInfo ? `No activity for ${stalledInfo.daysWithoutActivity} days` : null
 
   return (
     <Link
@@ -74,6 +86,11 @@ export function ApplicationListItem({ job }: { job: ApplicationJob }) {
                 <Badge variant="outline" className="border-border/50 bg-background/50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/80">
                   Board: {job.status}
                 </Badge>
+                {stalledInfo && (
+                  <Badge variant="outline" className="border-amber-500/20 bg-amber-500/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-amber-700 dark:text-amber-300">
+                    Stalled
+                  </Badge>
+                )}
               </div>
 
               <div>
@@ -109,6 +126,11 @@ export function ApplicationListItem({ job }: { job: ApplicationJob }) {
               <p className={`text-sm leading-relaxed ${hasUpcomingStage ? 'font-medium text-foreground' : 'text-muted-foreground'}`}>
                 {nextStageLabel}
               </p>
+              {stalledLabel && (
+                <p className="text-xs text-amber-700 dark:text-amber-300">
+                  {stalledLabel}. Consider marking it as ghosted.
+                </p>
+              )}
               {job.notes && (
                 <div className="inline-flex items-center gap-2 pt-1 text-xs text-muted-foreground">
                   <FileText className="h-3.5 w-3.5" />

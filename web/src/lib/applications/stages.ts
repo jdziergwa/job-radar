@@ -115,3 +115,42 @@ export function getTodayDateInputValue(): string {
   const day = String(now.getDate()).padStart(2, '0')
   return `${year}-${month}-${day}`
 }
+
+const STALLED_APPLICATION_THRESHOLDS: Partial<Record<ApplicationStatus, number>> = {
+  applied: 30,
+  screening: 21,
+  interviewing: 14,
+}
+
+export type StalledApplicationInfo = {
+  daysWithoutActivity: number
+  thresholdDays: number
+}
+
+export function getStalledApplicationInfo(
+  status: ApplicationStatus | null | undefined,
+  latestActivityAt: string | null | undefined,
+  hasUpcomingStage: boolean,
+): StalledApplicationInfo | null {
+  if (!status || hasUpcomingStage) return null
+
+  const thresholdDays = STALLED_APPLICATION_THRESHOLDS[status]
+  if (!thresholdDays) return null
+
+  const parsed = latestActivityAt
+    ? new Date(latestActivityAt.includes('T') ? latestActivityAt : `${latestActivityAt}T00:00:00.000Z`)
+    : null
+  if (!parsed || Number.isNaN(parsed.getTime())) return null
+
+  const now = new Date()
+  const diffMs = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate())
+    - Date.UTC(parsed.getFullYear(), parsed.getMonth(), parsed.getDate())
+  const daysWithoutActivity = Math.max(0, Math.floor(diffMs / (24 * 60 * 60 * 1000)))
+
+  if (daysWithoutActivity < thresholdDays) return null
+
+  return {
+    daysWithoutActivity,
+    thresholdDays,
+  }
+}

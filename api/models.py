@@ -199,6 +199,7 @@ def _parse_iso_datetime(value: str | None) -> datetime | None:
 class ApplicationJobResponse(JobResponse):
     days_since_applied: Optional[int] = None
     latest_stage_label: Optional[str] = None
+    latest_activity_at: Optional[str] = None
 
     @classmethod
     def from_row(cls, row: dict) -> "ApplicationJobResponse":
@@ -212,6 +213,7 @@ class ApplicationJobResponse(JobResponse):
             **base.model_dump(),
             days_since_applied=days_since_applied,
             latest_stage_label=row.get("latest_stage_label"),
+            latest_activity_at=row.get("latest_activity_at"),
         )
 
 

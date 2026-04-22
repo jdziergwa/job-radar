@@ -16,6 +16,7 @@ import {
   getApplicationEventDate,
   getApplicationStageLabel,
   getNextApplicationStage,
+  getStalledApplicationInfo,
   getTodayDateInputValue,
   normalizeTrackerDateForInput,
   APPLICATION_STAGE_TRANSITIONS,
@@ -115,6 +116,7 @@ export function JobDetailView({
   const [negativeOutcomeDialogOpen, setNegativeOutcomeDialogOpen] = useState(false)
   const [prefillNextStageResponse, setPrefillNextStageResponse] = useState(false)
   const [completionSourceEvent, setCompletionSourceEvent] = useState<ApplicationEventResponse | null>(null)
+  const [negativeOutcomeInitialStatus, setNegativeOutcomeInitialStatus] = useState<ApplicationStatus | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [rescoreRunId, setRescoreRunId] = useState<string | null>(null)
   const trackerMenuRef = useRef<HTMLDetailsElement | null>(null)
@@ -583,6 +585,7 @@ export function JobDetailView({
   const scheduledStageToComplete = completionSourceEvent
   const completingScheduledStage = Boolean(scheduledStageToComplete)
   const latestCompletedStageEvent = completedStageTimeline[completedStageTimeline.length - 1] ?? null
+  const latestCompletedTimelineEvent = completedTimeline[completedTimeline.length - 1] ?? null
   const canUseStageResponseShortcut = trackerStatus != null && ['applied', 'screening', 'interviewing', 'offer'].includes(trackerStatus)
   const shouldShowStageResponseShortcut = trackerStatus === 'applied'
     ? explicitResponseEvent === null
@@ -592,6 +595,14 @@ export function JobDetailView({
     && (APPLICATION_STAGE_TRANSITIONS[trackerStatus] ?? []).some((status) =>
       ['rejected_by_company', 'rejected_by_user', 'ghosted'].includes(status)
     )
+  const stalledInfo = getStalledApplicationInfo(
+    trackerStatus,
+    latestCompletedTimelineEvent ? getApplicationEventDate(latestCompletedTimelineEvent) : job.applied_at,
+    hasNextStage,
+  )
+  const canMarkGhosted = stalledInfo != null
+    && trackerStatus != null
+    && (APPLICATION_STAGE_TRANSITIONS[trackerStatus] ?? []).includes('ghosted')
 
   const openCompleteStageDialog = (event?: ApplicationEventResponse | null) => {
     setCompletionSourceEvent(event ?? null)
@@ -651,6 +662,11 @@ export function JobDetailView({
               {job.application_status && (
                 <Badge variant="outline" className="px-3 border-primary/20 bg-primary/10 text-primary">
                   Tracker: {trackerStatusLabel}
+                </Badge>
+              )}
+              {stalledInfo && (
+                <Badge variant="outline" className="px-3 border-amber-500/20 bg-amber-500/10 text-amber-700 dark:text-amber-300">
+                  Stalled
                 </Badge>
               )}
               {job.match_tier && <MatchTierBadge matchTier={job.match_tier} />}
@@ -880,7 +896,14 @@ export function JobDetailView({
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="flex items-center gap-2">
                   <ClipboardList className="h-4 w-4 text-primary" />
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Application Journey</p>
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Application Journey</p>
+                    {stalledInfo && (
+                      <p className="mt-1 text-xs text-amber-700 dark:text-amber-300">
+                        No activity for {stalledInfo.daysWithoutActivity} days. Consider marking this application as ghosted.
+                      </p>
+                    )}
+                  </div>
                 </div>
                 <div className="flex items-center justify-end">
                   <details ref={trackerMenuRef} className="group relative">
@@ -921,18 +944,36 @@ export function JobDetailView({
                         </button>
                       )}
                       {canCloseApplication && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            closeTrackerMenu()
-                            setNegativeOutcomeDialogOpen(true)
-                          }}
-                          disabled={updating}
-                          className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                          <XCircle className="h-3.5 w-3.5" />
-                          Close Application
-                        </button>
+                        <>
+                          {canMarkGhosted && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                closeTrackerMenu()
+                                setNegativeOutcomeInitialStatus('ghosted')
+                                setNegativeOutcomeDialogOpen(true)
+                              }}
+                              disabled={updating}
+                              className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                              <XCircle className="h-3.5 w-3.5" />
+                              Mark Ghosted
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              closeTrackerMenu()
+                              setNegativeOutcomeInitialStatus(null)
+                              setNegativeOutcomeDialogOpen(true)
+                            }}
+                            disabled={updating}
+                            className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            <XCircle className="h-3.5 w-3.5" />
+                            Close Application
+                          </button>
+                        </>
                       )}
                       <div className="my-1 h-px bg-border/60" />
                       <button
@@ -1218,14 +1259,21 @@ export function JobDetailView({
         }}
         onNegative={() => {
           setStageResponseDialogOpen(false)
+          setNegativeOutcomeInitialStatus(null)
           setNegativeOutcomeDialogOpen(true)
         }}
       />
       <NegativeOutcomeDialog
         open={negativeOutcomeDialogOpen}
-        onOpenChange={setNegativeOutcomeDialogOpen}
+        onOpenChange={(open) => {
+          setNegativeOutcomeDialogOpen(open)
+          if (!open) {
+            setNegativeOutcomeInitialStatus(null)
+          }
+        }}
         saving={updating}
         currentStatus={trackerStatus}
+        initialStatus={negativeOutcomeInitialStatus}
         onSubmit={async ({ status, note, occurred_at }) => {
           const ok = await updateApplicationStatus(status, note, occurred_at)
           if (ok) {

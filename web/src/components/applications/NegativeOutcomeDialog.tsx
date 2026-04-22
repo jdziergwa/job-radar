@@ -23,12 +23,14 @@ export function NegativeOutcomeDialog({
   onOpenChange,
   saving = false,
   currentStatus,
+  initialStatus,
   onSubmit,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   saving?: boolean
   currentStatus: ApplicationStatus | null
+  initialStatus?: ApplicationStatus | null
   onSubmit: (payload: { status: ApplicationStatus; note?: string; occurred_at: string }) => Promise<void> | void
 }) {
   const availableOptions = useMemo<ApplicationStatus[]>(() => {
@@ -42,10 +44,13 @@ export function NegativeOutcomeDialog({
   const [note, setNote] = useState('')
 
   useEffect(() => {
-    setSelectedStatus(availableOptions[0] ?? DEFAULT_NEGATIVE_OUTCOME)
+    const preferredStatus = initialStatus && availableOptions.includes(initialStatus)
+      ? initialStatus
+      : availableOptions[0] ?? DEFAULT_NEGATIVE_OUTCOME
+    setSelectedStatus(preferredStatus)
     setOccurredAt(getTodayDateInputValue())
     setNote('')
-  }, [availableOptions, open])
+  }, [availableOptions, initialStatus, open])
 
   const submit = async () => {
     await onSubmit({ status: selectedStatus, note: note.trim() || undefined, occurred_at: occurredAt })
@@ -112,7 +117,7 @@ export function NegativeOutcomeDialog({
           </Button>
           <Button onClick={() => void submit()} disabled={saving || !occurredAt} className="gap-2">
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <XCircle className="h-4 w-4" />}
-            Save Close-Out
+            Save
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -5,6 +5,9 @@ type JobListResponse = components['schemas']['JobListResponse']
 type JobDetailResponse = components['schemas']['JobDetailResponse']
 type JobResponse = components['schemas']['JobResponse']
 type ApplicationJobResponse = components['schemas']['ApplicationJobResponse']
+type DemoApplicationJobResponse = ApplicationJobResponse & {
+  latest_activity_at?: string | null
+}
 type ApplicationListResponse = components['schemas']['ApplicationListResponse']
 type ApplicationStatsResponse = components['schemas']['ApplicationStatsResponse']
 type ApplicationEventResponse = components['schemas']['ApplicationEventResponse']
@@ -124,7 +127,7 @@ function daysSince(value: string | null | undefined): number | null {
   return Math.max(0, Math.floor(diffMs / (24 * 60 * 60 * 1000)))
 }
 
-function buildApplicationJob(job: JobResponse | JobDetailResponse): ApplicationJobResponse | null {
+function buildApplicationJob(job: JobResponse | JobDetailResponse): DemoApplicationJobResponse | null {
   if (!job.application_status) {
     return null
   }
@@ -132,6 +135,7 @@ function buildApplicationJob(job: JobResponse | JobDetailResponse): ApplicationJ
   return {
     ...job,
     latest_stage_label: getApplicationStageLabel(job.application_status),
+    latest_activity_at: job.applied_at || job.first_seen_at,
     days_since_applied: daysSince(job.applied_at),
   }
 }
@@ -179,7 +183,7 @@ function buildApplicationTimeline(job: JobDetailResponse): TimelineResponse {
 }
 
 function filterApplicationJobs(
-  jobs: ApplicationJobResponse[],
+  jobs: DemoApplicationJobResponse[],
   params: URLSearchParams,
 ): ApplicationListResponse {
   let filteredJobs = [...jobs]
@@ -232,7 +236,7 @@ function filterApplicationJobs(
   }
 }
 
-function buildApplicationStats(jobs: ApplicationJobResponse[]): ApplicationStatsResponse {
+function buildApplicationStats(jobs: DemoApplicationJobResponse[]): ApplicationStatsResponse {
   const statusCounts: Record<string, number> = {
     applied: 0,
     screening: 0,
@@ -318,13 +322,6 @@ function rebaseJobListResponse(data: JobListResponse, deltaMs: number): JobListR
   return {
     ...data,
     jobs: data.jobs.map((job) => rebaseJob(job, deltaMs)),
-  }
-}
-
-function rebaseStatsResponse(data: StatsOverviewResponse, deltaMs: number): StatsOverviewResponse {
-  return {
-    ...data,
-    last_pipeline_run_at: shiftDateValue(data.last_pipeline_run_at, deltaMs),
   }
 }
 
@@ -786,7 +783,7 @@ async function handleRead(url: URL): Promise<Response | null> {
     const rebasedJobs = rebaseJobListResponse(dataset, deltaMs)
     const trackedJobs = rebasedJobs.jobs
       .map((job) => buildApplicationJob(job))
-      .filter((job): job is ApplicationJobResponse => job !== null)
+      .filter((job): job is DemoApplicationJobResponse => job !== null)
 
     return json(filterApplicationJobs(trackedJobs, url.searchParams))
   }
@@ -799,7 +796,7 @@ async function handleRead(url: URL): Promise<Response | null> {
     const rebasedJobs = rebaseJobListResponse(dataset, deltaMs)
     const trackedJobs = rebasedJobs.jobs
       .map((job) => buildApplicationJob(job))
-      .filter((job): job is ApplicationJobResponse => job !== null)
+      .filter((job): job is DemoApplicationJobResponse => job !== null)
 
     return json(buildApplicationStats(trackedJobs))
   }
