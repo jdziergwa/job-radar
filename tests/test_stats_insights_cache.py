@@ -1,7 +1,8 @@
-import asyncio
 import json
 from datetime import datetime, timedelta
 from unittest.mock import AsyncMock, patch
+
+import pytest
 
 from api.routers import stats as stats_router
 
@@ -28,7 +29,10 @@ class _FakeStore:
         return self._market_data
 
 
-def test_get_insights_reuses_recent_cache_when_pipeline_has_not_advanced():
+pytestmark = [pytest.mark.anyio, pytest.mark.unit]
+
+
+async def test_get_insights_reuses_recent_cache_when_pipeline_has_not_advanced():
     generated_at = (datetime.utcnow() - timedelta(days=1)).isoformat()
     store = _FakeStore(
         metadata={
@@ -45,14 +49,14 @@ def test_get_insights_reuses_recent_cache_when_pipeline_has_not_advanced():
         "_generate_insights_report",
         new=AsyncMock(return_value="fresh report"),
     ) as generator:
-        response = asyncio.run(stats_router.get_insights(profile="default", days=30, force=False))
+        response = await stats_router.get_insights(profile="default", days=30, force=False)
 
     assert response.report == "cached report"
     assert response.cached is True
     generator.assert_not_awaited()
 
 
-def test_get_insights_returns_cached_report_without_regenerating_when_not_forced():
+async def test_get_insights_returns_cached_report_without_regenerating_when_not_forced():
     generated_at = (datetime.utcnow() - timedelta(days=1)).isoformat()
     store = _FakeStore(
         metadata={
@@ -69,14 +73,14 @@ def test_get_insights_returns_cached_report_without_regenerating_when_not_forced
         "_generate_insights_report",
         new=AsyncMock(return_value="fresh report"),
     ) as generator:
-        response = asyncio.run(stats_router.get_insights(profile="default", days=30, force=False))
+        response = await stats_router.get_insights(profile="default", days=30, force=False)
 
     assert response.report == "cached report"
     assert response.cached is True
     generator.assert_not_awaited()
 
 
-def test_get_insights_returns_empty_response_when_not_forced_and_cache_missing():
+async def test_get_insights_returns_empty_response_when_not_forced_and_cache_missing():
     store = _FakeStore()
 
     with patch.object(stats_router, "get_store", return_value=store), patch.object(
@@ -84,7 +88,7 @@ def test_get_insights_returns_empty_response_when_not_forced_and_cache_missing()
         "_generate_insights_report",
         new=AsyncMock(return_value="fresh report"),
     ) as generator:
-        response = asyncio.run(stats_router.get_insights(profile="default", days=30, force=False))
+        response = await stats_router.get_insights(profile="default", days=30, force=False)
 
     assert response.report == ""
     assert response.generated_at == ""
@@ -92,7 +96,7 @@ def test_get_insights_returns_empty_response_when_not_forced_and_cache_missing()
     generator.assert_not_awaited()
 
 
-def test_get_insights_regenerates_when_forced():
+async def test_get_insights_regenerates_when_forced():
     generated_at = (datetime.utcnow() - timedelta(days=1)).isoformat()
     store = _FakeStore(
         metadata={
@@ -108,7 +112,7 @@ def test_get_insights_regenerates_when_forced():
         "_generate_insights_report",
         new=AsyncMock(return_value="fresh report"),
     ) as generator:
-        response = asyncio.run(stats_router.get_insights(profile="default", days=30, force=True))
+        response = await stats_router.get_insights(profile="default", days=30, force=True)
 
     assert response.report == "fresh report"
     assert response.cached is False

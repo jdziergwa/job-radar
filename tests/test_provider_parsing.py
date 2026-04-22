@@ -1,5 +1,3 @@
-import asyncio
-
 import httpx
 import pytest
 
@@ -126,17 +124,15 @@ def test_parse_himalayas_job_normalizes_html_and_salary():
     assert job.salary_currency == "USD"
 
 
-def test_himalayas_fetch_returns_empty_on_http_error():
+@pytest.mark.anyio
+async def test_himalayas_fetch_returns_empty_on_http_error():
     import unittest.mock as mock
 
-    async def _run():
-        provider = HimalayasProvider()
-        with mock.patch("httpx.AsyncClient") as mock_client:
-            instance = mock_client.return_value.__aenter__.return_value
-            instance.get.side_effect = httpx.ConnectError("simulated")
-            return await provider.fetch_jobs(ctx=None)
-
-    assert asyncio.run(_run()) == []
+    provider = HimalayasProvider()
+    with mock.patch("httpx.AsyncClient") as mock_client:
+        instance = mock_client.return_value.__aenter__.return_value
+        instance.get.side_effect = httpx.ConnectError("simulated")
+        assert await provider.fetch_jobs(ctx=None) == []
 
 
 # ── Jobicy ─────────────────────────────────────────────────────────────
@@ -184,14 +180,12 @@ def test_parse_jobicy_job_handles_html_and_rfc2822_date():
     assert job.salary_currency == "USD"
 
 
-def test_jobicy_fetch_returns_empty_on_http_error():
+@pytest.mark.anyio
+async def test_jobicy_fetch_returns_empty_on_http_error():
     import unittest.mock as mock
 
-    async def _run():
-        provider = JobicyProvider()
-        with mock.patch("httpx.AsyncClient") as mock_client:
-            instance = mock_client.return_value.__aenter__.return_value
-            instance.get.side_effect = httpx.ConnectError("simulated")
-            return await provider.fetch_jobs(ctx=None)
-
-    assert asyncio.run(_run()) == []
+    provider = JobicyProvider()
+    with mock.patch("httpx.AsyncClient") as mock_client:
+        instance = mock_client.return_value.__aenter__.return_value
+        instance.get.side_effect = httpx.ConnectError("simulated")
+        assert await provider.fetch_jobs(ctx=None) == []
