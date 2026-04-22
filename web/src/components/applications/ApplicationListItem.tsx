@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
 import { ScoreRing } from '@/components/score/ScoreRing'
@@ -70,15 +71,14 @@ export function ApplicationListItem({
   const stalledLabel = stalledInfo ? `No activity for ${stalledInfo.daysWithoutActivity} days` : null
 
   // Health / Momentum Analysis
-  const now = Date.now()
+  const [now] = useState(() => Date.now())
   const daysSinceApplied = job.applied_at ? Math.floor((now - new Date(job.applied_at).getTime()) / 86400000) : 0
   const daysSinceScreen = job.first_screen_at ? Math.floor((now - new Date(job.first_screen_at).getTime()) / 86400000) : 0
   const daysSinceActivity = job.latest_activity_at ? Math.floor((now - new Date(job.latest_activity_at).getTime()) / 86400000) : daysSinceApplied
 
-  let health: { color: string; label: string; tooltip: string } = {
+  let health: { color: string; tooltip: string } = {
     color: 'bg-emerald-500',
-    label: 'Healthy',
-    tooltip: `Application has good momentum. (${daysSinceActivity}d since last activity)`
+    tooltip: `Recently active: ${daysSinceActivity}d since last activity.`
   }
 
   // Override: If a stage is already scheduled, health is always Good
@@ -90,26 +90,26 @@ export function ApplicationListItem({
       const screenT = avgDaysToScreen || 5
       const rejectT = avgDaysToReject || 10
       if (daysSinceApplied > rejectT) {
-        health = { color: 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.4)]', label: 'Critical', tooltip: `Critical: Applied ${daysSinceApplied}d ago. Past your typical ${rejectT}d rejection window.` }
+        health = { color: 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.4)]', tooltip: `Likely stalled: Applied ${daysSinceApplied}d ago. Past your typical ${rejectT}d rejection window.` }
       } else if (daysSinceApplied > screenT) {
-        health = { color: 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.4)]', label: 'Stale', tooltip: `Stale: Applied ${daysSinceApplied}d ago. Past typical ${screenT}d screen window.` }
+        health = { color: 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.4)]', tooltip: `Delayed: Applied ${daysSinceApplied}d ago. Past typical ${screenT}d screen window.` }
       }
     } else if (status === 'screening' && job.first_screen_at) {
       const interviewT = avgDaysFromScreenToInterview || 7
       if (daysSinceScreen > interviewT + 7) {
-        health = { color: 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.4)]', label: 'Critical', tooltip: `Critical: ${daysSinceScreen}d since screen. Significantly past typical ${interviewT}d follow-up.` }
+        health = { color: 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.4)]', tooltip: `Likely stalled: ${daysSinceScreen}d since screen. Significantly past typical ${interviewT}d follow-up.` }
       } else if (daysSinceScreen > interviewT) {
-        health = { color: 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.4)]', label: 'Stale', tooltip: `Stale: ${daysSinceScreen}d since screen. Past typical ${interviewT}d follow-up window.` }
+        health = { color: 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.4)]', tooltip: `Delayed: ${daysSinceScreen}d since screen. Past typical ${interviewT}d follow-up window.` }
       }
     } else if (status === 'interviewing') {
       if (daysSinceActivity > 14) {
-        health = { color: 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.4)]', label: 'Critical', tooltip: `Critical: No activity for ${daysSinceActivity} days. Process may have stalled.` }
+        health = { color: 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.4)]', tooltip: `Likely stalled: No activity for ${daysSinceActivity} days. Process may have stalled.` }
       } else if (daysSinceActivity > 7) {
-        health = { color: 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.4)]', label: 'Stale', tooltip: `Stale: No activity for ${daysSinceActivity} days. Consider a follow-up.` }
+        health = { color: 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.4)]', tooltip: `Delayed: No activity for ${daysSinceActivity} days.` }
       }
     }
   } else {
-    health.tooltip = "Healthy: Next stage is already scheduled!"
+    health.tooltip = 'Recently active: Next stage is already scheduled.'
   }
 
   return (

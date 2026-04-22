@@ -35,6 +35,11 @@ APPLICATION_EVENT_LABELS = {
     "rejected_by_user": "Withdrawn",
     "ghosted": "Ghosted",
 }
+APPLICATION_STALLED_THRESHOLD_DAYS = {
+    "applied": 30,
+    "screening": 21,
+    "interviewing": 14,
+}
 SALARY_BUCKET_ORDER = [
     "Undisclosed",
     "< 60k",
@@ -112,6 +117,25 @@ def _default_scheduled_phase(current_status: str | None) -> str:
         "ghosted": "screening",
     }
     return suggested_next_stage.get(current_status, "screening")
+
+
+def _is_stalled_application(
+    status: str | None,
+    latest_activity_at: datetime | None,
+    has_upcoming_stage: bool,
+    today: datetime | None = None,
+) -> bool:
+    """Return whether an application should show the stalled badge."""
+    if has_upcoming_stage or latest_activity_at is None:
+        return False
+
+    threshold_days = APPLICATION_STALLED_THRESHOLD_DAYS.get(status or "")
+    if threshold_days is None:
+        return False
+
+    current_day = (today or datetime.utcnow()).date()
+    anchor_day = latest_activity_at.date()
+    return (current_day - anchor_day).days >= threshold_days
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS jobs (
@@ -1959,6 +1983,11 @@ class Store:
             " LIMIT 1) AS next_stage_note, "
             "(SELECT ev.occurred_at FROM application_events ev "
             " WHERE ev.job_id = jobs.id "
+            "   AND ev.lifecycle_state = 'completed' "
+            " ORDER BY ev.occurred_at DESC, ev.sort_order DESC, ev.id DESC "
+            " LIMIT 1) AS latest_activity_at, "
+            "(SELECT ev.occurred_at FROM application_events ev "
+            " WHERE ev.job_id = jobs.id "
             "   AND ev.canonical_phase = 'screening' "
             "   AND ev.lifecycle_state = 'completed' "
             " ORDER BY ev.occurred_at ASC "
@@ -2089,9 +2118,7 @@ class Store:
         interviewed_jobs = 0
         offers_count = 0
         pending_replies_count = 0
-        needs_attention_count = 0
         now = datetime.utcnow()
-        stale_threshold = timedelta(days=14)
         weekly_velocity: dict[str, int] = {}
         outcome_breakdown = {
             "offer": 0,
@@ -2225,6 +2252,18 @@ class Store:
             if reached_interview:
                 interviewed_jobs += 1
 
+            # Funnel reflects historical progression through completed stages,
+            # not the application's current terminal status.
+            funnel["applied"] += 1
+            if reached_screen:
+                funnel["screening"] += 1
+            if reached_interview:
+                funnel["interviewing"] += 1
+            if seen_statuses & {"offer", "accepted"}:
+                funnel["offer"] += 1
+            if "accepted" in seen_statuses:
+                funnel["accepted"] += 1
+
             # Decision duration (applied → definitive outcome EXCEPT ghosting)
             if first_applied_time is not None and final_outcome_time is not None and app_status != "ghosted":
                 process_durations.append((final_outcome_time - first_applied_time).total_seconds() / 86400)
@@ -2264,49 +2303,30 @@ class Store:
         needs_attention_count = 0
         for row in app_rows:
             app_status = row["application_status"]
-            stalled = False
-            
-            if app_status == "ghosted":
-                stalled = True
-            elif app_status in {"applied", "screening", "interviewing"}:
-                row_events = events_by_job.get(row["id"], [])
-                has_scheduled = any(str(e["lifecycle_state"]) == "scheduled" for e in row_events)
-                
-                if not has_scheduled:
-                    app_events = [e for e in row_events if e["lifecycle_state"] == "completed"]
-                    app_events.sort(key=lambda x: str(x["occurred_at"]))
-                    
-                    latest_event = app_events[-1] if app_events else None
-                    anchor_time = None
-                    if latest_event:
-                        try:
-                            anchor_time = datetime.fromisoformat(str(latest_event["occurred_at"]))
-                        except ValueError:
-                            pass
-                    
-                    if anchor_time is None and row["applied_at"]:
-                        try:
-                            anchor_time = datetime.fromisoformat(str(row["applied_at"]))
-                        except ValueError:
-                            pass
-                            
-                    if anchor_time:
-                        days_since = (now - anchor_time).total_seconds() / 86400
-                        
-                        if app_status == "applied":
-                            screenT = avg_days_to_screen or 5.0
-                            rejectT = avg_days_to_reject or 10.0
-                            if days_since > rejectT or days_since > screenT:
-                                stalled = True
-                        elif app_status == "screening":
-                            interviewT = avg_days_from_screen_to_interview or 7.0
-                            if days_since > interviewT:
-                                stalled = True
-                        elif app_status == "interviewing":
-                            if days_since > 7.0:
-                                stalled = True
-            
-            if stalled:
+            row_events = events_by_job.get(row["id"], [])
+            has_scheduled = any(str(e["lifecycle_state"]) == "scheduled" for e in row_events)
+            completed_events = [e for e in row_events if e["lifecycle_state"] == "completed"]
+            completed_events.sort(key=lambda x: str(x["occurred_at"]))
+
+            latest_activity_at = None
+            if completed_events:
+                try:
+                    latest_activity_at = datetime.fromisoformat(str(completed_events[-1]["occurred_at"]))
+                except ValueError:
+                    latest_activity_at = None
+
+            if latest_activity_at is None and row["applied_at"]:
+                try:
+                    latest_activity_at = datetime.fromisoformat(str(row["applied_at"]))
+                except ValueError:
+                    latest_activity_at = None
+
+            if _is_stalled_application(
+                app_status,
+                latest_activity_at,
+                has_scheduled,
+                today=now,
+            ):
                 needs_attention_count += 1
 
         top_company_rows: list[dict[str, object]] = []

@@ -1,10 +1,9 @@
 'use client'
 
 import { Card, CardContent } from '@/components/ui/card'
+import { Skeleton } from '@/components/ui/skeleton'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import {
-  AlertTriangle,
-  ArrowRightLeft,
   Clock3,
   Hash,
   HelpCircle,
@@ -21,7 +20,7 @@ interface ApplicationStatsData {
   avg_time_to_response_days: number | null
   screen_rate: number
   avg_days_to_screen: number | null
-  open_offers_count: number
+  pending_replies_count: number
   avg_days_from_screen_to_interview: number | null
   avg_days_to_reject: number | null
   needs_attention_count: number
@@ -89,7 +88,65 @@ function MiniStat({
   )
 }
 
-export function ApplicationStats({ stats }: { stats: ApplicationStatsData | null }) {
+function StatCardSkeleton() {
+  return (
+    <Card className="border-border/50 bg-card/60 shadow-xl backdrop-blur-xl">
+      <CardContent className="p-5">
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0 flex-1 space-y-3">
+            <Skeleton className="h-3 w-24 rounded-full bg-muted/20" />
+            <Skeleton className="h-9 w-20 rounded-full bg-muted/20" />
+            <Skeleton className="h-4 w-full max-w-[16rem] rounded-full bg-muted/20" />
+            <Skeleton className="h-4 w-full max-w-[13rem] rounded-full bg-muted/20" />
+          </div>
+          <Skeleton className="h-14 w-14 rounded-2xl bg-muted/20" />
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+function MiniStatSkeleton() {
+  return (
+    <Card className="border-border/40 bg-card/40 shadow-md backdrop-blur-lg">
+      <CardContent className="p-4">
+        <div className="flex items-center gap-2.5">
+          <Skeleton className="h-3 w-24 rounded-full bg-muted/20" />
+          <Skeleton className="h-3 w-3 rounded-full bg-muted/20" />
+          <Skeleton className="ml-auto h-4 w-10 rounded-full bg-muted/20" />
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+export function ApplicationStats({
+  stats,
+  loading = false,
+}: {
+  stats: ApplicationStatsData | null
+  loading?: boolean
+}) {
+  if (loading) {
+    return (
+      <div className="space-y-3">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
+          {Array.from({ length: 5 }, (_, index) => (
+            <StatCardSkeleton key={index} />
+          ))}
+        </div>
+
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-5">
+          {Array.from({ length: 5 }, (_, index) => (
+            <MiniStatSkeleton key={index} />
+          ))}
+        </div>
+
+        <Skeleton className="h-12 rounded-2xl bg-muted/20" />
+      </div>
+    )
+  }
+
   const pipelineCount = stats?.source_breakdown?.pipeline ?? 0
   const manualCount = stats?.source_breakdown?.manual ?? 0
 
@@ -158,7 +215,7 @@ export function ApplicationStats({ stats }: { stats: ApplicationStatsData | null
               <MiniStat
                 label="Stalled Applications"
                 value={String(stats?.needs_attention_count ?? 0)}
-                tooltip="Applications that have exceeded momentum benchmarks (7+ days of silence) or been ghosted."
+                tooltip="Applications with no recent progress that now need attention, and that do not have a next stage scheduled."
               />
             </CardContent>
           </Card>

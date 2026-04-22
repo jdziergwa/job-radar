@@ -156,7 +156,7 @@ export default function ApplicationsPage() {
         </div>
       </header>
 
-      <ApplicationStats stats={stats} />
+      <ApplicationStats stats={stats} loading={loading} />
 
       <div className="mt-6">
         <ApplicationFilters

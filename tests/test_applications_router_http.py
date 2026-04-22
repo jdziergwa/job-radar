@@ -330,6 +330,31 @@ def test_application_status_update_accepts_explicit_occurred_at(monkeypatch):
     assert events[-1]["note"] == "Closed after final review"
 
 
+def test_application_list_uses_latest_completed_activity_for_momentum(monkeypatch):
+    store = _build_store()
+    ids = _seed_jobs(store)
+    job_id = ids["job-1"]
+    monkeypatch.setattr(applications_router, "get_store", lambda profile="default": store)
+
+    with TestClient(app) as client:
+        client.patch(
+            f"/api/jobs/{job_id}/application-status",
+            json={"application_status": "applied", "occurred_at": "2026-04-10"},
+        )
+        client.patch(
+            f"/api/jobs/{job_id}/application-status",
+            json={"application_status": "screening", "occurred_at": "2026-04-17"},
+        )
+
+        list_response = client.get("/api/applications", params={"status": "screening"})
+
+    assert list_response.status_code == 200
+    listed_job = list_response.json()["jobs"][0]
+    assert listed_job["id"] == job_id
+    assert listed_job["latest_activity_at"] == "2026-04-17"
+    assert listed_job["first_screen_at"] == "2026-04-17"
+
+
 def test_timeline_events_can_be_retimed_and_deleted(monkeypatch):
     store = _build_store()
     ids = _seed_jobs(store)
