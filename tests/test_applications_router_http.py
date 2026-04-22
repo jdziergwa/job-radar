@@ -3,6 +3,7 @@ import tempfile
 from pathlib import Path
 
 from fastapi.testclient import TestClient
+import pytest
 import yaml
 
 from api.main import app
@@ -10,72 +11,13 @@ from api.routers import applications as applications_router
 from api.routers import companies as companies_router
 from api.routers import jobs as jobs_router
 from src.models import RawJob
-from src.store import Store
+
+pytestmark = pytest.mark.api
 
 
-def _build_store() -> Store:
-    tmpdir = tempfile.TemporaryDirectory()
-    db_path = Path(tmpdir.name) / "jobs.db"
-    store = Store(str(db_path))
-    store._tmpdir = tmpdir  # keep temp dir alive for the test lifetime
-    return store
-
-
-def _seed_jobs(store: Store) -> dict[str, int]:
-    store.upsert_jobs(
-        [
-            RawJob(
-                ats_platform="ashby",
-                company_slug="acme",
-                company_name="Acme",
-                job_id="job-1",
-                title="Senior QA Engineer",
-                location="Remote",
-                url="https://example.com/jobs/1",
-                description="Own the test platform.",
-                posted_at="2026-04-08T00:00:00Z",
-                fetched_at="2026-04-08T00:00:00Z",
-                match_tier="high_confidence",
-            ),
-            RawJob(
-                ats_platform="lever",
-                company_slug="globex",
-                company_name="Globex",
-                job_id="job-2",
-                title="Backend Engineer",
-                location="Berlin",
-                url="https://example.com/jobs/2",
-                description="Backend APIs.",
-                posted_at="2026-04-08T00:00:00Z",
-                fetched_at="2026-04-08T00:00:00Z",
-            ),
-        ]
-    )
-    seeded: dict[str, int] = {}
-    for candidate in store.get_unscored():
-        seeded[candidate.job_id] = candidate.db_id
-        if candidate.job_id == "job-1":
-            store.update_score(
-                db_id=candidate.db_id,
-                fit_score=82,
-                reasoning="Strong fit for SDET scope.",
-                breakdown={
-                    "tech_stack_match": 84,
-                    "seniority_match": 80,
-                    "remote_location_fit": 90,
-                    "growth_potential": 76,
-                },
-                fit_category="core_fit",
-                apply_priority="medium",
-            )
-    return seeded
-
-
-def test_application_endpoints_lifecycle_stats_and_timeline(monkeypatch):
-    store = _build_store()
-    ids = _seed_jobs(store)
-    job_id = ids["job-1"]
-    monkeypatch.setattr(applications_router, "get_store", lambda profile="default": store)
+def test_application_endpoints_lifecycle_stats_and_timeline(seed_sample_jobs, bind_store):
+    job_id = seed_sample_jobs()["job-1"]
+    bind_store(applications_router)
 
     with TestClient(app) as client:
         invalid_transition = client.patch(
@@ -163,12 +105,12 @@ def test_application_endpoints_lifecycle_stats_and_timeline(monkeypatch):
     assert timeline_after_remove.json()["events"] == []
 
 
-def test_scheduling_next_stage_can_record_response_milestone_without_advancing_stage(monkeypatch):
-    store = _build_store()
-    ids = _seed_jobs(store)
-    job_id = ids["job-1"]
-    monkeypatch.setattr(applications_router, "get_store", lambda profile="default": store)
-    monkeypatch.setattr(jobs_router, "get_store", lambda profile="default": store)
+def test_scheduling_next_stage_can_record_response_milestone_without_advancing_stage(
+    seed_sample_jobs,
+    bind_store,
+):
+    job_id = seed_sample_jobs()["job-1"]
+    bind_store(applications_router, jobs_router)
 
     with TestClient(app) as client:
         client.patch(
@@ -250,11 +192,9 @@ def test_scheduling_next_stage_can_record_response_milestone_without_advancing_s
     assert job_after_complete.json()["next_stage_label"] is None
 
 
-def test_response_date_updates_explicit_response_milestone_when_present(monkeypatch):
-    store = _build_store()
-    ids = _seed_jobs(store)
-    job_id = ids["job-1"]
-    monkeypatch.setattr(applications_router, "get_store", lambda profile="default": store)
+def test_response_date_updates_explicit_response_milestone_when_present(seed_sample_jobs, bind_store):
+    job_id = seed_sample_jobs()["job-1"]
+    bind_store(applications_router)
 
     with TestClient(app) as client:
         client.patch(
@@ -293,11 +233,9 @@ def test_response_date_updates_explicit_response_milestone_when_present(monkeypa
     assert events[1]["created_at"] == "2026-04-13"
 
 
-def test_application_status_update_accepts_explicit_occurred_at(monkeypatch):
-    store = _build_store()
-    ids = _seed_jobs(store)
-    job_id = ids["job-1"]
-    monkeypatch.setattr(applications_router, "get_store", lambda profile="default": store)
+def test_application_status_update_accepts_explicit_occurred_at(seed_sample_jobs, bind_store):
+    job_id = seed_sample_jobs()["job-1"]
+    bind_store(applications_router)
 
     with TestClient(app) as client:
         client.patch(
@@ -330,11 +268,9 @@ def test_application_status_update_accepts_explicit_occurred_at(monkeypatch):
     assert events[-1]["note"] == "Closed after final review"
 
 
-def test_application_list_uses_latest_completed_activity_for_momentum(monkeypatch):
-    store = _build_store()
-    ids = _seed_jobs(store)
-    job_id = ids["job-1"]
-    monkeypatch.setattr(applications_router, "get_store", lambda profile="default": store)
+def test_application_list_uses_latest_completed_activity_for_momentum(seed_sample_jobs, bind_store):
+    job_id = seed_sample_jobs()["job-1"]
+    bind_store(applications_router)
 
     with TestClient(app) as client:
         client.patch(
@@ -355,12 +291,9 @@ def test_application_list_uses_latest_completed_activity_for_momentum(monkeypatc
     assert listed_job["first_screen_at"] == "2026-04-17"
 
 
-def test_timeline_events_can_be_retimed_and_deleted(monkeypatch):
-    store = _build_store()
-    ids = _seed_jobs(store)
-    job_id = ids["job-1"]
-    monkeypatch.setattr(applications_router, "get_store", lambda profile="default": store)
-    monkeypatch.setattr(jobs_router, "get_store", lambda profile="default": store)
+def test_timeline_events_can_be_retimed_and_deleted(seed_sample_jobs, bind_store):
+    job_id = seed_sample_jobs()["job-1"]
+    bind_store(applications_router, jobs_router)
 
     with TestClient(app) as client:
         client.patch(
@@ -404,11 +337,9 @@ def test_timeline_events_can_be_retimed_and_deleted(monkeypatch):
     assert final_job_response.json()["applied_at"] == "2026-04-09"
 
 
-def test_stage_retime_ignores_explicit_response_milestone_for_ordering(monkeypatch):
-    store = _build_store()
-    ids = _seed_jobs(store)
-    job_id = ids["job-1"]
-    monkeypatch.setattr(applications_router, "get_store", lambda profile="default": store)
+def test_stage_retime_ignores_explicit_response_milestone_for_ordering(seed_sample_jobs, bind_store):
+    job_id = seed_sample_jobs()["job-1"]
+    bind_store(applications_router)
 
     with TestClient(app) as client:
         client.patch(
@@ -445,11 +376,9 @@ def test_stage_retime_ignores_explicit_response_milestone_for_ordering(monkeypat
     assert [event["status"] for event in updated_timeline.json()["events"]] == ["applied", "screening", "response_received"]
 
 
-def test_timeline_cannot_delete_only_applied_event(monkeypatch):
-    store = _build_store()
-    ids = _seed_jobs(store)
-    job_id = ids["job-1"]
-    monkeypatch.setattr(applications_router, "get_store", lambda profile="default": store)
+def test_timeline_cannot_delete_only_applied_event(seed_sample_jobs, bind_store):
+    job_id = seed_sample_jobs()["job-1"]
+    bind_store(applications_router)
 
     with TestClient(app) as client:
         client.patch(
@@ -466,12 +395,9 @@ def test_timeline_cannot_delete_only_applied_event(monkeypatch):
     assert delete_response.json()["detail"] == "Cannot delete the only timeline event"
 
 
-def test_timeline_can_create_custom_stage_and_update_projection(monkeypatch):
-    store = _build_store()
-    ids = _seed_jobs(store)
-    job_id = ids["job-1"]
-    monkeypatch.setattr(applications_router, "get_store", lambda profile="default": store)
-    monkeypatch.setattr(jobs_router, "get_store", lambda profile="default": store)
+def test_timeline_can_create_custom_stage_and_update_projection(seed_sample_jobs, bind_store):
+    job_id = seed_sample_jobs()["job-1"]
+    bind_store(applications_router, jobs_router)
 
     with TestClient(app) as client:
         client.patch(
@@ -513,12 +439,9 @@ def test_timeline_can_create_custom_stage_and_update_projection(monkeypatch):
     assert job_response.json()["applied_at"] is not None
 
 
-def test_timeline_patch_can_edit_phase_label_date_and_note(monkeypatch):
-    store = _build_store()
-    ids = _seed_jobs(store)
-    job_id = ids["job-1"]
-    monkeypatch.setattr(applications_router, "get_store", lambda profile="default": store)
-    monkeypatch.setattr(jobs_router, "get_store", lambda profile="default": store)
+def test_timeline_patch_can_edit_phase_label_date_and_note(seed_sample_jobs, bind_store):
+    job_id = seed_sample_jobs()["job-1"]
+    bind_store(applications_router, jobs_router)
 
     with TestClient(app) as client:
         client.patch(
@@ -569,12 +492,9 @@ def test_timeline_patch_can_edit_phase_label_date_and_note(monkeypatch):
     assert job_response.json()["application_status"] == "interviewing"
 
 
-def test_applications_list_exposes_latest_custom_stage_label(monkeypatch):
-    store = _build_store()
-    ids = _seed_jobs(store)
-    job_id = ids["job-1"]
-    monkeypatch.setattr(applications_router, "get_store", lambda profile="default": store)
-    monkeypatch.setattr(jobs_router, "get_store", lambda profile="default": store)
+def test_applications_list_exposes_latest_custom_stage_label(seed_sample_jobs, bind_store):
+    job_id = seed_sample_jobs()["job-1"]
+    bind_store(applications_router, jobs_router)
 
     with TestClient(app) as client:
         client.patch(
@@ -604,12 +524,9 @@ def test_applications_list_exposes_latest_custom_stage_label(monkeypatch):
     assert listed_job["latest_stage_label"] == "Technical Interview"
 
 
-def test_application_stats_use_timeline_history_for_response_metrics(monkeypatch):
-    store = _build_store()
-    ids = _seed_jobs(store)
-    job_id = ids["job-1"]
-    monkeypatch.setattr(applications_router, "get_store", lambda profile="default": store)
-    monkeypatch.setattr(jobs_router, "get_store", lambda profile="default": store)
+def test_application_stats_use_timeline_history_for_response_metrics(seed_sample_jobs, bind_store):
+    job_id = seed_sample_jobs()["job-1"]
+    bind_store(applications_router, jobs_router)
 
     with TestClient(app) as client:
         client.patch(
@@ -644,9 +561,8 @@ def test_application_stats_use_timeline_history_for_response_metrics(monkeypatch
     assert payload["funnel"]["screening"] == 1
 
 
-def test_application_import_endpoint_handles_fetch_duplicates_and_manual_fallback(monkeypatch):
-    store = _build_store()
-    monkeypatch.setattr(applications_router, "get_store", lambda profile="default": store)
+def test_application_import_endpoint_handles_fetch_duplicates_and_manual_fallback(store, bind_store, monkeypatch):
+    bind_store(applications_router)
 
     async def fake_fetch_job_from_url(url: str):
         assert "greenhouse" in url
@@ -746,11 +662,9 @@ def test_application_import_endpoint_handles_fetch_duplicates_and_manual_fallbac
     assert imported_row["salary_currency"] == "USD"
 
 
-def test_application_status_allows_stepping_back_one_stage(monkeypatch):
-    store = _build_store()
-    ids = _seed_jobs(store)
-    job_id = ids["job-1"]
-    monkeypatch.setattr(applications_router, "get_store", lambda profile="default": store)
+def test_application_status_allows_stepping_back_one_stage(seed_sample_jobs, bind_store):
+    job_id = seed_sample_jobs()["job-1"]
+    bind_store(applications_router)
 
     with TestClient(app) as client:
       client.patch(
@@ -774,9 +688,8 @@ def test_application_status_allows_stepping_back_one_stage(monkeypatch):
     assert timeline.json()["events"][-1]["note"] == "Clicked screening by mistake"
 
 
-def test_application_import_retracks_existing_identity_after_tracker_removal(monkeypatch):
-    store = _build_store()
-    monkeypatch.setattr(applications_router, "get_store", lambda profile="default": store)
+def test_application_import_retracks_existing_identity_after_tracker_removal(store, bind_store, monkeypatch):
+    bind_store(applications_router)
 
     async def fake_fetch_job_from_url(url: str):
         return RawJob(
@@ -825,9 +738,8 @@ def test_application_import_retracks_existing_identity_after_tracker_removal(mon
     assert timeline_response.json()["events"][0]["created_at"] != "2026-04-05"
 
 
-def test_manual_application_import_persists_manual_identity_and_salary(monkeypatch):
-    store = _build_store()
-    monkeypatch.setattr(applications_router, "get_store", lambda profile="default": store)
+def test_manual_application_import_persists_manual_identity_and_salary(bind_store):
+    bind_store(applications_router)
 
     with TestClient(app) as client:
         response = client.post(
@@ -854,9 +766,8 @@ def test_manual_application_import_persists_manual_identity_and_salary(monkeypat
     assert payload["job"]["url"] == ""
 
 
-def test_application_import_can_add_company_to_pipeline(monkeypatch):
-    store = _build_store()
-    monkeypatch.setattr(applications_router, "get_store", lambda profile="default": store)
+def test_application_import_can_add_company_to_pipeline(bind_store, monkeypatch):
+    bind_store(applications_router)
 
     with tempfile.TemporaryDirectory() as tmpdir:
         base_dir = Path(tmpdir)
@@ -904,9 +815,8 @@ def test_application_import_can_add_company_to_pipeline(monkeypatch):
     assert saved["greenhouse"] == [{"slug": "example-team", "name": "Example Team"}]
 
 
-def test_application_import_does_not_add_import_only_workday_company_to_pipeline(monkeypatch):
-    store = _build_store()
-    monkeypatch.setattr(applications_router, "get_store", lambda profile="default": store)
+def test_application_import_does_not_add_import_only_workday_company_to_pipeline(bind_store, monkeypatch):
+    bind_store(applications_router)
 
     with tempfile.TemporaryDirectory() as tmpdir:
         base_dir = Path(tmpdir)
@@ -955,9 +865,8 @@ def test_application_import_does_not_add_import_only_workday_company_to_pipeline
     assert "workday" not in saved
 
 
-def test_application_import_refreshes_existing_sparse_job_from_fetched_data(monkeypatch):
-    store = _build_store()
-    monkeypatch.setattr(applications_router, "get_store", lambda profile="default": store)
+def test_application_import_refreshes_existing_sparse_job_from_fetched_data(store, bind_store, monkeypatch):
+    bind_store(applications_router)
 
     created, _ = store.import_job(
         ats_platform="bamboohr",
