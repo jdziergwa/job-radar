@@ -280,6 +280,7 @@ class ImportJobRequest(BaseModel):
     applied_at: Optional[str] = None
     notes: Optional[str] = None
     track_company_in_pipeline: bool = False
+    add_to_tracker: bool = True
 
 
 class ManualImportRequest(BaseModel):
@@ -292,12 +293,14 @@ class ManualImportRequest(BaseModel):
     salary: Optional[str] = None
     notes: Optional[str] = None
     track_company_in_pipeline: bool = False
+    add_to_tracker: bool = True
 
 
 class ImportJobResponse(BaseModel):
     job_id: Optional[int] = None
     fetched: bool
     needs_manual_entry: bool
+    already_exists: bool = False
     already_tracked: bool
     job: Optional[JobResponse] = None
 

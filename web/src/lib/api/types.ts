@@ -1307,6 +1307,11 @@ export interface components {
              * @default false
              */
             track_company_in_pipeline: boolean;
+            /**
+             * Add To Tracker
+             * @default true
+             */
+            add_to_tracker: boolean;
         };
         /** ImportJobResponse */
         ImportJobResponse: {
@@ -1316,6 +1321,11 @@ export interface components {
             fetched: boolean;
             /** Needs Manual Entry */
             needs_manual_entry: boolean;
+            /**
+             * Already Exists
+             * @default false
+             */
+            already_exists: boolean;
             /** Already Tracked */
             already_tracked: boolean;
             job?: components["schemas"]["JobResponse"] | null;
@@ -1521,6 +1531,11 @@ export interface components {
              * @default false
              */
             track_company_in_pipeline: boolean;
+            /**
+             * Add To Tracker
+             * @default true
+             */
+            add_to_tracker: boolean;
         };
         /** MarketIntelligenceResponse */
         MarketIntelligenceResponse: {

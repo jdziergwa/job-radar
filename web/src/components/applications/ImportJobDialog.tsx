@@ -25,6 +25,7 @@ type ImportJobResponse = components['schemas']['ImportJobResponse']
 type CompaniesResponse = components['schemas']['CompaniesResponse']
 
 type Mode = 'url' | 'manual'
+type Destination = 'tracker' | 'board'
 
 type TrackableCompany = {
   platform: 'greenhouse' | 'lever' | 'ashby' | 'workable' | 'bamboohr' | 'smartrecruiters'
@@ -104,15 +105,18 @@ export function ImportJobDialog({
   open,
   onOpenChange,
   onImported,
+  destination = 'tracker',
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   onImported: (jobId?: number | null) => Promise<void> | void
+  destination?: Destination
 }) {
   const [mode, setMode] = useState<Mode>('url')
   const [submitting, setSubmitting] = useState(false)
   const [form, setForm] = useState(emptyForm())
   const [trackedCompanies, setTrackedCompanies] = useState<CompaniesResponse | null>(null)
+  const addToTracker = destination === 'tracker'
 
   useEffect(() => {
     if (!open) {
@@ -165,12 +169,33 @@ export function ImportJobDialog({
     ))
   }, [showTrackCompanyOption])
 
-  const finishImport = async (response: ImportJobResponse, successMessage: string) => {
+  const finishImport = async (response: ImportJobResponse) => {
     await onImported(response.job_id)
     onOpenChange(false)
-    toast.success(successMessage, {
-      description: response.already_tracked ? 'This job was already in your tracker.' : undefined,
-    })
+
+    let message = ''
+    let description: string | undefined
+
+    if (addToTracker) {
+      if (response.already_tracked) {
+        message = 'Application already tracked'
+        description = 'This job was already in your tracker.'
+      } else if (response.already_exists) {
+        message = 'Application added to tracker'
+        description = 'This existing board job was moved back into your tracker.'
+      } else {
+        message = 'Application imported'
+      }
+    } else if (response.already_tracked) {
+      message = 'Job already tracked'
+      description = 'This job already exists in your tracker, so it will also appear on the board.'
+    } else if (response.already_exists) {
+      message = 'Job already on board'
+    } else {
+      message = 'Job saved to board'
+    }
+
+    toast.success(message, { description })
   }
 
   const submitUrlImport = async () => {
@@ -181,12 +206,13 @@ export function ImportJobDialog({
       const { data, error } = await api.POST('/api/applications/import', {
         body: {
           url: form.url.trim(),
-          applied_at: form.applied_at || undefined,
+          applied_at: addToTracker ? (form.applied_at || undefined) : undefined,
           notes: form.notes.trim() || undefined,
           track_company_in_pipeline: showTrackCompanyOption ? form.track_company_in_pipeline : false,
+          add_to_tracker: addToTracker,
         },
       })
-      if (error || !data) throw new Error('Failed to import application')
+      if (error || !data) throw new Error(`Failed to import ${addToTracker ? 'application' : 'job'}`)
 
       if (data.needs_manual_entry) {
         setMode('manual')
@@ -194,9 +220,9 @@ export function ImportJobDialog({
         return
       }
 
-      await finishImport(data, data.already_tracked ? 'Application already tracked' : 'Application imported')
+      await finishImport(data)
     } catch (err: any) {
-      toast.error(err.message || 'Failed to import application')
+      toast.error(err.message || `Failed to import ${addToTracker ? 'application' : 'job'}`)
     } finally {
       setSubmitting(false)
     }
@@ -216,12 +242,13 @@ export function ImportJobDialog({
             company_name: form.company_name.trim(),
             title: form.title.trim(),
             location: form.location.trim() || undefined,
-            applied_at: form.applied_at || undefined,
+            applied_at: addToTracker ? (form.applied_at || undefined) : undefined,
             notes: form.notes.trim() || undefined,
             track_company_in_pipeline: showTrackCompanyOption ? form.track_company_in_pipeline : false,
+            add_to_tracker: addToTracker,
           },
         })
-        if (error || !data) throw new Error('Failed to import application')
+        if (error || !data) throw new Error(`Failed to import ${addToTracker ? 'application' : 'job'}`)
         response = data
       } else {
         const { data, error } = await api.POST('/api/applications/import/manual', {
@@ -230,20 +257,21 @@ export function ImportJobDialog({
             company_name: form.company_name.trim(),
             title: form.title.trim(),
             location: form.location.trim() || undefined,
-            applied_at: form.applied_at || undefined,
+            applied_at: addToTracker ? (form.applied_at || undefined) : undefined,
             description: form.description.trim() || undefined,
             salary: form.salary.trim() || undefined,
             notes: form.notes.trim() || undefined,
             track_company_in_pipeline: showTrackCompanyOption ? form.track_company_in_pipeline : false,
+            add_to_tracker: addToTracker,
           },
         })
-        if (error || !data) throw new Error('Failed to create manual application')
+        if (error || !data) throw new Error(`Failed to create manual ${addToTracker ? 'application' : 'job'}`)
         response = data
       }
 
-      await finishImport(response, response.already_tracked ? 'Application already tracked' : 'Application added to tracker')
+      await finishImport(response)
     } catch (err: any) {
-      toast.error(err.message || 'Failed to add application')
+      toast.error(err.message || `Failed to add ${addToTracker ? 'application' : 'job'}`)
     } finally {
       setSubmitting(false)
     }
@@ -261,11 +289,17 @@ export function ImportJobDialog({
         <DialogHeader className="px-6 pt-6">
           <div className="flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-primary" />
-            <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70">Import Application</span>
+            <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70">
+              {addToTracker ? 'Import Application' : 'Import Job'}
+            </span>
           </div>
-          <DialogTitle className="text-2xl font-black tracking-tight">Add an external application</DialogTitle>
+          <DialogTitle className="text-2xl font-black tracking-tight">
+            {addToTracker ? 'Add an external application' : 'Save an external job'}
+          </DialogTitle>
           <DialogDescription>
-            Paste a job URL and we&apos;ll try to import it automatically. If the source can&apos;t be fetched, you can finish it manually without leaving the dialog.
+            {addToTracker
+              ? "Paste a job URL and we'll try to import it automatically. If the source can't be fetched, you can finish it manually without leaving the dialog."
+              : "Paste a job URL and we'll try to import it onto the board automatically. If the source can't be fetched, you can finish it manually without leaving the dialog."}
           </DialogDescription>
         </DialogHeader>
 
@@ -311,19 +345,21 @@ export function ImportJobDialog({
                 </p>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="import-applied-at">Applied on</Label>
-                <Input
-                  id="import-applied-at"
-                  type="date"
-                  value={form.applied_at}
-                  onChange={(event) => setForm((prev) => ({ ...prev, applied_at: event.target.value }))}
-                  className="h-11 rounded-2xl border-border/50 bg-background/50 px-4"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Optional. Use this when adding jobs you applied to earlier. Leave blank to use today.
-                </p>
-              </div>
+              {addToTracker && (
+                <div className="space-y-2">
+                  <Label htmlFor="import-applied-at">Applied on</Label>
+                  <Input
+                    id="import-applied-at"
+                    type="date"
+                    value={form.applied_at}
+                    onChange={(event) => setForm((prev) => ({ ...prev, applied_at: event.target.value }))}
+                    className="h-11 rounded-2xl border-border/50 bg-background/50 px-4"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Optional. Use this when adding jobs you applied to earlier. Leave blank to use today.
+                  </p>
+                </div>
+              )}
 
               {showManualFields && (
                 <>
@@ -393,7 +429,9 @@ export function ImportJobDialog({
                   Notes
                 </div>
                 <p className="text-sm leading-relaxed text-muted-foreground">
-                  Keep recruiter context, where you found the role, or follow-up reminders attached from the moment you add it.
+                  {addToTracker
+                    ? 'Keep recruiter context, where you found the role, or follow-up reminders attached from the moment you add it.'
+                    : 'Keep sourcing context, copied details, or reminders attached from the moment you save it to the board.'}
                 </p>
               </div>
               <Textarea
@@ -447,7 +485,7 @@ export function ImportJobDialog({
           ) : (
             <Button onClick={() => void submitManualImport()} disabled={!canSubmitManual || submitting} className="gap-2">
               {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FilePenLine className="h-4 w-4" />}
-              Add to Tracker
+              {addToTracker ? 'Add to Tracker' : 'Save to Job Board'}
             </Button>
           )}
         </DialogFooter>

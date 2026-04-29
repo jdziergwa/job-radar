@@ -1,12 +1,14 @@
 'use client'
 
 import { useCallback, useEffect, useLayoutEffect, useState, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import { api } from '@/lib/api/client'
+import { ImportJobDialog } from '@/components/applications/ImportJobDialog'
 import { JobListItem } from '@/components/jobs/JobListItem'
 import { DismissalSummary } from '@/components/jobs/DismissalSummary'
 import { RescoreAllButton } from '@/components/jobs/RescoreAllButton'
 import { Button } from '@/components/ui/button'
-import { ChevronLeft, ChevronRight, ChevronDown, ChevronsLeft, ChevronsRight, Loader2, Search, SearchX, SlidersHorizontal, X, HelpCircle, Clock } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ChevronDown, ChevronsLeft, ChevronsRight, Loader2, Search, SearchX, SlidersHorizontal, X, HelpCircle, Clock, Plus } from 'lucide-react'
 import {
   Tooltip,
   TooltipContent,
@@ -49,6 +51,7 @@ const SCORE_FILTER_OPTIONS = [
 ]
 
 export default function JobsPage() {
+  const router = useRouter()
   const [jobs, setJobs] = useState<any[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(DEFAULT_JOB_BOARD_STATE.page)
@@ -63,6 +66,7 @@ export default function JobsPage() {
   const [isSparse, setIsSparse] = useState<boolean | null>(DEFAULT_JOB_BOARD_STATE.isSparse)
   const [todayOnly, setTodayOnly] = useState(DEFAULT_JOB_BOARD_STATE.todayOnly)
   const [statusOpen, setStatusOpen] = useState(false)
+  const [importDialogOpen, setImportDialogOpen] = useState(false)
   const statusRef = useRef<HTMLDivElement>(null)
   const boardStateRef = useRef<JobBoardState>(DEFAULT_JOB_BOARD_STATE)
   const restoredScrollRef = useRef(false)
@@ -246,6 +250,14 @@ export default function JobsPage() {
             <span className="text-primary font-bold">{total}</span>
             <span className="text-muted-foreground">Jobs Found</span>
           </div>
+          <Button
+            variant="outline"
+            onClick={() => setImportDialogOpen(true)}
+            className="gap-2 rounded-full border-border/50 bg-background/50 shadow-sm hover:bg-background/80"
+          >
+            <Plus className="h-4 w-4" />
+            Import Job
+          </Button>
           <RescoreAllButton variant="outline" className="rounded-full shadow-sm bg-background/50 hover:bg-background/80" />
         </div>
       </header>
@@ -470,6 +482,20 @@ export default function JobsPage() {
           </div>
         )}
       </div>
+
+      <ImportJobDialog
+        open={importDialogOpen}
+        onOpenChange={setImportDialogOpen}
+        destination="board"
+        onImported={async (jobId) => {
+          if (!jobId) {
+            await fetchJobs(boardStateRef.current)
+            return
+          }
+
+          router.push(`/jobs/detail?id=${jobId}&from=${encodeURIComponent(boardHref)}`)
+        }}
+      />
     </div>
   )
 }

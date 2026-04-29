@@ -136,7 +136,8 @@ def _existing_import_response(existing: dict, fetched: bool) -> ImportJobRespons
         job_id=existing["id"],
         fetched=fetched,
         needs_manual_entry=False,
-        already_tracked=True,
+        already_exists=True,
+        already_tracked=existing.get("application_status") is not None,
         job=JobResponse.from_row(existing),
     )
 
@@ -146,6 +147,7 @@ def _retracked_import_response(existing: dict, fetched: bool) -> ImportJobRespon
         job_id=existing["id"],
         fetched=fetched,
         needs_manual_entry=False,
+        already_exists=True,
         already_tracked=False,
         job=JobResponse.from_row(existing),
     )
@@ -591,7 +593,7 @@ async def import_application(body: ImportJobRequest, profile: str = Query("defau
     if existing:
         fetched_job = await fetch_job_from_url(body.url) if detect_ats_platform(body.url) else None
         existing = _refresh_existing_job_from_fetched(store, existing, fetched_job)
-        if existing.get("application_status") is None:
+        if body.add_to_tracker and existing.get("application_status") is None:
             if not store.update_application_status(existing["id"], "applied", "Re-added from URL import"):
                 raise HTTPException(status_code=404, detail="Job not found")
             if body.applied_at is not None:
@@ -628,7 +630,7 @@ async def import_application(body: ImportJobRequest, profile: str = Query("defau
         existing = store.get_job_by_identity(ats_platform, company_slug, external_job_id)
         if existing:
             existing = _refresh_existing_job_from_fetched(store, existing, fetched_job)
-            if existing.get("application_status") is None:
+            if body.add_to_tracker and existing.get("application_status") is None:
                 if not store.update_application_status(existing["id"], "applied", "Re-added from URL import"):
                     raise HTTPException(status_code=404, detail="Job not found")
                 if body.applied_at is not None:
@@ -673,7 +675,8 @@ async def import_application(body: ImportJobRequest, profile: str = Query("defau
             salary_max=fetched_job.salary_max,
             salary_currency=fetched_job.salary_currency,
             source="manual",
-            initial_event_note="Imported from URL",
+            initial_event_note="Imported from URL" if body.add_to_tracker else None,
+            track_as_application=body.add_to_tracker,
         )
         _maybe_track_company(
             profile=profile,
@@ -686,6 +689,7 @@ async def import_application(body: ImportJobRequest, profile: str = Query("defau
             job_id=created["id"],
             fetched=True,
             needs_manual_entry=False,
+            already_exists=already_tracked,
             already_tracked=already_tracked,
             job=JobResponse.from_row(created),
         )
@@ -706,10 +710,11 @@ async def import_application(body: ImportJobRequest, profile: str = Query("defau
         location=body.location,
         url=body.url,
         description=None,
-        applied_at=body.applied_at,
+        applied_at=body.applied_at if body.add_to_tracker else None,
         notes=body.notes,
         source="manual",
-        initial_event_note="Imported from URL",
+        initial_event_note="Imported from URL" if body.add_to_tracker else None,
+        track_as_application=body.add_to_tracker,
     )
     _maybe_track_company(
         profile=profile,
@@ -722,6 +727,7 @@ async def import_application(body: ImportJobRequest, profile: str = Query("defau
         job_id=created["id"],
         fetched=False,
         needs_manual_entry=False,
+        already_exists=already_tracked,
         already_tracked=already_tracked,
         job=JobResponse.from_row(created),
     )
@@ -742,11 +748,12 @@ def import_manual_application(body: ManualImportRequest, profile: str = Query("d
         location=body.location,
         url=url,
         description=body.description,
-        applied_at=body.applied_at,
+        applied_at=body.applied_at if body.add_to_tracker else None,
         notes=body.notes,
         salary=body.salary,
         source="manual",
-        initial_event_note="Manually added",
+        initial_event_note="Manually added" if body.add_to_tracker else None,
+        track_as_application=body.add_to_tracker,
     )
     if body.url:
         ref = resolve_job_ref(body.url)
@@ -762,6 +769,7 @@ def import_manual_application(body: ManualImportRequest, profile: str = Query("d
         job_id=created["id"],
         fetched=False,
         needs_manual_entry=False,
+        already_exists=already_tracked,
         already_tracked=already_tracked,
         job=JobResponse.from_row(created),
     )

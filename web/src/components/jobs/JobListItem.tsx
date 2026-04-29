@@ -7,6 +7,7 @@ import { FitCategoryBadge } from '@/components/score/FitCategoryBadge'
 import { timeAgo, getPlatformName } from '@/lib/utils/format'
 import { Badge } from '@/components/ui/badge'
 import { MapPin, Building2, ChevronRight, Banknote, HelpCircle } from 'lucide-react'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { getCompanyQualitySignalLabel } from '@/lib/company-quality'
 import { saveJobBoardScroll } from '@/lib/jobs/navigation'
 import { formatJobLocation } from '@/lib/jobs/location'
@@ -68,6 +69,25 @@ export function JobListItem({ job, boardHref }: { job: JobResponse; boardHref: s
               <span className="text-[10px] uppercase font-mono tracking-widest text-muted-foreground/70 bg-muted/40 px-1.5 py-0.5 rounded">
                 {getPlatformName(job.ats_platform)}
               </span>
+              {job.source === 'manual' && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger
+                      render={
+                        <Badge
+                          variant="outline"
+                          className="h-4 cursor-help border-border/50 bg-muted/40 px-1.5 py-0 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground"
+                        />
+                      }
+                    >
+                      Imported
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Added manually from an external source.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
               {job.status !== 'new' && (
                 <div className="flex items-center gap-1.5">
                   <Badge variant="secondary" className="capitalize text-[10px] font-normal px-1.5 py-0 h-4 opacity-80">

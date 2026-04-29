@@ -605,6 +605,7 @@ def test_application_import_endpoint_handles_fetch_duplicates_and_manual_fallbac
         assert first_import.status_code == 200
         first_payload = first_import.json()
         assert first_payload["fetched"] is True
+        assert first_payload["already_exists"] is False
         assert first_payload["already_tracked"] is False
         assert first_payload["job"]["application_status"] == "applied"
         assert first_payload["job"]["applied_at"] == "2026-04-05"
@@ -612,6 +613,7 @@ def test_application_import_endpoint_handles_fetch_duplicates_and_manual_fallbac
         assert first_payload["job"]["salary"] == "$180k - $220k"
 
         assert duplicate_import.status_code == 200
+        assert duplicate_import.json()["already_exists"] is True
         assert duplicate_import.json()["already_tracked"] is True
         assert timeline_response.status_code == 200
         assert timeline_response.json()["events"][0]["status"] == "applied"
@@ -641,6 +643,7 @@ def test_application_import_endpoint_handles_fetch_duplicates_and_manual_fallbac
         "job_id": None,
         "fetched": False,
         "needs_manual_entry": True,
+        "already_exists": False,
         "already_tracked": False,
         "job": None,
     }
@@ -648,6 +651,7 @@ def test_application_import_endpoint_handles_fetch_duplicates_and_manual_fallbac
     assert external_import.status_code == 200
     external_payload = external_import.json()
     assert external_payload["fetched"] is False
+    assert external_payload["already_exists"] is False
     assert external_payload["already_tracked"] is False
     assert external_payload["job"]["ats_platform"] == "external"
     assert external_payload["job"]["company_slug"] == "example-inc"
@@ -729,6 +733,7 @@ def test_application_import_retracks_existing_identity_after_tracker_removal(sto
     assert second_import.status_code == 200
     second_payload = second_import.json()
     assert second_payload["job_id"] == job_id
+    assert second_payload["already_exists"] is True
     assert second_payload["already_tracked"] is False
     assert second_payload["job"]["application_status"] == "applied"
     assert second_payload["job"]["notes"] == "Re-added after reconsidering"
@@ -757,6 +762,7 @@ def test_manual_application_import_persists_manual_identity_and_salary(bind_stor
 
     assert response.status_code == 200
     payload = response.json()
+    assert payload["already_exists"] is False
     assert payload["already_tracked"] is False
     assert payload["job"]["ats_platform"] == "manual"
     assert payload["job"]["company_slug"] == "example-manual-company"
@@ -906,6 +912,7 @@ def test_application_import_refreshes_existing_sparse_job_from_fetched_data(stor
 
     assert response.status_code == 200
     payload = response.json()
+    assert payload["already_exists"] is True
     assert payload["already_tracked"] is True
     assert payload["job_id"] == created["id"]
     assert payload["job"]["title"] == "Senior Software Engineer in Test"
@@ -915,3 +922,57 @@ def test_application_import_refreshes_existing_sparse_job_from_fetched_data(stor
     assert refreshed["title"] == "Senior Software Engineer in Test"
     assert refreshed["location"] == "London"
     assert refreshed["description"] == "<p>Build resilient quality systems.</p>"
+
+
+def test_application_import_can_save_job_to_board_without_tracker_state(store, bind_store, monkeypatch):
+    bind_store(applications_router, jobs_router)
+
+    async def fake_fetch_job_from_url(url: str):
+        assert url == "https://boards.greenhouse.io/example-team/jobs/12345"
+        return RawJob(
+            ats_platform="greenhouse",
+            company_slug="example-team",
+            company_name="Example Team",
+            job_id="12345",
+            title="Senior QA Engineer",
+            location="Remote",
+            url=url,
+            description="Test all the things.",
+            posted_at=None,
+            fetched_at="2026-04-18T00:00:00Z",
+        )
+
+    monkeypatch.setattr(applications_router, "fetch_job_from_url", fake_fetch_job_from_url)
+
+    with TestClient(app) as client:
+        response = client.post(
+            "/api/applications/import",
+            json={
+                "url": "https://boards.greenhouse.io/example-team/jobs/12345",
+                "add_to_tracker": False,
+                "notes": "Found externally",
+                "applied_at": "2026-04-05",
+            },
+        )
+        assert response.status_code == 200
+
+        payload = response.json()
+        timeline_response = client.get(f"/api/jobs/{payload['job_id']}/timeline")
+        board_response = client.get(
+            "/api/jobs",
+            params={"status": "new", "tracked_mode": "exclude"},
+        )
+
+    assert payload["already_exists"] is False
+    assert payload["already_tracked"] is False
+    assert payload["job"]["application_status"] is None
+    assert payload["job"]["applied_at"] is None
+    assert payload["job"]["notes"] == "Found externally"
+    assert timeline_response.status_code == 200
+    assert timeline_response.json()["events"] == []
+    assert any(job["id"] == payload["job_id"] for job in board_response.json()["jobs"])
+
+    stored = store.get_job_detail(payload["job_id"])
+    assert stored is not None
+    assert stored["application_status"] is None
+    assert stored["applied_at"] is None

@@ -654,6 +654,23 @@ export function JobDetailView({
               <Badge variant="secondary" className="uppercase tracking-widest text-[10px] py-1 px-3 bg-primary/10 text-primary border-none">
                 {getPlatformName(job.ats_platform)}
               </Badge>
+              {job.source === 'manual' && (
+                <Tooltip>
+                  <TooltipTrigger
+                    render={
+                      <Badge
+                        variant="outline"
+                        className="cursor-help px-3 text-[10px] font-semibold uppercase tracking-wide border-border/50 bg-muted/20 text-muted-foreground"
+                      />
+                    }
+                  >
+                    Imported
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Added manually from an external source.</p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
               {!job.is_sparse && <PriorityBadge priority={job.score_breakdown?.apply_priority} />}
               {job.status !== 'dismissed' && <FitCategoryBadge fitCategory={fitCategory} />}
               <Badge variant="outline" className="capitalize px-3 border-border/50 bg-muted/20">

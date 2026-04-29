@@ -210,6 +210,7 @@ export default function ApplicationsPage() {
       <ImportJobDialog
         open={importDialogOpen}
         onOpenChange={setImportDialogOpen}
+        destination="tracker"
         onImported={async () => {
           await fetchData()
         }}

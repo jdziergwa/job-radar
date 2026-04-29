@@ -2406,11 +2406,12 @@ class Store:
         salary_currency: str | None = None,
         source: str = "manual",
         initial_event_note: str | None = None,
+        track_as_application: bool = True,
     ) -> tuple[dict, bool]:
-        """Create a tracked application or return an existing duplicate."""
+        """Create a manual job import or return an existing duplicate."""
         normalized_job_id = external_job_id or uuid.uuid4().hex
         now = datetime.utcnow().isoformat()
-        normalized_applied_at = applied_at or now
+        normalized_applied_at = (applied_at or now) if track_as_application else None
         serialized_company_metadata = (
             Store._serialize_metadata(company_metadata) if company_metadata else None
         )
@@ -2459,16 +2460,17 @@ class Store:
                 ),
             )
             new_id = int(cursor.lastrowid)
-            self._insert_application_event(
-                conn,
-                db_id=new_id,
-                canonical_phase="applied",
-                stage_label="Applied",
-                note=initial_event_note,
-                occurred_at=normalized_applied_at,
-                created_by="import",
-            )
-            self._sync_job_tracker_fields_from_timeline(conn, new_id)
+            if track_as_application:
+                self._insert_application_event(
+                    conn,
+                    db_id=new_id,
+                    canonical_phase="applied",
+                    stage_label="Applied",
+                    note=initial_event_note,
+                    occurred_at=normalized_applied_at,
+                    created_by="import",
+                )
+                self._sync_job_tracker_fields_from_timeline(conn, new_id)
             created = conn.execute("SELECT * FROM jobs WHERE id = ?", (new_id,)).fetchone()
 
         self.set_metadata("last_job_status_change_at", now)
