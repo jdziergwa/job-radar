@@ -35,6 +35,7 @@ import { formatJobLocation } from '@/lib/jobs/location'
 import { Badge } from '@/components/ui/badge'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { JobDescription } from '@/components/jobs/JobDescription'
 import { cn } from '@/lib/utils'
 import {
@@ -117,6 +118,7 @@ export function JobDetailView({
   const [prefillNextStageResponse, setPrefillNextStageResponse] = useState(false)
   const [completionSourceEvent, setCompletionSourceEvent] = useState<ApplicationEventResponse | null>(null)
   const [negativeOutcomeInitialStatus, setNegativeOutcomeInitialStatus] = useState<ApplicationStatus | null>(null)
+  const [deleteImportedJobDialogOpen, setDeleteImportedJobDialogOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [rescoreRunId, setRescoreRunId] = useState<string | null>(null)
   const trackerMenuRef = useRef<HTMLDetailsElement | null>(null)
@@ -261,12 +263,6 @@ export function JobDetailView({
 
   const deleteImportedJob = async () => {
     if (!jobId || job?.source !== 'manual') return
-    if (typeof window !== 'undefined') {
-      const confirmed = window.confirm(
-        'Delete this imported job permanently? This will remove the job and its application history from the database.'
-      )
-      if (!confirmed) return
-    }
 
     setUpdating(true)
     try {
@@ -275,6 +271,7 @@ export function JobDetailView({
       })
       if (deleteError) throw new Error('Failed to delete imported job')
 
+      setDeleteImportedJobDialogOpen(false)
       toast.success('Imported job deleted')
       if (isSheet && onClose) {
         onClose()
@@ -885,7 +882,7 @@ export function JobDetailView({
                 <Button
                   variant="outline"
                   className="w-full gap-2 h-11 border-destructive/20 text-destructive hover:bg-destructive/10 hover:border-destructive/30"
-                  onClick={deleteImportedJob}
+                  onClick={() => setDeleteImportedJobDialogOpen(true)}
                   disabled={updating}
                 >
                   <Trash2 className="h-4 w-4" />
@@ -909,6 +906,26 @@ export function JobDetailView({
           )}
         </div>
       </section>
+
+      <Dialog open={deleteImportedJobDialogOpen} onOpenChange={setDeleteImportedJobDialogOpen}>
+        <DialogContent className="border-border/50 bg-background/95 shadow-2xl backdrop-blur-xl sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete Imported Job?</DialogTitle>
+            <DialogDescription className="pt-2">
+              This will permanently remove the job and any related application history from your database.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-4 gap-2 sm:gap-0">
+            <Button variant="ghost" onClick={() => setDeleteImportedJobDialogOpen(false)} disabled={updating}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={deleteImportedJob} disabled={updating} className="gap-2 shadow-lg">
+              {updating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+              Delete Job
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {trackerStatus && (
         <section className="grid gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)] lg:items-stretch">
