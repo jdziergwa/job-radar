@@ -693,6 +693,23 @@ export function JobDetailView({
                   Reason: {job.dismissal_reason}
                 </Badge>
               )}
+              {job.is_fresh && (
+                <Tooltip>
+                  <TooltipTrigger
+                    render={
+                      <Badge
+                        variant="outline"
+                        className="cursor-help px-3 text-[10px] font-semibold uppercase tracking-wide border-emerald-500/25 bg-emerald-500/8 text-emerald-700 dark:text-emerald-300"
+                      />
+                    }
+                  >
+                    New
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>First seen since your previous collection run.</p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
             </div>
             <h1 className="text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl lg:text-5xl xl:text-6xl">
               {job.title}

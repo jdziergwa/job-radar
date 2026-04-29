@@ -49,6 +49,15 @@ SALARY_BUCKET_ORDER = [
     ],
     "200k+",
 ]
+JOB_IS_FRESH_SQL = """CASE
+    WHEN jobs.source = 'pipeline'
+     AND (SELECT value FROM metadata WHERE key = 'previous_collection_run_at') IS NOT NULL
+     AND julianday(jobs.first_seen_at) > julianday(
+         (SELECT value FROM metadata WHERE key = 'previous_collection_run_at')
+     )
+    THEN 1
+    ELSE 0
+END AS is_fresh"""
 
 
 def _representative_annual_salary(
@@ -1853,7 +1862,8 @@ class Store:
             "   AND ev.lifecycle_state = 'scheduled' "
             " ORDER BY ev.scheduled_for ASC, ev.sort_order ASC, ev.id ASC "
             " LIMIT 1) AS next_stage_note, "
-            "salary, salary_min, salary_max, salary_currency, is_sparse"
+            "salary, salary_min, salary_max, salary_currency, is_sparse, "
+            f"{JOB_IS_FRESH_SQL}"
         )
         
         where_clauses: list[str] = []
@@ -1998,7 +2008,8 @@ class Store:
             "   AND ev.lifecycle_state = 'completed' "
             " ORDER BY ev.occurred_at ASC "
             " LIMIT 1) AS first_interview_at, "
-            "salary, salary_min, salary_max, salary_currency, is_sparse"
+            "salary, salary_min, salary_max, salary_currency, is_sparse, "
+            f"{JOB_IS_FRESH_SQL}"
         )
 
         where_clauses = ["application_status IS NOT NULL"]
@@ -2480,7 +2491,7 @@ class Store:
         """Get a single job by ID, including description."""
         with self._connect() as conn:
             row = conn.execute(
-                """SELECT jobs.*,
+                f"""SELECT jobs.*,
                           (SELECT ev.stage_label FROM application_events ev
                            WHERE ev.job_id = jobs.id
                              AND ev.event_type = 'stage'
@@ -2504,7 +2515,8 @@ class Store:
                              AND ev.event_type = 'stage'
                              AND ev.lifecycle_state = 'scheduled'
                            ORDER BY ev.scheduled_for ASC, ev.sort_order ASC, ev.id ASC
-                           LIMIT 1) AS next_stage_note
+                           LIMIT 1) AS next_stage_note,
+                          {JOB_IS_FRESH_SQL}
                    FROM jobs
                    WHERE id = ?""",
                 (db_id,),

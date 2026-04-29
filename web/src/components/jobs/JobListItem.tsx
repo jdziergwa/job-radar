@@ -69,8 +69,8 @@ export function JobListItem({ job, boardHref }: { job: JobResponse; boardHref: s
               <span className="text-[10px] uppercase font-mono tracking-widest text-muted-foreground/70 bg-muted/40 px-1.5 py-0.5 rounded">
                 {getPlatformName(job.ats_platform)}
               </span>
-              {job.source === 'manual' && (
-                <TooltipProvider>
+              <TooltipProvider>
+                {job.source === 'manual' && (
                   <Tooltip>
                     <TooltipTrigger
                       render={
@@ -86,8 +86,8 @@ export function JobListItem({ job, boardHref }: { job: JobResponse; boardHref: s
                       <p>Added manually from an external source.</p>
                     </TooltipContent>
                   </Tooltip>
-                </TooltipProvider>
-              )}
+                )}
+              </TooltipProvider>
               {job.status !== 'new' && (
                 <div className="flex items-center gap-1.5">
                   <Badge variant="secondary" className="capitalize text-[10px] font-normal px-1.5 py-0 h-4 opacity-80">
@@ -119,6 +119,25 @@ export function JobListItem({ job, boardHref }: { job: JobResponse; boardHref: s
                 </Badge>
               )}
               {job.status !== 'dismissed' && <FitCategoryBadge fitCategory={fitCategory} compact />}
+              {job.is_fresh && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger
+                      render={
+                        <Badge
+                          variant="outline"
+                          className="h-4 cursor-help border-emerald-500/25 bg-emerald-500/8 px-1.5 py-0 text-[9px] font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300"
+                        />
+                      }
+                    >
+                      New
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>First seen since your previous collection run.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
             </div>
             <h3 className="font-bold truncate text-lg group-hover:text-primary transition-colors leading-tight">
               {job.title}

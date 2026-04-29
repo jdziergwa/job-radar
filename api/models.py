@@ -52,6 +52,7 @@ class JobResponse(BaseModel):
     salary_max: Optional[int] = None
     salary_currency: Optional[str] = None
     is_sparse: bool = False
+    is_fresh: bool = False
     company_quality_signals: list[str] = []
     workplace_type: Optional[str] = None
     raw_location: Optional[str] = None

@@ -108,6 +108,29 @@ def test_run_persists_last_pipeline_run_at_after_scoring(monkeypatch, tmp_path):
     assert last_run is not None
 
 
+def test_run_rolls_collection_run_metadata_forward_on_collection_dry_run(monkeypatch, tmp_path):
+    _prepare_workspace(tmp_path, monkeypatch)
+    jobs = [_make_raw_job()]
+    previous_collection_run = "2026-04-10T08:15:00"
+
+    store = Store("data/default.db")
+    store.set_metadata("last_collection_run_at", previous_collection_run)
+
+    monkeypatch.setitem(main_module.PROVIDER_REGISTRY, "stub", _StubProvider(jobs))
+    monkeypatch.setattr(main_module, "load_config", lambda profile_dir: {"keywords": {"title_patterns": ["Engineer"]}})
+    monkeypatch.setattr(main_module, "load_companies", lambda profile_dir: {})
+    monkeypatch.setattr(main_module, "load_profile_doc", lambda profile_dir: "Profile doc")
+    monkeypatch.setattr(main_module, "print_scan_summary", lambda *args, **kwargs: None)
+    monkeypatch.setattr(main_module, "print_candidates", lambda *args, **kwargs: None)
+    monkeypatch.setattr(sys, "argv", ["main.py", "--profile", "default", "--source", "stub", "--dry-run"])
+
+    asyncio.run(main_module.run())
+
+    refreshed_store = Store("data/default.db")
+    assert refreshed_store.get_metadata("previous_collection_run_at") == previous_collection_run
+    assert refreshed_store.get_metadata("last_collection_run_at") not in (None, previous_collection_run)
+
+
 def _prepare_workspace(tmp_path: Path, monkeypatch) -> None:
     (tmp_path / "profiles" / "default").mkdir(parents=True)
     (tmp_path / "data").mkdir()

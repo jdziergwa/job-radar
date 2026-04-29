@@ -172,3 +172,63 @@ def test_job_response_normalizes_stale_priority_from_fit_score():
         assert response.fit_score == 82
         assert response.score_breakdown is not None
         assert response.score_breakdown.apply_priority == "high"
+
+
+def test_job_response_marks_pipeline_jobs_as_fresh_since_previous_collection_run():
+    with tempfile.TemporaryDirectory() as tmpdir:
+        db_path = Path(tmpdir) / "jobs.db"
+        store = Store(str(db_path))
+
+        store.upsert_jobs([
+            RawJob(
+                ats_platform="ashby",
+                company_slug="example-labs",
+                company_name="Example Labs",
+                job_id="role-old",
+                title="Backend Engineer",
+                location="Remote",
+                url="https://example.com/jobs/old",
+                description="Older pipeline job.",
+                posted_at="2026-04-08T00:00:00Z",
+                fetched_at="2026-04-08T00:00:00Z",
+            ),
+            RawJob(
+                ats_platform="ashby",
+                company_slug="example-labs",
+                company_name="Example Labs",
+                job_id="role-new",
+                title="Staff Backend Engineer",
+                location="Remote",
+                url="https://example.com/jobs/new",
+                description="Fresh pipeline job.",
+                posted_at="2026-04-08T00:00:00Z",
+                fetched_at="2026-04-08T00:00:00Z",
+            ),
+        ])
+
+        candidates = {candidate.job_id: candidate.db_id for candidate in store.get_unscored()}
+        store.set_metadata("previous_collection_run_at", "2026-04-10T12:00:00")
+
+        with store._connect() as conn:
+            conn.execute(
+                "UPDATE jobs SET first_seen_at = ? WHERE id = ?",
+                ("2026-04-10T10:00:00", candidates["role-old"]),
+            )
+            conn.execute(
+                "UPDATE jobs SET first_seen_at = ? WHERE id = ?",
+                ("2026-04-10T14:00:00", candidates["role-new"]),
+            )
+
+        rows, total = store.get_jobs_filtered(per_page=10, sort="date", order="asc")
+
+        assert total == 2
+        responses = {row["job_id"]: JobResponse.from_row(row) for row in rows}
+
+        assert responses["role-old"].is_fresh is False
+        assert responses["role-new"].is_fresh is True
+
+        detail_row = store.get_job_detail(candidates["role-new"])
+        assert detail_row is not None
+
+        detail_response = JobDetailResponse.from_row(detail_row)
+        assert detail_response.is_fresh is True

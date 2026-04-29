@@ -119,3 +119,33 @@ def test_delete_job_allows_manual_imports_and_rejects_pipeline_jobs(store, seed_
             (manual_id,),
         ).fetchone()[0]
     assert event_count == 0
+
+
+def test_jobs_endpoints_expose_fresh_flag_since_previous_collection_run(store, seed_sample_jobs, bind_store, client):
+    ids = seed_sample_jobs()
+    fresh_id = ids["job-1"]
+    older_id = next(job.db_id for job in store.get_unscored() if job.job_id == "job-2")
+
+    store.set_metadata("previous_collection_run_at", "2026-04-10T12:00:00")
+    with store._connect() as conn:
+        conn.execute(
+            "UPDATE jobs SET first_seen_at = ? WHERE id = ?",
+            ("2026-04-10T14:00:00", fresh_id),
+        )
+        conn.execute(
+            "UPDATE jobs SET first_seen_at = ? WHERE id = ?",
+            ("2026-04-10T10:00:00", older_id),
+        )
+
+    bind_store(jobs_router)
+
+    list_response = client.get("/api/jobs", params={"sort": "date", "order": "desc"})
+    detail_response = client.get(f"/api/jobs/{fresh_id}")
+
+    assert list_response.status_code == 200
+    jobs_by_id = {job["id"]: job for job in list_response.json()["jobs"]}
+    assert jobs_by_id[fresh_id]["is_fresh"] is True
+    assert jobs_by_id[older_id]["is_fresh"] is False
+
+    assert detail_response.status_code == 200
+    assert detail_response.json()["is_fresh"] is True

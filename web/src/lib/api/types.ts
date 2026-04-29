@@ -922,6 +922,11 @@ export interface components {
              */
             is_sparse: boolean;
             /**
+             * Is Fresh
+             * @default false
+             */
+            is_fresh: boolean;
+            /**
              * Company Quality Signals
              * @default []
              */
@@ -1407,6 +1412,11 @@ export interface components {
              */
             is_sparse: boolean;
             /**
+             * Is Fresh
+             * @default false
+             */
+            is_fresh: boolean;
+            /**
              * Company Quality Signals
              * @default []
              */
@@ -1498,6 +1508,11 @@ export interface components {
              * @default false
              */
             is_sparse: boolean;
+            /**
+             * Is Fresh
+             * @default false
+             */
+            is_fresh: boolean;
             /**
              * Company Quality Signals
              * @default []

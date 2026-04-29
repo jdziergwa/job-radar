@@ -212,6 +212,20 @@ def emit_progress(step: int, name: str, detail: str = "", stats: dict | None = N
         msg["progress"]["duration"] = duration
     print(_json.dumps(msg), flush=True)
 
+
+def _advance_metadata_boundary(
+    store: Store,
+    *,
+    current_key: str,
+    previous_key: str,
+) -> None:
+    """Shift the current metadata timestamp into the previous slot before updating it."""
+    previous_value = store.get_metadata(current_key)
+    if previous_value:
+        store.set_metadata(previous_key, previous_value)
+    store.set_metadata(current_key, datetime.utcnow().isoformat())
+
+
 async def run() -> None:
     """Main entry point — runs the full pipeline or handles subcommands."""
     # Load .env early
@@ -239,6 +253,13 @@ async def run() -> None:
 
     def mark_pipeline_completed() -> None:
         store.set_metadata("last_pipeline_run_at", datetime.utcnow().isoformat())
+
+    def mark_collection_completed() -> None:
+        _advance_metadata_boundary(
+            store,
+            current_key="last_collection_run_at",
+            previous_key="previous_collection_run_at",
+        )
 
     # ── Subcommands (no collection needed) ──────────────────────────
 
@@ -531,6 +552,8 @@ async def run() -> None:
     if args.dry_run:
         print_scan_summary(scan_stats)
         print_candidates(candidates, label="DRY RUN")
+        if not skip_collection:
+            mark_collection_completed()
         mark_pipeline_completed()
         if args.json_progress:
             emit_progress(scoring_step, "Skipped", "Scoring skipped (Dry Run)", duration=timer.get_stage_duration())
@@ -593,12 +616,16 @@ async def run() -> None:
         if telegram_config.get("enabled", False):
             top_n = telegram_config.get("top_n", 5)
             await send_telegram(good_matches, top_n=top_n)
-            
+
+        if not skip_collection:
+            mark_collection_completed()
         mark_pipeline_completed()
         if args.json_progress:
             emit_progress(done_step, "Done", stats=scan_stats, duration=timer.get_total_duration())
     else:
         print("\n  No new candidates today. Run --history to see past results.\n")
+        if not skip_collection:
+            mark_collection_completed()
         mark_pipeline_completed()
         if args.json_progress:
             scan_stats["scored"] = 0
