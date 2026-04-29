@@ -570,6 +570,10 @@ export function JobDetailView({
   const redFlags = job.score_breakdown?.red_flags ?? []
   const companySignals = Array.isArray(job.company_quality_signals) ? job.company_quality_signals : []
   const matchQualityLabel = job.is_sparse ? 'Manual Review Required' : getMatchQualityLabel(job.score_breakdown?.apply_priority)
+  const hasScore = job.fit_score != null
+  const scoreActionLabel = hasScore ? 'Rescore' : 'Score'
+  const scoreActionInProgressLabel = hasScore ? 'Rescoring...' : 'Scoring...'
+  const scoreActionTooltip = hasScore ? 'Rerun AI intelligence pass for this job' : 'Run AI intelligence pass for this job'
   const scoreReasoning = job.score_reasoning || 'No detailed reasoning provided.'
   const hasJobUrl = hasExternalJobUrl(job.url)
   const trackerStatusLabel = job.application_status ? getApplicationStageLabel(job.application_status) : null
@@ -751,19 +755,19 @@ export function JobDetailView({
                             {rescoreRunId ? (
                               <>
                                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                Rescoring...
+                                {scoreActionInProgressLabel}
                               </>
                             ) : (
                               <>
                                 <RotateCcw className="h-3.5 w-3.5 transition-transform duration-500 group-hover:rotate-180" />
-                                Rescore
+                                {scoreActionLabel}
                               </>
                             )}
                           </Button>
                         )}
                       />
                       <TooltipContent className="border border-border/50 bg-popover/80 text-[10px] text-popover-foreground shadow-xl backdrop-blur-md">
-                        <p>Rerun AI intelligence pass for this job</p>
+                        <p>{scoreActionTooltip}</p>
                       </TooltipContent>
                     </Tooltip>
                   </div>
@@ -804,19 +808,19 @@ export function JobDetailView({
                           {rescoreRunId ? (
                             <>
                               <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                              Rescoring...
+                              {scoreActionInProgressLabel}
                             </>
                           ) : (
                             <>
                               <RotateCcw className="h-3.5 w-3.5 transition-transform duration-500 group-hover:rotate-180" />
-                              Rescore
+                              {scoreActionLabel}
                             </>
                           )}
                         </Button>
                       )}
                     />
                     <TooltipContent className="border border-border/50 bg-popover/80 text-[10px] text-popover-foreground shadow-xl backdrop-blur-md">
-                      <p>Rerun AI intelligence pass for this job</p>
+                      <p>{scoreActionTooltip}</p>
                     </TooltipContent>
                   </Tooltip>
                 </div>
