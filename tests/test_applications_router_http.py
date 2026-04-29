@@ -821,6 +821,56 @@ def test_application_import_can_add_company_to_pipeline(bind_store, monkeypatch)
     assert saved["greenhouse"] == [{"slug": "example-team", "name": "Example Team"}]
 
 
+def test_application_import_can_add_regional_greenhouse_company_to_pipeline(bind_store, monkeypatch):
+    bind_store(applications_router)
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        base_dir = Path(tmpdir)
+        profile_dir = base_dir / "default"
+        profile_dir.mkdir(parents=True, exist_ok=True)
+        (profile_dir / "companies.yaml").write_text(
+            yaml.safe_dump({"greenhouse": []}, sort_keys=False),
+            encoding="utf-8",
+        )
+
+        original_profiles_dir = companies_router.PROFILES_DIR
+        companies_router.PROFILES_DIR = base_dir
+
+        async def fake_fetch_job_from_url(url: str):
+            assert url == "https://job-boards.eu.greenhouse.io/example-team/jobs/4849930101?gh_src=testsource"
+            return RawJob(
+                ats_platform="greenhouse",
+                company_slug="example-team",
+                company_name="Example Team",
+                job_id="4849930101",
+                title="Senior QA Engineer",
+                location="Remote",
+                url=url,
+                description="Drive quality across core product surfaces.",
+                posted_at=None,
+                fetched_at="2026-04-29T00:00:00Z",
+            )
+
+        monkeypatch.setattr(applications_router, "fetch_job_from_url", fake_fetch_job_from_url)
+
+        try:
+            with TestClient(app) as client:
+                response = client.post(
+                    "/api/applications/import",
+                    json={
+                        "url": "https://job-boards.eu.greenhouse.io/example-team/jobs/4849930101?gh_src=testsource",
+                        "track_company_in_pipeline": True,
+                    },
+                )
+        finally:
+            companies_router.PROFILES_DIR = original_profiles_dir
+
+        saved = yaml.safe_load((profile_dir / "companies.yaml").read_text(encoding="utf-8"))
+
+    assert response.status_code == 200
+    assert saved["greenhouse"] == [{"slug": "example-team", "name": "Example Team"}]
+
+
 def test_application_import_does_not_add_import_only_workday_company_to_pipeline(bind_store, monkeypatch):
     bind_store(applications_router)
 

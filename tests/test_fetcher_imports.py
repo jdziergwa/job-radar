@@ -146,6 +146,40 @@ async def test_fetch_job_from_url_supports_job_boards_greenhouse_host(monkeypatc
     )
 
 
+async def test_fetch_job_from_url_supports_regional_job_boards_greenhouse_host(monkeypatch):
+    async def fake_get(url: str, **kwargs):
+        assert url == "https://boards-api.greenhouse.io/v1/boards/example-team/jobs/4849930101"
+        return _FakeResponse(
+            status_code=200,
+            payload={
+                "id": 4849930101,
+                "title": "Senior QA Engineer",
+                "absolute_url": "https://job-boards.eu.greenhouse.io/example-team/jobs/4849930101?gh_src=testsource",
+                "updated_at": "2026-04-29T10:00:00Z",
+                "location": {"name": "Remote"},
+                "content": "<p>Drive quality across core product surfaces.</p>",
+            },
+        )
+
+    monkeypatch.setattr(fetcher.httpx, "AsyncClient", _make_async_client(fake_get))
+    result = await fetcher.fetch_job_from_url(
+        "https://job-boards.eu.greenhouse.io/example-team/jobs/4849930101?gh_src=testsource"
+    )
+
+    assert result == RawJob(
+        ats_platform="greenhouse",
+        company_slug="example-team",
+        company_name="Example Team",
+        job_id="4849930101",
+        title="Senior QA Engineer",
+        location="Remote",
+        url="https://job-boards.eu.greenhouse.io/example-team/jobs/4849930101?gh_src=testsource",
+        description="<p>Drive quality across core product surfaces.</p>",
+        posted_at="2026-04-29T10:00:00Z",
+        fetched_at=result.fetched_at,
+    )
+
+
 async def test_fetch_job_from_url_uses_bamboohr_resolver_for_normalized_raw_job(monkeypatch):
     async def fake_get(url: str, **kwargs):
         assert url == "https://example-team.bamboohr.com/careers/155/detail"

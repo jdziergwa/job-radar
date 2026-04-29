@@ -57,6 +57,12 @@ def _slugify(text: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", (text or "").lower()).strip("-")
 
 
+def _is_greenhouse_board_host(host: str) -> bool:
+    return host == "boards.greenhouse.io" or host == "job-boards.greenhouse.io" or (
+        host.endswith(".greenhouse.io") and (host.startswith("boards.") or host.startswith("job-boards."))
+    )
+
+
 def extract_platform_slug_from_url(url: str, fallback_slug: str | None = None) -> tuple[str | None, str | None]:
     normalized_fallback = _slugify(fallback_slug) if fallback_slug else None
 
@@ -71,7 +77,7 @@ def extract_platform_slug_from_url(url: str, fallback_slug: str | None = None) -
     host = parsed.netloc.lower()
     path_parts = [part for part in parsed.path.split("/") if part]
 
-    if host in {"boards.greenhouse.io", "job-boards.greenhouse.io"} and path_parts:
+    if _is_greenhouse_board_host(host) and path_parts:
         return "greenhouse", _slugify(path_parts[0])
     if host == "jobs.lever.co" or (host.startswith("jobs.") and host.endswith(".lever.co")):
         if path_parts:
