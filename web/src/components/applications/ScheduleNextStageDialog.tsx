@@ -128,7 +128,7 @@ export function ScheduleNextStageDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-w-lg min-w-0 flex-col overflow-hidden rounded-3xl border border-border/60 bg-popover/95 shadow-2xl backdrop-blur-xl">
+      <DialogContent className="flex max-h-[90vh] max-w-lg min-w-0 flex-col overflow-hidden rounded-3xl border border-border/60 bg-popover/95 shadow-2xl backdrop-blur-xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl font-bold">
             <CalendarClock className="h-4 w-4 text-primary" />
@@ -139,7 +139,8 @@ export function ScheduleNextStageDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid min-w-0 gap-4">
+        <div className="min-h-0 flex-1 overflow-y-auto px-0.5">
+          <div className="grid min-w-0 gap-4 py-1">
           {shouldPromptForResponse && currentStatus === 'applied' && (
             <div className="rounded-2xl border border-border/40 bg-background/30 p-4">
               <div className="flex items-start gap-3">
@@ -222,6 +223,7 @@ export function ScheduleNextStageDialog({
             />
           </div>
         </div>
+      </div>
 
         <DialogFooter className="flex-row items-center justify-between gap-2">
           {hasExistingNextStage ? (
