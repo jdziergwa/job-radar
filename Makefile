@@ -4,8 +4,27 @@ COMPOSE ?= docker compose
 PROJECT_NAME ?= $(notdir $(CURDIR))
 API_DB_VOLUME ?= $(PROJECT_NAME)_api_data
 
+PYTHON ?= python3
+VENV ?= .venv
+UV := $(shell which uv 2>/dev/null)
+
 install:
-	python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
+	@# Check Python version if not using uv (uv can manage its own python)
+	@if [ -z "$(UV)" ]; then \
+		$(PYTHON) -c 'import sys; exit(0) if sys.version_info >= (3, 11) else (print(f"Error: Python 3.11+ is required, but found {sys.version.split()[0]}"), exit(1))'; \
+	fi
+	@echo "Cleaning up any existing virtual environment..."
+	rm -rf $(VENV)
+	@if [ -n "$(UV)" ]; then \
+		echo "Creating virtual environment and installing dependencies using uv..."; \
+		$(UV) venv $(VENV) --python 3.11; \
+		$(UV) pip install -r requirements.txt; \
+	else \
+		echo "Creating virtual environment using venv..."; \
+		$(PYTHON) -m venv $(VENV); \
+		$(VENV)/bin/python -m pip install --upgrade pip; \
+		$(VENV)/bin/python -m pip install -r requirements.txt; \
+	fi
 	cd web && npm install
 
 dev:

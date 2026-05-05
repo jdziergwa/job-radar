@@ -71,9 +71,9 @@ When running via Docker Compose, the API stores SQLite databases in a Docker nam
 
 ### 1. Prerequisites
 
--   **Python 3.11+**
--   **Node.js 20+**
--   **Anthropic API Key** (Get one at [console.anthropic.com](https://console.anthropic.com))
+-   **Python 3.11+** (e.g., via [**uv**](https://docs.astral.sh/uv/getting-started/installation/) - recommended)
+-   **Node.js 20+** (e.g., at [**nodejs.org**](https://nodejs.org/en/download/) or a version manager)
+-   **Anthropic API Key** (at [console.anthropic.com](https://console.anthropic.com))
 
 ### 2. One-Minute Installation
 
