@@ -88,7 +88,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/jobs/rescore/all": {
+    "/api/jobs/rescore/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Preview Rescore Jobs */
+        get: operations["preview_rescore_jobs_api_jobs_rescore_preview_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/jobs/rescore": {
         parameters: {
             query?: never;
             header?: never;
@@ -97,11 +114,8 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /**
-         * Rescore All Jobs
-         * @description Trigger AI rescoring for all previously scored jobs.
-         */
-        post: operations["rescore_all_jobs_api_jobs_rescore_all_post"];
+        /** Rescore Jobs */
+        post: operations["rescore_jobs_api_jobs_rescore_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1656,6 +1670,39 @@ export interface components {
             /** Run Id */
             run_id: string;
         };
+        /** RescorePreviewJob */
+        RescorePreviewJob: {
+            /** Id */
+            id?: number | null;
+            /** Title */
+            title: string;
+            /** Company Name */
+            company_name: string;
+        };
+        /** RescorePreviewResponse */
+        RescorePreviewResponse: {
+            /** @enum {string} */
+            scope: "failed_recent" | "unscored_new" | "recent_scored" | "all";
+            /** Days */
+            days: number;
+            /** Count */
+            count: number;
+            /** Sample Jobs */
+            sample_jobs: components["schemas"]["RescorePreviewJob"][];
+        };
+        /** RescoreRequest */
+        RescoreRequest: {
+            /**
+             * @enum {string}
+             * @default failed_recent
+             */
+            scope: "failed_recent" | "unscored_new" | "recent_scored" | "all";
+            /**
+             * Days
+             * @default 7
+             */
+            days: number;
+        };
         /** PipelineStatusResponse */
         PipelineStatusResponse: {
             /**
@@ -2350,7 +2397,40 @@ export interface operations {
             };
         };
     };
-    rescore_all_jobs_api_jobs_rescore_all_post: {
+    preview_rescore_jobs_api_jobs_rescore_preview_get: {
+        parameters: {
+            query?: {
+                profile?: string;
+                scope?: "failed_recent" | "unscored_new" | "recent_scored" | "all";
+                days?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RescorePreviewResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    rescore_jobs_api_jobs_rescore_post: {
         parameters: {
             query?: {
                 profile?: string;
@@ -2359,7 +2439,11 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RescoreRequest"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {

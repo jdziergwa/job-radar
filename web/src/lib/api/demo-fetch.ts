@@ -741,6 +741,22 @@ async function applyJobFilters(
 }
 
 async function handleRead(url: URL): Promise<Response | null> {
+  if (url.pathname === '/api/jobs/rescore/preview') {
+    const scope = url.searchParams.get('scope') || 'failed_recent'
+    const counts: Record<string, number> = {
+      failed_recent: 3,
+      unscored_new: 5,
+      recent_scored: 18,
+      all: 72,
+    }
+    return json({
+      scope,
+      days: Number(url.searchParams.get('days') || 7),
+      count: counts[scope] ?? 0,
+      sample_jobs: [],
+    })
+  }
+
   if (/^\/api\/jobs\/rescore\/all$/.test(url.pathname)) {
     return json({ error: 'not found in demo' }, 404)
   }
@@ -909,8 +925,13 @@ async function handleWrite(url: URL, input: RequestInfo | URL, init?: RequestIni
     return json({ run_id: 'demo-pipeline-run' })
   }
 
-  if (url.pathname === '/api/jobs/rescore/all') {
-    return json({ run_id: 'demo-rescore-all' })
+  if (url.pathname === '/api/jobs/rescore') {
+    const body = await getJsonBody(input, init)
+    const scope =
+      body && typeof body === 'object' && 'scope' in body && typeof body.scope === 'string'
+        ? body.scope
+        : 'scoped'
+    return json({ run_id: `demo-rescore-${scope}` })
   }
 
   const rescoreMatch = url.pathname.match(/^\/api\/jobs\/(\d+)\/rescore$/)

@@ -40,6 +40,8 @@ async def launch_pipeline(
     sources: list[str] = ["aggregator", "local"],
     dry_run: bool = False,
     rescore_all: bool = False,
+    rescore_scope: str | None = None,
+    rescore_days: int | None = None,
     job_id: Optional[int] = None,
 ) -> str:
     """Spawn pipeline subprocess and return run_id."""
@@ -67,6 +69,10 @@ async def launch_pipeline(
     
     if rescore_all:
         args.append("--rescore")
+        if rescore_scope:
+            args += ["--rescore-scope", rescore_scope]
+        if rescore_days is not None:
+            args += ["--rescore-days", str(rescore_days)]
     elif job_id:
         args += ["--job-id", str(job_id), "--rescore"]
     else:

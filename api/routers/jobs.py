@@ -1,7 +1,16 @@
 from fastapi import APIRouter, HTTPException, Query
 from typing import Literal, Optional
 from api.deps import get_store
-from api.models import JobListResponse, JobDetailResponse, JobResponse, StatusUpdate, PipelineRunResponse
+from api.models import (
+    JobListResponse,
+    JobDetailResponse,
+    JobResponse,
+    StatusUpdate,
+    PipelineRunResponse,
+    RescorePreviewResponse,
+    RescoreRequest,
+    RescoreScope,
+)
 from api import background as bg
 
 router = APIRouter()
@@ -103,13 +112,26 @@ async def rescore_job(job_id: int, profile: str = Query("default")):
         raise HTTPException(status_code=409, detail=str(e))
 
 
-@router.post("/jobs/rescore/all", response_model=PipelineRunResponse)
-async def rescore_all_jobs(profile: str = Query("default")):
-    """Trigger AI rescoring for all previously scored jobs."""
+@router.get("/jobs/rescore/preview", response_model=RescorePreviewResponse)
+def preview_rescore_jobs(
+    profile: str = Query("default"),
+    scope: RescoreScope = Query("failed_recent"),
+    days: int = Query(7, ge=1, le=365),
+):
+    """Preview the number of jobs selected by a scoped rescore."""
+    store = get_store(profile)
+    return store.get_rescore_preview(scope=scope, days=days)
+
+
+@router.post("/jobs/rescore", response_model=PipelineRunResponse)
+async def rescore_jobs(body: RescoreRequest, profile: str = Query("default")):
+    """Trigger AI rescoring for a scoped set of persisted jobs."""
     try:
         run_id = await bg.launch_pipeline(
             profile=profile,
-            rescore_all=True
+            rescore_all=True,
+            rescore_scope=body.scope,
+            rescore_days=body.days,
         )
         return PipelineRunResponse(run_id=run_id)
     except RuntimeError as e:

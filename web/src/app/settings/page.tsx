@@ -442,7 +442,7 @@ export default function SettingsPage() {
                  <RefreshCw className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
                  <p>
                    This controls how the AI evaluates and weighs different aspects of job fit (tech stack matching, seniority, location, growth potential). The response format and JSON structure are fixed. Changes take effect on the next pipeline run.{' '}
-                   <span className="text-amber-500/90 font-medium">Run &quot;Rescore All&quot; to apply changes to already-scored jobs.</span>
+                   <span className="text-amber-500/90 font-medium">Use a scoped rescore to apply changes to saved jobs.</span>
                  </p>
               </div>
             </TabsContent>

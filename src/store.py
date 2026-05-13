@@ -2785,28 +2785,72 @@ class Store:
 
     # ── Rescore support ─────────────────────────────────────────────
 
-    def get_jobs_for_rescore(self) -> list[CandidateJob]:
+    def get_jobs_for_rescore(
+        self,
+        scope: Literal["all", "failed_recent", "unscored_new", "recent_scored"] = "all",
+        days: int = 7,
+    ) -> list[CandidateJob]:
         """Get jobs eligible for bulk rescore.
 
-        This includes:
-        - previously scored jobs, regardless of current status
-        - persisted `new` jobs that were collected during an earlier run but never scored
-
-        The second case covers workflows like a fresh database after `--dry-run`,
-        where candidates are saved locally but have no `scored_at` timestamp yet.
+        `all` preserves the legacy behavior. Narrower scopes are intended for
+        safer UI actions that avoid spending credits on a large historical set.
         """
+        cutoff = (datetime.utcnow() - timedelta(days=days)).isoformat()
+        where_sql = "scored_at IS NOT NULL OR status = 'new'"
+        params: list[object] = []
+
+        if scope == "failed_recent":
+            where_sql = """
+                fit_score = 0
+                AND score_reasoning IS NOT NULL
+                AND (
+                    score_reasoning LIKE 'API_ERROR:%'
+                    OR score_reasoning LIKE 'ERROR:%'
+                    OR score_reasoning LIKE 'PARSE_ERROR%'
+                    OR score_reasoning LIKE 'Temporary scoring failure:%'
+                )
+                AND first_seen_at >= ?
+            """
+            params.append(cutoff)
+        elif scope == "unscored_new":
+            where_sql = "status = 'new' AND scored_at IS NULL"
+        elif scope == "recent_scored":
+            where_sql = "scored_at IS NOT NULL AND scored_at >= ?"
+            params.append(cutoff)
+
         with self._connect() as conn:
             rows = conn.execute(
-                """
+                f"""
                 SELECT *
                 FROM jobs
-                WHERE scored_at IS NOT NULL
-                   OR status = 'new'
+                WHERE {where_sql}
                 ORDER BY
                     CASE WHEN scored_at IS NULL THEN first_seen_at ELSE scored_at END DESC
-                """
+                """,
+                params,
             ).fetchall()
         return [self._row_to_candidate(r) for r in rows]
+
+    def get_rescore_preview(
+        self,
+        scope: Literal["all", "failed_recent", "unscored_new", "recent_scored"] = "all",
+        days: int = 7,
+    ) -> dict[str, object]:
+        """Return a count and a few examples for a scoped rescore action."""
+        candidates = self.get_jobs_for_rescore(scope=scope, days=days)
+        return {
+            "scope": scope,
+            "days": days,
+            "count": len(candidates),
+            "sample_jobs": [
+                {
+                    "id": job.db_id,
+                    "title": job.title,
+                    "company_name": job.company_name,
+                }
+                for job in candidates[:5]
+            ],
+        }
 
     # ── Metadata (KV Store) ──────────────────────────────────────────
 

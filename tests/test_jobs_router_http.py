@@ -69,17 +69,48 @@ def test_jobs_rescore_endpoints_use_mocked_pipeline_launcher(seed_sample_jobs, b
     monkeypatch.setattr(jobs_router.bg, "launch_pipeline", fake_launch_pipeline)
 
     single_response = client.post(f"/api/jobs/{scored_id}/rescore")
-    all_response = client.post("/api/jobs/rescore/all")
+    scoped_response = client.post(
+        "/api/jobs/rescore",
+        json={"scope": "failed_recent", "days": 3},
+    )
 
     assert single_response.status_code == 200
     assert single_response.json() == {"run_id": "run-123"}
-    assert all_response.status_code == 200
-    assert all_response.json() == {"run_id": "run-123"}
+    assert scoped_response.status_code == 200
+    assert scoped_response.json() == {"run_id": "run-123"}
 
     assert calls == [
         {"profile": "default", "job_id": scored_id},
-        {"profile": "default", "rescore_all": True},
+        {
+            "profile": "default",
+            "rescore_all": True,
+            "rescore_scope": "failed_recent",
+            "rescore_days": 3,
+        },
     ]
+
+
+def test_jobs_rescore_preview_returns_scoped_count(store, seed_sample_jobs, bind_store, client):
+    seed_sample_jobs()
+    failed_job = next(job for job in store.get_unscored() if job.job_id == "job-2")
+    store.update_score(
+        db_id=failed_job.db_id,
+        fit_score=0,
+        reasoning="API_ERROR: credit balance is too low",
+        breakdown={},
+    )
+    bind_store(jobs_router)
+
+    response = client.get(
+        "/api/jobs/rescore/preview",
+        params={"scope": "failed_recent", "days": 7},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["scope"] == "failed_recent"
+    assert payload["count"] == 1
+    assert payload["sample_jobs"][0]["id"] == failed_job.db_id
 
 
 def test_delete_job_allows_manual_imports_and_rejects_pipeline_jobs(store, seed_sample_jobs, bind_store, client):

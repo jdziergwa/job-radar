@@ -1,5 +1,5 @@
 from datetime import datetime
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional, Literal
 import json
 
@@ -440,6 +440,27 @@ class PipelineRunRequest(BaseModel):
 
 class PipelineRunResponse(BaseModel):
     run_id: str
+
+
+RescoreScope = Literal["failed_recent", "unscored_new", "recent_scored", "all"]
+
+
+class RescoreRequest(BaseModel):
+    scope: RescoreScope = "failed_recent"
+    days: int = Field(default=7, ge=1, le=365)
+
+
+class RescorePreviewJob(BaseModel):
+    id: Optional[int] = None
+    title: str
+    company_name: str
+
+
+class RescorePreviewResponse(BaseModel):
+    scope: RescoreScope
+    days: int
+    count: int
+    sample_jobs: list[RescorePreviewJob] = []
 
 
 class PipelineStatusResponse(BaseModel):

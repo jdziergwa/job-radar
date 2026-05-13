@@ -234,9 +234,37 @@ Response:
 { "run_id": "..." }
 ```
 
-### `POST /api/jobs/rescore/all`
+### `GET /api/jobs/rescore/preview`
 
-Triggers bulk rescoring for previously scored jobs.
+Previews how many jobs a scoped rescore would target.
+
+Query params:
+
+| Param | Values | Default |
+| --- | --- | --- |
+| `scope` | `failed_recent`, `unscored_new`, `recent_scored`, `all` | `failed_recent` |
+| `days` | `1-365` | `7` |
+
+Response:
+
+```json
+{
+  "scope": "failed_recent",
+  "days": 7,
+  "count": 12,
+  "sample_jobs": [{ "id": 42, "title": "Backend Engineer", "company_name": "Example" }]
+}
+```
+
+### `POST /api/jobs/rescore`
+
+Triggers scoped bulk rescoring.
+
+Request:
+
+```json
+{ "scope": "failed_recent", "days": 7 }
+```
 
 Response:
 

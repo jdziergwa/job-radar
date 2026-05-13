@@ -136,6 +136,16 @@ Examples:
         help="Re-score previously scored jobs",
     )
     parser.add_argument(
+        "--rescore-scope",
+        choices=["all", "failed_recent", "unscored_new", "recent_scored"],
+        default="all",
+        help="Scope for --rescore. Default: all",
+    )
+    parser.add_argument(
+        "--rescore-days", type=int, default=7,
+        help="Lookback window for recent rescore scopes. Default: 7",
+    )
+    parser.add_argument(
         "--history", type=int, metavar="DAYS",
         help="Show scored jobs from last N days",
     )
@@ -443,8 +453,16 @@ async def run() -> None:
     if args.job_id:
         pass # Already populated in candidates_raw
     elif args.rescore:
-        candidates_raw = store.get_jobs_for_rescore()
-        logger.info("Scoring/rescoring %d persisted jobs", len(candidates_raw))
+        candidates_raw = store.get_jobs_for_rescore(
+            scope=args.rescore_scope,
+            days=args.rescore_days,
+        )
+        logger.info(
+            "Scoring/rescoring %d persisted jobs (scope=%s, days=%d)",
+            len(candidates_raw),
+            args.rescore_scope,
+            args.rescore_days,
+        )
     else:
         # Convert new RawJobs to CandidateJobs via the store
         candidates_raw = store.get_all_new_jobs()
