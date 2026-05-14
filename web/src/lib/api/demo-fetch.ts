@@ -341,7 +341,7 @@ function buildDemoStatsResponse(data: StatsOverviewResponse, jobs: JobResponse[]
   let applied = 0
   let dismissed = 0
   let pending = 0
-  let closed = 0
+  let archived = 0
 
   const scoreDistribution: StatsOverviewResponse['score_distribution'] = {
     '90-100': 0,
@@ -367,7 +367,7 @@ function buildDemoStatsResponse(data: StatsOverviewResponse, jobs: JobResponse[]
 
     if (isNewToday) {
       totalNewToday += 1
-      if (job.status !== 'dismissed') {
+      if (job.status !== 'dismissed' && job.status !== 'archived') {
         newToday += 1
       }
       if (applyPriority === 'high') {
@@ -375,7 +375,7 @@ function buildDemoStatsResponse(data: StatsOverviewResponse, jobs: JobResponse[]
       }
     }
 
-    if (isNewThisWeek && job.status !== 'dismissed') {
+    if (isNewThisWeek && job.status !== 'dismissed' && job.status !== 'archived') {
       newThisWeek += 1
     }
 
@@ -391,8 +391,8 @@ function buildDemoStatsResponse(data: StatsOverviewResponse, jobs: JobResponse[]
     if (job.status === 'new') {
       pending += 1
     }
-    if (job.status === 'closed') {
-      closed += 1
+    if (job.status === 'archived') {
+      archived += 1
     }
 
     if (typeof fitScore === 'number') {
@@ -421,7 +421,7 @@ function buildDemoStatsResponse(data: StatsOverviewResponse, jobs: JobResponse[]
     applied,
     dismissed,
     pending,
-    closed,
+    archived,
     score_distribution: scoreDistribution,
     apply_priority_counts: applyPriorityCounts,
   }

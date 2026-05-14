@@ -34,7 +34,7 @@ export function HighPriorityTable({ jobs, loading }: { jobs: any[], loading?: bo
             {jobs.length} shown
           </Badge>
         </div>
-        <Link href="/jobs?status=scored&min_score=80" className="text-xs text-primary hover:underline font-medium flex items-center gap-1">
+        <Link href="/jobs?status=scored&min_score=80&days=all" className="text-xs text-primary hover:underline font-medium flex items-center gap-1">
           View all <ExternalLink className="h-3 w-3" />
         </Link>
       </div>

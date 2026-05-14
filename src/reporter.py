@@ -126,7 +126,7 @@ def print_stats(stats: dict[str, Any]) -> None:
     print(f"  Scored:        {stats['scored']}")
     print(f"  Applied:       {stats['applied']}")
     print(f"  Dismissed:     {stats['dismissed']}")
-    print(f"  Closed/stale:  {stats['closed']}")
+    print(f"  Archived:      {stats['archived']}")
 
     dist = stats.get("score_distribution", {})
     if any(dist.values()):

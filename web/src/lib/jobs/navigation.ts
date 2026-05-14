@@ -8,6 +8,7 @@ export type JobBoardState = {
   sort: string
   minScore: string
   search: string
+  days: number | null
   todayOnly: boolean
   isSparse: boolean | null
 }
@@ -19,6 +20,7 @@ export const DEFAULT_JOB_BOARD_STATE: JobBoardState = {
   sort: 'score',
   minScore: '',
   search: '',
+  days: 14,
   todayOnly: false,
   isSparse: null,
 }
@@ -26,6 +28,8 @@ export const DEFAULT_JOB_BOARD_STATE: JobBoardState = {
 export function parseJobBoardState(searchParams: URLSearchParams): JobBoardState {
   const rawPage = parseInt(searchParams.get('page') ?? '1', 10)
   const rawMinScore = searchParams.get('min_score') ?? ''
+  const rawDays = searchParams.get('days')
+  const parsedDays = rawDays === null ? DEFAULT_JOB_BOARD_STATE.days : parseInt(rawDays, 10)
   const isSparse = rawMinScore === 'sparse'
 
   return {
@@ -35,6 +39,7 @@ export function parseJobBoardState(searchParams: URLSearchParams): JobBoardState
     sort: searchParams.get('sort') || DEFAULT_JOB_BOARD_STATE.sort,
     minScore: isSparse ? '' : rawMinScore,
     search: searchParams.get('search') || '',
+    days: parsedDays !== null && Number.isFinite(parsedDays) && parsedDays > 0 ? parsedDays : null,
     todayOnly: searchParams.get('today_only') === 'true',
     isSparse: isSparse ? true : null,
   }
@@ -47,6 +52,10 @@ export function buildJobBoardHref(state: JobBoardState): string {
   if (state.status !== DEFAULT_JOB_BOARD_STATE.status) params.set('status', state.status)
   if (state.trackedMode !== DEFAULT_JOB_BOARD_STATE.trackedMode) params.set('tracked_mode', state.trackedMode)
   if (state.sort !== DEFAULT_JOB_BOARD_STATE.sort) params.set('sort', state.sort)
+  if (state.days !== DEFAULT_JOB_BOARD_STATE.days) {
+    if (state.days !== null) params.set('days', String(state.days))
+    else params.set('days', 'all')
+  }
   if (state.isSparse) {
     params.set('min_score', 'sparse')
   } else if (state.minScore) {

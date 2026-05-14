@@ -59,8 +59,8 @@ def test_company_stats_only_include_recent_in_funnel_jobs():
                 ats_platform="ashby",
                 company_slug="globex",
                 company_name="Globex",
-                job_id="closed-role",
-                title="Closed role",
+                job_id="archived-role",
+                title="Archived role",
                 location="Remote",
                 url="https://example.com/4",
                 description="Role four",
@@ -91,8 +91,8 @@ def test_company_stats_only_include_recent_in_funnel_jobs():
 
         with store._connect() as conn:
             conn.execute(
-                "UPDATE jobs SET status = 'closed', last_seen_at = ? WHERE job_id = ?",
-                (_recent_timestamp(-1, 9, 0), "closed-role"),
+                "UPDATE jobs SET status = 'archived', last_seen_at = ? WHERE job_id = ?",
+                (_recent_timestamp(-1, 9, 0), "archived-role"),
             )
             conn.execute(
                 "UPDATE jobs SET first_seen_at = ?, last_seen_at = ? WHERE job_id = ?",

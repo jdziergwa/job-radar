@@ -98,6 +98,11 @@ export function JobListItem({ job, boardHref }: { job: JobResponse; boardHref: s
                       {job.dismissal_reason}
                     </Badge>
                   )}
+                  {job.status === 'archived' && (
+                    <Badge variant="outline" className="text-[10px] font-medium px-2 py-0 h-4 bg-amber-500/5 border-amber-500/25 text-amber-700 dark:text-amber-300">
+                      {job.last_seen_at ? `Last seen ${timeAgo(job.last_seen_at)}` : 'No longer seen'}
+                    </Badge>
+                  )}
                 </div>
               )}
               {job.application_status && (

@@ -183,6 +183,8 @@ scoring:
   min_score_to_display: 50
   concurrency: 10
   batch_size: 5
+runtime:
+  archive_after_days: 14
 output:
   terminal: true
   markdown_report: true

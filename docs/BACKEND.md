@@ -27,9 +27,9 @@ api/
 Board-oriented job discovery endpoints:
 - list jobs with filtering and pagination
 - fetch a single job detail
-- update board-level status (`new`, `scored`, `dismissed`)
+- update board-level status (`new`, `scored`, `dismissed`, `archived`)
 - delete manually imported jobs
-- trigger rescoring for one job or all jobs
+- trigger rescoring for one job or a scoped set of jobs
 
 ### `applications.py`
 

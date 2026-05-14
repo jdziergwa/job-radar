@@ -58,6 +58,7 @@ import {
   PencilLine,
   Plus,
   Trash2,
+  Archive,
 } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { useRouter } from 'next/navigation'
@@ -693,6 +694,11 @@ export function JobDetailView({
                   Reason: {job.dismissal_reason}
                 </Badge>
               )}
+              {job.status === 'archived' && (
+                <Badge variant="outline" className="px-3 border-amber-500/25 bg-amber-500/10 text-amber-700 dark:text-amber-300">
+                  Last seen: {job.last_seen_at ? formatDate(job.last_seen_at) : 'unknown'}
+                </Badge>
+              )}
               {job.is_fresh && (
                 <Tooltip>
                   <TooltipTrigger
@@ -880,6 +886,15 @@ export function JobDetailView({
               >
                 <XCircle className="h-4 w-4" />
                 Dismiss Job
+              </Button>
+              <Button
+                variant="outline"
+                className="w-full gap-2 h-11"
+                onClick={() => updateStatus('archived')}
+                disabled={job.status === 'archived' || updating}
+              >
+                <Archive className="h-4 w-4" />
+                Archive Job
               </Button>
               {job.status !== 'new' && job.status !== 'scored' && (
                 <Button

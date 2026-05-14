@@ -26,12 +26,14 @@ import {
 } from '@/lib/jobs/navigation'
 
 const STATUS_OPTIONS = [
-  { value: 'new,scored', trackedMode: 'exclude', label: 'Active' },
-  { value: 'new', trackedMode: 'exclude', label: 'Unscored' },
-  { value: 'scored', trackedMode: 'exclude', label: 'Scored' },
-  { value: '', trackedMode: 'only', label: 'Tracked' },
-  { value: 'dismissed', trackedMode: 'all', label: 'Dismissed' },
-  { value: '', trackedMode: 'all', label: 'Total' },
+  { value: 'new,scored', trackedMode: 'exclude', days: 14, label: 'Recent' },
+  { value: 'new', trackedMode: 'exclude', days: 14, label: 'Unscored' },
+  { value: 'scored', trackedMode: 'exclude', days: 14, label: 'Scored' },
+  { value: '', trackedMode: 'only', days: null, label: 'Tracked' },
+  { value: 'new,scored', trackedMode: 'exclude', days: null, label: 'All Active' },
+  { value: 'archived', trackedMode: 'all', days: null, label: 'Archived' },
+  { value: 'dismissed', trackedMode: 'all', days: null, label: 'Dismissed' },
+  { value: '', trackedMode: 'all', days: null, label: 'All' },
 ] as const
 
 const SORT_OPTIONS = [
@@ -61,6 +63,7 @@ export default function JobsPage() {
   const [trackedMode, setTrackedMode] = useState(DEFAULT_JOB_BOARD_STATE.trackedMode)
   const [sort, setSort] = useState(DEFAULT_JOB_BOARD_STATE.sort)
   const [minScore, setMinScore] = useState(DEFAULT_JOB_BOARD_STATE.minScore)
+  const [days, setDays] = useState(DEFAULT_JOB_BOARD_STATE.days)
   const [searchTerm, setSearchTerm] = useState(DEFAULT_JOB_BOARD_STATE.search)
   const [search, setSearch] = useState(DEFAULT_JOB_BOARD_STATE.search)
   const [isSparse, setIsSparse] = useState<boolean | null>(DEFAULT_JOB_BOARD_STATE.isSparse)
@@ -105,6 +108,9 @@ export default function JobsPage() {
       minScore: Object.prototype.hasOwnProperty.call(overrides, 'minScore')
         ? overrides.minScore ?? ''
         : currentState.minScore,
+      days: Object.prototype.hasOwnProperty.call(overrides, 'days')
+        ? overrides.days ?? null
+        : currentState.days,
       search: Object.prototype.hasOwnProperty.call(overrides, 'search')
         ? overrides.search ?? ''
         : currentState.search,
@@ -124,6 +130,7 @@ export default function JobsPage() {
     setTrackedMode(nextState.trackedMode)
     setSort(nextState.sort)
     setMinScore(nextState.minScore)
+    setDays(nextState.days)
     setSearch(nextState.search)
     setIsSparse(nextState.isSparse)
     setTodayOnly(nextState.todayOnly)
@@ -139,6 +146,7 @@ export default function JobsPage() {
       if (nextState.status) query.status = nextState.status
       if (nextState.trackedMode) query.tracked_mode = nextState.trackedMode
       if (nextState.minScore) query.min_score = parseInt(nextState.minScore, 10)
+      if (nextState.days !== null) query.days = nextState.days
       if (nextState.search) query.search = nextState.search
       if (nextState.isSparse !== null) query.is_sparse = nextState.isSparse
       if (nextState.todayOnly) query.today_only = true
@@ -188,6 +196,7 @@ export default function JobsPage() {
     trackedMode,
     sort,
     minScore,
+    days,
     search,
     todayOnly,
     isSparse,
@@ -211,8 +220,8 @@ export default function JobsPage() {
     clearSavedJobBoardScroll()
   }, [boardHref, loading])
 
-  const applyStatus = (val: string, nextTrackedMode: JobBoardState['trackedMode']) => {
-    fetchJobs(buildNextState(1, { status: val, trackedMode: nextTrackedMode }))
+  const applyStatus = (val: string, nextTrackedMode: JobBoardState['trackedMode'], nextDays: number | null) => {
+    fetchJobs(buildNextState(1, { status: val, trackedMode: nextTrackedMode, days: nextDays }))
   }
 
   const applyTodayOnly = (val: boolean) => {
@@ -294,7 +303,7 @@ export default function JobsPage() {
             onClick={() => setStatusOpen(!statusOpen)}
             className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-all border bg-primary text-primary-foreground border-primary shadow-sm cursor-pointer"
           >
-            {STATUS_OPTIONS.find((o) => o.value === status && o.trackedMode === trackedMode)?.label || 'Active'}
+            {STATUS_OPTIONS.find((o) => o.value === status && o.trackedMode === trackedMode && o.days === days)?.label || 'Recent'}
             <ChevronDown className={`h-3 w-3 text-muted-foreground transition-transform ${statusOpen ? 'rotate-180' : ''}`} />
           </button>
           {statusOpen && (
@@ -302,9 +311,9 @@ export default function JobsPage() {
               {STATUS_OPTIONS.map((opt) => (
                 <button
                   key={`${opt.label}-${opt.value}-${opt.trackedMode}`}
-                  onClick={() => { applyStatus(opt.value, opt.trackedMode); setStatusOpen(false) }}
+                  onClick={() => { applyStatus(opt.value, opt.trackedMode, opt.days); setStatusOpen(false) }}
                   className={`w-full text-left px-3 py-1.5 text-xs font-semibold transition-colors block ${
-                    status === opt.value && trackedMode === opt.trackedMode
+                    status === opt.value && trackedMode === opt.trackedMode && days === opt.days
                       ? 'text-primary bg-primary/10'
                       : 'text-popover-foreground/70 hover:text-popover-foreground hover:bg-muted/40'
                   }`}

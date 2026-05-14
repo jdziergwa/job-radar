@@ -20,7 +20,7 @@ class _FakeAnalyticsStore:
             "pending": 2,
             "applied": 1,
             "dismissed": 1,
-            "closed": 0,
+            "archived": 0,
             "score_distribution": {"90-100": 1},
             "apply_priority_counts": {"high": 1, "medium": 2, "low": 1, "skip": 2},
         }

@@ -482,6 +482,7 @@ class Store:
                    END
                    WHERE status = 'applied'"""
             )
+            conn.execute("UPDATE jobs SET status = 'archived' WHERE status = 'closed'")
             conn.execute(
                 """UPDATE jobs
                    SET applied_at = NULL,
@@ -872,7 +873,14 @@ class Store:
                 for start in range(0, total_jobs, UPSERT_WRITE_CHUNK_SIZE):
                     batch = jobs[start:start + UPSERT_WRITE_CHUNK_SIZE]
                     conn.executemany(
-                        "UPDATE jobs SET last_seen_at = ? WHERE ats_platform = ? AND company_slug = ? AND job_id = ?",
+                        """UPDATE jobs
+                           SET last_seen_at = ?,
+                               status = CASE
+                                   WHEN status = 'archived' AND application_status IS NULL THEN
+                                       CASE WHEN scored_at IS NOT NULL THEN 'scored' ELSE 'new' END
+                                   ELSE status
+                               END
+                           WHERE ats_platform = ? AND company_slug = ? AND job_id = ?""",
                         [
                             (now, job.ats_platform, job.company_slug, job.job_id)
                             for job in batch
@@ -1657,33 +1665,38 @@ class Store:
             logger.info("Bulk updated %d dismissal reasons", count)
         return count
 
-    def mark_stale(self, stale_days: int = 7) -> int:
-        """Mark jobs absent for stale_days+ as 'closed'. Returns count."""
+    def archive_stale_jobs(self, stale_days: int = 14) -> int:
+        """Archive active pipeline jobs absent for stale_days+. Returns count."""
         cutoff = (datetime.utcnow() - timedelta(days=stale_days)).isoformat()
 
         with self._connect() as conn:
             cursor = conn.execute(
                 """UPDATE jobs
-                   SET status = 'closed'
+                   SET status = 'archived'
                    WHERE last_seen_at IS NOT NULL
                      AND last_seen_at < ?
-                     AND status NOT IN ('dismissed', 'closed')
-                     AND application_status IS NULL""",
+                     AND status IN ('new', 'scored')
+                     AND application_status IS NULL
+                     AND source = 'pipeline'
+                     AND NOT EXISTS (
+                         SELECT 1 FROM application_events ev WHERE ev.job_id = jobs.id
+                     )""",
                 (cutoff,),
             )
         count = cursor.rowcount
         if count:
-            logger.info("Marked %d stale jobs as closed", count)
+            self.set_metadata("last_job_status_change_at", datetime.utcnow().isoformat())
+            logger.info("Archived %d stale jobs", count)
         return count
 
-    def get_stale(self, days: int = 30) -> list[ScoredJob]:
-        """Get recently closed (stale) jobs."""
+    def get_archived(self, days: int = 30) -> list[ScoredJob]:
+        """Get recently archived jobs."""
         cutoff = (datetime.utcnow() - timedelta(days=days)).isoformat()
 
         with self._connect() as conn:
             rows = conn.execute(
                 """SELECT * FROM jobs
-                   WHERE status = 'closed'
+                   WHERE status = 'archived'
                      AND last_seen_at >= ?
                    ORDER BY last_seen_at DESC""",
                 (cutoff,),
@@ -1701,16 +1714,16 @@ class Store:
         with self._connect() as conn:
             total = conn.execute("SELECT COUNT(*) FROM jobs").fetchone()[0]
             new_today = conn.execute(
-                "SELECT COUNT(*) FROM jobs WHERE first_seen_at >= ? AND status != 'dismissed'", (today,)
+                "SELECT COUNT(*) FROM jobs WHERE first_seen_at >= ? AND status NOT IN ('dismissed', 'archived')", (today,)
             ).fetchone()[0]
             total_new_today = conn.execute(
                 "SELECT COUNT(*) FROM jobs WHERE first_seen_at >= ?", (today,)
             ).fetchone()[0]
             new_this_week = conn.execute(
-                "SELECT COUNT(*) FROM jobs WHERE first_seen_at >= ? AND status != 'dismissed'", (week_ago,)
+                "SELECT COUNT(*) FROM jobs WHERE first_seen_at >= ? AND status NOT IN ('dismissed', 'archived')", (week_ago,)
             ).fetchone()[0]
             high_priority_today_rows = conn.execute(
-                "SELECT fit_score, score_breakdown FROM jobs WHERE first_seen_at >= ? AND score_breakdown IS NOT NULL",
+                "SELECT fit_score, score_breakdown FROM jobs WHERE first_seen_at >= ? AND score_breakdown IS NOT NULL AND status != 'archived'",
                 (today,),
             ).fetchall()
             scored = conn.execute(
@@ -1725,8 +1738,8 @@ class Store:
             pending = conn.execute(
                 "SELECT COUNT(*) FROM jobs WHERE status = 'new'"
             ).fetchone()[0]
-            closed = conn.execute(
-                "SELECT COUNT(*) FROM jobs WHERE status = 'closed'"
+            archived = conn.execute(
+                "SELECT COUNT(*) FROM jobs WHERE status = 'archived'"
             ).fetchone()[0]
 
             # Score distribution
@@ -1784,7 +1797,7 @@ class Store:
             "pending": pending,
             "applied": applied,
             "dismissed": dismissed,
-            "closed": closed,
+            "archived": archived,
             "score_distribution": distribution,
             "apply_priority_counts": priority_counts,
         }

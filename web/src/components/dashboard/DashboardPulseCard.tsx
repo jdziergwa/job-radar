@@ -189,14 +189,14 @@ export function DashboardPulseCard({
       label: 'New This Week',
       value: newThisWeek,
       copy: 'Fresh matches surfaced in the last 7 days.',
-      href: '/jobs?status=new,scored',
+      href: '/jobs?status=new,scored&days=7',
       icon: CalendarDays,
     },
     {
       label: 'Strong Matches',
       value: highPriorityThisWeek,
       copy: 'Best-fit scored roles from the last 7 days.',
-      href: '/jobs?status=scored&min_score=80',
+      href: '/jobs?status=scored&min_score=80&days=7',
       icon: Target,
     },
   ]

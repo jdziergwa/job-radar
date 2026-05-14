@@ -63,7 +63,7 @@ export interface paths {
         head?: never;
         /**
          * Update Status
-         * @description Update a job's board-level status (new, scored, dismissed).
+         * @description Update a job's board-level status (new, scored, dismissed, archived).
          */
         patch: operations["update_status_api_jobs__job_id__status_patch"];
         trace?: never;
@@ -1981,7 +1981,7 @@ export interface components {
              * Closed
              * @default 0
              */
-            closed: number;
+            archived: number;
             /**
              * Score Distribution
              * @default {}
@@ -2003,7 +2003,7 @@ export interface components {
              * Status
              * @enum {string}
              */
-            status: "new" | "scored" | "dismissed";
+            status: "new" | "scored" | "dismissed" | "archived";
         };
         /** TimelineEventCreate */
         TimelineEventCreate: {

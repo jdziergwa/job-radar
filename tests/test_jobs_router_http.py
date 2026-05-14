@@ -34,10 +34,16 @@ def test_jobs_endpoints_list_detail_and_status_update(store, seed_sample_jobs, b
         f"/api/jobs/{scored_id}/status",
         json={"status": "dismissed"},
     )
+    archive_response = client.patch(
+        f"/api/jobs/{scored_id}/status",
+        json={"status": "archived"},
+    )
 
     assert patch_response.status_code == 200
     assert patch_response.json() == {"ok": True, "id": scored_id, "status": "dismissed"}
-    assert store.get_job_detail(scored_id)["status"] == "dismissed"
+    assert archive_response.status_code == 200
+    assert archive_response.json() == {"ok": True, "id": scored_id, "status": "archived"}
+    assert store.get_job_detail(scored_id)["status"] == "archived"
     assert store.get_metadata("last_job_status_change_at") is not None
 
 

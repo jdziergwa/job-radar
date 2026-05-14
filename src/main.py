@@ -174,8 +174,8 @@ Examples:
         help="Dismiss a job",
     )
     parser.add_argument(
-        "--stale", action="store_true",
-        help="Show jobs that disappeared from ATS feeds",
+        "--archived", action="store_true",
+        help="Show archived jobs that disappeared from ATS feeds",
     )
     parser.add_argument(
         "--job-id", type=int,
@@ -311,9 +311,9 @@ async def run() -> None:
             print(f"\n  ✗ Job #{args.dismiss} not found\n")
         return
 
-    if args.stale:
-        stale_jobs = store.get_stale(days=30)
-        print_results(stale_jobs, title="Job Radar — Stale Jobs (disappeared from feeds)")
+    if args.archived:
+        archived_jobs = store.get_archived(days=30)
+        print_results(archived_jobs, title="Job Radar — Archived Jobs")
         return
 
     if args.job_id and not (args.rescore or args.open or args.mark_applied or args.dismiss):
@@ -443,10 +443,10 @@ async def run() -> None:
         timer.reset_stage()
 
     if not skip_collection:
-        # Mark stale jobs (absent 7+ days)
-        stale_count = store.mark_stale(stale_days=7)
-        if stale_count:
-            logger.info("Marked %d jobs as closed (stale)", stale_count)
+        archive_after_days = int(runtime_config.get("archive_after_days", 14))
+        archived_count = store.archive_stale_jobs(stale_days=archive_after_days)
+        if archived_count:
+            logger.info("Archived %d jobs not seen for %d+ days", archived_count, archive_after_days)
 
     # 3. Pre-filter
     # If we have a single targeted job, we use it directly

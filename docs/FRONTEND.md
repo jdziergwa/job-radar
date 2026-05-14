@@ -56,7 +56,7 @@ Common patterns:
 ### Status and priority presentation
 
 There are two separate status systems in the UI:
-- board status: discovery workflow state such as `new`, `scored`, `dismissed`
+- board status: discovery workflow state such as `new`, `scored`, `dismissed`, `archived`
 - tracker status: application lifecycle state such as `applied`, `screening`, `offer`, `rejected_by_company`
 
 Priority styling comes from score-derived `apply_priority` and should not be conflated with tracker stage or board status.
@@ -120,6 +120,7 @@ Discovery workflow for fetched jobs.
 
 Key behaviors:
 - filter by board status, score, company, search term, days, and tracking mode
+- default board entry shows recent active jobs: `new,scored` discovered in the last 14 days
 - trigger rescoring
 - move into the tracker from job detail
 - keep filters bookmarkable via URL params

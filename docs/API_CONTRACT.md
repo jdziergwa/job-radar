@@ -10,7 +10,7 @@ Base URL:
 
 ```typescript
 type ATSPlatform = 'greenhouse' | 'lever' | 'ashby' | 'workable'
-type JobStatus = 'new' | 'scored' | 'dismissed'
+type JobStatus = 'new' | 'scored' | 'dismissed' | 'archived'
 type ApplyPriority = 'high' | 'medium' | 'low' | 'skip'
 type ApplicationStatus =
   | 'applied'
@@ -94,7 +94,7 @@ interface StatsOverview {
   pending: number
   applied: number
   dismissed: number
-  closed: number
+  archived: number
   score_distribution: Record<string, number>
   apply_priority_counts: Record<string, number>
 }
@@ -165,7 +165,7 @@ interface ImportJobResponse {
 ```
 
 Key model split:
-- `status` is the board-level state for discovery workflow: `new`, `scored`, `dismissed`
+- `status` is the board-level state for discovery workflow: `new`, `scored`, `dismissed`, `archived`
 - `application_status` is the tracker state for active applications and outcomes
 
 ## Jobs
@@ -179,7 +179,7 @@ Query parameters:
 | Param | Type | Default | Notes |
 |---|---|---:|---|
 | `profile` | string | `default` | Profile name |
-| `status` | string | all | Comma-separated board statuses: `new,scored,dismissed` |
+| `status` | string | all | Comma-separated board statuses: `new,scored,dismissed,archived` |
 | `tracked_mode` | string | `all` | `all`, `only`, `exclude` |
 | `min_score` | int | — | `0-100` |
 | `max_score` | int | — | `0-100` |
@@ -222,7 +222,7 @@ Body:
 { "status": "dismissed" }
 ```
 
-Allowed values: `new`, `scored`, `dismissed`
+Allowed values: `new`, `scored`, `dismissed`, `archived`
 
 ### `POST /api/jobs/{job_id}/rescore`
 

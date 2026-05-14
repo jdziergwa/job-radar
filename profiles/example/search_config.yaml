@@ -61,6 +61,10 @@ scoring:
   batch_size: 5
   min_request_interval_seconds: 0.5    # Increase or lower concurrency if you still see Anthropic rate limits
 
+# ── Runtime config ──────────────────────────────────────────────────
+runtime:
+  archive_after_days: 14               # Hide pipeline jobs not seen for this many days
+
 # ── Output config ───────────────────────────────────────────────────
 output:
   terminal: true

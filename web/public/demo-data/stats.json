@@ -9,7 +9,7 @@
   "pending": 0,
   "applied": 1,
   "dismissed": 28322,
-  "closed": 0,
+  "archived": 0,
   "score_distribution": {
     "90-100": 0,
     "80-89": 6,

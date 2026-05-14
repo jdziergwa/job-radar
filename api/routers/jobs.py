@@ -92,7 +92,7 @@ def delete_job(job_id: int, profile: str = Query("default")):
 
 @router.patch("/jobs/{job_id}/status")
 def update_status(job_id: int, body: StatusUpdate, profile: str = Query("default")):
-    """Update a job's board-level status (new, scored, dismissed)."""
+    """Update a job's board-level status (new, scored, dismissed, archived)."""
     store = get_store(profile)
     if not store.update_status(job_id, body.status):
         raise HTTPException(status_code=404, detail="Job not found")

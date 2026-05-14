@@ -132,7 +132,7 @@ class JobListResponse(BaseModel):
 
 
 class StatusUpdate(BaseModel):
-    status: Literal["new", "scored", "dismissed"]
+    status: Literal["new", "scored", "dismissed", "archived"]
 
 
 class ApplicationStatusUpdate(BaseModel):
@@ -350,7 +350,7 @@ class StatsOverview(BaseModel):
     pending: int = 0
     applied: int = 0
     dismissed: int = 0
-    closed: int = 0
+    archived: int = 0
     score_distribution: dict[str, int] = {}
     apply_priority_counts: dict[str, int] = {}
 

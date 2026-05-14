@@ -21,7 +21,7 @@ class RawJob:
     fetched_at: str         # ISO timestamp of fetch
     company_metadata: dict[str, object] = field(default_factory=dict)
     location_metadata: dict[str, object] = field(default_factory=dict)
-    status: str = "new"     # "new" | "dismissed"
+    status: str = "new"     # "new" | "dismissed" | "archived"
     dismissal_reason: str | None = None
     match_tier: str | None = None
     salary: str | None = None
