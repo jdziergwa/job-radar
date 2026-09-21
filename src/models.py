@@ -89,6 +89,8 @@ class ScoredJob:
     skip_reason: str = "none"               # location_onsite | location_timezone | tech_gap | seniority_mismatch | growth_mismatch | none
     missing_skills: list[str] = field(default_factory=list)
     normalization_audit: dict[str, object] = field(default_factory=dict)
+    llm_provider: str | None = None
+    llm_model: str | None = None
     scored_at: str | None = None
     is_sparse: bool = False
     scoring_error: str | None = None

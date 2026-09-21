@@ -965,6 +965,8 @@ class Store:
         skip_reason: str = "none",
         missing_skills: list[str] | None = None,
         normalization_audit: dict[str, object] | None = None,
+        llm_provider: str | None = None,
+        llm_model: str | None = None,
         salary: str | None = None,
         salary_min: int | None = None,
         salary_max: int | None = None,
@@ -976,7 +978,7 @@ class Store:
         """Store LLM scoring results for a job."""
         now = datetime.utcnow().isoformat()
         is_sparse_int = 1 if is_sparse else 0
-        breakdown_json = json.dumps({
+        payload: dict[str, object] = {
             "dimensions": breakdown,
             "key_matches": key_matches or [],
             "red_flags": red_flags or [],
@@ -985,7 +987,12 @@ class Store:
             "skip_reason": skip_reason or "none",
             "missing_skills": missing_skills or [],
             "normalization_audit": normalization_audit or {},
-        })
+        }
+        if llm_provider:
+            payload["llm_provider"] = llm_provider
+        if llm_model:
+            payload["llm_model"] = llm_model
+        breakdown_json = json.dumps(payload)
 
         with self._connect() as conn:
             updated = conn.execute(
@@ -3028,6 +3035,8 @@ class Store:
         skip_reason = "none"
         missing_skills: list[str] = []
         normalization_audit: dict[str, object] = {}
+        llm_provider: str | None = None
+        llm_model: str | None = None
         is_sparse = bool(row["is_sparse"]) if "is_sparse" in row.keys() else False
 
         if breakdown_raw:
@@ -3043,6 +3052,8 @@ class Store:
                 raw_audit = data.get("normalization_audit", {})
                 if isinstance(raw_audit, dict):
                     normalization_audit = raw_audit
+                llm_provider = data.get("llm_provider") or None
+                llm_model = data.get("llm_model") or None
             except json.JSONDecodeError:
                 pass
 
@@ -3081,6 +3092,8 @@ class Store:
             skip_reason=skip_reason,
             missing_skills=missing_skills,
             normalization_audit=normalization_audit,
+            llm_provider=llm_provider,
+            llm_model=llm_model,
             scored_at=row["scored_at"],
             status=row["status"] or "new",
             is_sparse=is_sparse,

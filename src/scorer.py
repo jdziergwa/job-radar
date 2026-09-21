@@ -1096,6 +1096,8 @@ async def score_jobs(
                     skip_reason=result.skip_reason,
                     missing_skills=result.missing_skills,
                     normalization_audit=result.normalization_audit,
+                    llm_provider=adapter.name if result.normalization_audit else None,
+                    llm_model=model if result.normalization_audit else None,
                     salary=result.salary,
                     salary_min=result.salary_min,
                     salary_max=result.salary_max,

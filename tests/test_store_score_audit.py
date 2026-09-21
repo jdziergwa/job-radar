@@ -106,3 +106,44 @@ def test_store_priority_filter_uses_normalized_fit_score_not_stale_breakdown_pri
         assert len(high_rows) == 1
         assert medium_total == 0
         assert medium_rows == []
+
+
+def _insert_job(store, job_id):
+    with store._connect() as conn:
+        return conn.execute(
+            """INSERT INTO jobs (
+                ats_platform, company_slug, job_id, company_name, title, location, url, description, first_seen_at
+            ) VALUES ('test', 'example', ?, 'ExampleCo', 'Role', 'Remote', 'https://example.com/x', 'd', '2026-04-08T00:00:00')""",
+            (job_id,),
+        ).lastrowid
+
+
+def test_store_persists_llm_provider_and_model_in_score_breakdown():
+    with tempfile.TemporaryDirectory() as tmpdir:
+        store = Store(str(Path(tmpdir) / "jobs.db"))
+        db_id = _insert_job(store, "3")
+
+        store.update_score(
+            db_id=db_id,
+            fit_score=70,
+            reasoning="r",
+            breakdown={"tech_stack_match": 70},
+            llm_provider="gemini",
+            llm_model="gemini-2.5-flash",
+        )
+
+        stored = store.get_job_by_id(db_id)
+        assert stored.llm_provider == "gemini"
+        assert stored.llm_model == "gemini-2.5-flash"
+
+
+def test_rows_scored_without_provenance_load_without_the_fields():
+    with tempfile.TemporaryDirectory() as tmpdir:
+        store = Store(str(Path(tmpdir) / "jobs.db"))
+        db_id = _insert_job(store, "4")
+
+        store.update_score(db_id=db_id, fit_score=70, reasoning="r", breakdown={"tech_stack_match": 70})
+
+        stored = store.get_job_by_id(db_id)
+        assert stored.llm_provider is None
+        assert stored.llm_model is None
