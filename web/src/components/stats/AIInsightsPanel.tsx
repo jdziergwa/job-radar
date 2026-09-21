@@ -7,8 +7,12 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/componen
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Sparkles, RefreshCw, AlertCircle } from 'lucide-react'
+import { AiLabel } from '@/components/ai/AiLabel'
+import { useAiConfig } from '@/lib/ai/use-ai-config'
 
 export function AIInsightsPanel() {
+  const aiConfig = useAiConfig()
+  const notConfigured = aiConfig !== null && !aiConfig.configured
   const [report, setReport] = useState<string | null>(null)
   const [generatedAt, setGeneratedAt] = useState<string | null>(null)
   const [cached, setCached] = useState(false)
@@ -53,6 +57,9 @@ export function AIInsightsPanel() {
             <Sparkles className="h-4 w-4 text-primary" />
             <CardTitle className="text-sm font-semibold">AI Market Insights</CardTitle>
           </div>
+          {!notConfigured && (
+            <AiLabel config={aiConfig} task="stats" className="text-[10px] text-muted-foreground/60" />
+          )}
           {!loading && report && (
             <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${cached ? 'text-muted-foreground border-border/50 bg-muted/20' : 'text-primary border-primary/30 bg-primary/10'}`}>
               {cached ? 'Cached' : 'Live'}
@@ -64,7 +71,15 @@ export function AIInsightsPanel() {
         )}
       </CardHeader>
       <CardContent>
-        {loading ? (
+        {notConfigured ? (
+          <div className="rounded-2xl border border-dashed border-amber-500/30 bg-amber-500/5 p-6 sm:p-7">
+            <div className="flex flex-col items-center gap-2 text-center">
+              <AlertCircle className="h-6 w-6 text-amber-500" />
+              <p className="text-sm font-medium">AI not configured</p>
+              <p className="max-w-md text-xs text-muted-foreground">{aiConfig?.error}</p>
+            </div>
+          </div>
+        ) : loading ? (
           <div className="space-y-2">
             <Skeleton className="h-4 w-1/3 bg-muted/20" />
             <Skeleton className="h-3 w-full bg-muted/20" />
@@ -116,7 +131,7 @@ export function AIInsightsPanel() {
           />
         )}
       </CardContent>
-      {report && !loading && (
+      {report && !loading && !notConfigured && (
         <CardFooter className="pt-0">
           <Button
             variant="outline"

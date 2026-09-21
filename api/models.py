@@ -627,3 +627,19 @@ class WizardStateResponse(BaseModel):
     profile_name: str
     cv_analysis: Optional[CVAnalysisResponse] = None
     user_preferences: Optional[UserPreferences] = None
+
+
+class AiModels(BaseModel):
+    scoring: str
+    wizard: str
+    stats: str
+
+
+class AiConfig(BaseModel):
+    """Active LLM Provider and per-task Models. Never carries an API key."""
+
+    configured: bool
+    provider: str | None = None
+    provider_display_name: str | None = None
+    models: AiModels | None = None
+    error: str | None = None

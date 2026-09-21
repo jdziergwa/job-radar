@@ -4,6 +4,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from pathlib import Path
 from dotenv import load_dotenv
 
+from api.models import AiConfig
+from src.llm import describe_active
+
 # Load environment variables from .env
 load_dotenv()
 
@@ -32,6 +35,12 @@ app.include_router(profile.router, prefix="/api", tags=["profile"])
 app.include_router(companies.router, prefix="/api", tags=["companies"])
 
 
+
+
+@app.get("/api/ai-config", tags=["config"], response_model=AiConfig)
+def ai_config():
+    """Active LLM Provider and per-task Models. Never includes API keys."""
+    return describe_active()
 
 
 @app.get("/api/health", tags=["health"])

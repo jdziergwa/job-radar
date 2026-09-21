@@ -105,3 +105,20 @@ def _require_owned(provider, model: str) -> None:
         raise LLMConfigError(
             f"Model '{model}' does not belong to LLM Provider '{provider.name}'."
         )
+
+
+def describe_active() -> dict:
+    """Public, key-free view of the active LLM Provider and per-task Models.
+
+    Never raises: a misconfiguration is reported as `configured: False` with the
+    reason in `error`, so the UI can show an "AI not configured" state.
+    """
+    try:
+        check_api_key()
+        provider = _adapter_override or _adapter_class(resolve_provider_name())
+        models = {task.value: resolve_model(task) for task in AITask}
+    except (LLMConfigError, ImportError) as e:
+        return {"configured": False, "provider": None, "provider_display_name": None,
+                "models": None, "error": str(e)}
+    return {"configured": True, "provider": provider.name,
+            "provider_display_name": provider.display_name, "models": models, "error": None}

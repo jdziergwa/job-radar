@@ -481,7 +481,7 @@ Structured market intelligence payload.
 
 ### `GET /api/stats/insights`
 
-Cached narrative market insights.
+Cached narrative market insights. Returns `503` with an `AI not configured: ...` detail when no API key is set.
 
 Query parameters:
 
@@ -489,7 +489,25 @@ Query parameters:
 |---|---|---:|---|
 | `profile` | string | `default` | Profile name |
 | `days` | int | `30` | Analysis window |
-| `force` | bool | `false` | Regenerates via Claude when true |
+| `force` | bool | `false` | Regenerates via the active LLM Provider when true |
+
+## AI Configuration
+
+### `GET /api/ai-config`
+
+The active LLM Provider and the Model for each AI Task. Never includes an API key. Always returns `200`; a missing or ambiguous key is reported in the body so the UI can show an "AI not configured" state.
+
+```ts
+interface AiConfig {
+  configured: boolean
+  provider: string | null               // "anthropic" | "gemini"
+  provider_display_name: string | null  // e.g. "Gemini"
+  models: { scoring: string; wizard: string; stats: string } | null
+  error: string | null                  // why AI is not configured
+}
+```
+
+The wizard's `POST /api/wizard/analyze-cv` also returns `503` with an `AI not configured: ...` detail when the key is missing.
 
 ## Pipeline
 

@@ -34,8 +34,11 @@ import {
   ChevronRight
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
+import { AiLabel } from '@/components/ai/AiLabel'
+import { useAiConfig } from '@/lib/ai/use-ai-config'
 
 export default function SettingsPage() {
+  const aiConfig = useAiConfig()
   const [yamlContent, setYamlContent] = useState('')
   const [docContent, setDocContent] = useState('')
   const [philosophyContent, setPhilosophyContent] = useState('')
@@ -283,7 +286,7 @@ export default function SettingsPage() {
                   </p>
                   <div className="mt-5 border-t border-border/20 pt-3">
                     <div className="inline-flex flex-wrap items-center gap-2 text-[11px]">
-                      <span className="font-medium text-muted-foreground/70">Claude Sonnet</span>
+                      <AiLabel config={aiConfig} task="wizard" className="font-medium text-muted-foreground/70" />
                       <span className="font-medium text-primary/70">1 AI call, est. $0.08</span>
                     </div>
                   </div>
@@ -312,7 +315,7 @@ export default function SettingsPage() {
                   </p>
                   <div className="mt-5 border-t border-border/20 pt-3">
                     <div className="inline-flex flex-wrap items-center gap-2 text-[11px]">
-                      <span className="font-medium text-muted-foreground/70">Claude Sonnet</span>
+                      <AiLabel config={aiConfig} task="wizard" className="font-medium text-muted-foreground/70" />
                       <span className="font-medium text-primary/70">Typically 2 AI calls, est. $0.15</span>
                     </div>
                   </div>

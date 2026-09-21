@@ -11,10 +11,13 @@ import { Loader2, Play, Terminal, Zap, History, Info } from 'lucide-react'
 import { Label } from '@/components/ui/label'
 import { PipelineProgressDialog } from './PipelineProgressDialog'
 import type { components } from '@/lib/api/types'
+import { AiLabel } from '@/components/ai/AiLabel'
+import { useAiConfig } from '@/lib/ai/use-ai-config'
 
 type ProviderInfo = components['schemas']['ProviderInfo']
 
 export function PipelineTrigger({ collapsed = false }: { collapsed?: boolean }) {
+  const aiConfig = useAiConfig()
   const [open, setOpen] = useState(false)
   const [showProgress, setShowProgress] = useState(false)
   const [activeRun, setActiveRun] = useState<{ running: boolean; run_id: string | null } | null>(null)
@@ -87,6 +90,10 @@ export function PipelineTrigger({ collapsed = false }: { collapsed?: boolean }) 
   const handleStart = async () => {
     if (selectedSources.length === 0) {
       toast.error("Please select at least one source")
+      return
+    }
+    if (!dryRun && aiConfig && !aiConfig.configured) {
+      toast.error(`AI not configured: ${aiConfig.error ?? 'missing API key'}. Use a Dry Run or set a key.`)
       return
     }
     setIsStarting(true)
@@ -230,7 +237,11 @@ export function PipelineTrigger({ collapsed = false }: { collapsed?: boolean }) 
                     >
                       <div className="flex flex-col">
                         <span className={`text-sm font-bold ${!dryRun ? 'text-primary' : ''}`}>Intelligence Pass</span>
-                        <span className="text-[10px] text-muted-foreground mt-0.5">AI scoring · uses API credits</span>
+                        {aiConfig && !aiConfig.configured ? (
+                          <span className="text-[10px] text-amber-500 mt-0.5" title={aiConfig.error ?? undefined}>AI not configured · scoring unavailable</span>
+                        ) : (
+                          <span className="text-[10px] text-muted-foreground mt-0.5"><AiLabel config={aiConfig} task="scoring" /> · uses API credits</span>
+                        )}
                       </div>
                       <div className={`h-2 w-2 rounded-full transition-all ${!dryRun ? 'bg-primary scale-125' : 'bg-muted scale-100'}`} />
                     </div>
