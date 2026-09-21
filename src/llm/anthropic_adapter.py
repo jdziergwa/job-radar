@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import logging
+import time
 from typing import Any
 
 import anthropic
@@ -17,6 +19,8 @@ from src.llm.base import (
     Usage,
     parse_retry_after_seconds,
 )
+
+logger = logging.getLogger(__name__)
 
 # Models that run at low effort; Haiku also runs without extended thinking.
 _LOW_EFFORT_MODELS = {HAIKU_MODEL, SONNET_MODEL}
@@ -87,6 +91,11 @@ class AnthropicAdapter:
 
         # A timeout is a hard cap: disable the SDK's own retries so they don't multiply it.
         client = self._client if timeout is None else self._client.with_options(timeout=timeout, max_retries=0)
+        logger.debug(
+            "Anthropic request: model=%s max_tokens=%d timeout=%s cache_system=%s system_chars=%d messages=%d",
+            model, max_tokens, timeout, cache_system, len(system), len(messages),
+        )
+        started = time.monotonic()
         try:
             response = await client.messages.create(
                 model=model,
@@ -97,16 +106,39 @@ class AnthropicAdapter:
             )
         except anthropic.RateLimitError as error:
             headers = getattr(getattr(error, "response", None), "headers", None)
+            logger.warning("Anthropic rate limited after %.1fs (model=%s): %s", time.monotonic() - started, model, error)
             raise LLMRateLimitError(str(error), parse_retry_after_seconds(headers)) from error
         except anthropic.APIError as error:
+            logger.error(
+                "Anthropic API error after %.1fs (model=%s, status=%s): %s",
+                time.monotonic() - started, model, getattr(error, "status_code", None), error,
+            )
             raise LLMAPIError(str(error)) from error
+        except Exception:
+            logger.exception("Anthropic call raised an unexpected error (model=%s)", model)
+            raise
+        elapsed = time.monotonic() - started
+
+        usage = getattr(response, "usage", None)
+        stop_reason = getattr(response, "stop_reason", None)
+        logger.debug(
+            "Anthropic response in %.1fs: model=%s stop_reason=%s input_tokens=%s output_tokens=%s "
+            "cache_read=%s cache_write=%s",
+            elapsed, model, stop_reason,
+            getattr(usage, "input_tokens", None), getattr(usage, "output_tokens", None),
+            getattr(usage, "cache_read_input_tokens", None), getattr(usage, "cache_creation_input_tokens", None),
+        )
+        if stop_reason == "max_tokens":
+            logger.warning(
+                "Anthropic response hit max_tokens=%d (model=%s) — output is likely truncated", max_tokens, model
+            )
 
         try:
             text = message_text(response)
         except ValueError as error:
+            logger.error("Anthropic response unusable (model=%s, stop_reason=%s): %s", model, stop_reason, error)
             raise LLMAPIError(str(error)) from error
 
-        usage = getattr(response, "usage", None)
         return LLMResult(
             text=text,
             usage=Usage(

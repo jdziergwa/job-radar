@@ -140,6 +140,14 @@ def _log_normalization(raw: ScoredJob, normalized: ScoredJob) -> None:
     )
 
 
+def _log_raw_response(context: str, text: str | None) -> None:
+    """Show the start of a bad LLM response at WARNING and the whole of it at DEBUG."""
+    if text is None:
+        return
+    logger.warning("%s — raw response (%d chars, first 500): %r", context, len(text), text[:500])
+    logger.debug("%s — full raw response:\n%s", context, text)
+
+
 # Resolve paths relative to this file, not cwd
 _SRC_DIR = Path(__file__).resolve().parent
 _PROJECT_ROOT = _SRC_DIR.parent
@@ -727,14 +735,16 @@ def _parse_batch_response(text: str, expected_count: int, *, structured: bool = 
     try:
         json_str = _extract_json(text, is_array=True)
         if not json_str:
+            logger.warning("Batch parse: no JSON array found in response")
             return None
 
         # Try json.loads()
         try:
             data = json.loads(json_str)
-        except json.JSONDecodeError:
+        except json.JSONDecodeError as e:
             # One more attempt: check if it's a list but wrapped in something
             # (already covered by _extract_json but being defensive)
+            logger.warning("Batch parse: invalid JSON (%s)", e)
             return None
 
         # Validate structure (list of exactly expected_count dicts)
@@ -746,6 +756,12 @@ def _parse_batch_response(text: str, expected_count: int, *, structured: bool = 
             
             if all(isinstance(d, dict) and "fit_score" in d for d in data):
                 return data
+            logger.warning("Batch parse: array items are not all objects with a fit_score")
+        else:
+            logger.warning(
+                "Batch parse: expected a list of %d items, got %s of length %s",
+                expected_count, type(data).__name__, len(data) if isinstance(data, list) else "n/a",
+            )
 
     except Exception as e:
         logger.warning("Batch parse error: %s", e)
@@ -770,12 +786,18 @@ async def score_job(
     """
     model = model or resolve_model(AITask.SCORING)
     user_message = _build_user_message(job, max_desc_chars, profile_config)
+    label = f"{job.title} @ {job.company_name} (db_id={job.db_id})"
 
     for attempt in range(1, MAX_RETRIES + 1):
+        raw_text: str | None = None
         try:
             if rate_limiter is not None:
                 await rate_limiter.wait_for_slot()
 
+            logger.debug(
+                "Scoring single job %s via %s/%s (attempt %d/%d, user_chars=%d)",
+                label, adapter.name, model, attempt, MAX_RETRIES, len(user_message),
+            )
             response = await adapter.complete(
                 system=system_prompt,
                 messages=[{"role": "user", "content": user_message}],
@@ -787,6 +809,9 @@ async def score_job(
 
             raw_text = response.text
             data = _parse_score_response(raw_text)
+            logger.debug(
+                "Scored %s: fit_score=%s priority=%s", label, data.get("fit_score"), data.get("apply_priority")
+            )
 
             metadata = _extract_metadata(data)
             raw_result = ScoredJob(
@@ -830,10 +855,12 @@ async def score_job(
                 "Invalid score for %s @ %s (attempt %d/%d): %s",
                 job.title, job.company_name, attempt, MAX_RETRIES, error,
             )
+            _log_raw_response(f"Unparseable score for {label}", raw_text)
             if attempt < MAX_RETRIES:
                 await asyncio.sleep(1 * attempt)  # Exponential backoff
                 continue
             # Return error score on final failure
+            logger.error("Giving up on %s after %d parse failures; recording a failed attempt", label, MAX_RETRIES)
             return _error_scored_job(job, "PARSE_ERROR")
 
         except LLMRateLimitError as error:
@@ -854,12 +881,15 @@ async def score_job(
             if attempt < MAX_RETRIES:
                 await asyncio.sleep(2 ** attempt)
                 continue
+            logger.error("Giving up on %s after %d API errors; recording a failed attempt: %s", label, MAX_RETRIES, e)
             return _error_scored_job(job, f"API_ERROR: {e}")
 
         except Exception as e:
-            logger.error("Unexpected error scoring %s @ %s: %s", job.title, job.company_name, e)
+            logger.exception("Unexpected error scoring %s; recording a failed attempt: %s", label, e)
+            _log_raw_response(f"Response for {label} before the error", raw_text)
             return _error_scored_job(job, f"ERROR: {e}")
 
+    logger.error("Giving up on %s: rate limits persisted after %d attempts; recording a failed attempt", label, MAX_RETRIES)
     return _error_scored_job(job, f"Temporary scoring failure: {adapter.display_name} rate limits persisted after retries.")
 
 
@@ -887,11 +917,18 @@ async def score_batch(
         user_message += '\nReturn an object with a "jobs" array. Set each result\'s integer "job_id" to its input job ID.'
     max_tokens = min(1280 * len(jobs), 8192) if structured else min(800 * len(jobs), 4096)
 
+    batch_ids = [job.db_id for job in jobs]
+
     for attempt in range(1, MAX_RETRIES + 1):
+        raw_text: str | None = None
         try:
             if rate_limiter is not None:
                 await rate_limiter.wait_for_slot()
 
+            logger.debug(
+                "Scoring batch db_ids=%s via %s/%s (attempt %d/%d, max_tokens=%d, user_chars=%d)",
+                batch_ids, adapter.name, model, attempt, MAX_RETRIES, max_tokens, len(user_message),
+            )
             response = await adapter.complete(
                 system=system_prompt,
                 messages=[{"role": "user", "content": user_message}],
@@ -943,10 +980,14 @@ async def score_batch(
                     )
                     _log_normalization(raw_result, normalized_result)
                     results.append(normalized_result)
+                logger.debug(
+                    "Scored batch db_ids=%s: fit_scores=%s", batch_ids, [r.fit_score for r in results]
+                )
                 return results
 
             # Fallback if None returned from parser
-            logger.warning("Batch scoring fallback for %d jobs (parsing failed)", len(jobs))
+            logger.warning("Batch scoring fallback for %d jobs db_ids=%s (parsing failed)", len(jobs), batch_ids)
+            _log_raw_response(f"Unparseable batch db_ids={batch_ids}", raw_text)
             break # Exit retry loop and use fallback
 
         except LLMRateLimitError as error:
@@ -960,14 +1001,15 @@ async def score_batch(
             continue
 
         except (LLMAPIError, ValueError) as e:
-            logger.warning("API/JSON error in batch (attempt %d/%d): %s", attempt, MAX_RETRIES, e)
+            logger.warning("API/JSON error in batch db_ids=%s (attempt %d/%d): %s", batch_ids, attempt, MAX_RETRIES, e)
             if attempt < MAX_RETRIES:
                 await asyncio.sleep(2 ** attempt)
                 continue
             break
 
         except Exception as e:
-            logger.error("Unexpected error in batch scoring: %s", e)
+            logger.exception("Unexpected error in batch scoring db_ids=%s: %s", batch_ids, e)
+            _log_raw_response(f"Batch response for db_ids={batch_ids} before the error", raw_text)
             break
 
     # Final fallback for any terminal failure: score each individually
@@ -1130,13 +1172,28 @@ async def score_jobs(
             return results
 
     adapter = get_adapter()
+    logger.info(
+        "Scoring via LLM Provider %s (%s), model=%s, system_prompt_chars=%d",
+        adapter.display_name, adapter.name, model, len(system_prompt),
+    )
     try:
         all_results = await asyncio.gather(*(worker(batch) for batch in batches))
+    except Exception:
+        logger.exception("Scoring run aborted after %d/%d jobs", completed_count, total)
+        raise
     finally:
         await adapter.aclose()
 
     # Flatten results
     scored = [job for batch_result in all_results for job in batch_result]
+    failed = [job for job in scored if job.scoring_error is not None]
+    if failed:
+        logger.error(
+            "Scoring finished: %d/%d jobs failed; their previous scores were kept (first reason: %s)",
+            len(failed), len(scored), failed[0].scoring_error,
+        )
+    else:
+        logger.info("Scoring finished: %d jobs scored", len(scored))
     return scored
 
 

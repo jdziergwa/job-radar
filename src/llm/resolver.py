@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import os
 from typing import Mapping
 
@@ -16,6 +17,8 @@ _MODEL_ENV = {
     AITask.WIZARD: "WIZARD_MODEL",
     AITask.STATS: "STATS_MODEL",
 }
+
+logger = logging.getLogger(__name__)
 
 _adapter_override: LLMAdapter | None = None
 
@@ -45,6 +48,7 @@ def resolve_provider_name() -> str:
         if explicit not in _PROVIDERS:
             supported = ", ".join(_PROVIDERS)
             raise LLMConfigError(f"Unsupported LLM_PROVIDER '{explicit}'. Supported: {supported}.")
+        logger.debug("LLM Provider '%s' chosen by LLM_PROVIDER", explicit)
         return explicit
 
     configured = {
@@ -53,11 +57,14 @@ def resolve_provider_name() -> str:
         if (env := next((env for env in _CREDENTIAL_ENVS[name] if os.getenv(env)), None))
     }
     if len(configured) == 1:
-        return next(iter(configured))
+        name, env = next(iter(configured.items()))
+        logger.debug("LLM Provider '%s' inferred from the only API key set (%s)", name, env)
+        return name
     if configured:
         keys = " and ".join(configured.values())
         raise LLMConfigError(f"Both {keys} are set. Set LLM_PROVIDER to {' or '.join(configured)}.")
     # No key at all: default to Anthropic so the missing-key error names its env var.
+    logger.debug("No LLM API key set; defaulting LLM Provider to 'anthropic'")
     return "anthropic"
 
 
@@ -67,6 +74,7 @@ def check_api_key() -> None:
         return
     adapter_class = _adapter_class(resolve_provider_name())
     if not any(os.getenv(env) for env in adapter_class.credential_envs):
+        logger.error("%s not found in environment or .env file", adapter_class.api_key_env)
         raise LLMConfigError(f"{adapter_class.api_key_env} not found in environment or .env file.")
 
 
@@ -88,20 +96,24 @@ def resolve_model(
     provider = _adapter_override or _adapter_class(resolve_provider_name())
 
     candidates = [
-        profile_model if task is AITask.SCORING else None,
-        (settings_overrides or {}).get(task),
-        os.getenv(_MODEL_ENV[task]),
+        ("profile YAML", profile_model if task is AITask.SCORING else None),
+        ("Settings override", (settings_overrides or {}).get(task)),
+        (_MODEL_ENV[task], os.getenv(_MODEL_ENV[task])),
     ]
-    for candidate in candidates:
+    for source, candidate in candidates:
         model = (candidate or "").strip()
         if model:
             _require_owned(provider, model)
+            logger.debug("Model for %s: '%s' (from %s, provider=%s)", task.value, model, source, provider.name)
             return model
-    return provider.default_models[task]
+    model = provider.default_models[task]
+    logger.debug("Model for %s: '%s' (provider default, provider=%s)", task.value, model, provider.name)
+    return model
 
 
 def _require_owned(provider, model: str) -> None:
     if not provider.owns_model(model):
+        logger.error("Model '%s' does not belong to LLM Provider '%s'", model, provider.name)
         raise LLMConfigError(
             f"Model '{model}' does not belong to LLM Provider '{provider.name}'."
         )

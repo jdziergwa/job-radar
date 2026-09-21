@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import asyncio
 import base64
+import logging
+import time
 from typing import Any
 
 import httpx
@@ -19,6 +21,8 @@ from src.llm.base import (
     Usage,
     parse_retry_after_seconds,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def _to_parts(content) -> list[types.Part]:
@@ -79,23 +83,63 @@ class GeminiAdapter:
             http_options=None if timeout is None else types.HttpOptions(timeout=int(timeout * 1000)),
         )
 
+        logger.debug(
+            "Gemini request: model=%s max_tokens=%d timeout=%s system_chars=%d messages=%d",
+            model, max_tokens, timeout, len(system), len(messages),
+        )
+        started = time.monotonic()
         try:
             response = await self._client.aio.models.generate_content(
                 model=model, contents=contents, config=config
             )
         except errors.APIError as error:
+            elapsed = time.monotonic() - started
             if error.code == 429:
                 headers = getattr(getattr(error, "response", None), "headers", None)
+                logger.warning("Gemini rate limited after %.1fs (model=%s): %s", elapsed, model, error)
                 raise LLMRateLimitError(str(error), parse_retry_after_seconds(headers)) from error
+            logger.error(
+                "Gemini API error after %.1fs (model=%s, code=%s, status=%s): %s",
+                elapsed, model, error.code, getattr(error, "status", None), error,
+            )
             raise LLMAPIError(str(error)) from error
         except (asyncio.TimeoutError, httpx.TimeoutException) as error:
+            logger.error("Gemini request timed out after %.1fs (model=%s)", time.monotonic() - started, model)
             raise LLMAPIError(f"Gemini request timed out: {error}") from error
+        except Exception:
+            logger.exception("Gemini call raised an unexpected error (model=%s)", model)
+            raise
+        elapsed = time.monotonic() - started
+
+        usage = getattr(response, "usage_metadata", None)
+        candidate = (getattr(response, "candidates", None) or [None])[0]
+        finish_reason = getattr(candidate, "finish_reason", None)
+        prompt_feedback = getattr(response, "prompt_feedback", None)
+        logger.debug(
+            "Gemini response in %.1fs: model=%s finish_reason=%s prompt_tokens=%s output_tokens=%s "
+            "thinking_tokens=%s cached_tokens=%s prompt_feedback=%s",
+            elapsed, model, finish_reason,
+            getattr(usage, "prompt_token_count", None),
+            getattr(usage, "candidates_token_count", None),
+            getattr(usage, "thoughts_token_count", None),
+            getattr(usage, "cached_content_token_count", None),
+            prompt_feedback,
+        )
 
         text = response.text
         if not text:
-            raise LLMAPIError("Gemini returned no text content")
+            logger.error(
+                "Gemini returned no text (model=%s, finish_reason=%s, thinking_tokens=%s, max_tokens=%d, prompt_feedback=%s)",
+                model, finish_reason, getattr(usage, "thoughts_token_count", None), max_tokens, prompt_feedback,
+            )
+            raise LLMAPIError(f"Gemini returned no text content (finish_reason={finish_reason})")
+        if finish_reason is not None and getattr(finish_reason, "name", str(finish_reason)) != "STOP":
+            logger.warning(
+                "Gemini response not cleanly finished (model=%s, finish_reason=%s, output_chars=%d, "
+                "thinking_tokens=%s, max_tokens=%d) — output is likely truncated",
+                model, finish_reason, len(text), getattr(usage, "thoughts_token_count", None), max_tokens,
+            )
 
-        usage = getattr(response, "usage_metadata", None)
         return LLMResult(
             text=text,
             usage=Usage(

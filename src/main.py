@@ -38,6 +38,7 @@ from src.reporter import (
     write_report,
 )
 from src.llm import AITask, LLMConfigError, check_api_key, load_model_overrides, resolve_model
+from src.log_file import attach_file_log
 from src.scorer import score_jobs
 from src.store import Store
 
@@ -55,6 +56,10 @@ def setup_logging(verbose: bool = False) -> None:
     logging.getLogger("httpx").setLevel(logging.WARNING)
     logging.getLogger("httpcore").setLevel(logging.WARNING)
     logging.getLogger("anthropic").setLevel(logging.WARNING)
+    logging.getLogger("google_genai").setLevel(logging.WARNING)
+    log_path = attach_file_log()
+    if log_path:
+        logger.info("Pipeline started (argv=%s); debug log at %s", sys.argv[1:], log_path)
 
 
 def load_config(profile_dir: Path) -> dict[str, Any]:
@@ -670,7 +675,12 @@ async def run() -> None:
 
 def main() -> None:
     """Sync wrapper for the async entry point."""
-    asyncio.run(run())
+    try:
+        asyncio.run(run())
+    except Exception:
+        # The API discards this subprocess's output, so make sure crashes reach the log file.
+        logger.exception("Pipeline crashed")
+        raise
 
 
 if __name__ == "__main__":

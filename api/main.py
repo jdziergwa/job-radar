@@ -7,9 +7,11 @@ from dotenv import load_dotenv
 from api.deps import get_store
 from api.models import AiConfig, AiModelOverrideRequest
 from src.llm import AITask, LLMConfigError, describe_active, load_model_overrides, set_model_override
+from src.log_file import attach_file_log
 
 # Load environment variables from .env
 load_dotenv()
+attach_file_log()
 
 app = FastAPI(
     title="Job Radar API",

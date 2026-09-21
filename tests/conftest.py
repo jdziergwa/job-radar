@@ -1,7 +1,11 @@
 import importlib.util
+import os
 from pathlib import Path
 import sys
 import types
+
+# Keep test runs out of the real logs/ debug file (src/log_file.py).
+os.environ["JOB_RADAR_LOG_FILE"] = ""
 
 from fastapi.testclient import TestClient
 import pytest
