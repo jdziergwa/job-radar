@@ -78,6 +78,7 @@ class AnthropicAdapter:
         model: str,
         max_tokens: int,
         cache_system: bool = False,
+        timeout: float | None = None,
         json_schema: dict[str, Any] | None = None,
     ) -> LLMResult:
         block: dict = {"type": "text", "text": system}
@@ -91,6 +92,7 @@ class AnthropicAdapter:
                 system=[block],
                 messages=[_to_anthropic(m) for m in messages],
                 **self._request_options(model, json_schema),
+                **({} if timeout is None else {"timeout": timeout}),
             )
         except anthropic.RateLimitError as error:
             headers = getattr(getattr(error, "response", None), "headers", None)

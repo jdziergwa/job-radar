@@ -96,3 +96,24 @@ def test_neutral_image_blocks_become_anthropic_image_sources():
         {"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": "QUJD"}},
         {"type": "text", "text": "hi"},
     ]
+
+
+def _complete_with(messages, **extra):
+    adapter = AnthropicAdapter(client=types.SimpleNamespace(messages=messages))
+    return asyncio.run(adapter.complete(
+        system="s", messages=[{"role": "user", "content": "hi"}],
+        model="claude-x", max_tokens=5, **extra,
+    ))
+
+
+def test_timeout_is_passed_to_the_sdk_request():
+    messages = _Messages()
+    _complete_with(messages, timeout=7.0)
+    assert messages.kwargs["timeout"] == 7.0
+
+
+def test_no_timeout_leaves_sdk_default():
+    messages = _Messages()
+    _complete_with(messages)
+    assert "timeout" not in messages.kwargs
+

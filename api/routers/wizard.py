@@ -34,6 +34,9 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
+# Seconds before a wizard LLM request gives up (slow multi-page vision CVs).
+_WIZARD_TIMEOUT = 120.0
+
 # Resolve paths relative to src/
 from pathlib import Path
 _SRC_DIR = Path(__file__).resolve().parent.parent.parent / "src"
@@ -240,6 +243,7 @@ async def analyze_cv(file: UploadFile = File(...)):
                     messages=[{"role": "user", "content": user_content}],
                     model=model,
                     max_tokens=8192,
+                    timeout=_WIZARD_TIMEOUT,
                 )
                 raw_text = result.text
                 json_str = _extract_json(raw_text)
@@ -265,6 +269,7 @@ async def analyze_cv(file: UploadFile = File(...)):
                             ],
                             model=model,
                             max_tokens=8192,
+                            timeout=_WIZARD_TIMEOUT,
                         )
                         raw_text = fix_result.text
                         json_str = _extract_json(raw_text)
@@ -374,6 +379,7 @@ Refine only the editable sections and keyword blocks following the instructions.
             messages=[{"role": "user", "content": user_message}],
             model=model,
             max_tokens=12288,
+            timeout=_WIZARD_TIMEOUT,
         )
         data = json.loads(_extract_json(result.text))
 

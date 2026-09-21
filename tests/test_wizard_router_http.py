@@ -161,7 +161,7 @@ def test_wizard_generate_save_state_and_template_endpoints(monkeypatch, tmp_path
 def test_wizard_refine_profile_uses_mocked_llm_response(monkeypatch, tmp_path):
     _write_example_profile(tmp_path)
     monkeypatch.setattr(wizard_router, "PROFILES_DIR", tmp_path)
-    set_adapter_override(FakeLLMAdapter(
+    fake = FakeLLMAdapter(
         ["""{
               "profile_doc_sections": {
                 "Experience Summary": "Refined summary"
@@ -177,7 +177,8 @@ def test_wizard_refine_profile_uses_mocked_llm_response(monkeypatch, tmp_path):
               },
               "changes_made": ["Refined focus areas"]
             }"""]
-    ))
+    )
+    set_adapter_override(fake)
 
     with TestClient(app) as client:
         response = client.post(
@@ -206,6 +207,7 @@ def test_wizard_refine_profile_uses_mocked_llm_response(monkeypatch, tmp_path):
         assert "## Role Target\nLocked" in payload["profile_doc"]
         assert "\\bsdet\\b" in payload["profile_yaml"]
         assert payload["changes_made"] == ["Refined focus areas"]
+        assert fake.calls[0]["timeout"] == 120.0
 
 
 def test_analyze_cv_uses_adapter_and_wizard_model():
@@ -219,6 +221,7 @@ def test_analyze_cv_uses_adapter_and_wizard_model():
     assert response.json()["current_role"] == "Senior Backend Engineer"
     assert response.json()["extraction_method"] == "text"
     assert fake.calls[0]["model"] == "fake-model"
+    assert fake.calls[0]["timeout"] == 120.0
 
 
 def test_analyze_cv_retries_invalid_json_once_with_fix_up():
@@ -230,6 +233,7 @@ def test_analyze_cv_retries_invalid_json_once_with_fix_up():
 
     assert response.status_code == 200
     assert len(fake.calls) == 2
+    assert [c["timeout"] for c in fake.calls] == [120.0, 120.0]
     assert fake.calls[1]["messages"][1] == {"role": "assistant", "content": "not json"}
 
 

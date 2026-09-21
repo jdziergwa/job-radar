@@ -82,3 +82,21 @@ def test_other_api_errors_map_to_llm_api_error():
 def test_empty_response_is_an_api_error():
     with pytest.raises(LLMAPIError):
         _complete(_adapter(_Models(_response(text=None))))
+
+
+def test_timeout_is_passed_as_http_options_milliseconds():
+    models = _Models(_response())
+    _complete(_adapter(models), timeout=2.5)
+    assert models.kwargs["config"].http_options.timeout == 2500
+
+
+def test_no_timeout_leaves_vendor_default():
+    models = _Models(_response())
+    _complete(_adapter(models))
+    assert models.kwargs["config"].http_options is None
+
+
+def test_timed_out_request_maps_to_llm_api_error():
+    import httpx
+    with pytest.raises(LLMAPIError):
+        _complete(_adapter(_Models(error=httpx.ReadTimeout("slow"))), timeout=1)

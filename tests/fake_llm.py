@@ -25,10 +25,11 @@ class FakeLLMAdapter:
     def supports_json_schema(model: str) -> bool:
         return False
 
-    async def complete(self, *, system, messages, model, max_tokens, cache_system=False, json_schema=None):
+    async def complete(self, *, system, messages, model, max_tokens, cache_system=False, timeout=None,
+                       json_schema=None):
         self.calls.append(
-            {"system": system, "messages": messages, "model": model,
-             "max_tokens": max_tokens, "cache_system": cache_system, "json_schema": json_schema}
+            {"system": system, "messages": messages, "model": model, "max_tokens": max_tokens,
+             "cache_system": cache_system, "timeout": timeout, "json_schema": json_schema}
         )
         outcome = self._outcomes.pop(0)
         if isinstance(outcome, Exception):

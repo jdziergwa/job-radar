@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import asyncio
 import base64
 from typing import Any
 
+import httpx
 from google import genai
 from google.genai import errors, types
 
@@ -59,6 +61,7 @@ class GeminiAdapter:
         model: str,
         max_tokens: int,
         cache_system: bool = False,
+        timeout: float | None = None,
         json_schema: dict[str, Any] | None = None,
     ) -> LLMResult:
         # `cache_system` is ignored: Gemini caches repeated prefixes implicitly.
@@ -71,6 +74,8 @@ class GeminiAdapter:
             for message in messages
         ]
         config = types.GenerateContentConfig(system_instruction=system, max_output_tokens=max_tokens)
+        if timeout is not None:
+            config.http_options = types.HttpOptions(timeout=int(timeout * 1000))
 
         try:
             response = await self._client.aio.models.generate_content(
@@ -81,6 +86,8 @@ class GeminiAdapter:
                 headers = getattr(getattr(error, "response", None), "headers", None)
                 raise LLMRateLimitError(str(error), parse_retry_after_seconds(headers)) from error
             raise LLMAPIError(str(error)) from error
+        except (asyncio.TimeoutError, httpx.TimeoutException) as error:
+            raise LLMAPIError(f"Gemini request timed out: {error}") from error
 
         text = response.text
         if not text:
