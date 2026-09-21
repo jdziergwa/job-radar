@@ -41,9 +41,9 @@ class GeminiAdapter:
     api_key_env = "GOOGLE_API_KEY"
     credential_envs = ("GOOGLE_API_KEY",)
     default_models = {
-        AITask.SCORING: "gemini-2.5-flash",
-        AITask.WIZARD: "gemini-2.5-pro",
-        AITask.STATS: "gemini-2.5-flash",
+        AITask.SCORING: "gemini-3.8-flash",
+        AITask.WIZARD: "gemini-3.1-pro-preview",
+        AITask.STATS: "gemini-3.8-flash",
     }
 
     def __init__(self, client: genai.Client | None = None):

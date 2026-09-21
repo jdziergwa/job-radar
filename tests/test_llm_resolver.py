@@ -90,16 +90,16 @@ def test_blank_overrides_are_ignored(monkeypatch):
 
 
 def test_model_from_another_provider_fails_fast(monkeypatch):
-    monkeypatch.setenv("SCORING_MODEL", "gemini-2.5-flash")
-    with pytest.raises(LLMConfigError, match="gemini-2.5-flash"):
+    monkeypatch.setenv("SCORING_MODEL", "gemini-3.8-flash")
+    with pytest.raises(LLMConfigError, match="gemini-3.8-flash"):
         resolve_model(AITask.SCORING)
 
 
 def test_gemini_selected_explicitly(monkeypatch):
     monkeypatch.setenv("LLM_PROVIDER", "gemini")
     assert resolve_provider_name() == "gemini"
-    assert resolve_model(AITask.SCORING) == "gemini-2.5-flash"
-    assert resolve_model(AITask.WIZARD) == "gemini-2.5-pro"
+    assert resolve_model(AITask.SCORING) == "gemini-3.8-flash"
+    assert resolve_model(AITask.WIZARD) == "gemini-3.1-pro-preview"
 
 
 def test_auto_detects_gemini_when_only_its_key_is_set(monkeypatch):

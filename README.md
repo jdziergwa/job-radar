@@ -140,7 +140,7 @@ Job Radar is highly configurable to match your specific career goals.
 | `LLM_PROVIDER` | No | `anthropic` or `gemini`. If unset, auto-detected when exactly one key below is set; with both keys set the app errors until you choose. |
 | `ANTHROPIC_API_KEY` | One of the two keys | Anthropic key, used when the LLM Provider is `anthropic`. |
 | `GOOGLE_API_KEY` | One of the two keys | Google Gemini key, used when the LLM Provider is `gemini`. |
-| `SCORING_MODEL` / `WIZARD_MODEL` / `STATS_MODEL` | No | Override the Model for job scoring, CV wizard analysis and stats insight. Must belong to the active LLM Provider or startup fails. Defaults: Anthropic `claude-haiku-5-5` / `claude-sonnet-5-5` / `claude-haiku-5-5`; Gemini `gemini-2.5-flash` / `gemini-2.5-pro` / `gemini-2.5-flash`. |
+| `SCORING_MODEL` / `WIZARD_MODEL` / `STATS_MODEL` | No | Override the Model for job scoring, CV wizard analysis and stats insight. Must belong to the active LLM Provider or startup fails. Defaults: Anthropic `claude-haiku-5-5` / `claude-sonnet-5-5` / `claude-haiku-5-5`; Gemini `gemini-3.8-flash` / `gemini-3.1-pro-preview` / `gemini-3.8-flash`. |
 
 **Model precedence** (highest first): profile `search_config.yaml` `scoring.model` (scoring only) → Settings page override → env variable above → built-in default for the LLM Provider. API keys are read only from the environment and are never returned by the API.
 | `ADZUNA_APP_ID` | No | Required only if you enable the Adzuna provider. Create an account at [developer.adzuna.com](https://developer.adzuna.com/) to get it. Adzuna allows personal research use; see [their terms](https://developer.adzuna.com/docs/terms_of_service). |
@@ -154,7 +154,7 @@ Each profile is a directory containing four main editable files:
 2.  **`search_config.yaml`**:
     -   `keywords.title_patterns`: Split into `high_confidence` and `broad` tiers for precise filtering.
     -   `keywords.location_patterns` / `remote_patterns`: Primary location targets and a remote tier (governed by the `fallback_tier` field).
-    -   `scoring`: Choose your model (e.g., `claude-haiku-5-5` or `gemini-2.5-flash`; it must belong to the active LLM Provider), set thresholds, and tune rate-limit behavior with `concurrency` and `min_request_interval_seconds` if your LLM Provider starts rejecting bursts.
+    -   `scoring`: Choose your model (e.g., `claude-haiku-5-5` or `gemini-3.8-flash`; it must belong to the active LLM Provider), set thresholds, and tune rate-limit behavior with `concurrency` and `min_request_interval_seconds` if your LLM Provider starts rejecting bursts.
 3.  **`scoring_philosophy.md`**: The per-profile scoring rubric used by the LLM after pre-filtering. This is editable from **Settings**.
 4.  **`companies.yaml`**: Specific companies to monitor directly via their ATS boards, grouped by platform (Greenhouse, Lever, Ashby, Workable, BambooHR).
 

@@ -3,9 +3,9 @@
   "provider": "gemini",
   "provider_display_name": "Gemini",
   "models": {
-    "scoring": "gemini-2.5-flash",
-    "wizard": "gemini-2.5-pro",
-    "stats": "gemini-2.5-flash"
+    "scoring": "gemini-3.8-flash",
+    "wizard": "gemini-3.1-pro-preview",
+    "stats": "gemini-3.8-flash"
   },
   "error": null
 }

@@ -13,7 +13,7 @@ The vendor whose API serves the AI models, such as Anthropic or Google Gemini. O
 _Avoid_: Provider (unqualified), vendor, backend, AI
 
 **Model**:
-A specific model offered by an LLM Provider, identified by its model name (e.g. `gemini-2.5-flash`).
+A specific model offered by an LLM Provider, identified by its model name (e.g. `gemini-3.8-flash`).
 _Avoid_: engine, LLM
 
 **AI Task**:
