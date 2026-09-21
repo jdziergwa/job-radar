@@ -7,7 +7,7 @@
 ### Prerequisites
 - Python 3.11+ (`brew install python` on macOS)
 - Node.js 20+ (`brew install node`)
-- Anthropic API key
+- An LLM API key: Anthropic (`ANTHROPIC_API_KEY`) or Google Gemini (`GOOGLE_API_KEY`)
 
 ### Setup (one-time)
 
@@ -17,7 +17,7 @@ cd job-radar
 
 # 1. Set API key
 cp .env.example .env
-# Edit .env: ANTHROPIC_API_KEY=sk-ant-...
+# Edit .env: ANTHROPIC_API_KEY=sk-ant-... (or GOOGLE_API_KEY=... for Gemini; see the variables table below)
 
 # 2. Install dependencies
 make install
@@ -373,7 +373,12 @@ Browser will show a native Basic Auth prompt. For a single-user tool, this is su
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `ANTHROPIC_API_KEY` | Yes | — | Anthropic API key for scoring |
+| `LLM_PROVIDER` | No | auto-detect | `anthropic` or `gemini`; required if both keys are set |
+| `ANTHROPIC_API_KEY` | One key required | — | Anthropic API key (LLM Provider `anthropic`) |
+| `GOOGLE_API_KEY` | One key required | — | Google Gemini API key (LLM Provider `gemini`) |
+| `SCORING_MODEL` | No | per LLM Provider | Model for scoring; overridden by profile `scoring.model` and the Settings page |
+| `WIZARD_MODEL` | No | per LLM Provider | Model for CV wizard analysis |
+| `STATS_MODEL` | No | per LLM Provider | Model for stats insight |
 | `DATA_DIR` | No | `data` | Path to SQLite database directory |
 | `PROFILES_DIR` | No | `profiles` | Path to profile configs directory |
 | `APP_PASSWORD` | No | — | Enables HTTP Basic Auth if set |

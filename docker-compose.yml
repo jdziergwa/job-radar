@@ -6,7 +6,12 @@ services:
     command: uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload
     user: "${HOST_UID:-0}:${HOST_GID:-0}"
     environment:
+      LLM_PROVIDER: ${LLM_PROVIDER:-}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
+      SCORING_MODEL: ${SCORING_MODEL:-}
+      WIZARD_MODEL: ${WIZARD_MODEL:-}
+      STATS_MODEL: ${STATS_MODEL:-}
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
       TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:-}
       PROFILES_DIR: /app/profiles

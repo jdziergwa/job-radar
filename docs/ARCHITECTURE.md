@@ -184,7 +184,7 @@ Regex and keyword constraints from `search_config.yaml` eliminate most noise bef
 
 ### Scoring
 
-Claude-based scoring runs only for survivors. `--dry-run` skips this stage entirely.
+LLM-based scoring (via the LLM adapter in `src/llm/`) runs only for survivors. `--dry-run` skips this stage entirely.
 
 ### Store
 

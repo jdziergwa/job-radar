@@ -6,7 +6,7 @@
   </picture>
 </p>
 
-Job Radar scans curated ATS boards, public remote-job APIs, hiring feeds, and an optional large job aggregator for roles that match your profile. It collects, hydrates, filters, and scores job listings against your profile using Claude, then presents the results in a web dashboard with a built-in application tracker for managing the full journey from applied to outcome.
+Job Radar scans curated ATS boards, public remote-job APIs, hiring feeds, and an optional large job aggregator for roles that match your profile. It collects, hydrates, filters, and scores job listings against your profile using an LLM (Anthropic Claude or Google Gemini), then presents the results in a web dashboard with a built-in application tracker for managing the full journey from applied to outcome.
 
 Try the live demo: [https://jdziergwa.github.io/job-radar/](https://jdziergwa.github.io/job-radar/)
 
@@ -45,13 +45,13 @@ docker compose up --build
 -   **Backend**: [http://localhost:8000](http://localhost:8000)
 -   **Frontend**: [http://localhost:3000](http://localhost:3000)
 
-If you want AI scoring, create a `.env` file first so the API can see your Anthropic key:
+If you want AI scoring, create a `.env` file first so the API can see your LLM Provider key (Anthropic or Google Gemini):
 
-Create an Anthropic API key in [Console Settings → API Keys](https://platform.claude.com/settings/keys) and add prepaid credits from the [Billing page](https://support.claude.com/en/articles/8977456-how-do-i-pay-for-my-api-usage). Then paste the key into `.env` as `ANTHROPIC_API_KEY`.
+Create an Anthropic API key in [Console Settings → API Keys](https://platform.claude.com/settings/keys) and add prepaid credits from the [Billing page](https://support.claude.com/en/articles/8977456-how-do-i-pay-for-my-api-usage). Then paste the key into `.env` as `ANTHROPIC_API_KEY`. Prefer Gemini? Create a key in [Google AI Studio](https://aistudio.google.com/apikey) and set `GOOGLE_API_KEY` instead (see [Environment Variables](#%EF%B8%8F-environment-variables-env)).
 
 ```bash
 cp .env.example .env
-# Edit .env and set ANTHROPIC_API_KEY=sk-ant-...
+# Edit .env and set ANTHROPIC_API_KEY=sk-ant-... (or GOOGLE_API_KEY=... for Gemini)
 docker compose up --build
 ```
 
@@ -73,7 +73,7 @@ When running via Docker Compose, the API stores SQLite databases in a Docker nam
 
 -   **Python 3.11+** (e.g., via [**uv**](https://docs.astral.sh/uv/getting-started/installation/) - recommended)
 -   **Node.js 20+** (e.g., at [**nodejs.org**](https://nodejs.org/en/download/) or a version manager)
--   **Anthropic API Key** (at [console.anthropic.com](https://console.anthropic.com))
+-   **An LLM API key**: Anthropic (at [console.anthropic.com](https://console.anthropic.com)) or Google Gemini (at [aistudio.google.com](https://aistudio.google.com/apikey))
 
 ### 2. One-Minute Installation
 
@@ -86,7 +86,7 @@ make install
 
 # Configure your environment
 cp .env.example .env
-# Edit .env and paste your ANTHROPIC_API_KEY=sk-ant-...
+# Edit .env and paste your ANTHROPIC_API_KEY=sk-ant-... (or GOOGLE_API_KEY=...)
 ```
 
 ### 3. Launch
@@ -111,11 +111,11 @@ If you prefer direct editing, **Settings** still exposes the raw `profile_doc.md
 
 ### Cost and Runtime Expectations
 
-Claude costs vary by model and by how many jobs survive filtering. One first-run example from my earlier Haiku 4.5 setup:
+LLM costs vary by model and by how many jobs survive filtering. One first-run example from my earlier Claude Haiku 4.5 setup:
 
 - One-time profile generation with Sonnet: about `$0.15`
 - Scoring `880` jobs: about `$3.58`
-- First broad run with all providers: roughly `1 hour` (scoring takes the longest because it is rate-limited by the Claude API)
+- First broad run with all providers: roughly `1 hour` (scoring takes the longest because it is rate-limited by the LLM API)
 
 One real incremental-run example after one day:
 
@@ -125,7 +125,7 @@ One real incremental-run example after one day:
 
 Later runs are usually cheaper and faster because only new surviving jobs need scoring. Use the examples above as historical figures and measure your first run with Haiku 5.5 to estimate current costs.
 
-If you want to try the pipeline cost-free first, use the web UI trigger with `Dry Run` to fetch and filter jobs without any Claude scoring, so you can see how many jobs would reach scoring. The CLI supports the same flow with `--dry-run`, for example: `.venv/bin/python -m src.main --source aggregator local --dry-run -v`.
+If you want to try the pipeline cost-free first, use the web UI trigger with `Dry Run` to fetch and filter jobs without any AI scoring, so you can see how many jobs would reach scoring. The CLI supports the same flow with `--dry-run`, for example: `.venv/bin/python -m src.main --source aggregator local --dry-run -v`.
 
 ---
 
@@ -137,7 +137,12 @@ Job Radar is highly configurable to match your specific career goals.
 
 | Variable | Required | Purpose |
 |----------|----------|---------|
-| `ANTHROPIC_API_KEY` | **Yes** | Used by Claude AI to score job descriptions. |
+| `LLM_PROVIDER` | No | `anthropic` or `gemini`. If unset, auto-detected when exactly one key below is set; with both keys set the app errors until you choose. |
+| `ANTHROPIC_API_KEY` | One of the two keys | Anthropic key, used when the LLM Provider is `anthropic`. |
+| `GOOGLE_API_KEY` | One of the two keys | Google Gemini key, used when the LLM Provider is `gemini`. |
+| `SCORING_MODEL` / `WIZARD_MODEL` / `STATS_MODEL` | No | Override the Model for job scoring, CV wizard analysis and stats insight. Must belong to the active LLM Provider or startup fails. Defaults: Anthropic `claude-haiku-5-5` / `claude-sonnet-5-5` / `claude-haiku-5-5`; Gemini `gemini-2.5-flash` / `gemini-2.5-pro` / `gemini-2.5-flash`. |
+
+**Model precedence** (highest first): profile `search_config.yaml` `scoring.model` (scoring only) → Settings page override → env variable above → built-in default for the LLM Provider. API keys are read only from the environment and are never returned by the API.
 | `ADZUNA_APP_ID` | No | Required only if you enable the Adzuna provider. Create an account at [developer.adzuna.com](https://developer.adzuna.com/) to get it. Adzuna allows personal research use; see [their terms](https://developer.adzuna.com/docs/terms_of_service). |
 | `ADZUNA_APP_KEY` | No | Required only if you enable the Adzuna provider. Adzuna issues this alongside your app ID. |
 
@@ -149,7 +154,7 @@ Each profile is a directory containing four main editable files:
 2.  **`search_config.yaml`**:
     -   `keywords.title_patterns`: Split into `high_confidence` and `broad` tiers for precise filtering.
     -   `keywords.location_patterns` / `remote_patterns`: Primary location targets and a remote tier (governed by the `fallback_tier` field).
-    -   `scoring`: Choose your model (e.g., `claude-haiku-5-5`), set thresholds, and tune rate-limit behavior with `concurrency` and `min_request_interval_seconds` if Anthropic starts rejecting bursts.
+    -   `scoring`: Choose your model (e.g., `claude-haiku-5-5` or `gemini-2.5-flash`; it must belong to the active LLM Provider), set thresholds, and tune rate-limit behavior with `concurrency` and `min_request_interval_seconds` if your LLM Provider starts rejecting bursts.
 3.  **`scoring_philosophy.md`**: The per-profile scoring rubric used by the LLM after pre-filtering. This is editable from **Settings**.
 4.  **`companies.yaml`**: Specific companies to monitor directly via their ATS boards, grouped by platform (Greenhouse, Lever, Ashby, Workable, BambooHR).
 
@@ -203,7 +208,7 @@ graph TD
     B -->|Check SQLite| C[Hydrate]
     C -->|Fetch fuller descriptions| D[Pre-filter]
     D -->|Regex Check| E[Score]
-    E -->|Claude AI| F[Report]
+    E -->|LLM| F[Report]
     F -->|UI / Reports| G[Opportunity]
     
     style E fill:#f96,stroke:#333,stroke-width:2px
@@ -213,7 +218,7 @@ graph TD
 2.  **Deduplicate**: Skips jobs you've already seen.
 3.  **Hydrate**: Fetches fuller descriptions for jobs with missing or sparse text.
 4.  **Pre-filter**: Matches against your `title_patterns` and `location_patterns`.
-5.  **Score**: Sends survivors to Claude to compute a fit score (0-100).
+5.  **Score**: Sends survivors to the LLM to compute a fit score (0-100).
 6.  **Report**: Persists results and updates the dashboard and reports.
 
 ---
@@ -240,8 +245,8 @@ graph TD
 
 ## 🔒 Security & Privacy
 
-- **Never commit `.env`** — it contains your `ANTHROPIC_API_KEY`. The `.gitignore` already excludes it, but double-check before pushing. If you accidentally expose a key, revoke it immediately at [console.anthropic.com](https://console.anthropic.com).
-- **All data stays local** — job listings, scores, and your `profile_doc.md` are stored only on your machine. Native runs use `data/{profile}.db`; Docker Compose runs keep SQLite databases in the Docker API volume mounted at `/app/data`. The only third-party processing is the Claude API calls used for CV analysis, profile generation, and job scoring, which send the relevant job and profile context needed for those prompts.
+- **Never commit `.env`** — it contains your LLM API key (`ANTHROPIC_API_KEY` or `GOOGLE_API_KEY`). The `.gitignore` already excludes it, but double-check before pushing. If you accidentally expose a key, revoke it immediately at [console.anthropic.com](https://console.anthropic.com).
+- **All data stays local** — job listings, scores, and your `profile_doc.md` are stored only on your machine. Native runs use `data/{profile}.db`; Docker Compose runs keep SQLite databases in the Docker API volume mounted at `/app/data`. The only third-party processing is the LLM API calls (to Anthropic or Google, whichever you configure) used for CV analysis, profile generation, and job scoring, which send the relevant job and profile context needed for those prompts.
 
 ## 🙌 Acknowledgments
 
@@ -266,8 +271,8 @@ Job Radar uses a mix of direct ATS APIs, public job feeds, and optional third-pa
 
 ## ❗ Troubleshooting
 
-### ❌ `ANTHROPIC_API_KEY not found`
-Ensure you have created a `.env` file in the root directory and that it contains `ANTHROPIC_API_KEY=your_key_here`.
+### ❌ `AI not configured` / API key not found
+Ensure you have created a `.env` file in the root directory and that it contains `ANTHROPIC_API_KEY=your_key_here` or `GOOGLE_API_KEY=your_key_here`. If both keys are set, also set `LLM_PROVIDER=anthropic` or `LLM_PROVIDER=gemini`.
 
 ### ❌ `ModuleNotFoundError`
 Run `make install` again to ensure your Python virtual environment is correctly set up.
