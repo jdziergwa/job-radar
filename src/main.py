@@ -37,6 +37,7 @@ from src.reporter import (
     send_telegram,
     write_report,
 )
+from src.llm import AITask, LLMConfigError, check_api_key, resolve_model
 from src.scorer import score_jobs
 from src.store import Store
 
@@ -593,14 +594,17 @@ async def run() -> None:
         finish_run()
         return
 
-    # 5. Score with Claude API
+    # 5. Score with the active LLM Provider
     timer.reset_stage()
     if candidates:
         if args.json_progress:
             emit_progress(scoring_step, "Scoring", f"Starting LLM scoring for {len(candidates)} jobs", duration=timer.get_stage_duration())
 
-        if not (os.getenv("ANTHROPIC_API_KEY") or os.getenv("ANTHROPIC_AUTH_TOKEN")):
-            error_msg = "ANTHROPIC_API_KEY not found in environment or .env file. Scoring skipped."
+        try:
+            check_api_key()
+            resolve_model(AITask.SCORING, profile_model=config.get("scoring", {}).get("model"))
+        except LLMConfigError as error:
+            error_msg = f"{error} Scoring skipped."
             logger.error(error_msg)
             if args.json_progress:
                 emit_progress(scoring_step, "Error", error_msg)

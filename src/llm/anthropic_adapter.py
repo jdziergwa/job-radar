@@ -1,0 +1,104 @@
+"""Anthropic adapter: explicit prompt caching, default Models per AI Task."""
+
+from __future__ import annotations
+
+from typing import Any
+
+import anthropic
+from anthropic import AsyncAnthropic
+
+from src.claude import HAIKU_MODEL, SONNET_MODEL, message_text
+from src.llm.base import (
+    AITask,
+    LLMAPIError,
+    LLMRateLimitError,
+    LLMResult,
+    Usage,
+    parse_retry_after_seconds,
+)
+
+# Models that run at low effort; Haiku also runs without extended thinking.
+_LOW_EFFORT_MODELS = {HAIKU_MODEL, SONNET_MODEL}
+
+
+class AnthropicAdapter:
+    name = "anthropic"
+    display_name = "Anthropic"
+    api_key_env = "ANTHROPIC_API_KEY"
+    credential_envs = ("ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN")
+    default_models = {
+        AITask.SCORING: HAIKU_MODEL,
+        AITask.WIZARD: SONNET_MODEL,
+        AITask.STATS: HAIKU_MODEL,
+    }
+
+    def __init__(self, client: AsyncAnthropic | None = None):
+        self._client = client or AsyncAnthropic()
+
+    @classmethod
+    def owns_model(cls, model: str) -> bool:
+        return model.startswith("claude-")
+
+    @staticmethod
+    def supports_json_schema(model: str) -> bool:
+        return model == HAIKU_MODEL
+
+    @classmethod
+    def _request_options(cls, model: str, json_schema: dict[str, Any] | None) -> dict[str, Any]:
+        options: dict[str, Any] = {}
+        output_config: dict[str, Any] = {}
+        if model == HAIKU_MODEL:
+            options["thinking"] = {"type": "disabled"}
+        if model in _LOW_EFFORT_MODELS:
+            output_config["effort"] = "low"
+        if json_schema is not None and cls.supports_json_schema(model):
+            output_config["format"] = {"type": "json_schema", "schema": json_schema}
+        if output_config:
+            options["output_config"] = output_config
+        return options
+
+    async def complete(
+        self,
+        *,
+        system: str,
+        messages: list[dict[str, str]],
+        model: str,
+        max_tokens: int,
+        cache_system: bool = False,
+        json_schema: dict[str, Any] | None = None,
+    ) -> LLMResult:
+        block: dict = {"type": "text", "text": system}
+        if cache_system:
+            block["cache_control"] = {"type": "ephemeral"}
+
+        try:
+            response = await self._client.messages.create(
+                model=model,
+                max_tokens=max_tokens,
+                system=[block],
+                messages=messages,
+                **self._request_options(model, json_schema),
+            )
+        except anthropic.RateLimitError as error:
+            headers = getattr(getattr(error, "response", None), "headers", None)
+            raise LLMRateLimitError(str(error), parse_retry_after_seconds(headers)) from error
+        except anthropic.APIError as error:
+            raise LLMAPIError(str(error)) from error
+
+        try:
+            text = message_text(response)
+        except ValueError as error:
+            raise LLMAPIError(str(error)) from error
+
+        usage = getattr(response, "usage", None)
+        return LLMResult(
+            text=text,
+            usage=Usage(
+                input_tokens=getattr(usage, "input_tokens", 0) or 0,
+                output_tokens=getattr(usage, "output_tokens", 0) or 0,
+                cached_input_tokens=getattr(usage, "cache_read_input_tokens", 0) or 0,
+            ),
+        )
+
+    async def aclose(self) -> None:
+        await self._client.close()
