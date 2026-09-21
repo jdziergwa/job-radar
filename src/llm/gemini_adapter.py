@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import base64
 from typing import Any
 
 from google import genai
@@ -12,9 +13,20 @@ from src.llm.base import (
     LLMAPIError,
     LLMRateLimitError,
     LLMResult,
+    Message,
     Usage,
     parse_retry_after_seconds,
 )
+
+
+def _to_parts(content) -> list[types.Part]:
+    if isinstance(content, str):
+        return [types.Part(text=content)]
+    return [
+        types.Part.from_bytes(data=base64.b64decode(b["data"]), mime_type=b["media_type"])
+        if b["type"] == "image" else types.Part(text=b["text"])
+        for b in content
+    ]
 
 
 class GeminiAdapter:
@@ -43,7 +55,7 @@ class GeminiAdapter:
         self,
         *,
         system: str,
-        messages: list[dict[str, str]],
+        messages: list[Message],
         model: str,
         max_tokens: int,
         cache_system: bool = False,
@@ -54,7 +66,7 @@ class GeminiAdapter:
         contents = [
             types.Content(
                 role="model" if message["role"] == "assistant" else "user",
-                parts=[types.Part(text=message["content"])],
+                parts=_to_parts(message["content"]),
             )
             for message in messages
         ]

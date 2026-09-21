@@ -50,6 +50,12 @@ class LLMResult:
     usage: Usage = Usage()
 
 
+# A message's `content` is plain text or a list of neutral blocks:
+#   {"type": "text", "text": str}
+#   {"type": "image", "media_type": "image/png", "data": <base64 str>}
+Message = dict[str, Any]
+
+
 @runtime_checkable
 class LLMAdapter(Protocol):
     """One LLM Provider behind a vendor-neutral completion call."""
@@ -73,7 +79,7 @@ class LLMAdapter(Protocol):
         self,
         *,
         system: str,
-        messages: list[dict[str, str]],
+        messages: list[Message],
         model: str,
         max_tokens: int,
         cache_system: bool = False,

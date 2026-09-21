@@ -8,6 +8,7 @@ from src.llm.base import (
     LLMError,
     LLMRateLimitError,
     LLMResult,
+    Message,
     Usage,
 )
 from src.llm.resolver import (
@@ -26,6 +27,7 @@ __all__ = [
     "LLMError",
     "LLMRateLimitError",
     "LLMResult",
+    "Message",
     "Usage",
     "check_api_key",
     "get_adapter",

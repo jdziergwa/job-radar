@@ -13,12 +13,25 @@ from src.llm.base import (
     LLMAPIError,
     LLMRateLimitError,
     LLMResult,
+    Message,
     Usage,
     parse_retry_after_seconds,
 )
 
 # Models that run at low effort; Haiku also runs without extended thinking.
 _LOW_EFFORT_MODELS = {HAIKU_MODEL, SONNET_MODEL}
+
+
+def _to_anthropic(message: Message) -> Message:
+    content = message["content"]
+    if isinstance(content, str):
+        return message
+    blocks = [
+        {"type": "image", "source": {"type": "base64", "media_type": b["media_type"], "data": b["data"]}}
+        if b["type"] == "image" else b
+        for b in content
+    ]
+    return {**message, "content": blocks}
 
 
 class AnthropicAdapter:
@@ -61,7 +74,7 @@ class AnthropicAdapter:
         self,
         *,
         system: str,
-        messages: list[dict[str, str]],
+        messages: list[Message],
         model: str,
         max_tokens: int,
         cache_system: bool = False,
@@ -76,7 +89,7 @@ class AnthropicAdapter:
                 model=model,
                 max_tokens=max_tokens,
                 system=[block],
-                messages=messages,
+                messages=[_to_anthropic(m) for m in messages],
                 **self._request_options(model, json_schema),
             )
         except anthropic.RateLimitError as error:

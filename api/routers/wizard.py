@@ -6,10 +6,16 @@ import shutil
 import base64
 import re
 import fitz  # pymupdf
-import anthropic
-from anthropic import AsyncAnthropic
 from fastapi import APIRouter, HTTPException, UploadFile, File, Query
 from api.deps import PROFILES_DIR
+from src.llm import (
+    AITask,
+    LLMAPIError,
+    LLMConfigError,
+    LLMRateLimitError,
+    get_adapter,
+    resolve_model,
+)
 from api.models import (
     CVAnalysisResponse,
     ProfileGenerateRequest,
@@ -22,7 +28,6 @@ from api.models import (
     WizardStateResponse,
     UserPreferences,
 )
-from src.claude import SONNET_MODEL, message_text
 
 logger = logging.getLogger(__name__)
 
@@ -78,6 +83,14 @@ def _extract_json(text: str) -> str:
     if match:
         return match.group(0)
     return text.strip()
+
+
+def _wizard_adapter():
+    """Active adapter and the wizard's Model; a missing key is a UI-readable 503."""
+    try:
+        return get_adapter(), resolve_model(AITask.WIZARD)
+    except LLMConfigError as e:
+        raise HTTPException(status_code=503, detail=f"AI not configured: {e}")
 
 
 def _wizard_state_paths(profile_name: str) -> tuple[Path, Path, Path]:
@@ -197,14 +210,7 @@ async def analyze_cv(file: UploadFile = File(...)):
             images = _render_pdf_to_images(file_bytes, dpi=300)
             for img_bytes in images:
                 b64_data = base64.b64encode(img_bytes).decode("utf-8")
-                user_content.append({
-                    "type": "image",
-                    "source": {
-                        "type": "base64",
-                        "media_type": "image/png",
-                        "data": b64_data,
-                    }
-                })
+                user_content.append({"type": "image", "media_type": "image/png", "data": b64_data})
             user_content.append({
                 "type": "text",
                 "text": "Analyze this CV. The pages are provided as images above. Extract all professional information visible across all pages."
@@ -221,28 +227,26 @@ async def analyze_cv(file: UploadFile = File(...)):
 
     system_prompt = _load_cv_analysis_prompt()
 
-    async with AsyncAnthropic() as client:
+    adapter, model = _wizard_adapter()
+    try:
         # We want up to 2 retries (3 total attempts) for API errors
         # JSON fix-up is handled separately and only on the first attempt
         max_retries = 2
         for attempt in range(max_retries + 1):
             try:
-                response = await client.messages.create(
-                    model=SONNET_MODEL,
-                    output_config={"effort": "low"},
-                    max_tokens=8192,
+                result = await adapter.complete(
                     system=system_prompt,
                     messages=[{"role": "user", "content": user_content}],
-                    timeout=120.0,
+                    model=model,
+                    max_tokens=8192,
                 )
-
-                raw_text = message_text(response)
+                raw_text = result.text
                 json_str = _extract_json(raw_text)
 
                 try:
                     data = json.loads(json_str)
                     return CVAnalysisResponse(
-                        page_count=page_count, 
+                        page_count=page_count,
                         extraction_method=extraction_method,
                         **data
                     )
@@ -251,45 +255,45 @@ async def analyze_cv(file: UploadFile = File(...)):
                     if attempt == 0:
                         logger.warning(f"Initial JSON parse error: {e}. Attempting fix-up...")
                         retry_message = f"Your previous response was not valid JSON or didn't match the schema. Error: {e}. Please fix the JSON and return the full object again."
-                        fix_response = await client.messages.create(
-                            model=SONNET_MODEL,
-                            output_config={"effort": "low"},
-                            max_tokens=8192,
+                        fix_result = await adapter.complete(
                             system=system_prompt,
                             messages=[
                                 {"role": "user", "content": user_content},
                                 {"role": "assistant", "content": raw_text},
                                 {"role": "user", "content": retry_message}
                             ],
-                            timeout=120.0,
+                            model=model,
+                            max_tokens=8192,
                         )
-                        raw_text = message_text(fix_response)
+                        raw_text = fix_result.text
                         json_str = _extract_json(raw_text)
                         data = json.loads(json_str)
                         return CVAnalysisResponse(
-                            page_count=page_count, 
+                            page_count=page_count,
                             extraction_method=extraction_method,
                             **data
                         )
                     else:
                         raise HTTPException(status_code=502, detail=f"LLM returned invalid JSON after fix-up: {e}")
 
-            except anthropic.RateLimitError:
+            except LLMRateLimitError:
                 if attempt < max_retries:
                     wait = 2 ** (attempt + 1)
                     logger.warning(f"Rate limited, waiting {wait}s...")
                     await asyncio.sleep(wait)
                     continue
-                raise HTTPException(status_code=502, detail="Anthropic Rate Limit exceeded")
-            except anthropic.APIError as e:
+                raise HTTPException(status_code=502, detail=f"{adapter.display_name} Rate Limit exceeded")
+            except LLMAPIError as e:
                 if attempt < max_retries:
                     await asyncio.sleep(2 ** (attempt + 1))
                     continue
-                raise HTTPException(status_code=502, detail=f"Anthropic API Error: {e}")
+                raise HTTPException(status_code=502, detail=f"{adapter.display_name} API Error: {e}")
             except Exception as e:
                 if isinstance(e, HTTPException): raise e
                 logger.error(f"Unexpected error in CV analysis: {e}")
                 raise HTTPException(status_code=500, detail=f"Internal Server Error: {e}")
+    finally:
+        await adapter.aclose()
 
     raise HTTPException(status_code=502, detail="Failed to analyze CV after multiple attempts")
 
@@ -361,32 +365,28 @@ async def refine_profile(req: ProfileRefineRequest):
 
 Refine only the editable sections and keyword blocks following the instructions. Do not reconstruct or rename locked sections."""
 
+    adapter = None
     try:
-        async with AsyncAnthropic() as client:
-            response = await client.messages.create(
-                model=SONNET_MODEL,
-                output_config={"effort": "low"},
-                max_tokens=12288,
-                system=system_prompt,
-                messages=[{"role": "user", "content": user_message}],
-                timeout=120.0,
-            )
+        adapter, model = _wizard_adapter()
+        result = await adapter.complete(
+            system=system_prompt,
+            messages=[{"role": "user", "content": user_message}],
+            model=model,
+            max_tokens=12288,
+        )
+        data = json.loads(_extract_json(result.text))
 
-            raw_text = message_text(response)
-            json_str = _extract_json(raw_text)
-            data = json.loads(json_str)
+        refined_doc_sections = data.get("profile_doc_sections", {})
+        refined_search_keywords = data.get("search_config_keywords", {})
+        changes = data.get("changes_made", [])
+        refined_doc = merge_refined_profile_doc_sections(req.draft_doc, refined_doc_sections)
+        refined_yaml = merge_refined_search_config_keywords(req.draft_yaml, refined_search_keywords)
 
-            refined_doc_sections = data.get("profile_doc_sections", {})
-            refined_search_keywords = data.get("search_config_keywords", {})
-            changes = data.get("changes_made", [])
-            refined_doc = merge_refined_profile_doc_sections(req.draft_doc, refined_doc_sections)
-            refined_yaml = merge_refined_search_config_keywords(req.draft_yaml, refined_search_keywords)
-
-            return ProfileRefineResponse(
-                profile_doc=refined_doc,
-                profile_yaml=refined_yaml,
-                changes_made=changes,
-            )
+        return ProfileRefineResponse(
+            profile_doc=refined_doc,
+            profile_yaml=refined_yaml,
+            changes_made=changes,
+        )
 
     except Exception as e:
         logger.error(f"Refinement failed: {e}")
@@ -396,6 +396,9 @@ Refine only the editable sections and keyword blocks following the instructions.
             profile_yaml=req.draft_yaml,
             changes_made=[f"Refinement skipped: {str(e)[:100]}"],
         )
+    finally:
+        if adapter is not None:
+            await adapter.aclose()
 
 
 @router.post("/wizard/save-profile")

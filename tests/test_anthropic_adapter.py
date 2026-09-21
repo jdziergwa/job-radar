@@ -80,3 +80,19 @@ def test_text_after_thinking_block_is_returned():
 def test_truncated_response_raises_api_error():
     with pytest.raises(LLMAPIError, match="max_tokens"):
         _run(response=_response(_text('{"fit_score": 0'), stop_reason="max_tokens"))
+
+
+def test_neutral_image_blocks_become_anthropic_image_sources():
+    messages = _Messages()
+    adapter = AnthropicAdapter(client=types.SimpleNamespace(messages=messages))
+    asyncio.run(adapter.complete(
+        system="s", model="claude-x", max_tokens=5,
+        messages=[{"role": "user", "content": [
+            {"type": "image", "media_type": "image/png", "data": "QUJD"},
+            {"type": "text", "text": "hi"},
+        ]}],
+    ))
+    assert messages.kwargs["messages"][0]["content"] == [
+        {"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": "QUJD"}},
+        {"type": "text", "text": "hi"},
+    ]
