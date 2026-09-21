@@ -24,6 +24,10 @@ from src.llm.base import (
 
 logger = logging.getLogger(__name__)
 
+# Gemini counts thinking tokens against max_output_tokens. Thinking is capped at this budget and
+# the same amount is added on top of the caller's max_tokens, so the answer always keeps its room.
+THINKING_HEADROOM_TOKENS = 8192
+
 
 def _to_parts(content) -> list[types.Part]:
     if isinstance(content, str):
@@ -32,6 +36,14 @@ def _to_parts(content) -> list[types.Part]:
         types.Part.from_bytes(data=base64.b64decode(b["data"]), mime_type=b["media_type"])
         if b["type"] == "image" else types.Part(text=b["text"])
         for b in content
+    ]
+
+
+def _part_kinds(parts) -> list[str]:
+    """Name the populated field of each response part, e.g. ['thought', 'function_call']."""
+    return [
+        next((field for field, value in part if value is not None and field != "thought_signature"), "empty")
+        for part in parts
     ]
 
 
@@ -67,6 +79,7 @@ class GeminiAdapter:
         cache_system: bool = False,
         timeout: float | None = None,
         json_schema: dict[str, Any] | None = None,
+        json_output: bool = False,
     ) -> LLMResult:
         # `cache_system` is ignored: Gemini caches repeated prefixes implicitly.
         # `json_schema` is ignored: callers parse the JSON the prompt asks for.
@@ -79,13 +92,16 @@ class GeminiAdapter:
         ]
         config = types.GenerateContentConfig(
             system_instruction=system,
-            max_output_tokens=max_tokens,
+            max_output_tokens=max_tokens + THINKING_HEADROOM_TOKENS,
+            thinking_config=types.ThinkingConfig(thinking_budget=THINKING_HEADROOM_TOKENS),
+            response_mime_type="application/json" if json_output else None,
             http_options=None if timeout is None else types.HttpOptions(timeout=int(timeout * 1000)),
         )
 
         logger.debug(
-            "Gemini request: model=%s max_tokens=%d timeout=%s system_chars=%d messages=%d",
-            model, max_tokens, timeout, len(system), len(messages),
+            "Gemini request: model=%s max_tokens=%d (+%d thinking) json_output=%s timeout=%s "
+            "system_chars=%d messages=%d",
+            model, max_tokens, THINKING_HEADROOM_TOKENS, json_output, timeout, len(system), len(messages),
         )
         started = time.monotonic()
         try:
@@ -128,16 +144,19 @@ class GeminiAdapter:
 
         text = response.text
         if not text:
+            parts = getattr(getattr(candidate, "content", None), "parts", None) or []
             logger.error(
-                "Gemini returned no text (model=%s, finish_reason=%s, thinking_tokens=%s, max_tokens=%d, prompt_feedback=%s)",
-                model, finish_reason, getattr(usage, "thoughts_token_count", None), max_tokens, prompt_feedback,
+                "Gemini returned no text (model=%s, finish_reason=%s, thinking_tokens=%s, max_output_tokens=%d, "
+                "prompt_feedback=%s, part_kinds=%s)",
+                model, finish_reason, getattr(usage, "thoughts_token_count", None), config.max_output_tokens,
+                prompt_feedback, _part_kinds(parts),
             )
             raise LLMAPIError(f"Gemini returned no text content (finish_reason={finish_reason})")
         if finish_reason is not None and getattr(finish_reason, "name", str(finish_reason)) != "STOP":
             logger.warning(
                 "Gemini response not cleanly finished (model=%s, finish_reason=%s, output_chars=%d, "
-                "thinking_tokens=%s, max_tokens=%d) — output is likely truncated",
-                model, finish_reason, len(text), getattr(usage, "thoughts_token_count", None), max_tokens,
+                "thinking_tokens=%s, max_output_tokens=%d) — output is likely truncated",
+                model, finish_reason, len(text), getattr(usage, "thoughts_token_count", None), config.max_output_tokens,
             )
 
         return LLMResult(

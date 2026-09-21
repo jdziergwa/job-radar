@@ -805,6 +805,7 @@ async def score_job(
                 max_tokens=1536,
                 cache_system=True,
                 json_schema=_SINGLE_SCORE_SCHEMA,
+                json_output=True,
             )
 
             raw_text = response.text
@@ -936,6 +937,7 @@ async def score_batch(
                 max_tokens=max_tokens,
                 cache_system=True,
                 json_schema=_BATCH_SCORE_SCHEMA,
+                json_output=True,
             )
 
             raw_text = response.text

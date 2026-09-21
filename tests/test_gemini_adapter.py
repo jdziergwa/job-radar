@@ -5,7 +5,7 @@ import pytest
 from google.genai import errors
 
 from src.llm import LLMAPIError, LLMRateLimitError
-from src.llm.gemini_adapter import GeminiAdapter
+from src.llm.gemini_adapter import THINKING_HEADROOM_TOKENS, GeminiAdapter
 
 
 class _Models:
@@ -51,7 +51,9 @@ def test_request_shape_and_usage_extraction():
     kwargs = models.kwargs
     assert kwargs["model"] == "gemini-x"
     assert kwargs["config"].system_instruction == "sys"
-    assert kwargs["config"].max_output_tokens == 50
+    assert kwargs["config"].max_output_tokens == 50 + THINKING_HEADROOM_TOKENS
+    assert kwargs["config"].thinking_config.thinking_budget == THINKING_HEADROOM_TOKENS
+    assert kwargs["config"].response_mime_type is None
     assert [(c.role, c.parts[0].text) for c in kwargs["contents"]] == [("user", "hi"), ("model", "yo")]
     assert result.text == "hello"
     assert (result.usage.input_tokens, result.usage.output_tokens, result.usage.cached_input_tokens) == (10, 5, 7)
@@ -63,6 +65,12 @@ def test_cache_hint_is_ignored_safely():
     _complete(_adapter(with_hint), cache_system=True)
     _complete(_adapter(without_hint), cache_system=False)
     assert with_hint.kwargs["config"] == without_hint.kwargs["config"]
+
+
+def test_json_output_requests_json_mime_type():
+    models = _Models(_response('{"a": 1}'))
+    _complete(_adapter(models), json_output=True)
+    assert models.kwargs["config"].response_mime_type == "application/json"
 
 
 def test_rate_limit_maps_with_retry_after():

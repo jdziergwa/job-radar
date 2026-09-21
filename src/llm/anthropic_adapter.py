@@ -84,7 +84,9 @@ class AnthropicAdapter:
         cache_system: bool = False,
         timeout: float | None = None,
         json_schema: dict[str, Any] | None = None,
+        json_output: bool = False,
     ) -> LLMResult:
+        # `json_output` is ignored: the prompts already ask for JSON and the callers parse it.
         block: dict = {"type": "text", "text": system}
         if cache_system:
             block["cache_control"] = {"type": "ephemeral"}

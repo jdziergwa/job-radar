@@ -85,12 +85,16 @@ class LLMAdapter(Protocol):
         cache_system: bool = False,
         timeout: float | None = None,
         json_schema: dict[str, Any] | None = None,
+        json_output: bool = False,
     ) -> LLMResult:
         """Return the model's text. `cache_system` hints the system prompt is reusable.
 
-        `timeout` is seconds for the request; None keeps the vendor SDK default.
-        When `supports_json_schema(model)`, the answer is constrained to `json_schema`;
+        `max_tokens` bounds the answer, not any hidden reasoning the Model does first.
+        `json_output` hints the answer must be a bare JSON document. When
+        `supports_json_schema(model)`, the answer is also constrained to `json_schema`;
         otherwise `json_schema` is ignored and callers must parse free-form JSON.
+
+        `timeout` is seconds for the request; None keeps the vendor SDK default.
         Raises LLMRateLimitError or LLMAPIError.
         """
         ...

@@ -44,4 +44,5 @@ def test_score_jobs_uses_resolver_adapter_and_profile_model(monkeypatch):
     assert results[0].fit_score == 70
     assert fake.calls[0]["model"] == "profile-model"
     assert fake.calls[0]["cache_system"] is True
+    assert fake.calls[0]["json_output"] is True
     assert len(store.updates) == 1
