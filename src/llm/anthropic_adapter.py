@@ -85,14 +85,15 @@ class AnthropicAdapter:
         if cache_system:
             block["cache_control"] = {"type": "ephemeral"}
 
+        # A timeout is a hard cap: disable the SDK's own retries so they don't multiply it.
+        client = self._client if timeout is None else self._client.with_options(timeout=timeout, max_retries=0)
         try:
-            response = await self._client.messages.create(
+            response = await client.messages.create(
                 model=model,
                 max_tokens=max_tokens,
                 system=[block],
                 messages=[_to_anthropic(m) for m in messages],
                 **self._request_options(model, json_schema),
-                **({} if timeout is None else {"timeout": timeout}),
             )
         except anthropic.RateLimitError as error:
             headers = getattr(getattr(error, "response", None), "headers", None)

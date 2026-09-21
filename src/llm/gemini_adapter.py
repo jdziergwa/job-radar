@@ -73,9 +73,11 @@ class GeminiAdapter:
             )
             for message in messages
         ]
-        config = types.GenerateContentConfig(system_instruction=system, max_output_tokens=max_tokens)
-        if timeout is not None:
-            config.http_options = types.HttpOptions(timeout=int(timeout * 1000))
+        config = types.GenerateContentConfig(
+            system_instruction=system,
+            max_output_tokens=max_tokens,
+            http_options=None if timeout is None else types.HttpOptions(timeout=int(timeout * 1000)),
+        )
 
         try:
             response = await self._client.aio.models.generate_content(

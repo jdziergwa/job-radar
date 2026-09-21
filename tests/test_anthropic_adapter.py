@@ -98,22 +98,31 @@ def test_neutral_image_blocks_become_anthropic_image_sources():
     ]
 
 
-def _complete_with(messages, **extra):
-    adapter = AnthropicAdapter(client=types.SimpleNamespace(messages=messages))
+class _Client:
+    def __init__(self, messages):
+        self.messages = messages
+        self.options = None
+
+    def with_options(self, **options):
+        self.options = options
+        return self
+
+
+def _complete_with(client, **extra):
+    adapter = AnthropicAdapter(client=client)
     return asyncio.run(adapter.complete(
         system="s", messages=[{"role": "user", "content": "hi"}],
         model="claude-x", max_tokens=5, **extra,
     ))
 
 
-def test_timeout_is_passed_to_the_sdk_request():
-    messages = _Messages()
-    _complete_with(messages, timeout=7.0)
-    assert messages.kwargs["timeout"] == 7.0
+def test_timeout_is_a_hard_cap_without_sdk_retries():
+    client = _Client(_Messages())
+    _complete_with(client, timeout=7.0)
+    assert client.options == {"timeout": 7.0, "max_retries": 0}
 
 
-def test_no_timeout_leaves_sdk_default():
-    messages = _Messages()
-    _complete_with(messages)
-    assert "timeout" not in messages.kwargs
-
+def test_no_timeout_leaves_sdk_defaults():
+    client = _Client(_Messages())
+    _complete_with(client)
+    assert client.options is None
