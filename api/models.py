@@ -642,4 +642,11 @@ class AiConfig(BaseModel):
     provider: str | None = None
     provider_display_name: str | None = None
     models: AiModels | None = None
+    overrides: dict[str, str] = {}
     error: str | None = None
+
+
+class AiModelOverrideRequest(BaseModel):
+    """Set a Settings Model override for one AI Task; empty or null clears it."""
+
+    model: str | None = None

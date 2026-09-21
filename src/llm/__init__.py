@@ -15,9 +15,11 @@ from src.llm.resolver import (
     check_api_key,
     describe_active,
     get_adapter,
+    load_model_overrides,
     resolve_model,
     resolve_provider_name,
     set_adapter_override,
+    set_model_override,
 )
 
 __all__ = [
@@ -33,7 +35,9 @@ __all__ = [
     "check_api_key",
     "describe_active",
     "get_adapter",
+    "load_model_overrides",
     "resolve_model",
     "resolve_provider_name",
     "set_adapter_override",
+    "set_model_override",
 ]

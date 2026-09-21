@@ -7,13 +7,14 @@ import base64
 import re
 import fitz  # pymupdf
 from fastapi import APIRouter, HTTPException, UploadFile, File, Query
-from api.deps import PROFILES_DIR
+from api.deps import PROFILES_DIR, get_store
 from src.llm import (
     AITask,
     LLMAPIError,
     LLMConfigError,
     LLMRateLimitError,
     get_adapter,
+    load_model_overrides,
     resolve_model,
 )
 from api.models import (
@@ -88,7 +89,7 @@ def _extract_json(text: str) -> str:
 def _wizard_adapter():
     """Active adapter and the wizard's Model; a missing key is a UI-readable 503."""
     try:
-        return get_adapter(), resolve_model(AITask.WIZARD)
+        return get_adapter(), resolve_model(AITask.WIZARD, settings_overrides=load_model_overrides(get_store()))
     except LLMConfigError as e:
         raise HTTPException(status_code=503, detail=f"AI not configured: {e}")
 

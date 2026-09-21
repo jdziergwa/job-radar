@@ -193,3 +193,9 @@ def bind_store(monkeypatch, store: Store):
 def client():
     with TestClient(app) as test_client:
         yield test_client
+
+
+@pytest.fixture(autouse=True)
+def _isolated_data_dir(tmp_path_factory, monkeypatch):
+    """Keep API paths that open the app-side store off the real data/ directory."""
+    monkeypatch.setattr("api.deps.DATA_DIR", tmp_path_factory.mktemp("appdata"))

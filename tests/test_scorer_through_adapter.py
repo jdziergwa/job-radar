@@ -15,6 +15,9 @@ class _Store:
     def __init__(self):
         self.updates = []
 
+    def get_metadata(self, key, default=None):
+        return default
+
     def update_score(self, **kwargs):
         self.updates.append(kwargs)
 

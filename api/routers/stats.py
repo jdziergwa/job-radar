@@ -1,7 +1,7 @@
 from collections.abc import Callable
 from fastapi import APIRouter, HTTPException, Query
 from api.deps import get_store
-from src.llm import AITask, LLMAPIError, LLMConfigError, LLMRateLimitError, get_adapter, resolve_model
+from src.llm import AITask, LLMAPIError, LLMConfigError, LLMRateLimitError, get_adapter, load_model_overrides, resolve_model
 from api.models import StatsOverview, TrendsResponse, DismissalStats, MarketIntelligenceResponse, InsightsResponse
 import json
 from datetime import datetime, timedelta
@@ -110,7 +110,7 @@ async def _generate_insights_report(market_data: dict, days: int, profile: str) 
         raise HTTPException(status_code=503, detail=f"AI not configured: {e}")
 
     try:
-        model = resolve_model(AITask.STATS)
+        model = resolve_model(AITask.STATS, settings_overrides=load_model_overrides(get_store(profile)))
         # 1. Load user context from disk instead of hardcoding
         profile_dir = get_profile_dir(profile)
         doc_path = profile_dir / "profile_doc.md"

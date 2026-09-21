@@ -140,3 +140,25 @@ def test_claude_model_with_gemini_fails_fast(monkeypatch):
     monkeypatch.setenv("SCORING_MODEL", "claude-sonnet-4-5")
     with pytest.raises(LLMConfigError, match="claude-sonnet-4-5"):
         resolve_model(AITask.SCORING)
+
+
+def test_profile_model_beats_settings_override_and_settings_beats_env(monkeypatch):
+    from src.llm import AITask, resolve_model
+
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.setenv("GOOGLE_API_KEY", "g")
+    monkeypatch.setenv("LLM_PROVIDER", "gemini")
+    monkeypatch.setenv("SCORING_MODEL", "gemini-env")
+    overrides = {AITask.SCORING: "gemini-settings"}
+
+    assert resolve_model(AITask.SCORING, settings_overrides=overrides) == "gemini-settings"
+    assert resolve_model(AITask.SCORING, profile_model="gemini-profile", settings_overrides=overrides) == "gemini-profile"
+
+
+def test_foreign_settings_override_fails_fast(monkeypatch):
+    from src.llm import AITask, LLMConfigError, resolve_model
+
+    monkeypatch.setenv("GOOGLE_API_KEY", "g")
+    monkeypatch.setenv("LLM_PROVIDER", "gemini")
+    with pytest.raises(LLMConfigError, match="does not belong"):
+        resolve_model(AITask.WIZARD, settings_overrides={AITask.WIZARD: "claude-sonnet-4-5"})

@@ -37,7 +37,7 @@ from src.reporter import (
     send_telegram,
     write_report,
 )
-from src.llm import AITask, LLMConfigError, check_api_key, resolve_model
+from src.llm import AITask, LLMConfigError, check_api_key, load_model_overrides, resolve_model
 from src.scorer import score_jobs
 from src.store import Store
 
@@ -602,7 +602,11 @@ async def run() -> None:
 
         try:
             check_api_key()
-            resolve_model(AITask.SCORING, profile_model=config.get("scoring", {}).get("model"))
+            resolve_model(
+                AITask.SCORING,
+                profile_model=config.get("scoring", {}).get("model"),
+                settings_overrides=load_model_overrides(store),
+            )
         except LLMConfigError as error:
             error_msg = f"{error} Scoring skipped."
             logger.error(error_msg)

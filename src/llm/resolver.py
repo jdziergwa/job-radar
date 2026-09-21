@@ -107,7 +107,29 @@ def _require_owned(provider, model: str) -> None:
         )
 
 
-def describe_active() -> dict:
+_OVERRIDE_KEY = "model_override."
+
+
+def load_model_overrides(store) -> dict[AITask, str]:
+    """Settings-page Model overrides persisted app-side in the store's metadata."""
+    overrides = {}
+    for task in AITask:
+        value = (store.get_metadata(_OVERRIDE_KEY + task.value) or "").strip()
+        if value:
+            overrides[task] = value
+    return overrides
+
+
+def set_model_override(store, task: AITask, model: str | None) -> None:
+    """Set, or with an empty `model` clear, a Settings override. Rejects foreign Models."""
+    model = (model or "").strip()
+    if model:
+        provider = _adapter_override or _adapter_class(resolve_provider_name())
+        _require_owned(provider, model)
+    store.set_metadata(_OVERRIDE_KEY + task.value, model)
+
+
+def describe_active(store=None) -> dict:
     """Public, key-free view of the active LLM Provider and per-task Models.
 
     Never raises: a misconfiguration is reported as `configured: False` with the
@@ -116,7 +138,8 @@ def describe_active() -> dict:
     try:
         check_api_key()
         provider = _adapter_override or _adapter_class(resolve_provider_name())
-        models = {task.value: resolve_model(task) for task in AITask}
+        overrides = load_model_overrides(store) if store is not None else None
+        models = {task.value: resolve_model(task, settings_overrides=overrides) for task in AITask}
     except (LLMConfigError, ImportError) as e:
         return {"configured": False, "provider": None, "provider_display_name": None,
                 "models": None, "error": str(e)}

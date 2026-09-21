@@ -15,7 +15,15 @@ from dataclasses import replace
 from pathlib import Path
 from typing import Any, Protocol, runtime_checkable, Optional, Callable
 
-from src.llm import AITask, LLMAdapter, LLMAPIError, LLMRateLimitError, get_adapter, resolve_model
+from src.llm import (
+    AITask,
+    LLMAdapter,
+    LLMAPIError,
+    LLMRateLimitError,
+    get_adapter,
+    load_model_overrides,
+    resolve_model,
+)
 from src.models import CandidateJob, ScoredJob
 from src.score_normalization import (
     DIMENSION_WEIGHTS,
@@ -1041,7 +1049,11 @@ async def score_jobs(
     batch_size = scoring_config.get("batch_size", batch_size)
     min_request_interval = scoring_config.get("min_request_interval_seconds", CALL_DELAY)
 
-    model = resolve_model(AITask.SCORING, profile_model=scoring_config.get("model"))
+    model = resolve_model(
+        AITask.SCORING,
+        profile_model=scoring_config.get("model"),
+        settings_overrides=load_model_overrides(store),
+    )
     max_desc_chars = scoring_config.get("max_description_chars", 20000)
 
     # Load scoring philosophy and assemble template

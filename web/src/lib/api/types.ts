@@ -810,6 +810,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/ai-config/models/{task}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Ai Model
+         * @description Set or clear the Settings Model override for an AI Task.
+         */
+        put: operations["set_ai_model_api_ai_config_models__task__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/health": {
         parameters: {
             query?: never;
@@ -832,6 +852,12 @@ export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
         /**
+         * AITask
+         * @description A distinct job the app gives to an AI model.
+         * @enum {string}
+         */
+        AITask: "scoring" | "wizard" | "stats";
+        /**
          * AiConfig
          * @description Active LLM Provider and per-task Models. Never carries an API key.
          */
@@ -843,8 +869,23 @@ export interface components {
             /** Provider Display Name */
             provider_display_name?: string | null;
             models?: components["schemas"]["AiModels"] | null;
+            /**
+             * Overrides
+             * @default {}
+             */
+            overrides: {
+                [key: string]: string;
+            };
             /** Error */
             error?: string | null;
+        };
+        /**
+         * AiModelOverrideRequest
+         * @description Set a Settings Model override for one AI Task; empty or null clears it.
+         */
+        AiModelOverrideRequest: {
+            /** Model */
+            model?: string | null;
         };
         /** AiModels */
         AiModels: {
@@ -3965,7 +4006,9 @@ export interface operations {
     };
     ai_config_api_ai_config_get: {
         parameters: {
-            query?: never;
+            query?: {
+                profile?: string;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -3979,6 +4022,52 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AiConfig"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_ai_model_api_ai_config_models__task__put: {
+        parameters: {
+            query?: {
+                profile?: string;
+            };
+            header?: never;
+            path: {
+                task: components["schemas"]["AITask"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AiModelOverrideRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiConfig"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
