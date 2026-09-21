@@ -9,7 +9,10 @@ from src.llm import (
     resolve_provider_name,
 )
 
-ENV_VARS = ["LLM_PROVIDER", "ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN", "GEMINI_API_KEY", "SCORING_MODEL", "WIZARD_MODEL", "STATS_MODEL"]
+ENV_VARS = [
+    "LLM_PROVIDER", "ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN", "GOOGLE_API_KEY",
+    "SCORING_MODEL", "WIZARD_MODEL", "STATS_MODEL",
+]
 
 
 @pytest.fixture(autouse=True)
@@ -89,4 +92,51 @@ def test_blank_overrides_are_ignored(monkeypatch):
 def test_model_from_another_provider_fails_fast(monkeypatch):
     monkeypatch.setenv("SCORING_MODEL", "gemini-2.5-flash")
     with pytest.raises(LLMConfigError, match="gemini-2.5-flash"):
+        resolve_model(AITask.SCORING)
+
+
+def test_gemini_selected_explicitly(monkeypatch):
+    monkeypatch.setenv("LLM_PROVIDER", "gemini")
+    assert resolve_provider_name() == "gemini"
+    assert resolve_model(AITask.SCORING) == "gemini-2.5-flash"
+    assert resolve_model(AITask.WIZARD) == "gemini-2.5-pro"
+
+
+def test_auto_detects_gemini_when_only_its_key_is_set(monkeypatch):
+    monkeypatch.setenv("GOOGLE_API_KEY", "k")
+    assert resolve_provider_name() == "gemini"
+
+
+def test_both_keys_without_provider_asks_user_to_choose(monkeypatch):
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "k")
+    monkeypatch.setenv("GOOGLE_API_KEY", "k")
+    with pytest.raises(LLMConfigError, match="LLM_PROVIDER"):
+        resolve_provider_name()
+
+
+def test_anthropic_auth_token_counts_for_detection(monkeypatch):
+    monkeypatch.setenv("ANTHROPIC_AUTH_TOKEN", "t")
+    assert resolve_provider_name() == "anthropic"
+    monkeypatch.setenv("GOOGLE_API_KEY", "k")
+    with pytest.raises(LLMConfigError, match="ANTHROPIC_AUTH_TOKEN and GOOGLE_API_KEY"):
+        resolve_provider_name()
+
+
+def test_explicit_provider_resolves_ambiguity(monkeypatch):
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "k")
+    monkeypatch.setenv("GOOGLE_API_KEY", "k")
+    monkeypatch.setenv("LLM_PROVIDER", "gemini")
+    assert resolve_provider_name() == "gemini"
+
+
+def test_gemini_missing_key_names_exact_env_var(monkeypatch):
+    monkeypatch.setenv("LLM_PROVIDER", "gemini")
+    with pytest.raises(LLMConfigError, match="GOOGLE_API_KEY"):
+        check_api_key()
+
+
+def test_claude_model_with_gemini_fails_fast(monkeypatch):
+    monkeypatch.setenv("LLM_PROVIDER", "gemini")
+    monkeypatch.setenv("SCORING_MODEL", "claude-sonnet-4-5")
+    with pytest.raises(LLMConfigError, match="claude-sonnet-4-5"):
         resolve_model(AITask.SCORING)

@@ -7,7 +7,10 @@ from typing import Mapping
 
 from src.llm.base import AITask, LLMAdapter, LLMConfigError
 
-_PROVIDERS = ("anthropic",)
+_PROVIDERS = ("anthropic", "gemini")
+# Env vars that authenticate each LLM Provider, mirrored from the adapters so detection
+# does not import every vendor SDK.
+_CREDENTIAL_ENVS = {"anthropic": ("ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN"), "gemini": ("GOOGLE_API_KEY",)}
 _MODEL_ENV = {
     AITask.SCORING: "SCORING_MODEL",
     AITask.WIZARD: "WIZARD_MODEL",
@@ -29,6 +32,10 @@ def _adapter_class(name: str):
         from src.llm.anthropic_adapter import AnthropicAdapter
 
         return AnthropicAdapter
+    if name == "gemini":
+        from src.llm.gemini_adapter import GeminiAdapter
+
+        return GeminiAdapter
     raise LLMConfigError(f"Unsupported LLM_PROVIDER '{name}'.")
 
 
@@ -39,6 +46,18 @@ def resolve_provider_name() -> str:
             supported = ", ".join(_PROVIDERS)
             raise LLMConfigError(f"Unsupported LLM_PROVIDER '{explicit}'. Supported: {supported}.")
         return explicit
+
+    configured = {
+        name: env
+        for name in _PROVIDERS
+        if (env := next((env for env in _CREDENTIAL_ENVS[name] if os.getenv(env)), None))
+    }
+    if len(configured) == 1:
+        return next(iter(configured))
+    if configured:
+        keys = " and ".join(configured.values())
+        raise LLMConfigError(f"Both {keys} are set. Set LLM_PROVIDER to {' or '.join(configured)}.")
+    # No key at all: default to Anthropic so the missing-key error names its env var.
     return "anthropic"
 
 
