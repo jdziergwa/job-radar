@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import asyncio
 import email.utils
+import hashlib
 import json
 import logging
 import re
@@ -19,8 +20,15 @@ from typing import Any, Protocol, runtime_checkable, Optional, Callable
 import anthropic
 from anthropic import AsyncAnthropic
 
+from src.claude import HAIKU_MODEL, message_text
 from src.models import CandidateJob, ScoredJob
-from src.score_normalization import compute_weighted_fit_score, normalize_scored_job
+from src.score_normalization import (
+    DIMENSION_WEIGHTS,
+    VALID_PRIORITIES,
+    VALID_SKIP_REASONS,
+    compute_weighted_fit_score,
+    normalize_scored_job,
+)
 from src.store import Store
 
 logger = logging.getLogger(__name__)
@@ -28,6 +36,50 @@ logger = logging.getLogger(__name__)
 # Delay between API calls to be respectful
 CALL_DELAY = 0.5  # seconds
 MAX_RETRIES = 3
+
+
+def _object_schema(properties: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "type": "object",
+        "properties": properties,
+        "required": list(properties),
+        "additionalProperties": False,
+    }
+
+
+_SCORE_PROPERTIES = {
+    "fit_score": {"type": "integer"},
+    "breakdown": _object_schema({key: {"type": "integer"} for key in DIMENSION_WEIGHTS}),
+    "reasoning": {"type": "string"},
+    "key_matches": {"type": "array", "items": {"type": "string"}},
+    "red_flags": {"type": "array", "items": {"type": "string"}},
+    "apply_priority": {"type": "string", "enum": sorted(VALID_PRIORITIES)},
+    "skip_reason": {"type": "string", "enum": sorted(VALID_SKIP_REASONS)},
+    "missing_skills": {"type": "array", "items": {"type": "string"}},
+    "salary_info": _object_schema({
+        "salary": {"type": ["string", "null"]},
+        "min": {"type": ["integer", "null"]},
+        "max": {"type": ["integer", "null"]},
+        "currency": {"type": ["string", "null"]},
+    }),
+    "is_sparse": {"type": "boolean"},
+}
+_SINGLE_SCORE_SCHEMA = _object_schema(_SCORE_PROPERTIES)
+_BATCH_SCORE_SCHEMA = _object_schema({
+    "jobs": {
+        "type": "array",
+        "items": _object_schema({"job_id": {"type": "integer"}, **_SCORE_PROPERTIES}),
+    },
+})
+
+
+def _scoring_request_options(model: str, schema: dict[str, Any]) -> dict[str, Any]:
+    if model != HAIKU_MODEL:
+        return {}
+    return {
+        "thinking": {"type": "disabled"},
+        "output_config": {"effort": "low", "format": {"type": "json_schema", "schema": schema}},
+    }
 
 
 class _ScoringRateLimiter:
@@ -657,6 +709,8 @@ def _parse_score_response(text: str) -> dict[str, Any]:
         raise ValueError("No JSON object found in response")
 
     data = json.loads(json_str)
+    if not isinstance(data, dict):
+        raise ValueError("Expected a score object")
     
     # 1. Ensure fit_score exists even if LLM used a different key
     if "fit_score" not in data:
@@ -706,8 +760,20 @@ Description:
     return "\n\n".join(parts) + "\n\nScore each job's fit for the candidate. Treat each job in complete isolation. For each reasoning string, mention only the current job and the candidate profile. Never mention job numbers, ordering, previous/next jobs, other jobs in the batch, or comparisons between jobs."
 
 
-def _parse_batch_response(text: str, expected_count: int) -> list[dict] | None:
+def _parse_batch_response(text: str, expected_count: int, *, structured: bool = False) -> list[dict] | None:
     """Parse JSON array of fit scores. Returns None if validation fails."""
+    if structured:
+        payload = json.loads(text)
+        rows = payload.get("jobs") if isinstance(payload, dict) else None
+        if not isinstance(rows, list) or len(rows) != expected_count:
+            return None
+        if any(not isinstance(row, dict) or type(row.get("job_id")) is not int for row in rows):
+            return None
+        by_id = {row["job_id"]: row for row in rows}
+        if by_id.keys() != set(range(1, expected_count + 1)):
+            return None
+        return [by_id[job_id] for job_id in range(1, expected_count + 1)]
+
     try:
         json_str = _extract_json(text, is_array=True)
         if not json_str:
@@ -744,7 +810,7 @@ async def score_job(
     job: CandidateJob,
     system_prompt: list[dict[str, Any]],
     profile_config: dict[str, Any] | None = None,
-    model: str = "claude-haiku-4-5-20251001",
+    model: str = HAIKU_MODEL,
     max_desc_chars: int = 20000,
     rate_limiter: _ScoringRateLimiter | None = None,
 ) -> ScoredJob:
@@ -761,12 +827,13 @@ async def score_job(
 
             response = await client.messages.create(
                 model=model,
-                max_tokens=1000,
+                max_tokens=1536,
                 system=system_prompt,
                 messages=[{"role": "user", "content": user_message}],
+                **_scoring_request_options(model, _SINGLE_SCORE_SCHEMA),
             )
 
-            raw_text = response.content[0].text
+            raw_text = message_text(response)
             data = _parse_score_response(raw_text)
 
             metadata = _extract_metadata(data)
@@ -806,10 +873,10 @@ async def score_job(
             _log_normalization(raw_result, normalized_result)
             return normalized_result
 
-        except json.JSONDecodeError:
+        except ValueError as error:
             logger.warning(
-                "JSON parse error for %s @ %s (attempt %d/%d)",
-                job.title, job.company_name, attempt, MAX_RETRIES,
+                "Invalid score for %s @ %s (attempt %d/%d): %s",
+                job.title, job.company_name, attempt, MAX_RETRIES, error,
             )
             if attempt < MAX_RETRIES:
                 await asyncio.sleep(1 * attempt)  # Exponential backoff
@@ -849,7 +916,7 @@ async def score_batch(
     jobs: list[CandidateJob],
     system_prompt: list[dict[str, Any]],
     profile_config: dict[str, Any] | None = None,
-    model: str = "claude-haiku-4-5-20251001",
+    model: str = HAIKU_MODEL,
     max_desc_chars: int = 20000,
     rate_limiter: _ScoringRateLimiter | None = None,
 ) -> list[ScoredJob]:
@@ -862,7 +929,10 @@ async def score_batch(
         return [await score_job(client, jobs[0], system_prompt, profile_config, model, max_desc_chars, rate_limiter)]
 
     user_message = _build_batch_user_message(jobs, max_desc_chars, profile_config)
-    max_tokens = min(800 * len(jobs), 4096)
+    structured = model == HAIKU_MODEL
+    if structured:
+        user_message += '\nReturn an object with a "jobs" array. Set each result\'s integer "job_id" to its input job ID.'
+    max_tokens = min(1280 * len(jobs), 8192) if structured else min(800 * len(jobs), 4096)
 
     for attempt in range(1, MAX_RETRIES + 1):
         try:
@@ -874,10 +944,11 @@ async def score_batch(
                 max_tokens=max_tokens,
                 system=system_prompt,
                 messages=[{"role": "user", "content": user_message}],
+                **_scoring_request_options(model, _BATCH_SCORE_SCHEMA),
             )
 
-            raw_text = response.content[0].text
-            data = _parse_batch_response(raw_text, len(jobs))
+            raw_text = message_text(response)
+            data = _parse_batch_response(raw_text, len(jobs), structured=structured)
 
             if data is not None:
                 results = []
@@ -934,7 +1005,7 @@ async def score_batch(
                 await asyncio.sleep(wait)
             continue
 
-        except (anthropic.APIError, json.JSONDecodeError) as e:
+        except (anthropic.APIError, ValueError) as e:
             logger.warning("API/JSON error in batch (attempt %d/%d): %s", attempt, MAX_RETRIES, e)
             if attempt < MAX_RETRIES:
                 await asyncio.sleep(2 ** attempt)
@@ -959,7 +1030,7 @@ class ScorerProtocol(Protocol):
 class AnthropicScorer:
     """Default scorer using Claude Haiku with prompt caching."""
     
-    def __init__(self, model: str = "claude-haiku-4-5-20251001", max_desc_chars: int = 20000, profile_dir: Path | None = None):
+    def __init__(self, model: str = HAIKU_MODEL, max_desc_chars: int = 20000, profile_dir: Path | None = None):
         self.model = model
         self.max_desc_chars = max_desc_chars
         self.profile_dir = profile_dir
@@ -1024,13 +1095,14 @@ async def score_jobs(
     batch_size = scoring_config.get("batch_size", batch_size)
     min_request_interval = scoring_config.get("min_request_interval_seconds", CALL_DELAY)
 
-    model = scoring_config.get("model", "claude-haiku-4-5-20251001")
+    model = scoring_config.get("model", HAIKU_MODEL)
     max_desc_chars = scoring_config.get("max_description_chars", 20000)
 
     # Load scoring philosophy and assemble template
     philosophy = load_scoring_philosophy(profile_dir)
     structure = load_prompt_structure()
     scoring_instructions = structure.format(scoring_philosophy=philosophy)
+    rubric_version = hashlib.sha256(scoring_instructions.encode()).hexdigest()
     
     # Build system prompt (cached across all calls)
     system_prompt = _build_system_prompt(scoring_instructions, profile_doc, profile_config)
@@ -1063,7 +1135,9 @@ async def score_jobs(
             )
             
             for result in results:
-                # Persist score immediately
+                if result.scoring_error is not None:
+                    store.record_scoring_failure(result.db_id, model, rubric_version, result.scoring_error)
+                    continue
                 store.update_score(
                     db_id=result.db_id,
                     fit_score=result.fit_score,
@@ -1081,6 +1155,8 @@ async def score_jobs(
                     salary_max=result.salary_max,
                     salary_currency=result.salary_currency,
                     is_sparse=result.is_sparse,
+                    scoring_model=model,
+                    rubric_version=rubric_version,
                 )
 
             completed_count += len(batch)
@@ -1120,6 +1196,7 @@ def _error_scored_job(job: CandidateJob, reason: str) -> ScoredJob:
         first_seen_at=job.first_seen_at,
         fit_score=0,
         reasoning=reason,
+        scoring_error=reason,
         fit_category="",
         apply_priority="skip",
     )

@@ -111,7 +111,7 @@ If you prefer direct editing, **Settings** still exposes the raw `profile_doc.md
 
 ### Cost and Runtime Expectations
 
-Claude costs are reasonable enough to try with a small credit balance. One real first-run example from my setup:
+Claude costs vary by model and by how many jobs survive filtering. One first-run example from my earlier Haiku 4.5 setup:
 
 - One-time profile generation with Sonnet: about `$0.15`
 - Scoring `880` jobs: about `$3.58`
@@ -123,7 +123,7 @@ One real incremental-run example after one day:
 - Scoring cost: about `$0.15`
 - Incremental run with all providers: roughly `13 minutes`
 
-Your numbers will vary with provider mix and how many jobs survive filtering. Later runs are usually much cheaper and faster because only new surviving jobs need scoring, as in the example above. A `$5` top-up is usually enough to try profile generation plus ~10 incremental runs.
+Later runs are usually cheaper and faster because only new surviving jobs need scoring. Use the examples above as historical figures and measure your first run with Haiku 5.5 to estimate current costs.
 
 If you want to try the pipeline cost-free first, use the web UI trigger with `Dry Run` to fetch and filter jobs without any Claude scoring, so you can see how many jobs would reach scoring. The CLI supports the same flow with `--dry-run`, for example: `.venv/bin/python -m src.main --source aggregator local --dry-run -v`.
 
@@ -149,7 +149,7 @@ Each profile is a directory containing four main editable files:
 2.  **`search_config.yaml`**:
     -   `keywords.title_patterns`: Split into `high_confidence` and `broad` tiers for precise filtering.
     -   `keywords.location_patterns` / `remote_patterns`: Primary location targets and a remote tier (governed by the `fallback_tier` field).
-    -   `scoring`: Choose your model (e.g., `claude-haiku-4-5-20251001`), set thresholds, and tune rate-limit behavior with `concurrency` and `min_request_interval_seconds` if Anthropic starts rejecting bursts.
+    -   `scoring`: Choose your model (e.g., `claude-haiku-5-5`), set thresholds, and tune rate-limit behavior with `concurrency` and `min_request_interval_seconds` if Anthropic starts rejecting bursts.
 3.  **`scoring_philosophy.md`**: The per-profile scoring rubric used by the LLM after pre-filtering. This is editable from **Settings**.
 4.  **`companies.yaml`**: Specific companies to monitor directly via their ATS boards, grouped by platform (Greenhouse, Lever, Ashby, Workable, BambooHR).
 

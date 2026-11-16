@@ -103,6 +103,7 @@ async def _generate_insights_report(market_data: dict, days: int, profile: str) 
     """Call Claude Haiku to generate a markdown market intelligence report."""
     from anthropic import AsyncAnthropic
     from api.deps import get_profile_dir
+    from src.claude import HAIKU_MODEL, message_text
 
     # 1. Load user context from disk instead of hardcoding
     profile_dir = get_profile_dir(profile)
@@ -114,8 +115,10 @@ async def _generate_insights_report(market_data: dict, days: int, profile: str) 
     
     async with AsyncAnthropic() as client:
         response = await client.messages.create(
-            model="claude-haiku-4-5-20251001",
-            max_tokens=800,
+            model=HAIKU_MODEL,
+            max_tokens=1200,
+            thinking={"type": "disabled"},
+            output_config={"effort": "low"},
             system=(
                 "You are a career market analyst. You help a candidate understand their "
                 "positioning based on their profile and recent job market data. "
@@ -134,7 +137,7 @@ async def _generate_insights_report(market_data: dict, days: int, profile: str) 
                 )
             }]
         )
-    return response.content[0].text
+    return message_text(response)
 
 
 @router.get("/stats/market", response_model=MarketIntelligenceResponse)

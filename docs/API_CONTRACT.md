@@ -238,6 +238,8 @@ Response:
 
 Previews how many jobs a scoped rescore would target.
 
+`failed_recent` selects jobs whose latest scoring attempt failed during the lookback window. It also recognizes legacy failures stored as zero-fit scores on recently discovered jobs.
+
 Query params:
 
 | Param | Values | Default |

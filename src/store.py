@@ -177,6 +177,7 @@ CREATE TABLE IF NOT EXISTS jobs (
     next_step TEXT,
     next_step_date TEXT,
     source TEXT DEFAULT 'pipeline',
+    collection_provider TEXT,
     dismissal_reason TEXT,
     match_tier TEXT,
     salary TEXT,
@@ -192,6 +193,16 @@ CREATE INDEX IF NOT EXISTS idx_first_seen ON jobs(first_seen_at);
 CREATE INDEX IF NOT EXISTS idx_status ON jobs(status);
 CREATE INDEX IF NOT EXISTS idx_score ON jobs(fit_score);
 CREATE INDEX IF NOT EXISTS idx_last_seen ON jobs(last_seen_at);
+CREATE TABLE IF NOT EXISTS job_scoring_attempts (
+    id INTEGER PRIMARY KEY,
+    job_id INTEGER NOT NULL REFERENCES jobs(id) ON DELETE CASCADE,
+    attempted_at TEXT NOT NULL,
+    model TEXT NOT NULL,
+    rubric_version TEXT NOT NULL,
+    error TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_scoring_attempts_job ON job_scoring_attempts(job_id, id);
+CREATE INDEX IF NOT EXISTS idx_scoring_failures_when ON job_scoring_attempts(attempted_at) WHERE error IS NOT NULL;
 CREATE TABLE IF NOT EXISTS application_events (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     job_id INTEGER NOT NULL REFERENCES jobs(id),
@@ -243,6 +254,7 @@ class Store:
         with self._connect() as conn:
             conn.execute("PRAGMA journal_mode=WAL")
             conn.executescript(SCHEMA)
+            conn.execute("BEGIN IMMEDIATE")
 
             existing_columns = {
                 str(row[1])
@@ -265,6 +277,7 @@ class Store:
                 ("next_step", "TEXT"),
                 ("next_step_date", "TEXT"),
                 ("source", "TEXT DEFAULT 'pipeline'"),
+                ("collection_provider", "TEXT"),
             ]:
                 if col in existing_columns:
                     continue
@@ -822,7 +835,7 @@ class Store:
     # ── Upsert ──────────────────────────────────────────────────────
 
     @staticmethod
-    def _job_insert_row(job: RawJob, now: str) -> tuple:
+    def _job_insert_row(job: RawJob, now: str, collection_provider: str | None) -> tuple:
         company_metadata = Store._serialize_metadata(job.company_metadata) if job.company_metadata else None
         location_metadata = Store._serialize_metadata(job.location_metadata) if job.location_metadata else None
         return (
@@ -846,6 +859,7 @@ class Store:
             job.salary_min,
             job.salary_max,
             job.salary_currency,
+            collection_provider,
         )
 
     def upsert_jobs(
@@ -858,8 +872,19 @@ class Store:
             return 0
             
         now = datetime.utcnow().isoformat()
+        # An active job may first appear through multiple providers in the same batch.
+        collectors = {
+            (job.ats_platform, job.company_slug, job.job_id): job.collection_provider
+            for job in jobs if job.collection_provider and job.status != "dismissed"
+        }
+        if collectors:
+            for job in jobs:
+                key = (job.ats_platform, job.company_slug, job.job_id)
+                if job.collection_provider and key in collectors and collectors[key] != job.collection_provider:
+                    collectors[key] = "multiple"
 
         with self._connect() as conn:
+            conn.execute("BEGIN IMMEDIATE")
             db_has_rows = conn.execute("SELECT 1 FROM jobs LIMIT 1").fetchone() is not None
             new_jobs_count = 0
             to_backfill_descriptions = [
@@ -875,6 +900,12 @@ class Store:
                     conn.executemany(
                         """UPDATE jobs
                            SET last_seen_at = ?,
+                               collection_provider = CASE
+                                   WHEN source != 'pipeline' OR status = 'dismissed' OR ? IS NULL THEN collection_provider
+                                   WHEN collection_provider IS NULL THEN ?
+                                   WHEN collection_provider != ? THEN 'multiple'
+                                   ELSE collection_provider
+                               END,
                                status = CASE
                                    WHEN status = 'archived' AND application_status IS NULL THEN
                                        CASE WHEN scored_at IS NOT NULL THEN 'scored' ELSE 'new' END
@@ -882,7 +913,8 @@ class Store:
                                END
                            WHERE ats_platform = ? AND company_slug = ? AND job_id = ?""",
                         [
-                            (now, job.ats_platform, job.company_slug, job.job_id)
+                            (now, job.collection_provider, job.collection_provider, job.collection_provider,
+                             job.ats_platform, job.company_slug, job.job_id)
                             for job in batch
                         ],
                     )
@@ -894,8 +926,11 @@ class Store:
                 batch = jobs[start:start + UPSERT_WRITE_CHUNK_SIZE]
                 before_changes = conn.total_changes
                 conn.executemany(
-                    "INSERT OR IGNORE INTO jobs (ats_platform, company_slug, job_id, company_name, company_metadata, title, location, location_metadata, url, description, posted_at, first_seen_at, last_seen_at, status, dismissal_reason, match_tier, salary, salary_min, salary_max, salary_currency) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                    [self._job_insert_row(job, now) for job in batch],
+                    "INSERT OR IGNORE INTO jobs (ats_platform, company_slug, job_id, company_name, company_metadata, title, location, location_metadata, url, description, posted_at, first_seen_at, last_seen_at, status, dismissal_reason, match_tier, salary, salary_min, salary_max, salary_currency, collection_provider) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    [
+                        self._job_insert_row(job, now, collectors.get((job.ats_platform, job.company_slug, job.job_id)))
+                        for job in batch
+                    ],
                 )
                 new_jobs_count += conn.total_changes - before_changes
                 if progress_callback:
@@ -935,6 +970,8 @@ class Store:
         salary_max: int | None = None,
         salary_currency: str | None = None,
         is_sparse: bool = False,
+        scoring_model: str | None = None,
+        rubric_version: str | None = None,
     ) -> None:
         """Store LLM scoring results for a job."""
         now = datetime.utcnow().isoformat()
@@ -951,10 +988,11 @@ class Store:
         })
 
         with self._connect() as conn:
-            conn.execute(
+            updated = conn.execute(
                 """UPDATE jobs
                    SET fit_score = ?, score_reasoning = ?, score_breakdown = ?,
-                       scored_at = ?, status = 'scored',
+                       scored_at = ?,
+                       status = CASE WHEN status = 'new' THEN 'scored' ELSE status END,
                        salary = ?,
                        salary_min = ?,
                        salary_max = ?,
@@ -963,7 +1001,21 @@ class Store:
                    WHERE id = ?""",
                 (fit_score, reasoning, breakdown_json, now, salary, salary_min, salary_max, salary_currency, is_sparse_int, db_id),
             )
+            if updated.rowcount and scoring_model is not None and rubric_version is not None:
+                conn.execute(
+                    "INSERT INTO job_scoring_attempts (job_id, attempted_at, model, rubric_version) VALUES (?, ?, ?, ?)",
+                    (db_id, now, scoring_model, rubric_version),
+                )
         logger.debug("Scored job %d: %d%%", db_id, fit_score)
+
+    def record_scoring_failure(self, db_id: int, model: str, rubric_version: str, error: str) -> None:
+        """Record a failed scoring attempt without changing the job or any previous score."""
+        with self._connect() as conn:
+            conn.execute(
+                """INSERT INTO job_scoring_attempts (job_id, attempted_at, model, rubric_version, error)
+                   SELECT id, ?, ?, ?, ? FROM jobs WHERE id = ?""",
+                (datetime.utcnow().isoformat(), model, rubric_version, error, db_id),
+            )
 
     @staticmethod
     def _parse_score_breakdown_payload(
@@ -1665,23 +1717,33 @@ class Store:
             logger.info("Bulk updated %d dismissal reasons", count)
         return count
 
-    def archive_stale_jobs(self, stale_days: int = 14) -> int:
-        """Archive active pipeline jobs absent for stale_days+. Returns count."""
-        cutoff = (datetime.utcnow() - timedelta(days=stale_days)).isoformat()
+    def archive_stale_jobs(
+        self,
+        stale_days: int = 14,
+        *,
+        collection_provider: str | None = None,
+        legacy_stale_days: int | None = None,
+    ) -> int:
+        """Archive stale pipeline jobs, with a separate age limit for jobs missing a collector."""
+        now = datetime.utcnow()
+        cutoff = (now - timedelta(days=stale_days)).isoformat()
+        legacy_cutoff = (now - timedelta(days=legacy_stale_days)).isoformat() if legacy_stale_days is not None else None
 
         with self._connect() as conn:
             cursor = conn.execute(
                 """UPDATE jobs
                    SET status = 'archived'
-                   WHERE last_seen_at IS NOT NULL
-                     AND last_seen_at < ?
-                     AND status IN ('new', 'scored')
+                   WHERE status IN ('new', 'scored')
                      AND application_status IS NULL
                      AND source = 'pipeline'
+                     AND (
+                         (last_seen_at < ? AND (? IS NULL OR collection_provider = ?))
+                         OR (collection_provider IS NULL AND last_seen_at < ?)
+                     )
                      AND NOT EXISTS (
                          SELECT 1 FROM application_events ev WHERE ev.job_id = jobs.id
                      )""",
-                (cutoff,),
+                (cutoff, collection_provider, collection_provider, legacy_cutoff),
             )
         count = cursor.rowcount
         if count:
@@ -2814,17 +2876,21 @@ class Store:
 
         if scope == "failed_recent":
             where_sql = """
-                fit_score = 0
-                AND score_reasoning IS NOT NULL
-                AND (
-                    score_reasoning LIKE 'API_ERROR:%'
-                    OR score_reasoning LIKE 'ERROR:%'
-                    OR score_reasoning LIKE 'PARSE_ERROR%'
-                    OR score_reasoning LIKE 'Temporary scoring failure:%'
+                id IN (
+                    SELECT attempt.job_id FROM job_scoring_attempts AS attempt
+                    WHERE attempt.error IS NOT NULL AND attempt.attempted_at >= ?
+                      AND attempt.id = (SELECT MAX(id) FROM job_scoring_attempts WHERE job_id = attempt.job_id)
+                ) OR (
+                    fit_score = 0
+                    AND first_seen_at >= ?
+                    AND (score_reasoning LIKE 'API_ERROR:%'
+                         OR score_reasoning LIKE 'ERROR:%'
+                         OR score_reasoning LIKE 'PARSE_ERROR%'
+                         OR score_reasoning LIKE 'Temporary scoring failure:%')
+                    AND NOT EXISTS (SELECT 1 FROM job_scoring_attempts WHERE job_id = jobs.id)
                 )
-                AND first_seen_at >= ?
             """
-            params.append(cutoff)
+            params.extend([cutoff, cutoff])
         elif scope == "unscored_new":
             where_sql = "status = 'new' AND scored_at IS NULL"
         elif scope == "recent_scored":

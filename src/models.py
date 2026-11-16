@@ -28,6 +28,7 @@ class RawJob:
     salary_min: int | None = None
     salary_max: int | None = None
     salary_currency: str | None = None
+    collection_provider: str | None = None
 
 
 @dataclass
@@ -90,6 +91,7 @@ class ScoredJob:
     normalization_audit: dict[str, object] = field(default_factory=dict)
     scored_at: str | None = None
     is_sparse: bool = False
+    scoring_error: str | None = None
 
     # Status
     status: str = "new"

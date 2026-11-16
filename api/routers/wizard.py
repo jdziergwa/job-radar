@@ -22,6 +22,7 @@ from api.models import (
     WizardStateResponse,
     UserPreferences,
 )
+from src.claude import SONNET_MODEL, message_text
 
 logger = logging.getLogger(__name__)
 
@@ -227,14 +228,15 @@ async def analyze_cv(file: UploadFile = File(...)):
         for attempt in range(max_retries + 1):
             try:
                 response = await client.messages.create(
-                    model="claude-sonnet-4-20250514",
-                    max_tokens=4096,
+                    model=SONNET_MODEL,
+                    output_config={"effort": "low"},
+                    max_tokens=8192,
                     system=system_prompt,
                     messages=[{"role": "user", "content": user_content}],
                     timeout=120.0,
                 )
 
-                raw_text = response.content[0].text
+                raw_text = message_text(response)
                 json_str = _extract_json(raw_text)
 
                 try:
@@ -250,8 +252,9 @@ async def analyze_cv(file: UploadFile = File(...)):
                         logger.warning(f"Initial JSON parse error: {e}. Attempting fix-up...")
                         retry_message = f"Your previous response was not valid JSON or didn't match the schema. Error: {e}. Please fix the JSON and return the full object again."
                         fix_response = await client.messages.create(
-                            model="claude-sonnet-4-20250514",
-                            max_tokens=4096,
+                            model=SONNET_MODEL,
+                            output_config={"effort": "low"},
+                            max_tokens=8192,
                             system=system_prompt,
                             messages=[
                                 {"role": "user", "content": user_content},
@@ -260,7 +263,7 @@ async def analyze_cv(file: UploadFile = File(...)):
                             ],
                             timeout=120.0,
                         )
-                        raw_text = fix_response.content[0].text
+                        raw_text = message_text(fix_response)
                         json_str = _extract_json(raw_text)
                         data = json.loads(json_str)
                         return CVAnalysisResponse(
@@ -361,14 +364,15 @@ Refine only the editable sections and keyword blocks following the instructions.
     try:
         async with AsyncAnthropic() as client:
             response = await client.messages.create(
-                model="claude-sonnet-4-20250514",
-                max_tokens=8192,
+                model=SONNET_MODEL,
+                output_config={"effort": "low"},
+                max_tokens=12288,
                 system=system_prompt,
                 messages=[{"role": "user", "content": user_message}],
                 timeout=120.0,
             )
 
-            raw_text = response.content[0].text
+            raw_text = message_text(response)
             json_str = _extract_json(raw_text)
             data = json.loads(json_str)
 

@@ -78,7 +78,10 @@ def _write_example_profile(base_dir: Path) -> None:
 
 class _FakeAnthropicResponse:
     def __init__(self, text: str) -> None:
-        self.content = [type("Block", (), {"text": text})()]
+        self.content = [
+            type("Block", (), {"type": "thinking"})(),
+            type("Block", (), {"type": "text", "text": text})(),
+        ]
 
 
 class _FakeAnthropicClient:

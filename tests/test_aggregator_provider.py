@@ -1,5 +1,6 @@
 import gzip
 import json
+from datetime import datetime, timedelta, timezone
 
 import httpx
 import pytest
@@ -62,12 +63,13 @@ async def test_get_aggregator_metadata_prefers_current_chunks_manifest(monkeypat
 
 
 async def test_fetch_all_aggregator_jobs_falls_back_to_legacy_manifest_path(monkeypatch):
-    current_manifest_url, legacy_manifest_url = aggregator.MANIFEST_URLS
+    *current_manifest_urls, legacy_manifest_url = aggregator.MANIFEST_URLS
     chunk_url = "https://feashliaa.github.io/job-board-aggregator/data/jobs_chunk_0.json.gz"
+    last_updated_at = datetime.now(timezone.utc).isoformat()
     manifest = {
         "chunks": ["jobs_chunk_0.json.gz"],
         "totalJobs": 1,
-        "last_updated": "2026-04-22T12:00:00Z",
+        "last_updated": last_updated_at,
     }
     payload = [{
         "ats": "Greenhouse",
@@ -79,7 +81,7 @@ async def test_fetch_all_aggregator_jobs_falls_back_to_legacy_manifest_path(monk
 
     def handler(request: httpx.Request) -> httpx.Response:
         url = str(request.url)
-        if url == current_manifest_url:
+        if url in current_manifest_urls:
             return httpx.Response(404, request=request)
         if url == legacy_manifest_url:
             return httpx.Response(200, json=manifest, request=request)
@@ -96,9 +98,43 @@ async def test_fetch_all_aggregator_jobs_falls_back_to_legacy_manifest_path(monk
 
     jobs, last_updated = await aggregator.fetch_all_aggregator_jobs()
 
-    assert last_updated == "2026-04-22T12:00:00Z"
+    assert last_updated == last_updated_at
     assert len(jobs) == 1
     assert jobs[0].ats_platform == "greenhouse"
     assert jobs[0].company_slug == "acme"
     assert jobs[0].title == "Backend Engineer"
     assert jobs[0].url == "https://example.com/jobs/1"
+
+
+@pytest.mark.parametrize("stale", [False, True])
+async def test_stale_or_incomplete_aggregator_snapshot_cannot_trigger_archiving(monkeypatch, stale):
+    manifest_url = "https://riley-dorrington.github.io/job-board-data/data/chunks/jobs_manifest.json"
+    attempted_chunks = []
+    age = timedelta(days=5) if stale else timedelta()
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if str(request.url) == manifest_url:
+            return httpx.Response(200, json={
+                "chunks": ["jobs_0.json.gz", "jobs_1.json.gz"],
+                "totalJobs": 2,
+                "last_updated": (datetime.now(timezone.utc) - age).isoformat(),
+            })
+        attempted_chunks.append(request.url.path)
+        if request.url.path.endswith("jobs_0.json.gz"):
+            return httpx.Response(200, content=_gzip_json([{
+                "ats": "lever", "company": "acme", "title": "Engineer", "url": "https://example.com/1",
+            }]))
+        return httpx.Response(503)
+
+    transport = httpx.MockTransport(handler)
+    monkeypatch.setattr(aggregator.httpx, "AsyncClient", lambda **kwargs: _FakeAsyncClient(transport=transport))
+
+    jobs, last_updated = await aggregator.fetch_all_aggregator_jobs()
+
+    assert last_updated == "unknown"
+    if stale:
+        assert not jobs
+        assert not attempted_chunks
+    else:
+        assert len(jobs) == 1
+        assert len(attempted_chunks) == 2

@@ -1,7 +1,12 @@
 import asyncio
+import json
 import sys
 import tempfile
+from dataclasses import replace
+from datetime import datetime, timedelta
 from pathlib import Path
+
+import pytest
 
 from src.models import RawJob, ScoredJob
 from src.store import Store
@@ -129,6 +134,60 @@ def test_run_rolls_collection_run_metadata_forward_on_collection_dry_run(monkeyp
     refreshed_store = Store("data/default.db")
     assert refreshed_store.get_metadata("previous_collection_run_at") == previous_collection_run
     assert refreshed_store.get_metadata("last_collection_run_at") not in (None, previous_collection_run)
+
+
+@pytest.mark.parametrize("complete", [False, True])
+def test_complete_snapshot_archives_stale_aggregator_and_old_unattributed_jobs(monkeypatch, tmp_path, capsys, complete):
+    _prepare_workspace(tmp_path, monkeypatch)
+    store = Store("data/default.db")
+    previous_sync = (datetime.utcnow() - timedelta(days=2)).isoformat()
+    store.set_metadata("last_collection_run_at", previous_sync)
+    store.set_metadata("aggregator_version", previous_sync)
+    template = _make_raw_job()
+    store.upsert_jobs([
+        replace(template, job_id="aggregator-only", collection_provider="aggregator"),
+        replace(template, job_id="local-only", collection_provider="local"),
+        replace(template, job_id="both", collection_provider="aggregator"),
+        replace(template, job_id="both", collection_provider="local"),
+        replace(template, job_id="legacy-recent"),
+        replace(template, job_id="legacy-stale"),
+        replace(template, job_id="legacy-tracked"),
+        template,
+    ])
+    tracked = next(job for job in store.get_unscored() if job.job_id == "legacy-tracked")
+    store.update_application_status(tracked.db_id, "applied")
+    with store._connect() as conn:
+        conn.execute("UPDATE jobs SET last_seen_at = ?", ((datetime.utcnow() - timedelta(days=40)).isoformat(),))
+        conn.execute(
+            "UPDATE jobs SET last_seen_at = ? WHERE job_id IN (?, 'legacy-stale', 'legacy-tracked', 'local-only', 'both')",
+            ((datetime.utcnow() - timedelta(days=150)).isoformat(), template.job_id),
+        )
+
+    provider = _StubProvider([template])
+    provider.last_updated = datetime.utcnow().isoformat() if complete else "unknown"
+    monkeypatch.setitem(main_module.PROVIDER_REGISTRY, "aggregator", provider)
+    monkeypatch.setattr(main_module, "load_config", lambda _: {"keywords": {"title_patterns": ["Engineer"]}})
+    monkeypatch.setattr(main_module, "load_companies", lambda _: {})
+    monkeypatch.setattr(main_module, "load_profile_doc", lambda _: "Profile doc")
+    monkeypatch.setattr(main_module, "should_hydrate_description", lambda _: False)
+    monkeypatch.setattr(sys, "argv", ["main.py", "--source", "aggregator", "--dry-run", "--json-progress"])
+
+    asyncio.run(main_module.run())
+
+    archived = {job.job_id for job in store.get_archived(days=180)}
+    assert archived == ({"aggregator-only", "legacy-stale"} if complete else set())
+    done = json.loads(capsys.readouterr().out.splitlines()[-1])["progress"]
+    assert done["name"] == "Done"
+    assert done["stats"]["aggregator_sync"] == ("complete" if complete else "incomplete")
+    if complete:
+        assert store.get_metadata("aggregator_version") == provider.last_updated
+        assert store.get_metadata("previous_collection_run_at") == previous_sync
+        assert store.get_metadata("last_collection_run_at") != previous_sync
+    else:
+        assert "Aggregator refresh incomplete" in done["detail"]
+        assert store.get_metadata("aggregator_version") == previous_sync
+        assert store.get_metadata("last_collection_run_at") == previous_sync
+        assert store.get_metadata("previous_collection_run_at") is None
 
 
 def _prepare_workspace(tmp_path: Path, monkeypatch) -> None:

@@ -53,6 +53,7 @@ export function PipelineProgressDialog({
 
   const isRunStarting = Boolean(runId) && !status
   const isRunActive = status?.status === 'running'
+  const hasWarnings = status?.stats?.aggregator_sync === 'incomplete' || status?.stats?.scoring_failed > 0
   const isDialogLocked = isRunStarting || isRunActive
   const noun = mode === 'rescore' ? 'Rescore' : 'Pipeline'
 
@@ -278,10 +279,10 @@ export function PipelineProgressDialog({
                       </div>
                    )}
                    {status?.status === 'done' && (
-                      <div className="pt-4 text-emerald-500 font-bold flex flex-col gap-2">
+                      <div className={`pt-4 font-bold flex flex-col gap-2 ${hasWarnings ? 'text-amber-500' : 'text-emerald-500'}`}>
                          <div className="flex items-center gap-2">
-                            <CheckCircle2 className="h-4 w-4" />
-                            Completed successfully.
+                            {hasWarnings ? <AlertCircle className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}
+                            {hasWarnings ? 'Completed with warnings.' : 'Completed successfully.'}
                          </div>
                          <Button onClick={() => onOpenChange(false)} variant="outline" size="sm" className="w-fit text-xs">Close</Button>
                       </div>

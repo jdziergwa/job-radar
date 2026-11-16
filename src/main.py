@@ -41,6 +41,7 @@ from src.scorer import score_jobs
 from src.store import Store
 
 logger = logging.getLogger("job_radar")
+LEGACY_ARCHIVE_MIN_DAYS = 90
 
 
 def setup_logging(verbose: bool = False) -> None:
@@ -261,9 +262,6 @@ async def run() -> None:
 
     logger.info("Profile: %s | DB: %s", args.profile, db_path)
 
-    def mark_pipeline_completed() -> None:
-        store.set_metadata("last_pipeline_run_at", datetime.utcnow().isoformat())
-
     def mark_collection_completed() -> None:
         _advance_metadata_boundary(
             store,
@@ -331,6 +329,8 @@ async def run() -> None:
     keywords_config = config.get("keywords", {})
 
     skip_collection = bool(args.job_id or args.rescore)
+    aggregator_requested = not skip_collection and "aggregator" in args.source
+    aggregator_version = None
 
     # If targeting a single job ID, we skip collection and pre-filtering
     if args.job_id:
@@ -399,15 +399,14 @@ async def run() -> None:
                 progress_callback=lambda c, t, p_name=provider.display_name: p_callback(c, t, f"[{p_name}] "),
             )
             
-            # Persist aggregator version metadata when available (side-channel on provider)
-            if hasattr(provider, "last_updated") and provider.last_updated != "unknown":
-                store.set_metadata("aggregator_version", provider.last_updated)
+            if source_name == "aggregator":
+                last_updated = getattr(provider, "last_updated", "unknown")
+                aggregator_version = last_updated if last_updated != "unknown" else None
             
             logger.info("Source '%s': %d jobs fetched", provider.name, len(provider_jobs))
-            if raw_jobs:
-                raw_jobs.extend(provider_jobs)
-            else:
-                raw_jobs = provider_jobs
+            for job in provider_jobs:
+                job.collection_provider = source_name
+            raw_jobs.extend(provider_jobs)
 
         # Soft pre-filter (Title/Loc) to avoid bloating DB
         if args.json_progress:
@@ -442,11 +441,23 @@ async def run() -> None:
         companies_scanned = ", ".join(args.source)
         timer.reset_stage()
 
-    if not skip_collection:
+    if aggregator_version is not None:
         archive_after_days = int(runtime_config.get("archive_after_days", 14))
-        archived_count = store.archive_stale_jobs(stale_days=archive_after_days)
-        if archived_count:
-            logger.info("Archived %d jobs not seen for %d+ days", archived_count, archive_after_days)
+        store.archive_stale_jobs(
+            stale_days=archive_after_days,
+            collection_provider="aggregator",
+            legacy_stale_days=max(archive_after_days, LEGACY_ARCHIVE_MIN_DAYS),
+        )
+        store.set_metadata("aggregator_version", aggregator_version)
+
+    aggregator_incomplete = aggregator_requested and aggregator_version is None
+    warnings: list[str] = []
+    if aggregator_incomplete:
+        warning = "Aggregator refresh incomplete. Archiving skipped."
+        logger.warning(warning)
+        warnings.append(warning)
+    if not skip_collection and not aggregator_incomplete:
+        mark_collection_completed()
 
     # 3. Pre-filter
     # If we have a single targeted job, we use it directly
@@ -565,17 +576,21 @@ async def run() -> None:
         "candidates": len(candidates),
         "total_duration": format_duration(timer.get_total_duration()),
     }
+    if aggregator_requested:
+        scan_stats["aggregator_sync"] = "incomplete" if aggregator_incomplete else "complete"
+
+    def finish_run() -> None:
+        store.set_metadata("last_pipeline_run_at", datetime.utcnow().isoformat())
+        if args.json_progress:
+            emit_progress(done_step, "Done", " ".join(warnings), stats=scan_stats, duration=timer.get_total_duration())
 
     # 4. Dry run — stop before scoring
     if args.dry_run:
         print_scan_summary(scan_stats)
         print_candidates(candidates, label="DRY RUN")
-        if not skip_collection:
-            mark_collection_completed()
-        mark_pipeline_completed()
         if args.json_progress:
             emit_progress(scoring_step, "Skipped", "Scoring skipped (Dry Run)", duration=timer.get_stage_duration())
-            emit_progress(done_step, "Done", stats=scan_stats, duration=timer.get_total_duration())
+        finish_run()
         return
 
     # 5. Score with Claude API
@@ -583,20 +598,17 @@ async def run() -> None:
     if candidates:
         if args.json_progress:
             emit_progress(scoring_step, "Scoring", f"Starting LLM scoring for {len(candidates)} jobs", duration=timer.get_stage_duration())
-        
-        # Early check for API key
-            if not os.getenv("ANTHROPIC_API_KEY"):
-                error_msg = "ANTHROPIC_API_KEY not found in environment or .env file. Scoring skipped."
-                logger.error(error_msg)
-                if args.json_progress:
-                    emit_progress(scoring_step, "Error", error_msg)
-                else:
-                    print(f"\n  ✗ {error_msg}\n")
-                sys.exit(1)
+
+        if not (os.getenv("ANTHROPIC_API_KEY") or os.getenv("ANTHROPIC_AUTH_TOKEN")):
+            error_msg = "ANTHROPIC_API_KEY not found in environment or .env file. Scoring skipped."
+            logger.error(error_msg)
+            if args.json_progress:
+                emit_progress(scoring_step, "Error", error_msg)
+            sys.exit(1)
 
         def score_p_callback(curr, tot):
             if args.json_progress:
-                emit_progress(scoring_step, "Scoring", f"{curr}/{tot} scored", duration=timer.get_stage_duration())
+                emit_progress(scoring_step, "Scoring", f"{curr}/{tot} processed", duration=timer.get_stage_duration())
 
         scoring_config = config.get("scoring", {})
         scored = await score_jobs(
@@ -615,40 +627,37 @@ async def run() -> None:
         )
 
         # 6. Report
-        scan_stats["scored"] = len(scored)
+        successful_scores = [job for job in scored if job.scoring_error is None]
+        failed_count = len(scored) - len(successful_scores)
+        scan_stats["scored"] = len(successful_scores)
+        scan_stats["scoring_failed"] = failed_count
         scan_stats["total_duration"] = format_duration(timer.get_total_duration())
         print_scan_summary(scan_stats)
-        
-        good_matches = [j for j in scored if j.fit_score >= args.min_score]
+
+        if failed_count:
+            logger.warning("Scoring failed for %d jobs. Retry with --rescore --rescore-scope failed_recent.", failed_count)
+            warnings.append(f"{failed_count} scoring attempts failed and can be retried.")
+
+        good_matches = [j for j in successful_scores if j.fit_score >= args.min_score]
         good_matches.sort(key=lambda j: j.fit_score, reverse=True)
 
         print_results(good_matches)
 
         # Write markdown report (all scored, not just good)
         output_config = config.get("output", {})
-        if output_config.get("markdown_report", True):
-            write_report(scored, profile_name=args.profile, scan_stats=scan_stats)
+        if successful_scores and output_config.get("markdown_report", True):
+            write_report(successful_scores, profile_name=args.profile, scan_stats=scan_stats)
 
         # Optional Telegram
         telegram_config = output_config.get("telegram", {})
         if telegram_config.get("enabled", False):
             top_n = telegram_config.get("top_n", 5)
             await send_telegram(good_matches, top_n=top_n)
-
-        if not skip_collection:
-            mark_collection_completed()
-        mark_pipeline_completed()
-        if args.json_progress:
-            emit_progress(done_step, "Done", stats=scan_stats, duration=timer.get_total_duration())
     else:
         print("\n  No new candidates today. Run --history to see past results.\n")
-        if not skip_collection:
-            mark_collection_completed()
-        mark_pipeline_completed()
-        if args.json_progress:
-            scan_stats["scored"] = 0
-            scan_stats["total_duration"] = format_duration(timer.get_total_duration())
-            emit_progress(done_step, "Done", stats=scan_stats, duration=timer.get_total_duration())
+        scan_stats["scored"] = 0
+        scan_stats["total_duration"] = format_duration(timer.get_total_duration())
+    finish_run()
 
 
 def main() -> None:

@@ -5,7 +5,8 @@ import gzip
 import io
 import json
 import logging
-from datetime import datetime, timezone
+import ssl
+from datetime import datetime, timedelta, timezone
 from typing import Callable, Optional, TYPE_CHECKING
 
 import certifi
@@ -16,6 +17,7 @@ from src.models import RawJob
 logger = logging.getLogger(__name__)
 
 MANIFEST_URLS = (
+    "https://riley-dorrington.github.io/job-board-data/data/chunks/jobs_manifest.json",
     "https://feashliaa.github.io/job-board-aggregator/data/chunks/jobs_manifest.json",
     "https://feashliaa.github.io/job-board-aggregator/data/jobs_manifest.json",
 )
@@ -25,6 +27,7 @@ if TYPE_CHECKING:
 
 MAX_CONCURRENT_CHUNKS = 5
 CHUNK_TIMEOUT = 30  # seconds
+MAX_SNAPSHOT_AGE = timedelta(days=3)
 
 
 async def fetch_chunk(
@@ -32,7 +35,7 @@ async def fetch_chunk(
     sem: asyncio.Semaphore,
     chunk_base_url: str,
     chunk_filename: str,
-) -> list[dict]:
+) -> list[dict] | None:
     url = chunk_base_url + chunk_filename
     async with sem:
         try:
@@ -44,18 +47,22 @@ async def fetch_chunk(
             with gzip.GzipFile(fileobj=io.BytesIO(response.content)) as f:
                 data = json.load(f)
 
+            if not isinstance(data, list) or any(not isinstance(item, dict) for item in data):
+                raise ValueError("invalid chunk data")
             return data
         except Exception as e:
             logger.warning("Failed to fetch chunk %s: %s", chunk_filename, e)
-            return []
+            return None
 
 async def _fetch_manifest(client: httpx.AsyncClient) -> tuple[dict, str]:
     for manifest_url in MANIFEST_URLS:
         try:
-            resp = await client.get(manifest_url, timeout=10)
+            resp = await client.get(manifest_url, timeout=10, follow_redirects=True)
             resp.raise_for_status()
             manifest = resp.json()
-            chunk_base_url = manifest_url.rsplit("/", 1)[0] + "/"
+            if not isinstance(manifest, dict):
+                raise ValueError("invalid aggregator manifest")
+            chunk_base_url = str(resp.url).rsplit("/", 1)[0] + "/"
             return manifest, chunk_base_url
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 404:
@@ -71,7 +78,7 @@ async def _fetch_manifest(client: httpx.AsyncClient) -> tuple[dict, str]:
 
 async def get_aggregator_metadata() -> dict:
     """Fetch manifest and return metadata without chunks."""
-    ssl_context = certifi.where()
+    ssl_context = ssl.create_default_context(cafile=certifi.where())
     async with httpx.AsyncClient(verify=ssl_context) as client:
         try:
             manifest, _chunk_base_url = await _fetch_manifest(client)
@@ -88,7 +95,7 @@ async def fetch_all_aggregator_jobs(progress_callback: Optional[Callable[[int, i
     """Fetch all chunks from the remote job aggregator and convert to RawJob format."""
     logger.info("Initializing connection to job aggregator...")
 
-    ssl_context = certifi.where()
+    ssl_context = ssl.create_default_context(cafile=certifi.where())
     async with httpx.AsyncClient(verify=ssl_context) as client:
         try:
             manifest, chunk_base_url = await _fetch_manifest(client)
@@ -96,18 +103,31 @@ async def fetch_all_aggregator_jobs(progress_callback: Optional[Callable[[int, i
             logger.error("Failed to fetch aggregator manifest: %s", e)
             return [], "unknown"
 
-        chunks = manifest.get("chunks", [])
-        total_expected = manifest.get("totalJobs", 0)
-        last_updated = manifest.get("last_updated", "unknown")
+        chunks = manifest.get("chunks")
+        total_expected = manifest.get("totalJobs")
+        last_updated = manifest.get("last_updated")
 
         try:
-            # Parse ISO 8601 strings like "2026-04-02T02:38:58.465457Z"
-            dt = datetime.fromisoformat(last_updated.replace("Z", "+00:00"))
-            pretty_date = dt.strftime("%Y-%m-%d %H:%M UTC")
+            updated_at = datetime.fromisoformat(last_updated)
+            age = datetime.now(timezone.utc) - updated_at
         except (ValueError, TypeError):
-            pretty_date = last_updated
+            logger.warning("Aggregator manifest has no valid update timestamp: %r", last_updated)
+            return [], "unknown"
+        if age < -timedelta(minutes=10) or age > MAX_SNAPSHOT_AGE:
+            logger.warning("Aggregator snapshot is outside the freshness window: %s", last_updated)
+            return [], "unknown"
+        if (
+            not isinstance(chunks, list)
+            or not chunks
+            or any(not isinstance(name, str) or not name for name in chunks)
+            or len(set(chunks)) != len(chunks)
+            or type(total_expected) is not int
+            or total_expected <= 0
+        ):
+            logger.warning("Aggregator manifest has an invalid chunk list or job count")
+            return [], "unknown"
 
-        logger.info("Aggregator data last updated on: %s", pretty_date)
+        logger.info("Aggregator data last updated on: %s", last_updated)
         logger.info("Found %d chunks (expected ~%d jobs)", len(chunks), total_expected)
 
         sem = asyncio.Semaphore(MAX_CONCURRENT_CHUNKS)
@@ -120,44 +140,54 @@ async def fetch_all_aggregator_jobs(progress_callback: Optional[Callable[[int, i
         # We'll use as_completed to provide progress updates
         tasks = [fetch_chunk(client, sem, chunk_base_url, chunk) for chunk in chunks]
         completed_count = 0
-        total_chunks = len(chunks)
+        failed_chunks = 0
 
         for task in asyncio.as_completed(tasks):
             chunk_data = await task
             completed_count += 1
+            if chunk_data is None:
+                failed_chunks += 1
+            if progress_callback:
+                progress_callback(completed_count, len(chunks))
 
             # Process results into RawJob objects
-            for item in chunk_data:
+            for item in chunk_data or []:
                 ats = str(item.get("ats", "")).lower()
                 company_slug = str(item.get("company", ""))
-                job_id_str = item.get("url", "")
+                url = str(item.get("url") or "").strip()
+                title = str(item.get("title") or "").strip()
+                if not url or not title:
+                    continue
                 
                 raw_jobs.append(RawJob(
                     ats_platform=ats,
                     company_slug=company_slug,
                     company_name=company_slug.title(),
-                    job_id=job_id_str,
-                    title=(item.get("title") or "").strip(),
-                    location=(item.get("location") or "").strip(),
-                    url=(item.get("url") or "").strip(),
+                    job_id=url,
+                    title=title,
+                    location=str(item.get("location") or "").strip(),
+                    url=url,
                     description="",
                     posted_at=None,
                     fetched_at=now
                 ))
 
-            if progress_callback:
-                progress_callback(completed_count, total_chunks)
-
     logger.info("Aggregator extraction complete. Yielded %d total jobs.", len(raw_jobs))
+    if failed_chunks or len(raw_jobs) != total_expected:
+        logger.warning(
+            "Incomplete aggregator snapshot: %d failed chunks, %d/%d jobs; archiving skipped",
+            failed_chunks, len(raw_jobs), total_expected,
+        )
+        return raw_jobs, "unknown"
     return raw_jobs, last_updated
 
 
 class AggregatorProvider:
-    """Static chunk downloader (~910k jobs) from the global job-board-aggregator."""
+    """Static chunk downloader from the global job-board-aggregator."""
 
     name = "aggregator"
     display_name = "Global Aggregator"
-    description = "Broad Market: Scans 910k+ jobs from the open aggregator."
+    description = "Broad Market: Scans the global job-board aggregator."
     shows_aggregator_badge = True
     last_updated: str = "unknown"
 
