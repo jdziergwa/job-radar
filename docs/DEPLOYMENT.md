@@ -379,6 +379,7 @@ Browser will show a native Basic Auth prompt. For a single-user tool, this is su
 | `SCORING_MODEL` | No | per LLM Provider | Model for scoring; used when the profile YAML sets no `scoring.model` and no Settings override exists |
 | `WIZARD_MODEL` | No | per LLM Provider | Model for CV wizard analysis |
 | `STATS_MODEL` | No | per LLM Provider | Model for stats insight |
+| `JOB_RADAR_LOG_FILE` | No | `logs/job-radar.log` | Debug log file path; set empty to disable. LLM responses are logged as excerpts only |
 | `DATA_DIR` | No | `data` | Path to SQLite database directory |
 | `PROFILES_DIR` | No | `profiles` | Path to profile configs directory |
 | `APP_PASSWORD` | No | — | Enables HTTP Basic Auth if set |

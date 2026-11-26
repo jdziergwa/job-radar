@@ -2,6 +2,9 @@
 
 The pipeline runs as a subprocess of the API whose output is not kept, so
 failures there are otherwise invisible. Both processes append to one file.
+
+LLM responses discuss the candidate's CV, so the log never holds one whole:
+use `excerpt` for any response text that is logged.
 """
 
 from __future__ import annotations
@@ -16,6 +19,13 @@ DEFAULT_LOG_PATH = _PROJECT_ROOT / "logs" / "job-radar.log"
 
 # Loggers whose DEBUG records go to the file even when the console is at INFO.
 _DEBUG_LOGGERS = ("src.llm", "src.scorer")
+
+
+def excerpt(text: str, limit: int = 200) -> str:
+    """Short, loggable view of an LLM response: its first `limit` chars and full length."""
+    if len(text) <= limit:
+        return f"{text!r} ({len(text)} chars)"
+    return f"{text[:limit]!r}… ({len(text)} chars)"
 
 
 def attach_file_log() -> Path | None:

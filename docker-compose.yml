@@ -12,6 +12,7 @@ services:
       SCORING_MODEL: ${SCORING_MODEL:-}
       WIZARD_MODEL: ${WIZARD_MODEL:-}
       STATS_MODEL: ${STATS_MODEL:-}
+      JOB_RADAR_LOG_FILE: ${JOB_RADAR_LOG_FILE-/app/logs/job-radar.log}
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
       TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:-}
       PROFILES_DIR: /app/profiles

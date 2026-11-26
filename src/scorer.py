@@ -24,6 +24,7 @@ from src.llm import (
     load_model_overrides,
     resolve_model,
 )
+from src.log_file import excerpt
 from src.models import CandidateJob, ScoredJob, ScoringProvenance
 from src.score_normalization import (
     DIMENSION_WEIGHTS,
@@ -141,11 +142,10 @@ def _log_normalization(raw: ScoredJob, normalized: ScoredJob) -> None:
 
 
 def _log_raw_response(context: str, text: str | None) -> None:
-    """Show the start of a bad LLM response at WARNING and the whole of it at DEBUG."""
+    """Log a short excerpt and the length of a bad LLM response; never the whole of it."""
     if text is None:
         return
-    logger.warning("%s — raw response (%d chars, first 500): %r", context, len(text), text[:500])
-    logger.debug("%s — full raw response:\n%s", context, text)
+    logger.warning("%s — raw response %s", context, excerpt(text))
 
 
 # Resolve paths relative to this file, not cwd
@@ -766,7 +766,7 @@ def _parse_batch_response(text: str, expected_count: int, *, structured: bool = 
     except Exception as e:
         logger.warning("Batch parse error: %s", e)
         # Log the raw text on failure to aid debugging
-        logger.debug("Raw batch text that failed: %s", text)
+        logger.debug("Raw batch text that failed: %s", excerpt(text))
 
     return None
 

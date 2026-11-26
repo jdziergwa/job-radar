@@ -141,6 +141,7 @@ Job Radar is highly configurable to match your specific career goals.
 | `ANTHROPIC_API_KEY` | One of the two keys | Anthropic key, used when the LLM Provider is `anthropic`. |
 | `GOOGLE_API_KEY` | One of the two keys | Google Gemini key, used when the LLM Provider is `gemini`. |
 | `SCORING_MODEL` / `WIZARD_MODEL` / `STATS_MODEL` | No | Override the Model for job scoring, CV wizard analysis and stats insight. Must belong to the active LLM Provider or startup fails. Defaults: Anthropic `claude-haiku-5-5` / `claude-sonnet-5-5` / `claude-haiku-5-5`; Gemini `gemini-3.8-flash` / `gemini-3.1-pro-preview` / `gemini-3.8-flash`. |
+| `JOB_RADAR_LOG_FILE` | No | Path of the rotating debug log (LLM calls and scoring; LLM responses are logged only as a short excerpt and their length). Defaults to `logs/job-radar.log` in the project; set it to an empty value to turn the file off. |
 
 **Model precedence** (highest first): profile `search_config.yaml` `scoring.model` (scoring only) → Settings page override → env variable above → built-in default for the LLM Provider. API keys are read only from the environment and are never returned by the API.
 | `ADZUNA_APP_ID` | No | Required only if you enable the Adzuna provider. Create an account at [developer.adzuna.com](https://developer.adzuna.com/) to get it. Adzuna allows personal research use; see [their terms](https://developer.adzuna.com/docs/terms_of_service). |
