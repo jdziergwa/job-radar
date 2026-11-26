@@ -24,7 +24,7 @@ from src.llm import (
     load_model_overrides,
     resolve_model,
 )
-from src.models import CandidateJob, ScoredJob
+from src.models import CandidateJob, ScoredJob, ScoringProvenance
 from src.score_normalization import (
     DIMENSION_WEIGHTS,
     VALID_PRIORITIES,
@@ -1152,8 +1152,7 @@ async def score_jobs(
                     skip_reason=result.skip_reason,
                     missing_skills=result.missing_skills,
                     normalization_audit=result.normalization_audit,
-                    llm_provider=adapter.name if result.normalization_audit else None,
-                    llm_model=model if result.normalization_audit else None,
+                    provenance=ScoringProvenance(adapter.name, model),
                     salary=result.salary,
                     salary_min=result.salary_min,
                     salary_max=result.salary_max,

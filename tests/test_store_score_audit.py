@@ -2,7 +2,7 @@ import tempfile
 from pathlib import Path
 
 from src.store import Store
-from src.models import RawJob
+from src.models import RawJob, ScoringProvenance
 
 
 def test_store_persists_normalization_audit_in_score_breakdown():
@@ -121,13 +121,11 @@ def test_store_persists_llm_provider_and_model_in_score_breakdown(store, raw_job
         fit_score=70,
         reasoning="r",
         breakdown={"tech_stack_match": 70},
-        llm_provider="gemini",
-        llm_model="gemini-2.5-flash",
+        provenance=ScoringProvenance("gemini", "gemini-2.5-flash"),
     )
 
     stored = store.get_job_by_id(db_id)
-    assert stored.llm_provider == "gemini"
-    assert stored.llm_model == "gemini-2.5-flash"
+    assert stored.provenance == ScoringProvenance("gemini", "gemini-2.5-flash")
 
 
 def test_rows_scored_without_provenance_load_without_the_fields(store, raw_job_factory):
@@ -136,5 +134,4 @@ def test_rows_scored_without_provenance_load_without_the_fields(store, raw_job_f
     store.update_score(db_id=db_id, fit_score=70, reasoning="r", breakdown={"tech_stack_match": 70})
 
     stored = store.get_job_by_id(db_id)
-    assert stored.llm_provider is None
-    assert stored.llm_model is None
+    assert stored.provenance is None
