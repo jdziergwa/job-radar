@@ -1,3 +1,5 @@
+import sys
+
 import pytest
 
 from api.routers import ai_config as ai_config_router
@@ -24,14 +26,12 @@ def _empty_profiles_dir(monkeypatch, tmp_path):
     monkeypatch.setattr("api.deps.PROFILES_DIR", tmp_path)
 
 
-def _clear_env(monkeypatch):
-    for var in ("LLM_PROVIDER", "ANTHROPIC_API_KEY", "GOOGLE_API_KEY",
-                "SCORING_MODEL", "WIZARD_MODEL", "STATS_MODEL"):
-        monkeypatch.delenv(var, raising=False)
+@pytest.fixture(autouse=True)
+def _clean_env(no_ai_key):
+    """Every test starts with no LLM Provider key; each sets up the one it needs."""
 
 
 def test_reports_active_llm_provider_and_models_without_the_key(monkeypatch, client):
-    _clear_env(monkeypatch)
     monkeypatch.setenv("GOOGLE_API_KEY", "secret-gemini-key")
     monkeypatch.setenv("WIZARD_MODEL", "gemini-custom")
 
@@ -57,7 +57,6 @@ def test_reports_fake_adapter_via_override(client):
 
 
 def test_reports_not_configured_when_key_missing(monkeypatch, client):
-    _clear_env(monkeypatch)
 
     response = client.get("/api/ai-config")
 
@@ -71,7 +70,6 @@ def test_reports_not_configured_when_key_missing(monkeypatch, client):
 
 
 def test_reports_not_configured_when_both_keys_and_no_choice(monkeypatch, client):
-    _clear_env(monkeypatch)
     monkeypatch.setenv("ANTHROPIC_API_KEY", "a")
     monkeypatch.setenv("GOOGLE_API_KEY", "g")
 
@@ -82,7 +80,6 @@ def test_reports_not_configured_when_both_keys_and_no_choice(monkeypatch, client
 
 
 def _gemini(monkeypatch):
-    _clear_env(monkeypatch)
     monkeypatch.setenv("GOOGLE_API_KEY", "g")
 
 
@@ -118,11 +115,8 @@ def test_model_from_another_llm_provider_is_rejected_with_a_clear_message(monkey
 
 
 def test_missing_llm_provider_sdk_on_set_override_is_422(monkeypatch, client):
-    from dataclasses import replace
-    from src.llm.resolver import _REGISTRY
-
     _gemini(monkeypatch)
-    monkeypatch.setitem(_REGISTRY, "gemini", replace(_REGISTRY["gemini"], module="src.llm.no_such_adapter"))
+    monkeypatch.setitem(sys.modules, "src.llm.gemini_adapter", None)  # makes importing it fail
 
     response = client.put("/api/ai-config/models/wizard", json={"model": "gemini-custom"})
 
@@ -164,7 +158,6 @@ def _write_profile(tmp_path, monkeypatch, scoring_model):
 
 
 def test_profile_scoring_model_is_reported_and_flagged_as_from_profile(monkeypatch, client, tmp_path):
-    _clear_env(monkeypatch)
     monkeypatch.setenv("GOOGLE_API_KEY", "k")
     _write_profile(tmp_path, monkeypatch, "gemini-from-profile")
 
@@ -177,7 +170,6 @@ def test_profile_scoring_model_is_reported_and_flagged_as_from_profile(monkeypat
 
 
 def test_profile_without_scoring_model_is_not_flagged(monkeypatch, client, tmp_path):
-    _clear_env(monkeypatch)
     monkeypatch.setenv("GOOGLE_API_KEY", "k")
     _write_profile(tmp_path, monkeypatch, None)
 
@@ -188,7 +180,6 @@ def test_profile_without_scoring_model_is_not_flagged(monkeypatch, client, tmp_p
 
 
 def test_foreign_profile_scoring_model_only_makes_scoring_unavailable(monkeypatch, client, tmp_path):
-    _clear_env(monkeypatch)
     monkeypatch.setenv("GOOGLE_API_KEY", "k")
     _write_profile(tmp_path, monkeypatch, "claude-haiku-5-5")
 
@@ -223,11 +214,8 @@ def test_model_errors_is_empty_when_all_models_are_fine(monkeypatch, client):
 
 
 def test_missing_llm_provider_sdk_is_reported_not_configured(monkeypatch, client):
-    from dataclasses import replace
-    from src.llm.resolver import _REGISTRY
-
     _gemini(monkeypatch)
-    monkeypatch.setitem(_REGISTRY, "gemini", replace(_REGISTRY["gemini"], module="src.llm.no_such_adapter"))
+    monkeypatch.setitem(sys.modules, "src.llm.gemini_adapter", None)  # makes importing it fail
 
     body = client.get("/api/ai-config").json()
 

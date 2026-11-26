@@ -166,7 +166,7 @@ class AnthropicAdapter:
                 **self._request_options(model, json_schema),
             ),
             classify=classify_error,
-            read=lambda response, _elapsed: read_response(response, model, max_tokens),
+            read=lambda response: read_response(response, model, max_tokens),
         )
 
     async def aclose(self) -> None:

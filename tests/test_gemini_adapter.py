@@ -153,10 +153,11 @@ def _connection_errors():
     ]
 
 
-@pytest.mark.parametrize("error", _connection_errors(), ids=lambda e: type(e).__module__ + "." + type(e).__name__)
-async def test_connection_errors_map_to_llm_api_error(error):
+async def test_connection_error_surfaces_from_complete_as_llm_api_error():
+    # One case end to end; every SDK transport error type is covered at the classifier level below.
+    import httpx
     with pytest.raises(LLMAPIError, match="Gemini connection error"):
-        await _complete(_adapter(_Models(error=error)))
+        await _complete(_adapter(_Models(error=httpx.ConnectError("refused"))))
 
 
 @pytest.mark.parametrize("error", _connection_errors(), ids=lambda e: type(e).__module__ + "." + type(e).__name__)

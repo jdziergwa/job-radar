@@ -1,12 +1,12 @@
-import asyncio
 import logging
 import sys
 
 import pytest
+from fastapi.testclient import TestClient
 
 import src.main as main_module
+from api.main import app
 from src.llm import LLMConfigError
-from tests.test_pipeline_run_metadata import _make_raw_job, _prepare_workspace
 
 
 class _CountingProvider:
@@ -24,10 +24,12 @@ class _CountingProvider:
         return list(self._jobs)
 
 
-def _setup(monkeypatch, tmp_path, jobs, argv_extra=(), config=None):
-    _prepare_workspace(tmp_path, monkeypatch)
-    for env in ("ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN", "GOOGLE_API_KEY", "LLM_PROVIDER", "SCORING_MODEL"):
-        monkeypatch.delenv(env, raising=False)
+@pytest.fixture(autouse=True)
+def _workspace(no_ai_key, pipeline_workspace):
+    """Every test here starts with no AI configured, in an empty workspace."""
+
+
+def _setup(monkeypatch, jobs, argv_extra=(), config=None):
     provider = _CountingProvider(jobs)
     monkeypatch.setitem(main_module.PROVIDER_REGISTRY, "stub", provider)
     monkeypatch.setattr(
@@ -42,66 +44,60 @@ def _setup(monkeypatch, tmp_path, jobs, argv_extra=(), config=None):
     return provider
 
 
-@pytest.mark.parametrize("jobs", [[_make_raw_job()], []], ids=["with-candidates", "no-candidates"])
-def test_missing_key_fails_before_any_job_provider_is_called(monkeypatch, tmp_path, jobs):
-    provider = _setup(monkeypatch, tmp_path, jobs)
+@pytest.mark.anyio
+@pytest.mark.parametrize("with_candidates", [True, False], ids=["with-candidates", "no-candidates"])
+async def test_missing_key_fails_before_any_job_provider_is_called(monkeypatch, raw_job_factory, with_candidates):
+    provider = _setup(monkeypatch, [raw_job_factory()] if with_candidates else [])
 
     with pytest.raises(SystemExit) as exit_info:
-        asyncio.run(main_module.run())
+        await main_module.run()
 
     assert exit_info.value.code == 1
     assert provider.fetches == 0
 
 
-def test_foreign_profile_scoring_model_fails_before_any_job_provider_is_called(monkeypatch, tmp_path):
-    monkeypatch.setenv("GOOGLE_API_KEY", "test-key")
+@pytest.mark.anyio
+async def test_foreign_profile_scoring_model_fails_before_any_job_provider_is_called(monkeypatch, raw_job_factory):
     provider = _setup(
-        monkeypatch, tmp_path, [_make_raw_job()],
+        monkeypatch, [raw_job_factory()],
         config={"keywords": {"title_patterns": ["Engineer"]}, "scoring": {"model": "claude-sonnet-4-5"}},
     )
     monkeypatch.setenv("GOOGLE_API_KEY", "test-key")
 
     with pytest.raises(SystemExit) as exit_info:
-        asyncio.run(main_module.run())
+        await main_module.run()
 
     assert exit_info.value.code == 1
     assert provider.fetches == 0
 
 
-def test_missing_sdk_prints_the_clear_message_and_stops_before_fetching(monkeypatch, tmp_path, caplog):
-    from dataclasses import replace
-    from src.llm.resolver import _REGISTRY
-
-    provider = _setup(monkeypatch, tmp_path, [_make_raw_job()])
+@pytest.mark.anyio
+async def test_missing_sdk_prints_the_clear_message_and_stops_before_fetching(monkeypatch, raw_job_factory, caplog):
+    provider = _setup(monkeypatch, [raw_job_factory()])
     monkeypatch.setenv("GOOGLE_API_KEY", "test-key")
-    monkeypatch.setitem(_REGISTRY, "gemini", replace(_REGISTRY["gemini"], module="src.llm.no_such_adapter"))
+    monkeypatch.setitem(sys.modules, "src.llm.gemini_adapter", None)  # makes importing it fail
 
     with caplog.at_level(logging.ERROR), pytest.raises(SystemExit) as exit_info:
-        asyncio.run(main_module.run())
+        await main_module.run()
 
     assert exit_info.value.code == 1
     assert provider.fetches == 0
     assert "pip install google-genai" in caplog.text
 
 
-def test_dry_run_without_a_key_still_fetches(monkeypatch, tmp_path):
-    provider = _setup(monkeypatch, tmp_path, [_make_raw_job()], argv_extra=["--dry-run"])
+@pytest.mark.anyio
+async def test_dry_run_without_a_key_still_fetches(monkeypatch, raw_job_factory):
+    provider = _setup(monkeypatch, [raw_job_factory()], argv_extra=["--dry-run"])
 
-    asyncio.run(main_module.run())
+    await main_module.run()
 
     assert provider.fetches == 1
 
 
-def test_api_startup_warns_once_when_ai_is_not_configured_and_still_serves(monkeypatch, caplog):
-    from fastapi.testclient import TestClient
-    from api.main import app
-
-    for env in ("ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN", "GOOGLE_API_KEY", "LLM_PROVIDER"):
-        monkeypatch.delenv(env, raising=False)
-
-    with caplog.at_level(logging.WARNING):
-        with TestClient(app) as client:
-            assert client.get("/api/health").status_code == 200
+def test_api_startup_warns_once_when_ai_is_not_configured_and_still_serves(caplog):
+    # Startup is what logs the warning, so the client must be opened inside the capture.
+    with caplog.at_level(logging.WARNING), TestClient(app) as client:
+        assert client.get("/api/health").status_code == 200
 
     warnings = [r for r in caplog.records if r.levelno == logging.WARNING and "AI is not configured" in r.getMessage()]
     assert len(warnings) == 1

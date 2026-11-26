@@ -12,7 +12,7 @@ from src.llm.base import AITask, LLMAdapter, LLMConfigError
 
 
 @dataclass(frozen=True)
-class _ProviderEntry:
+class _LLMProviderEntry:
     """One LLM Provider: lazy adapter import and the env vars that authenticate it."""
 
     display_name: str
@@ -33,11 +33,11 @@ class _ProviderEntry:
 
 
 _REGISTRY = {
-    "anthropic": _ProviderEntry(
+    "anthropic": _LLMProviderEntry(
         "Anthropic", "anthropic", "src.llm.anthropic_adapter", "AnthropicAdapter", ("ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN"),
         ("anthropic",),
     ),
-    "gemini": _ProviderEntry("Gemini", "google-genai", "src.llm.gemini_adapter", "GeminiAdapter", ("GOOGLE_API_KEY",), ("google_genai",)),
+    "gemini": _LLMProviderEntry("Gemini", "google-genai", "src.llm.gemini_adapter", "GeminiAdapter", ("GOOGLE_API_KEY",), ("google_genai",)),
 }
 _MODEL_ENV = {
     AITask.SCORING: "SCORING_MODEL",
@@ -71,8 +71,11 @@ def describe_defaults(provider_name: str) -> dict:
     }
 
 
-def _active_adapter_class():
-    """The injected test adapter, or the active LLM Provider's adapter class."""
+def _active_adapter_or_class():
+    """The injected test adapter instance, or the active LLM Provider's adapter class.
+
+    Either way it has the class-level `name`, `display_name`, `default_models` and `owns_model`.
+    """
     return _adapter_override or _REGISTRY[resolve_provider_name()].adapter_class()
 
 
@@ -118,7 +121,7 @@ def check_api_key() -> None:
 def get_adapter() -> LLMAdapter:
     """Return the active adapter. Callers own it and should `await aclose()` it."""
     check_api_key()
-    return _adapter_override or _active_adapter_class()()  # override is already an instance
+    return _adapter_override or _active_adapter_or_class()()  # override is already an instance
 
 
 def resolve_model(
@@ -128,7 +131,7 @@ def resolve_model(
     settings_overrides: Mapping[AITask, str] | None = None,
 ) -> str:
     """Precedence: profile YAML (scoring), Settings override, env, LLM Provider default."""
-    llm_provider = _active_adapter_class()
+    llm_provider = _active_adapter_or_class()
     model, source = _configured_model(task, llm_provider, profile_model, settings_overrides)
     if source is None:
         logger.debug("Model for %s: '%s' (default of LLM Provider '%s')", task.value, model, llm_provider.name)
@@ -178,7 +181,7 @@ def set_model_override(store, task: AITask, model: str | None) -> None:
     """Set, or with an empty `model` clear, a Settings override. Rejects foreign Models."""
     model = (model or "").strip()
     if model:
-        llm_provider = _active_adapter_class()
+        llm_provider = _active_adapter_or_class()
         _require_owned(llm_provider, model)
     store.set_metadata(_OVERRIDE_KEY + task.value, model)
 
@@ -205,7 +208,7 @@ def describe_active(store=None, profile_model: str | None = None) -> dict:
     """
     try:
         check_api_key()
-        llm_provider = _active_adapter_class()
+        llm_provider = _active_adapter_or_class()
     except LLMConfigError as e:
         return {"configured": False, "provider": None, "provider_display_name": None,
                 "models": None, "model_errors": {}, "error": str(e), "scoring_from_profile": False}

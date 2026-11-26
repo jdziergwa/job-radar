@@ -214,3 +214,25 @@ def fake_ai():
     set_adapter_override(FakeLLMAdapter())
     yield
     set_adapter_override(None)
+
+
+@pytest.fixture
+def no_ai_key(monkeypatch):
+    """No LLM Provider selected, no key, no Model env overrides and no injected adapter."""
+    from src.llm import set_adapter_override
+
+    for env in (
+        "LLM_PROVIDER", "ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN", "GOOGLE_API_KEY",
+        "SCORING_MODEL", "WIZARD_MODEL", "STATS_MODEL",
+    ):
+        monkeypatch.delenv(env, raising=False)
+    set_adapter_override(None)
+
+
+@pytest.fixture
+def pipeline_workspace(tmp_path, monkeypatch):
+    """An empty profiles/ + data/ workspace as the cwd, for tests that run the CLI pipeline."""
+    (tmp_path / "profiles" / "default").mkdir(parents=True)
+    (tmp_path / "data").mkdir()
+    monkeypatch.chdir(tmp_path)
+    return tmp_path

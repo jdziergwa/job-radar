@@ -177,7 +177,7 @@ async def call_llm(
     request_summary: str,
     send: Callable[[], Awaitable[Any]],
     classify: Classifier,
-    read: Callable[[Any, float], Reading],
+    read: Callable[[Any], Reading],
 ) -> LLMResult:
     """Time and log one SDK call, wrap its errors and build the `LLMResult`.
 
@@ -197,7 +197,7 @@ async def call_llm(
         raise failure.error from error
     elapsed = time.monotonic() - started
 
-    reading = read(response, elapsed)
+    reading = read(response)
     logger.debug("%s response in %.1fs: %s", label, elapsed, reading.summary)
     if reading.warning:
         logger.warning("%s", reading.warning)

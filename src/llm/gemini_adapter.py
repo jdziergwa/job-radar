@@ -187,7 +187,7 @@ class GeminiAdapter:
             ),
             send=lambda: self._client.aio.models.generate_content(model=model, contents=contents, config=config),
             classify=classify_error,
-            read=lambda response, _elapsed: read_response(response, model, config.max_output_tokens),
+            read=lambda response: read_response(response, model, config.max_output_tokens),
         )
 
     async def aclose(self) -> None:

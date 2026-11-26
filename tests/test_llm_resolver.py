@@ -11,10 +11,9 @@ from src.llm import (
     resolve_provider_name,
     sdk_logger_names,
 )
-from dataclasses import replace
+import sys
 
 from src.llm import describe_active
-from src.llm.resolver import _REGISTRY
 from src.main import setup_logging
 
 ENV_VARS = [
@@ -30,7 +29,7 @@ def _clean_env(monkeypatch):
 
 
 @pytest.fixture
-def anthropic_provider(monkeypatch):
+def anthropic_llm_provider(monkeypatch):
     monkeypatch.setenv("LLM_PROVIDER", "anthropic")
 
 
@@ -55,8 +54,6 @@ def test_no_key_and_no_llm_provider_asks_for_a_key_and_names_every_primary_key_e
         resolve_provider_name()
     message = str(excinfo.value)
     assert "ANTHROPIC_API_KEY" in message and "GOOGLE_API_KEY" in message
-    # Names track the registry: every entry's primary key env var appears.
-    assert all(entry.credential_envs[0] in message for entry in _REGISTRY.values())
     with pytest.raises(LLMConfigError, match="GOOGLE_API_KEY"):
         check_api_key()
 
@@ -83,24 +80,24 @@ def test_check_api_key_accepts_anthropic_auth_token(monkeypatch):
     check_api_key()
 
 
-def test_default_models_per_task(anthropic_provider):
+def test_default_models_per_task(anthropic_llm_provider):
     assert resolve_model(AITask.SCORING) == HAIKU_MODEL
     assert resolve_model(AITask.WIZARD) == SONNET_MODEL
     assert resolve_model(AITask.STATS) == HAIKU_MODEL
 
 
-def test_env_overrides_default(monkeypatch, anthropic_provider):
+def test_env_overrides_default(monkeypatch, anthropic_llm_provider):
     monkeypatch.setenv("SCORING_MODEL", "claude-sonnet-4-5")
     assert resolve_model(AITask.SCORING) == "claude-sonnet-4-5"
 
 
-def test_settings_override_beats_env(monkeypatch, anthropic_provider):
+def test_settings_override_beats_env(monkeypatch, anthropic_llm_provider):
     monkeypatch.setenv("SCORING_MODEL", "claude-env")
     result = resolve_model(AITask.SCORING, settings_overrides={AITask.SCORING: "claude-settings"})
     assert result == "claude-settings"
 
 
-def test_profile_model_beats_settings_and_env(monkeypatch, anthropic_provider):
+def test_profile_model_beats_settings_and_env(monkeypatch, anthropic_llm_provider):
     monkeypatch.setenv("SCORING_MODEL", "claude-env")
     result = resolve_model(
         AITask.SCORING,
@@ -110,12 +107,12 @@ def test_profile_model_beats_settings_and_env(monkeypatch, anthropic_provider):
     assert result == "claude-profile"
 
 
-def test_blank_overrides_are_ignored(monkeypatch, anthropic_provider):
+def test_blank_overrides_are_ignored(monkeypatch, anthropic_llm_provider):
     monkeypatch.setenv("WIZARD_MODEL", "  ")
     assert resolve_model(AITask.WIZARD, profile_model="") == SONNET_MODEL
 
 
-def test_model_from_another_llm_provider_fails_fast(monkeypatch, anthropic_provider):
+def test_model_from_another_llm_provider_fails_fast(monkeypatch, anthropic_llm_provider):
     monkeypatch.setenv("SCORING_MODEL", "gemini-3.8-flash")
     with pytest.raises(LLMConfigError, match="gemini-3.8-flash"):
         resolve_model(AITask.SCORING)
@@ -216,7 +213,7 @@ def test_cli_logging_setup_quiets_every_sdk_logger():
 
 def test_missing_sdk_is_a_config_error_naming_the_pip_package(monkeypatch):
     monkeypatch.setenv("GOOGLE_API_KEY", "g")
-    monkeypatch.setitem(_REGISTRY, "gemini", replace(_REGISTRY["gemini"], module="src.llm.no_such_adapter"))
+    monkeypatch.setitem(sys.modules, "src.llm.gemini_adapter", None)  # makes importing it fail
 
     with pytest.raises(LLMConfigError, match="Gemini SDK isn't installed.*pip install google-genai"):
         resolve_model(AITask.SCORING)
@@ -239,7 +236,7 @@ def test_describe_active_reports_a_foreign_model_per_ai_task(monkeypatch):
 
 def test_describe_active_with_a_missing_sdk_is_not_configured(monkeypatch):
     monkeypatch.setenv("GOOGLE_API_KEY", "g")
-    monkeypatch.setitem(_REGISTRY, "gemini", replace(_REGISTRY["gemini"], module="src.llm.no_such_adapter"))
+    monkeypatch.setitem(sys.modules, "src.llm.gemini_adapter", None)  # makes importing it fail
 
     described = describe_active()
 

@@ -266,8 +266,7 @@ def test_analyze_cv_maps_rate_limit_and_api_errors_to_502(monkeypatch):
     assert "Rate Limit" in response.json()["detail"]
 
     set_adapter_override(FakeLLMAdapter([LLMAPIError("boom")] * 3))
-    with TestClient(app) as client:
-        response = _analyze(client)
+    response = _analyze(client)
     assert response.status_code == 502
     assert "API Error: boom" in response.json()["detail"]
 
@@ -301,25 +300,19 @@ def _gemini_adapter_failing_to_connect(monkeypatch):
 
 
 @pytest.mark.parametrize("make_adapter", [_anthropic_adapter_failing_to_connect, _gemini_adapter_failing_to_connect])
-def test_analyze_cv_maps_connection_failure_to_502_on_either_llm_provider(monkeypatch, make_adapter):
+def test_analyze_cv_maps_connection_failure_to_502_on_either_llm_provider(monkeypatch, client, make_adapter):
     async def no_sleep(_):
         pass
 
     monkeypatch.setattr(wizard_router.asyncio, "sleep", no_sleep)
     set_adapter_override(make_adapter(monkeypatch))
-    with TestClient(app) as client:
-        response = _analyze(client)
+    response = _analyze(client)
     assert response.status_code == 502
     assert "API Error" in response.json()["detail"]
 
 
-def test_analyze_cv_missing_key_returns_ai_not_configured(monkeypatch):
-    monkeypatch.delenv("LLM_PROVIDER", raising=False)
-    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
-    monkeypatch.delenv("GOOGLE_API_KEY", raising=False)
-
-    with TestClient(app) as client:
-        response = _analyze(client)
+def test_analyze_cv_missing_key_returns_ai_not_configured(no_ai_key, client):
+    response = _analyze(client)
 
     assert response.status_code == 503
     assert response.json()["detail"].startswith("AI not configured")
@@ -347,9 +340,7 @@ def test_refine_profile_without_key_falls_back_to_drafts(monkeypatch):
     assert response.json()["changes_made"][0].startswith("Refinement skipped")
 
 
-def test_wizard_generated_profile_scores_with_the_gemini_default(monkeypatch, tmp_path):
-    for var in ("LLM_PROVIDER", "ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN", "SCORING_MODEL"):
-        monkeypatch.delenv(var, raising=False)
+def test_wizard_generated_profile_scores_with_the_gemini_default(no_ai_key, monkeypatch, tmp_path, client):
     monkeypatch.setenv("GOOGLE_API_KEY", "gemini-key")
     _write_example_profile(tmp_path)
     monkeypatch.setattr(wizard_router, "PROFILES_DIR", tmp_path)
@@ -360,12 +351,11 @@ def test_wizard_generated_profile_scores_with_the_gemini_default(monkeypatch, tm
         "user_preferences": _sample_user_preferences_payload(),
     }
 
-    with TestClient(app) as client:
-        generated = client.post("/api/wizard/generate-profile", json=payload).json()
-        saved = client.post("/api/wizard/save-profile", json={**payload, **generated})
-        assert saved.status_code == 200
+    generated = client.post("/api/wizard/generate-profile", json=payload).json()
+    saved = client.post("/api/wizard/save-profile", json={**payload, **generated})
+    assert saved.status_code == 200
 
-        body = client.get("/api/ai-config", params={"profile": "default"}).json()
+    body = client.get("/api/ai-config", params={"profile": "default"}).json()
 
     assert body["configured"] is True
     assert body["provider"] == "gemini"

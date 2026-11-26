@@ -2,15 +2,9 @@ import pytest
 
 from api.routers import jobs as jobs_router
 from api.routers import pipeline as pipeline_router
-from src.llm import set_adapter_override
 
 
-@pytest.fixture
-def no_ai_key(monkeypatch):
-    """No LLM Provider key anywhere, and no injected adapter."""
-    for env in ("LLM_PROVIDER", "ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN", "GOOGLE_API_KEY"):
-        monkeypatch.delenv(env, raising=False)
-    set_adapter_override(None)
+pytestmark = pytest.mark.api
 
 
 @pytest.fixture
