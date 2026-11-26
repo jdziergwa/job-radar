@@ -68,6 +68,22 @@ def test_foreign_profile_scoring_model_fails_before_any_job_provider_is_called(m
     assert provider.fetches == 0
 
 
+def test_missing_sdk_prints_the_clear_message_and_stops_before_fetching(monkeypatch, tmp_path, caplog):
+    from dataclasses import replace
+    from src.llm.resolver import _REGISTRY
+
+    provider = _setup(monkeypatch, tmp_path, [_make_raw_job()])
+    monkeypatch.setenv("GOOGLE_API_KEY", "test-key")
+    monkeypatch.setitem(_REGISTRY, "gemini", replace(_REGISTRY["gemini"], module="src.llm.no_such_adapter"))
+
+    with caplog.at_level(logging.ERROR), pytest.raises(SystemExit) as exit_info:
+        asyncio.run(main_module.run())
+
+    assert exit_info.value.code == 1
+    assert provider.fetches == 0
+    assert "pip install google-genai" in caplog.text
+
+
 def test_dry_run_without_a_key_still_fetches(monkeypatch, tmp_path):
     provider = _setup(monkeypatch, tmp_path, [_make_raw_job()], argv_extra=["--dry-run"])
 

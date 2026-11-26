@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label'
 import { PipelineProgressDialog } from './PipelineProgressDialog'
 import type { components } from '@/lib/api/types'
 import { AiLabel } from '@/components/ai/AiLabel'
-import { useAiConfig } from '@/lib/ai/use-ai-config'
+import { aiTaskUnavailable, useAiConfig } from '@/lib/ai/use-ai-config'
 
 type ProviderInfo = components['schemas']['ProviderInfo']
 
@@ -23,7 +23,8 @@ export function PipelineTrigger({ collapsed = false }: { collapsed?: boolean }) 
   const [activeRun, setActiveRun] = useState<{ running: boolean; run_id: string | null } | null>(null)
   const [selectedSources, setSelectedSources] = useState<string[]>([])
   const [dryRun, setDryRun] = useState(false)
-  const aiNotConfigured = aiConfig !== null && !aiConfig.configured
+  const aiUnavailable = aiTaskUnavailable(aiConfig, 'scoring')
+  const aiNotConfigured = aiUnavailable !== null
   const [isStarting, setIsStarting] = useState(false)
   const [providers, setProviders] = useState<ProviderInfo[]>([])
   const [aggregatorStatus, setAggregatorStatus] = useState<{
@@ -93,8 +94,8 @@ export function PipelineTrigger({ collapsed = false }: { collapsed?: boolean }) 
       toast.error("Please select at least one source")
       return
     }
-    if (!dryRun && aiConfig && !aiConfig.configured) {
-      toast.error(`AI not configured: ${aiConfig.error ?? 'missing API key'}. Use a Dry Run or set a key.`)
+    if (!dryRun && aiUnavailable) {
+      toast.error(`${aiUnavailable}. Use a Dry Run or fix the setup.`)
       return
     }
     setIsStarting(true)
@@ -238,8 +239,8 @@ export function PipelineTrigger({ collapsed = false }: { collapsed?: boolean }) 
                     >
                       <div className="flex flex-col">
                         <span className={`text-sm font-bold ${!dryRun ? 'text-primary' : ''}`}>Intelligence Pass</span>
-                        {aiConfig && !aiConfig.configured ? (
-                          <span className="text-[10px] text-amber-500 mt-0.5" title={aiConfig.error ?? undefined}>AI not configured · scoring unavailable</span>
+                        {aiUnavailable ? (
+                          <span className="text-[10px] text-amber-500 mt-0.5" title={aiUnavailable}>AI not configured · scoring unavailable</span>
                         ) : (
                           <span className="text-[10px] text-muted-foreground mt-0.5"><AiLabel config={aiConfig} task="scoring" /> · uses API credits</span>
                         )}

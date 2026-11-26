@@ -11,6 +11,9 @@ from src.llm import (
     resolve_provider_name,
     sdk_logger_names,
 )
+from dataclasses import replace
+
+from src.llm import describe_active
 from src.llm.resolver import _REGISTRY
 from src.main import setup_logging
 
@@ -209,3 +212,36 @@ def test_cli_logging_setup_quiets_every_sdk_logger():
     setup_logging()
 
     assert all(logging.getLogger(name).level == logging.WARNING for name in names)
+
+
+def test_missing_sdk_is_a_config_error_naming_the_pip_package(monkeypatch):
+    monkeypatch.setenv("GOOGLE_API_KEY", "g")
+    monkeypatch.setitem(_REGISTRY, "gemini", replace(_REGISTRY["gemini"], module="src.llm.no_such_adapter"))
+
+    with pytest.raises(LLMConfigError, match="Gemini SDK isn't installed.*pip install google-genai"):
+        resolve_model(AITask.SCORING)
+
+
+def test_describe_active_reports_a_foreign_model_per_ai_task(monkeypatch):
+    monkeypatch.setenv("GOOGLE_API_KEY", "g")
+    monkeypatch.setenv("WIZARD_MODEL", HAIKU_MODEL)
+
+    described = describe_active()
+
+    assert described["configured"] is True
+    assert described["provider"] == "gemini"
+    assert described["error"] is None
+    assert described["models"]["wizard"] == HAIKU_MODEL
+    assert described["models"]["scoring"].startswith("gemini")
+    assert set(described["model_errors"]) == {"wizard"}
+    assert "does not belong" in described["model_errors"]["wizard"]
+
+
+def test_describe_active_with_a_missing_sdk_is_not_configured(monkeypatch):
+    monkeypatch.setenv("GOOGLE_API_KEY", "g")
+    monkeypatch.setitem(_REGISTRY, "gemini", replace(_REGISTRY["gemini"], module="src.llm.no_such_adapter"))
+
+    described = describe_active()
+
+    assert described["configured"] is False
+    assert "pip install google-genai" in described["error"]

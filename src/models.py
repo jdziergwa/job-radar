@@ -12,6 +12,13 @@ class ScoringProvenance:
     llm_provider: str
     model: str
 
+    @classmethod
+    def from_breakdown(cls, data: dict) -> "ScoringProvenance | None":
+        """Rebuild from a persisted `score_breakdown` dict; None for rows scored before provenance."""
+        if data.get("llm_provider") and data.get("llm_model"):
+            return cls(data["llm_provider"], data["llm_model"])
+        return None
+
 
 @dataclass
 class RawJob:

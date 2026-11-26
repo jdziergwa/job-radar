@@ -93,6 +93,9 @@ export function ModelAssignments() {
             <Button size="sm" variant="ghost" disabled={!override || busy === task} onClick={() => save(task, null)}>
               Clear
             </Button>
+            {config.model_errors?.[task] && (
+              <p className="basis-full text-xs text-amber-500">{config.model_errors[task]}</p>
+            )}
           </div>
         )
       })}

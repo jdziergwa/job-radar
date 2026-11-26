@@ -8,11 +8,12 @@ import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Sparkles, RefreshCw, AlertCircle } from 'lucide-react'
 import { AiLabel } from '@/components/ai/AiLabel'
-import { useAiConfig } from '@/lib/ai/use-ai-config'
+import { aiTaskUnavailable, useAiConfig } from '@/lib/ai/use-ai-config'
 
 export function AIInsightsPanel() {
   const aiConfig = useAiConfig()
-  const notConfigured = aiConfig !== null && !aiConfig.configured
+  const unavailable = aiTaskUnavailable(aiConfig, 'stats')
+  const notConfigured = unavailable !== null
   const [report, setReport] = useState<string | null>(null)
   const [generatedAt, setGeneratedAt] = useState<string | null>(null)
   const [cached, setCached] = useState(false)
@@ -76,7 +77,7 @@ export function AIInsightsPanel() {
             <div className="flex flex-col items-center gap-2 text-center">
               <AlertCircle className="h-6 w-6 text-amber-500" />
               <p className="text-sm font-medium">AI not configured</p>
-              <p className="max-w-md text-xs text-muted-foreground">{aiConfig?.error}</p>
+              <p className="max-w-md text-xs text-muted-foreground">{unavailable}</p>
             </div>
           </div>
         ) : loading ? (

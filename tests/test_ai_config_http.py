@@ -117,16 +117,17 @@ def test_model_from_another_llm_provider_is_rejected_with_a_clear_message(monkey
     assert body["overrides"] == {}
 
 
-def test_missing_llm_provider_sdk_is_ai_not_configured(monkeypatch, client):
-    def _no_sdk(*_args):
-        raise ImportError("google-genai is not installed")
+def test_missing_llm_provider_sdk_on_set_override_is_422(monkeypatch, client):
+    from dataclasses import replace
+    from src.llm.resolver import _REGISTRY
 
-    monkeypatch.setattr(ai_config_router, "set_model_override", _no_sdk)
+    _gemini(monkeypatch)
+    monkeypatch.setitem(_REGISTRY, "gemini", replace(_REGISTRY["gemini"], module="src.llm.no_such_adapter"))
 
     response = client.put("/api/ai-config/models/wizard", json={"model": "gemini-custom"})
 
-    assert response.status_code == 503
-    assert response.json()["detail"] == "AI not configured: google-genai is not installed"
+    assert response.status_code == 422
+    assert "pip install google-genai" in response.json()["detail"]
 
 
 def test_settings_override_beats_env_override(monkeypatch, client):
@@ -146,9 +147,11 @@ def test_stale_override_from_another_llm_provider_can_still_be_cleared(monkeypat
     stale = client.get("/api/ai-config").json()
     cleared = client.put("/api/ai-config/models/scoring", json={"model": ""}).json()
 
-    assert stale["configured"] is False
+    assert stale["configured"] is True
+    assert set(stale["model_errors"]) == {"scoring"}
     assert stale["overrides"] == {"scoring": "gemini-custom"}
     assert cleared["configured"] is True
+    assert cleared["model_errors"] == {}
     assert cleared["overrides"] == {}
 
 
@@ -184,7 +187,7 @@ def test_profile_without_scoring_model_is_not_flagged(monkeypatch, client, tmp_p
     assert body["scoring_from_profile"] is False
 
 
-def test_foreign_profile_scoring_model_is_reported_as_error_not_crash(monkeypatch, client, tmp_path):
+def test_foreign_profile_scoring_model_only_makes_scoring_unavailable(monkeypatch, client, tmp_path):
     _clear_env(monkeypatch)
     monkeypatch.setenv("GOOGLE_API_KEY", "k")
     _write_profile(tmp_path, monkeypatch, "claude-haiku-5-5")
@@ -193,5 +196,40 @@ def test_foreign_profile_scoring_model_is_reported_as_error_not_crash(monkeypatc
 
     body = response.json()
     assert response.status_code == 200
+    assert body["configured"] is True
+    assert body["provider"] == "gemini"
+    assert body["error"] is None
+    assert body["models"]["scoring"] == "claude-haiku-5-5"
+    assert body["models"]["wizard"] == "gemini-3.1-pro-preview"
+    assert set(body["model_errors"]) == {"scoring"}
+    assert "profile YAML `scoring.model`" in body["model_errors"]["scoring"]
+
+
+@pytest.mark.parametrize("task", ["scoring", "wizard", "stats"])
+def test_foreign_env_model_flags_only_its_ai_task(monkeypatch, client, task):
+    _gemini(monkeypatch)
+    monkeypatch.setenv(f"{task.upper()}_MODEL", "claude-sonnet-4-5")
+
+    body = client.get("/api/ai-config").json()
+
+    assert body["configured"] is True
+    assert set(body["model_errors"]) == {task}
+    assert f"{task.upper()}_MODEL" in body["model_errors"][task]
+
+
+def test_model_errors_is_empty_when_all_models_are_fine(monkeypatch, client):
+    _gemini(monkeypatch)
+    assert client.get("/api/ai-config").json()["model_errors"] == {}
+
+
+def test_missing_llm_provider_sdk_is_reported_not_configured(monkeypatch, client):
+    from dataclasses import replace
+    from src.llm.resolver import _REGISTRY
+
+    _gemini(monkeypatch)
+    monkeypatch.setitem(_REGISTRY, "gemini", replace(_REGISTRY["gemini"], module="src.llm.no_such_adapter"))
+
+    body = client.get("/api/ai-config").json()
+
     assert body["configured"] is False
-    assert "profile YAML `scoring.model`" in body["error"]
+    assert "pip install google-genai" in body["error"]

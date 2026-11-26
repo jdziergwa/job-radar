@@ -25,3 +25,13 @@ export function useAiConfig(): AiConfig | null {
 
   return config
 }
+
+/**
+ * Why an AI Task can't run: AI isn't configured, or that task's Model has its own error.
+ * Null when the task is available or the config is still loading. The one place every AI control decides this.
+ */
+export function aiTaskUnavailable(config: AiConfig | null, task: AiTask): string | null {
+  if (config === null) return null
+  if (!config.configured) return `AI not configured: ${config.error ?? 'missing API key'}`
+  return config.model_errors?.[task] ?? null
+}

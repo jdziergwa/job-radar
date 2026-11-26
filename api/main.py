@@ -22,7 +22,7 @@ async def lifespan(_app: FastAPI):
     """Warn once if AI isn't configured; the API still starts so the UI can show it."""
     try:
         check_scoring_config()
-    except (LLMConfigError, ImportError) as error:
+    except LLMConfigError as error:
         logger.warning("AI is not configured: %s", error)
     yield
 

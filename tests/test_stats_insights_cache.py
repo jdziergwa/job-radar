@@ -7,7 +7,7 @@ import pytest
 from fastapi import HTTPException
 
 from api.routers import stats as stats_router
-from src.llm import LLMAPIError, LLMRateLimitError, set_adapter_override
+from src.llm import LLMAPIError, LLMConfigError, LLMRateLimitError, set_adapter_override
 from tests.fake_llm import FakeLLMAdapter
 
 
@@ -158,7 +158,7 @@ async def test_forced_insights_maps_llm_errors_to_502(error, fragment):
 
 async def test_forced_insights_missing_llm_provider_sdk_is_ai_not_configured(monkeypatch):
     def _no_sdk():
-        raise ImportError("google-genai is not installed")
+        raise LLMConfigError("The Gemini SDK isn't installed. Install it with: pip install google-genai")
 
     monkeypatch.setattr(stats_router, "get_adapter", _no_sdk)
 
@@ -167,4 +167,4 @@ async def test_forced_insights_missing_llm_provider_sdk_is_ai_not_configured(mon
             await stats_router.get_insights(profile="default", days=30, force=True)
 
     assert exc.value.status_code == 503
-    assert exc.value.detail == "AI not configured: google-genai is not installed"
+    assert exc.value.detail == "AI not configured: The Gemini SDK isn't installed. Install it with: pip install google-genai"

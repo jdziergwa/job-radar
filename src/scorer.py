@@ -842,6 +842,7 @@ async def score_job(
                 salary_max=metadata["salary_max"],
                 salary_currency=metadata["salary_currency"],
                 is_sparse=metadata["is_sparse"],
+                provenance=ScoringProvenance(adapter.name, model),
             )
             normalized_result = normalize_scored_job(raw_result)
             normalized_result = replace(
@@ -974,6 +975,7 @@ async def score_batch(
                         salary_max=metadata["salary_max"],
                         salary_currency=metadata["salary_currency"],
                         is_sparse=metadata["is_sparse"],
+                        provenance=ScoringProvenance(adapter.name, model),
                     )
                     normalized_result = normalize_scored_job(raw_result)
                     normalized_result = replace(
@@ -1152,7 +1154,7 @@ async def score_jobs(
                     skip_reason=result.skip_reason,
                     missing_skills=result.missing_skills,
                     normalization_audit=result.normalization_audit,
-                    provenance=ScoringProvenance(adapter.name, model),
+                    provenance=result.provenance,
                     salary=result.salary,
                     salary_min=result.salary_min,
                     salary_max=result.salary_max,

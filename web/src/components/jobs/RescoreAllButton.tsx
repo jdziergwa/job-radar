@@ -19,7 +19,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { PipelineProgressDialog } from '../pipeline/PipelineProgressDialog'
-import { useAiConfig } from '@/lib/ai/use-ai-config'
+import { aiTaskUnavailable, useAiConfig } from '@/lib/ai/use-ai-config'
 
 type RescoreScope = 'failed_recent' | 'unscored_new' | 'recent_scored' | 'all'
 
@@ -78,7 +78,8 @@ export function RescoreAllButton({
   showText = true
 }: RescoreAllButtonProps) {
   const aiConfig = useAiConfig()
-  const aiNotConfigured = aiConfig !== null && !aiConfig.configured
+  const aiUnavailable = aiTaskUnavailable(aiConfig, 'scoring')
+  const aiNotConfigured = aiUnavailable !== null
   const [loading, setLoading] = useState(false)
   const [showProgress, setShowProgress] = useState(false)
   const [confirmOpen, setConfirmOpen] = useState(false)
@@ -170,7 +171,7 @@ export function RescoreAllButton({
       size={size}
       onClick={openConfirm}
       disabled={loading || aiNotConfigured}
-      title={aiNotConfigured ? `AI not configured: ${aiConfig?.error ?? 'missing API key'}` : undefined}
+      title={aiUnavailable ?? undefined}
       className={`gap-2 ${className}`}
     >
       {loading ? (

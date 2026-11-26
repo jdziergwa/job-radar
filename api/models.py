@@ -1,8 +1,10 @@
+from dataclasses import asdict
 from datetime import datetime
 from pydantic import BaseModel, Field
 from typing import Optional, Literal
 import json
 
+from src.models import ScoringProvenance
 from src.score_normalization import normalize_persisted_priority
 
 
@@ -87,8 +89,8 @@ class JobResponse(BaseModel):
                 )
                 if isinstance(raw, dict):
                     raw["apply_priority"] = apply_priority
-                    if raw.get("llm_provider") and raw.get("llm_model"):
-                        raw["provenance"] = {"llm_provider": raw["llm_provider"], "model": raw["llm_model"]}
+                    if provenance := ScoringProvenance.from_breakdown(raw):
+                        raw["provenance"] = asdict(provenance)
                 breakdown = ScoreBreakdown(**raw)
             except (json.JSONDecodeError, Exception):
                 pass
@@ -650,6 +652,7 @@ class AiConfig(BaseModel):
     provider: str | None = None
     provider_display_name: str | None = None
     models: AiModels | None = None
+    model_errors: dict[str, str] = {}  # AI Task value -> why its Model can't be used
     overrides: dict[str, str] = {}
     scoring_from_profile: bool = False
     error: str | None = None

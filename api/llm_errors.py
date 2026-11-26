@@ -8,7 +8,7 @@ from src.llm import LLMAPIError, LLMConfigError, LLMRateLimitError, check_scorin
 
 def llm_http_error(exc: Exception, adapter=None) -> HTTPException | None:
     """HTTP response for an LLM error, or None if it isn't one. Name the active LLM Provider via `adapter`."""
-    if isinstance(exc, (LLMConfigError, ImportError)):
+    if isinstance(exc, LLMConfigError):
         return HTTPException(status_code=503, detail=f"AI not configured: {exc}")
     name = getattr(adapter, "display_name", "LLM Provider")
     if isinstance(exc, LLMRateLimitError):

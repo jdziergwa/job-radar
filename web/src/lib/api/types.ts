@@ -550,7 +550,7 @@ export interface paths {
         put?: never;
         /**
          * Analyze Cv
-         * @description Extract text from PDF and return a structured CV analysis using Claude.
+         * @description Extract text from PDF and return a structured CV analysis using the active LLM Provider.
          */
         post: operations["analyze_cv_api_wizard_analyze_cv_post"];
         delete?: never;
@@ -869,6 +869,13 @@ export interface components {
             /** Provider Display Name */
             provider_display_name?: string | null;
             models?: components["schemas"]["AiModels"] | null;
+            /**
+             * Model Errors
+             * @default {}
+             */
+            model_errors: {
+                [key: string]: string;
+            };
             /**
              * Overrides
              * @default {}

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { api } from '@/lib/api/client'
-import { useAiConfig } from '@/lib/ai/use-ai-config'
+import { aiTaskUnavailable, useAiConfig } from '@/lib/ai/use-ai-config'
 import type { components } from '@/lib/api/types'
 import { CompleteStageDialog } from '@/components/applications/CompleteStageDialog'
 import { NotesEditor } from '@/components/applications/NotesEditor'
@@ -123,7 +123,8 @@ export function JobDetailView({
   const [deleteImportedJobDialogOpen, setDeleteImportedJobDialogOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const aiConfig = useAiConfig()
-  const aiNotConfigured = aiConfig !== null && !aiConfig.configured
+  const aiUnavailable = aiTaskUnavailable(aiConfig, 'scoring')
+  const aiNotConfigured = aiUnavailable !== null
   const [rescoreRunId, setRescoreRunId] = useState<string | null>(null)
   const trackerMenuRef = useRef<HTMLDetailsElement | null>(null)
   const timelineScrollRef = useRef<HTMLDivElement | null>(null)
@@ -574,7 +575,7 @@ export function JobDetailView({
   const hasScore = job.fit_score != null
   const scoreActionLabel = hasScore ? 'Rescore' : 'Score'
   const scoreActionInProgressLabel = hasScore ? 'Rescoring...' : 'Scoring...'
-  const scoreActionTooltip = aiNotConfigured ? `AI not configured: ${aiConfig?.error ?? 'missing API key'}` : hasScore ? 'Rerun AI intelligence pass for this job' : 'Run AI intelligence pass for this job'
+  const scoreActionTooltip = aiUnavailable ?? (hasScore ? 'Rerun AI intelligence pass for this job' : 'Run AI intelligence pass for this job')
   const scoreReasoning = job.score_reasoning || 'No detailed reasoning provided.'
   const hasJobUrl = hasExternalJobUrl(job.url)
   const trackerStatusLabel = job.application_status ? getApplicationStageLabel(job.application_status) : null

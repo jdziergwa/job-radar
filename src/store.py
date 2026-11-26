@@ -3049,8 +3049,7 @@ class Store:
                 raw_audit = data.get("normalization_audit", {})
                 if isinstance(raw_audit, dict):
                     normalization_audit = raw_audit
-                if data.get("llm_provider") and data.get("llm_model"):
-                    provenance = ScoringProvenance(data["llm_provider"], data["llm_model"])
+                provenance = ScoringProvenance.from_breakdown(data)
             except json.JSONDecodeError:
                 pass
 

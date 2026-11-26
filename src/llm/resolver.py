@@ -15,6 +15,8 @@ from src.llm.base import AITask, LLMAdapter, LLMConfigError
 class _ProviderEntry:
     """One LLM Provider: lazy adapter import and the env vars that authenticate it."""
 
+    display_name: str
+    pip_package: str
     module: str
     class_name: str
     credential_envs: tuple[str, ...]  # the first is the one named in missing-key errors
@@ -22,15 +24,20 @@ class _ProviderEntry:
 
     def adapter_class(self):
         """Imported lazily so only the active LLM Provider's SDK is needed."""
-        return getattr(importlib.import_module(self.module), self.class_name)
+        try:
+            return getattr(importlib.import_module(self.module), self.class_name)
+        except ImportError as e:
+            raise LLMConfigError(
+                f"The {self.display_name} SDK isn't installed. Install it with: pip install {self.pip_package}"
+            ) from e
 
 
 _REGISTRY = {
     "anthropic": _ProviderEntry(
-        "src.llm.anthropic_adapter", "AnthropicAdapter", ("ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN"),
+        "Anthropic", "anthropic", "src.llm.anthropic_adapter", "AnthropicAdapter", ("ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN"),
         ("anthropic",),
     ),
-    "gemini": _ProviderEntry("src.llm.gemini_adapter", "GeminiAdapter", ("GOOGLE_API_KEY",), ("google_genai",)),
+    "gemini": _ProviderEntry("Gemini", "google-genai", "src.llm.gemini_adapter", "GeminiAdapter", ("GOOGLE_API_KEY",), ("google_genai",)),
 }
 _MODEL_ENV = {
     AITask.SCORING: "SCORING_MODEL",
@@ -122,7 +129,17 @@ def resolve_model(
 ) -> str:
     """Precedence: profile YAML (scoring), Settings override, env, LLM Provider default."""
     llm_provider = _active_adapter_class()
+    model, source = _configured_model(task, llm_provider, profile_model, settings_overrides)
+    if source is None:
+        logger.debug("Model for %s: '%s' (default of LLM Provider '%s')", task.value, model, llm_provider.name)
+        return model
+    _require_owned(llm_provider, model, source)
+    logger.debug("Model for %s: '%s' (from %s, LLM Provider '%s')", task.value, model, source, llm_provider.name)
+    return model
 
+
+def _configured_model(task, llm_provider, profile_model, settings_overrides) -> tuple[str, str | None]:
+    """The Model an AI Task would use and where it came from (None source = LLM Provider default)."""
     candidates = [
         ("profile YAML `scoring.model`", profile_model if task is AITask.SCORING else None),
         ("Settings override", (settings_overrides or {}).get(task)),
@@ -131,12 +148,8 @@ def resolve_model(
     for source, candidate in candidates:
         model = (candidate or "").strip()
         if model:
-            _require_owned(llm_provider, model, source)
-            logger.debug("Model for %s: '%s' (from %s, LLM Provider '%s')", task.value, model, source, llm_provider.name)
-            return model
-    model = llm_provider.default_models[task]
-    logger.debug("Model for %s: '%s' (default of LLM Provider '%s')", task.value, model, llm_provider.name)
-    return model
+            return model, source
+    return llm_provider.default_models[task], None
 
 
 def _require_owned(llm_provider, model: str, source: str | None = None) -> None:
@@ -185,18 +198,26 @@ def check_scoring_config(
 def describe_active(store=None, profile_model: str | None = None) -> dict:
     """Public, key-free view of the active LLM Provider and per-task Models.
 
-    Never raises: a misconfiguration is reported as `configured: False` with the
-    reason in `error`, so the UI can show an "AI not configured" state.
+    Never raises. `configured` means the LLM Provider resolves and its key is set; otherwise
+    the reason is in `error`. A foreign Model only makes its own AI Task unavailable: it is
+    shown in `models` and explained in `model_errors` (keyed by AI Task value).
     `profile_model` is the profile YAML `scoring.model`; when set it wins for scoring.
     """
     try:
         check_api_key()
         llm_provider = _active_adapter_class()
-        overrides = load_model_overrides(store) if store is not None else None
-        models = {task.value: resolve_model(task, profile_model=profile_model, settings_overrides=overrides) for task in AITask}
-    except (LLMConfigError, ImportError) as e:
+    except LLMConfigError as e:
         return {"configured": False, "provider": None, "provider_display_name": None,
-                "models": None, "error": str(e), "scoring_from_profile": False}
+                "models": None, "model_errors": {}, "error": str(e), "scoring_from_profile": False}
+    overrides = load_model_overrides(store) if store is not None else None
+    models, model_errors = {}, {}
+    for task in AITask:
+        try:
+            models[task.value] = resolve_model(task, profile_model=profile_model, settings_overrides=overrides)
+        except LLMConfigError as e:
+            models[task.value] = _configured_model(task, llm_provider, profile_model, overrides)[0]
+            model_errors[task.value] = str(e)
     return {"configured": True, "provider": llm_provider.name,
-            "provider_display_name": llm_provider.display_name, "models": models, "error": None,
+            "provider_display_name": llm_provider.display_name, "models": models,
+            "model_errors": model_errors, "error": None,
             "scoring_from_profile": bool((profile_model or "").strip())}
