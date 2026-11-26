@@ -37,7 +37,7 @@ from src.reporter import (
     send_telegram,
     write_report,
 )
-from src.llm import AITask, LLMConfigError, check_api_key, load_model_overrides, resolve_model
+from src.llm import AITask, LLMConfigError, check_api_key, load_model_overrides, resolve_model, sdk_logger_names
 from src.log_file import attach_file_log
 from src.scorer import score_jobs
 from src.store import Store
@@ -55,8 +55,8 @@ def setup_logging(verbose: bool = False) -> None:
     # Quiet noisy libraries
     logging.getLogger("httpx").setLevel(logging.WARNING)
     logging.getLogger("httpcore").setLevel(logging.WARNING)
-    logging.getLogger("anthropic").setLevel(logging.WARNING)
-    logging.getLogger("google_genai").setLevel(logging.WARNING)
+    for name in sdk_logger_names():
+        logging.getLogger(name).setLevel(logging.WARNING)
     log_path = attach_file_log()
     if log_path:
         logger.info("Pipeline started (argv=%s); debug log at %s", sys.argv[1:], log_path)
@@ -104,7 +104,7 @@ def load_profile_doc(profile_dir: Path) -> str:
 def build_parser() -> argparse.ArgumentParser:
     """Build CLI argument parser."""
     parser = argparse.ArgumentParser(
-        description="Job Radar — personalized job monitor powered by Claude AI",
+        description="Job Radar — personalized job monitor powered by an LLM",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""\
 Examples:

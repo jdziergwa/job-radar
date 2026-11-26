@@ -2,10 +2,9 @@ import types
 
 import pytest
 
-from src.claude import HAIKU_MODEL, SONNET_MODEL
 from src.llm import LLMAPIError, LLMRateLimitError
 from src.llm import anthropic_adapter
-from src.llm.anthropic_adapter import AnthropicAdapter, classify_error
+from src.llm.anthropic_adapter import HAIKU_MODEL, SONNET_MODEL, AnthropicAdapter, classify_error
 
 pytestmark = pytest.mark.anyio
 

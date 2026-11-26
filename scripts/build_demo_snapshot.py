@@ -29,9 +29,12 @@ from api.models import (
     StatsOverview,
     TrendsResponse,
 )
-from src.llm.gemini_adapter import GeminiAdapter
+from src.llm import describe_defaults
 from src.providers import get_all_info
 from src.score_normalization import normalize_persisted_priority
+
+
+_DEMO_LLM_PROVIDER = "gemini"  # registry key of the LLM Provider the static demo advertises
 
 
 def _now_iso() -> str:
@@ -90,13 +93,8 @@ def _build_insights_response(store: Any, profile: str, days: int) -> InsightsRes
 
 
 def _build_demo_ai_config() -> AiConfig:
-    """The static demo has no API key, so it shows Gemini with its default Models."""
-    return AiConfig(
-        configured=True,
-        provider=GeminiAdapter.name,
-        provider_display_name=GeminiAdapter.display_name,
-        models={task.value: model for task, model in GeminiAdapter.default_models.items()},
-    )
+    """The static demo has no API key, so it shows the demo LLM Provider with its default Models."""
+    return AiConfig(configured=True, **describe_defaults(_DEMO_LLM_PROVIDER))
 
 
 def _load_json_or_none(path: Path) -> Any:

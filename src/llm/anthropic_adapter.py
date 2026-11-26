@@ -7,7 +7,6 @@ from typing import Any
 import anthropic
 from anthropic import AsyncAnthropic
 
-from src.claude import HAIKU_MODEL, SONNET_MODEL, message_text
 from src.llm.base import (
     AITask,
     Failure,
@@ -20,8 +19,23 @@ from src.llm.base import (
     parse_retry_after_seconds,
 )
 
+HAIKU_MODEL = "claude-haiku-5-5"
+SONNET_MODEL = "claude-sonnet-5-5"
+
 # Models that run at low effort; Haiku also runs without extended thinking.
 _LOW_EFFORT_MODELS = {HAIKU_MODEL, SONNET_MODEL}
+
+
+def message_text(response: Any) -> str:
+    """Read text from a complete response, including messages that start with thinking."""
+    stop_reason = getattr(response, "stop_reason", None)
+    if stop_reason in {"max_tokens", "model_context_window_exceeded", "refusal"}:
+        raise ValueError(f"Claude did not complete the response ({stop_reason})")
+
+    text = "".join(block.text for block in response.content if block.type == "text")
+    if not text.strip():
+        raise ValueError("Claude returned no text")
+    return text
 
 
 def _to_anthropic(message: Message) -> Message:

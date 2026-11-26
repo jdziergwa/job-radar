@@ -661,7 +661,7 @@ def _extract_json(text: str, is_array: bool = False) -> str | None:
 
 
 def _parse_score_response(text: str) -> dict[str, Any]:
-    """Parse the JSON response from Claude. Handles common formatting issues."""
+    """Parse the JSON response from the LLM. Handles common formatting issues."""
     json_str = _extract_json(text, is_array=False)
     if not json_str:
         raise ValueError("No JSON object found in response")

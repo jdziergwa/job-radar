@@ -148,7 +148,7 @@ def _is_extraction_poor(text: str) -> bool:
     return alnum_ratio < 0.7
 
 def _render_pdf_to_images(file_bytes: bytes, dpi: int = 300, max_pages: int = 10) -> list[bytes]:
-    """Convert PDF pages to PNG images for Claude Vision."""
+    """Convert PDF pages to PNG images for the LLM's image input."""
     doc = fitz.open(stream=file_bytes, filetype="pdf")
     images = []
     
@@ -167,7 +167,7 @@ def _render_pdf_to_images(file_bytes: bytes, dpi: int = 300, max_pages: int = 10
 @router.post("/wizard/analyze-cv", response_model=CVAnalysisResponse)
 async def analyze_cv(file: UploadFile = File(...)):
     """
-    Extract text from PDF and return a structured CV analysis using Claude.
+    Extract text from PDF and return a structured CV analysis using an LLM.
     """
     if not file.filename.lower().endswith(".pdf"):
         raise HTTPException(status_code=422, detail="Only PDF files are supported")

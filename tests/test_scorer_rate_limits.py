@@ -5,9 +5,8 @@ from dataclasses import replace
 import pytest
 
 import src.scorer as scorer
-from src.claude import HAIKU_MODEL
 from src.llm import LLMRateLimitError, set_adapter_override
-from src.llm.anthropic_adapter import AnthropicAdapter
+from src.llm.anthropic_adapter import HAIKU_MODEL, AnthropicAdapter
 from src.models import CandidateJob, RawJob
 from src.scorer import _ScoringRateLimiter, _rate_limit_wait_seconds, score_batch, score_job, score_jobs
 from src.store import Store

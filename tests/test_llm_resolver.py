@@ -1,13 +1,17 @@
+import logging
+
 import pytest
 
-from src.claude import HAIKU_MODEL, SONNET_MODEL
+from src.llm.anthropic_adapter import HAIKU_MODEL, SONNET_MODEL
 from src.llm import (
     AITask,
     LLMConfigError,
     check_api_key,
     resolve_model,
     resolve_provider_name,
+    sdk_logger_names,
 )
+from src.main import setup_logging
 
 ENV_VARS = [
     "LLM_PROVIDER", "ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN", "GOOGLE_API_KEY",
@@ -171,3 +175,18 @@ def test_foreign_profile_model_error_names_profile_yaml_as_source(monkeypatch):
 
     with pytest.raises(LLMConfigError, match="from profile YAML `scoring.model`\\) does not belong to LLM Provider 'gemini'"):
         resolve_model(AITask.SCORING, profile_model=HAIKU_MODEL)
+
+
+def test_every_llm_provider_names_its_sdk_loggers():
+    names = sdk_logger_names()
+    assert {"anthropic", "google_genai"} <= set(names)
+
+
+def test_cli_logging_setup_quiets_every_sdk_logger():
+    names = sdk_logger_names()
+    for name in names:
+        logging.getLogger(name).setLevel(logging.NOTSET)
+
+    setup_logging()
+
+    assert all(logging.getLogger(name).level == logging.WARNING for name in names)

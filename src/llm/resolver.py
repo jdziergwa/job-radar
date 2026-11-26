@@ -18,6 +18,7 @@ class _ProviderEntry:
     module: str
     class_name: str
     credential_envs: tuple[str, ...]  # the first is the one named in missing-key errors
+    sdk_loggers: tuple[str, ...]  # the SDK's noisy loggers; named here so no SDK import is needed
 
     def adapter_class(self):
         """Imported lazily so only the active LLM Provider's SDK is needed."""
@@ -26,9 +27,10 @@ class _ProviderEntry:
 
 _REGISTRY = {
     "anthropic": _ProviderEntry(
-        "src.llm.anthropic_adapter", "AnthropicAdapter", ("ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN")
+        "src.llm.anthropic_adapter", "AnthropicAdapter", ("ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN"),
+        ("anthropic",),
     ),
-    "gemini": _ProviderEntry("src.llm.gemini_adapter", "GeminiAdapter", ("GOOGLE_API_KEY",)),
+    "gemini": _ProviderEntry("src.llm.gemini_adapter", "GeminiAdapter", ("GOOGLE_API_KEY",), ("google_genai",)),
 }
 _MODEL_ENV = {
     AITask.SCORING: "SCORING_MODEL",
@@ -45,6 +47,21 @@ def set_adapter_override(adapter: LLMAdapter | None) -> None:
     """Inject an adapter (tests) that bypasses LLM Provider selection and key checks."""
     global _adapter_override
     _adapter_override = adapter
+
+
+def sdk_logger_names() -> tuple[str, ...]:
+    """Logger names of every LLM Provider SDK, so the CLI can quiet them without naming any."""
+    return tuple(name for entry in _REGISTRY.values() for name in entry.sdk_loggers)
+
+
+def describe_defaults(provider_name: str) -> dict:
+    """Name, display name and default Models of a named LLM Provider (no key needed)."""
+    adapter_class = _REGISTRY[provider_name].adapter_class()
+    return {
+        "provider": adapter_class.name,
+        "provider_display_name": adapter_class.display_name,
+        "models": {task.value: model for task, model in adapter_class.default_models.items()},
+    }
 
 
 def _active_adapter_class():

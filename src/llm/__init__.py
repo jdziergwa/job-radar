@@ -14,10 +14,12 @@ from src.llm.base import (
 from src.llm.resolver import (
     check_api_key,
     describe_active,
+    describe_defaults,
     get_adapter,
     load_model_overrides,
     resolve_model,
     resolve_provider_name,
+    sdk_logger_names,
     set_adapter_override,
     set_model_override,
 )
@@ -34,10 +36,12 @@ __all__ = [
     "Usage",
     "check_api_key",
     "describe_active",
+    "describe_defaults",
     "get_adapter",
     "load_model_overrides",
     "resolve_model",
     "resolve_provider_name",
+    "sdk_logger_names",
     "set_adapter_override",
     "set_model_override",
 ]
