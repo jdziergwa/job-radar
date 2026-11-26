@@ -90,9 +90,12 @@ def resolve_provider_name() -> str:
     if configured:
         keys = " and ".join(configured.values())
         raise LLMConfigError(f"Both {keys} are set. Set LLM_PROVIDER to {' or '.join(configured)}.")
-    # No key at all: default to Anthropic so the missing-key error names its env var.
-    logger.debug("No LLM API key set; defaulting LLM Provider to 'anthropic'")
-    return "anthropic"
+    keys = [entry.credential_envs[0] for entry in _REGISTRY.values()]
+    named = keys[0] if len(keys) == 1 else f"{', '.join(keys[:-1])} or {keys[-1]}"
+    raise LLMConfigError(
+        f"No LLM Provider API key found. Set {named} in your environment or .env file "
+        "(set LLM_PROVIDER to choose when both are set)."
+    )
 
 
 def check_api_key() -> None:

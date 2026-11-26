@@ -65,6 +65,8 @@ def test_reports_not_configured_when_key_missing(monkeypatch, client):
     assert response.status_code == 200
     assert body["configured"] is False
     assert "ANTHROPIC_API_KEY" in body["error"]
+    assert "GOOGLE_API_KEY" in body["error"]
+    assert "LLM_PROVIDER" in body["error"]
     assert body["models"] is None
 
 

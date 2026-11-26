@@ -70,6 +70,7 @@ def test_rate_limit_wait_prefers_retry_after_header():
 
 
 def test_score_job_retries_after_rate_limit_and_succeeds(monkeypatch):
+    monkeypatch.setenv("LLM_PROVIDER", "anthropic")
     sleeps: list[float] = []
 
     async def fake_sleep(delay: float):
@@ -115,6 +116,7 @@ def test_score_job_retries_after_rate_limit_and_succeeds(monkeypatch):
 
 
 def test_score_job_returns_helpful_message_after_persistent_rate_limits(monkeypatch):
+    monkeypatch.setenv("LLM_PROVIDER", "anthropic")
     sleeps: list[float] = []
 
     async def fake_sleep(delay: float):

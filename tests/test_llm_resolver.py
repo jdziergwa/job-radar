@@ -11,6 +11,7 @@ from src.llm import (
     resolve_provider_name,
     sdk_logger_names,
 )
+from src.llm.resolver import _REGISTRY
 from src.main import setup_logging
 
 ENV_VARS = [
@@ -23,6 +24,11 @@ ENV_VARS = [
 def _clean_env(monkeypatch):
     for name in ENV_VARS:
         monkeypatch.delenv(name, raising=False)
+
+
+@pytest.fixture
+def anthropic_provider(monkeypatch):
+    monkeypatch.setenv("LLM_PROVIDER", "anthropic")
 
 
 def test_llm_provider_defaults_to_anthropic_when_only_its_key_is_set(monkeypatch):
@@ -41,9 +47,22 @@ def test_unknown_llm_provider_is_rejected(monkeypatch):
         resolve_provider_name()
 
 
-def test_no_key_and_no_llm_provider_falls_back_to_anthropic_default():
-    # Keeps the existing behaviour: the missing-key error then names ANTHROPIC_API_KEY.
-    assert resolve_provider_name() == "anthropic"
+def test_no_key_and_no_llm_provider_asks_for_a_key_and_names_every_primary_key_env():
+    with pytest.raises(LLMConfigError, match="LLM_PROVIDER") as excinfo:
+        resolve_provider_name()
+    message = str(excinfo.value)
+    assert "ANTHROPIC_API_KEY" in message and "GOOGLE_API_KEY" in message
+    # Names track the registry: every entry's primary key env var appears.
+    assert all(entry.credential_envs[0] in message for entry in _REGISTRY.values())
+    with pytest.raises(LLMConfigError, match="GOOGLE_API_KEY"):
+        check_api_key()
+
+
+def test_missing_key_with_explicit_llm_provider_names_only_its_key(monkeypatch):
+    monkeypatch.setenv("LLM_PROVIDER", "gemini")
+    with pytest.raises(LLMConfigError, match="GOOGLE_API_KEY") as excinfo:
+        check_api_key()
+    assert "ANTHROPIC_API_KEY" not in str(excinfo.value)
 
 
 def test_missing_key_error_names_exact_env_var():
@@ -61,24 +80,24 @@ def test_check_api_key_accepts_anthropic_auth_token(monkeypatch):
     check_api_key()
 
 
-def test_default_models_per_task():
+def test_default_models_per_task(anthropic_provider):
     assert resolve_model(AITask.SCORING) == HAIKU_MODEL
     assert resolve_model(AITask.WIZARD) == SONNET_MODEL
     assert resolve_model(AITask.STATS) == HAIKU_MODEL
 
 
-def test_env_overrides_default(monkeypatch):
+def test_env_overrides_default(monkeypatch, anthropic_provider):
     monkeypatch.setenv("SCORING_MODEL", "claude-sonnet-4-5")
     assert resolve_model(AITask.SCORING) == "claude-sonnet-4-5"
 
 
-def test_settings_override_beats_env(monkeypatch):
+def test_settings_override_beats_env(monkeypatch, anthropic_provider):
     monkeypatch.setenv("SCORING_MODEL", "claude-env")
     result = resolve_model(AITask.SCORING, settings_overrides={AITask.SCORING: "claude-settings"})
     assert result == "claude-settings"
 
 
-def test_profile_model_beats_settings_and_env(monkeypatch):
+def test_profile_model_beats_settings_and_env(monkeypatch, anthropic_provider):
     monkeypatch.setenv("SCORING_MODEL", "claude-env")
     result = resolve_model(
         AITask.SCORING,
@@ -88,12 +107,12 @@ def test_profile_model_beats_settings_and_env(monkeypatch):
     assert result == "claude-profile"
 
 
-def test_blank_overrides_are_ignored(monkeypatch):
+def test_blank_overrides_are_ignored(monkeypatch, anthropic_provider):
     monkeypatch.setenv("WIZARD_MODEL", "  ")
     assert resolve_model(AITask.WIZARD, profile_model="") == SONNET_MODEL
 
 
-def test_model_from_another_llm_provider_fails_fast(monkeypatch):
+def test_model_from_another_llm_provider_fails_fast(monkeypatch, anthropic_provider):
     monkeypatch.setenv("SCORING_MODEL", "gemini-3.8-flash")
     with pytest.raises(LLMConfigError, match="gemini-3.8-flash"):
         resolve_model(AITask.SCORING)
