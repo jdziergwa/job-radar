@@ -68,6 +68,7 @@ job-radar/
 ├── api/
 │   ├── main.py
 │   ├── deps.py
+│   ├── llm_errors.py
 │   ├── background.py
 │   ├── models.py
 │   └── routers/

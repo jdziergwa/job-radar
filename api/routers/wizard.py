@@ -8,10 +8,10 @@ import re
 import fitz  # pymupdf
 from fastapi import APIRouter, HTTPException, UploadFile, File, Query
 from api.deps import PROFILES_DIR, get_store
+from api.llm_errors import llm_http_error, llm_http_errors
 from src.llm import (
     AITask,
     LLMAPIError,
-    LLMConfigError,
     LLMRateLimitError,
     get_adapter,
     load_model_overrides,
@@ -91,10 +91,8 @@ def _extract_json(text: str) -> str:
 
 def _wizard_adapter():
     """Active adapter and the wizard's Model; a missing key is a UI-readable 503."""
-    try:
+    with llm_http_errors():
         return get_adapter(), resolve_model(AITask.WIZARD, settings_overrides=load_model_overrides(get_store()))
-    except LLMConfigError as e:
-        raise HTTPException(status_code=503, detail=f"AI not configured: {e}")
 
 
 def _wizard_state_paths(profile_name: str) -> tuple[Path, Path, Path]:
@@ -282,18 +280,18 @@ async def analyze_cv(file: UploadFile = File(...)):
                     else:
                         raise HTTPException(status_code=502, detail=f"LLM returned invalid JSON after fix-up: {e}")
 
-            except LLMRateLimitError:
+            except LLMRateLimitError as e:
                 if attempt < max_retries:
                     wait = 2 ** (attempt + 1)
                     logger.warning(f"Rate limited, waiting {wait}s...")
                     await asyncio.sleep(wait)
                     continue
-                raise HTTPException(status_code=502, detail=f"{adapter.display_name} Rate Limit exceeded")
+                raise llm_http_error(e, adapter)
             except LLMAPIError as e:
                 if attempt < max_retries:
                     await asyncio.sleep(2 ** (attempt + 1))
                     continue
-                raise HTTPException(status_code=502, detail=f"{adapter.display_name} API Error: {e}")
+                raise llm_http_error(e, adapter)
             except Exception as e:
                 if isinstance(e, HTTPException): raise e
                 logger.error(f"Unexpected error in CV analysis: {e}")

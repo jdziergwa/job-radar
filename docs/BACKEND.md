@@ -8,6 +8,7 @@ FastAPI is the REST layer over the SQLite-backed store and the existing Python j
 api/
 ├── main.py           # FastAPI app setup, router registration, static export mount
 ├── deps.py           # Shared dependencies (store, profile paths)
+├── llm_errors.py     # LLM errors to HTTP responses (503 not configured, 502 LLM Provider failure)
 ├── models.py         # Pydantic request/response models
 ├── background.py     # Pipeline subprocess launcher + in-memory run state
 └── routers/

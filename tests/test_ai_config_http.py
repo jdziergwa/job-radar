@@ -109,6 +109,18 @@ def test_model_from_another_llm_provider_is_rejected_with_a_clear_message(monkey
     assert body["overrides"] == {}
 
 
+def test_missing_llm_provider_sdk_is_ai_not_configured(monkeypatch, client):
+    def _no_sdk(*_args):
+        raise ImportError("google-genai is not installed")
+
+    monkeypatch.setattr(ai_config_router, "set_model_override", _no_sdk)
+
+    response = client.put("/api/ai-config/models/wizard", json={"model": "gemini-custom"})
+
+    assert response.status_code == 503
+    assert response.json()["detail"] == "AI not configured: google-genai is not installed"
+
+
 def test_settings_override_beats_env_override(monkeypatch, client):
     _gemini(monkeypatch)
     monkeypatch.setenv("STATS_MODEL", "gemini-from-env")
