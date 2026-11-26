@@ -13,12 +13,18 @@ class ScoreBreakdownDimensions(BaseModel):
     growth_potential: int = 0
 
 
+class ScoringProvenanceResponse(BaseModel):
+    llm_provider: str
+    model: str
+
+
 class ScoreBreakdown(BaseModel):
     dimensions: ScoreBreakdownDimensions = ScoreBreakdownDimensions()
     key_matches: list[str] = []
     red_flags: list[str] = []
     fit_category: Optional[str] = None
     apply_priority: Literal["high", "medium", "low", "skip"] = "skip"
+    provenance: Optional[ScoringProvenanceResponse] = None
 
 
 class JobResponse(BaseModel):
@@ -81,6 +87,8 @@ class JobResponse(BaseModel):
                 )
                 if isinstance(raw, dict):
                     raw["apply_priority"] = apply_priority
+                    if raw.get("llm_provider") and raw.get("llm_model"):
+                        raw["provenance"] = {"llm_provider": raw["llm_provider"], "model": raw["llm_model"]}
                 breakdown = ScoreBreakdown(**raw)
             except (json.JSONDecodeError, Exception):
                 pass

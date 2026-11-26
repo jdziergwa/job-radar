@@ -1,6 +1,7 @@
 import pytest
 
 from api.routers import jobs as jobs_router
+from src.models import ScoringProvenance
 
 
 pytestmark = pytest.mark.api
@@ -186,3 +187,23 @@ def test_jobs_endpoints_expose_fresh_flag_since_previous_collection_run(store, s
 
     assert detail_response.status_code == 200
     assert detail_response.json()["is_fresh"] is True
+
+
+def test_job_response_carries_scoring_provenance_and_null_for_older_rows(
+    store, raw_job_factory, bind_store, client
+):
+    store.upsert_jobs([raw_job_factory(job_id="a"), raw_job_factory(job_id="b")])
+    with_id, without_id = [c.db_id for c in store.get_unscored()]
+    breakdown = {"tech_stack_match": 70}
+    store.update_score(
+        db_id=with_id, fit_score=70, reasoning="r", breakdown=breakdown,
+        provenance=ScoringProvenance("gemini", "gemini-2.5-flash"),
+    )
+    store.update_score(db_id=without_id, fit_score=70, reasoning="r", breakdown=breakdown)
+    bind_store(jobs_router)
+
+    with_provenance = client.get(f"/api/jobs/{with_id}").json()["score_breakdown"]
+    older_row = client.get(f"/api/jobs/{without_id}").json()["score_breakdown"]
+
+    assert with_provenance["provenance"] == {"llm_provider": "gemini", "model": "gemini-2.5-flash"}
+    assert older_row["provenance"] is None

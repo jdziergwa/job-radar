@@ -33,6 +33,7 @@ interface ScoreBreakdown {
   red_flags: string[]
   fit_category?: string | null
   apply_priority: ApplyPriority
+  provenance?: { llm_provider: string; model: string } | null // LLM Provider and Model that scored the job; null for jobs scored before provenance was recorded
 }
 
 interface JobResponse {

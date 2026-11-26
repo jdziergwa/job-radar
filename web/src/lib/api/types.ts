@@ -2032,6 +2032,14 @@ export interface components {
              * @enum {string}
              */
             apply_priority: "high" | "medium" | "low" | "skip";
+            provenance?: components["schemas"]["ScoringProvenanceResponse"] | null;
+        };
+        /** ScoringProvenanceResponse */
+        ScoringProvenanceResponse: {
+            /** Llm Provider */
+            llm_provider: string;
+            /** Model */
+            model: string;
         };
         /** ScoreBreakdownDimensions */
         ScoreBreakdownDimensions: {
