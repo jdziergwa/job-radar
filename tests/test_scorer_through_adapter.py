@@ -1,9 +1,11 @@
-import asyncio
+import pytest
 
 from src.llm import set_adapter_override
 from src.models import CandidateJob
 from src.scorer import score_jobs
 from tests.fake_llm import FakeLLMAdapter
+
+pytestmark = pytest.mark.anyio
 
 RESPONSE = """{"fit_score": 70, "reasoning": "ok",
 "breakdown": {"tech_stack_match": 70, "seniority_match": 70, "remote_location_fit": 70, "growth_potential": 70},
@@ -30,14 +32,14 @@ def _job() -> CandidateJob:
     )
 
 
-def test_score_jobs_uses_resolver_adapter_and_profile_model(monkeypatch):
+async def test_score_jobs_uses_resolver_adapter_and_profile_model(monkeypatch):
     fake = FakeLLMAdapter([RESPONSE])
     set_adapter_override(fake)
     try:
         store = _Store()
-        results = asyncio.run(score_jobs(
+        results = await score_jobs(
             [_job()], "profile", {"model": "profile-model", "min_request_interval_seconds": 0}, store,
-        ))
+        )
     finally:
         set_adapter_override(None)
 

@@ -497,15 +497,47 @@ Query parameters:
 
 The active LLM Provider and the Model for each AI Task. Never includes an API key. Always returns `200`; a missing or ambiguous key is reported in the body so the UI can show an "AI not configured" state.
 
+Query parameters:
+
+| Param | Type | Default | Notes |
+|---|---|---:|---|
+| `profile` | string | `default` | Profile name |
+
 ```ts
 interface AiConfig {
   configured: boolean
   provider: string | null               // "anthropic" | "gemini"
   provider_display_name: string | null  // e.g. "Gemini"
   models: { scoring: string; wizard: string; stats: string } | null
+  overrides: Record<string, string>     // Settings Model overrides by AI Task, e.g. { "scoring": "gemini-custom" }
   error: string | null                  // why AI is not configured
 }
 ```
+
+`models` is the Model each AI Task resolves to, after Settings overrides and env variables (a profile's `scoring.model` still wins at scoring time). `overrides` lists only the Settings overrides and is returned even when AI is not configured, so a stale override can still be cleared.
+
+### `PUT /api/ai-config/models/{task}`
+
+Sets or clears the Settings Model override for one AI Task. `task` is `scoring`, `wizard` or `stats`. API keys can't be set here.
+
+Query parameters:
+
+| Param | Type | Default | Notes |
+|---|---|---:|---|
+| `profile` | string | `default` | Profile name |
+
+Body:
+
+```json
+{ "model": "gemini-3.8-flash" }
+```
+
+An empty or `null` `model` clears the override. Returns the updated `AiConfig`.
+
+Errors:
+
+- `422` when the Model doesn't belong to the active LLM Provider (`detail` names both), or when the LLM Provider can't be resolved, such as both keys set without `LLM_PROVIDER`
+- `503` with an `AI not configured: ...` detail when the active LLM Provider's SDK isn't installed
 
 The wizard's `POST /api/wizard/analyze-cv` also returns `503` with an `AI not configured: ...` detail when the key is missing.
 

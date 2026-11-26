@@ -10,7 +10,7 @@ from src.llm.base import AITask, LLMAdapter, LLMConfigError
 
 _PROVIDERS = ("anthropic", "gemini")
 # Env vars that authenticate each LLM Provider, mirrored from the adapters so detection
-# does not import every vendor SDK.
+# does not import every LLM Provider's SDK.
 _CREDENTIAL_ENVS = {"anthropic": ("ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN"), "gemini": ("GOOGLE_API_KEY",)}
 _MODEL_ENV = {
     AITask.SCORING: "SCORING_MODEL",
@@ -24,13 +24,13 @@ _adapter_override: LLMAdapter | None = None
 
 
 def set_adapter_override(adapter: LLMAdapter | None) -> None:
-    """Inject an adapter (tests) that bypasses provider selection and key checks."""
+    """Inject an adapter (tests) that bypasses LLM Provider selection and key checks."""
     global _adapter_override
     _adapter_override = adapter
 
 
 def _adapter_class(name: str):
-    """Adapters are imported lazily so only the active vendor SDK is needed."""
+    """Adapters are imported lazily so only the active LLM Provider's SDK is needed."""
     if name == "anthropic":
         from src.llm.anthropic_adapter import AnthropicAdapter
 
@@ -92,8 +92,8 @@ def resolve_model(
     profile_model: str | None = None,
     settings_overrides: Mapping[AITask, str] | None = None,
 ) -> str:
-    """Precedence: profile YAML (scoring), Settings override, env, provider default."""
-    provider = _adapter_override or _adapter_class(resolve_provider_name())
+    """Precedence: profile YAML (scoring), Settings override, env, LLM Provider default."""
+    llm_provider = _adapter_override or _adapter_class(resolve_provider_name())
 
     candidates = [
         ("profile YAML", profile_model if task is AITask.SCORING else None),
@@ -103,19 +103,19 @@ def resolve_model(
     for source, candidate in candidates:
         model = (candidate or "").strip()
         if model:
-            _require_owned(provider, model)
-            logger.debug("Model for %s: '%s' (from %s, provider=%s)", task.value, model, source, provider.name)
+            _require_owned(llm_provider, model)
+            logger.debug("Model for %s: '%s' (from %s, LLM Provider '%s')", task.value, model, source, llm_provider.name)
             return model
-    model = provider.default_models[task]
-    logger.debug("Model for %s: '%s' (provider default, provider=%s)", task.value, model, provider.name)
+    model = llm_provider.default_models[task]
+    logger.debug("Model for %s: '%s' (default of LLM Provider '%s')", task.value, model, llm_provider.name)
     return model
 
 
-def _require_owned(provider, model: str) -> None:
-    if not provider.owns_model(model):
-        logger.error("Model '%s' does not belong to LLM Provider '%s'", model, provider.name)
+def _require_owned(llm_provider, model: str) -> None:
+    if not llm_provider.owns_model(model):
+        logger.error("Model '%s' does not belong to LLM Provider '%s'", model, llm_provider.name)
         raise LLMConfigError(
-            f"Model '{model}' does not belong to LLM Provider '{provider.name}'."
+            f"Model '{model}' does not belong to LLM Provider '{llm_provider.name}'."
         )
 
 
@@ -136,8 +136,8 @@ def set_model_override(store, task: AITask, model: str | None) -> None:
     """Set, or with an empty `model` clear, a Settings override. Rejects foreign Models."""
     model = (model or "").strip()
     if model:
-        provider = _adapter_override or _adapter_class(resolve_provider_name())
-        _require_owned(provider, model)
+        llm_provider = _adapter_override or _adapter_class(resolve_provider_name())
+        _require_owned(llm_provider, model)
     store.set_metadata(_OVERRIDE_KEY + task.value, model)
 
 
@@ -149,11 +149,11 @@ def describe_active(store=None) -> dict:
     """
     try:
         check_api_key()
-        provider = _adapter_override or _adapter_class(resolve_provider_name())
+        llm_provider = _adapter_override or _adapter_class(resolve_provider_name())
         overrides = load_model_overrides(store) if store is not None else None
         models = {task.value: resolve_model(task, settings_overrides=overrides) for task in AITask}
     except (LLMConfigError, ImportError) as e:
         return {"configured": False, "provider": None, "provider_display_name": None,
                 "models": None, "error": str(e)}
-    return {"configured": True, "provider": provider.name,
-            "provider_display_name": provider.display_name, "models": models, "error": None}
+    return {"configured": True, "provider": llm_provider.name,
+            "provider_display_name": llm_provider.display_name, "models": models, "error": None}

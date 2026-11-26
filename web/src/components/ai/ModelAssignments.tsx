@@ -13,8 +13,8 @@ const TASKS: { task: AiTask; label: string }[] = [
   { task: 'stats', label: 'Stats insight' },
 ]
 
-/** Per-task Model overrides for the active LLM Provider. Keys are env-only and never shown. */
-export function ModelSettings() {
+/** Model Assignments per AI Task, with Settings overrides. Keys are env-only and never shown. */
+export function ModelAssignments() {
   const loaded = useAiConfig()
   const [config, setConfig] = useState<AiConfig | null>(null)
   const [drafts, setDrafts] = useState<Record<string, string>>({})

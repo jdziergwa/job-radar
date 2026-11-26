@@ -77,7 +77,8 @@ job-radar/
 │       ├── pipeline.py
 │       ├── profile.py
 │       ├── wizard.py
-│       └── companies.py
+│       ├── companies.py
+│       └── ai_config.py
 ├── web/
 │   └── src/
 │       ├── app/

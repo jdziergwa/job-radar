@@ -1,4 +1,4 @@
-"""Vendor-neutral LLM adapter interface, shared types and errors."""
+"""LLM Provider-agnostic adapter interface, shared types and errors."""
 
 from __future__ import annotations
 
@@ -58,7 +58,7 @@ Message = dict[str, Any]
 
 @runtime_checkable
 class LLMAdapter(Protocol):
-    """One LLM Provider behind a vendor-neutral completion call."""
+    """One LLM Provider behind a completion call shared by every LLM Provider."""
 
     name: str
     display_name: str
@@ -94,7 +94,7 @@ class LLMAdapter(Protocol):
         `supports_json_schema(model)`, the answer is also constrained to `json_schema`;
         otherwise `json_schema` is ignored and callers must parse free-form JSON.
 
-        `timeout` is seconds for the request; None keeps the vendor SDK default.
+        `timeout` is seconds for the request; None keeps the LLM Provider SDK's default.
         Raises LLMRateLimitError or LLMAPIError.
         """
         ...

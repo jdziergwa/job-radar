@@ -35,7 +35,7 @@ import {
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { AiLabel } from '@/components/ai/AiLabel'
-import { ModelSettings } from '@/components/ai/ModelSettings'
+import { ModelAssignments } from '@/components/ai/ModelAssignments'
 import { useAiConfig } from '@/lib/ai/use-ai-config'
 
 export default function SettingsPage() {
@@ -459,7 +459,7 @@ export default function SettingsPage() {
             </TabsContent>
 
             <TabsContent value="ai" className="animate-in fade-in slide-in-from-top-2 duration-300">
-              <ModelSettings />
+              <ModelAssignments />
             </TabsContent>
           </Tabs>
         </div>

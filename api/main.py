@@ -1,12 +1,9 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from pathlib import Path
 from dotenv import load_dotenv
 
-from api.deps import get_store
-from api.models import AiConfig, AiModelOverrideRequest
-from src.llm import AITask, LLMConfigError, describe_active, load_model_overrides, set_model_override
 from src.log_file import attach_file_log
 
 # Load environment variables from .env
@@ -28,7 +25,7 @@ app.add_middleware(
 )
 
 # Routers will be registered here in later prompts (03-06)
-from api.routers import applications, jobs, stats, pipeline, profile, companies, wizard
+from api.routers import ai_config, applications, jobs, stats, pipeline, profile, companies, wizard
 app.include_router(jobs.router, prefix="/api", tags=["jobs"])
 app.include_router(applications.router, prefix="/api", tags=["applications"])
 app.include_router(stats.router, prefix="/api", tags=["stats"])
@@ -36,28 +33,7 @@ app.include_router(pipeline.router, prefix="/api", tags=["pipeline"])
 app.include_router(wizard.router, prefix="/api", tags=["wizard"])
 app.include_router(profile.router, prefix="/api", tags=["profile"])
 app.include_router(companies.router, prefix="/api", tags=["companies"])
-
-
-
-
-@app.get("/api/ai-config", tags=["config"], response_model=AiConfig)
-def ai_config(profile: str = "default"):
-    """Active LLM Provider and per-task Models. Never includes API keys."""
-    store = get_store(profile)
-    return {**describe_active(store), "overrides": {t.value: m for t, m in load_model_overrides(store).items()}}
-
-
-@app.put("/api/ai-config/models/{task}", tags=["config"], response_model=AiConfig)
-def set_ai_model(task: AITask, body: AiModelOverrideRequest, profile: str = "default"):
-    """Set or clear the Settings Model override for an AI Task."""
-    store = get_store(profile)
-    try:
-        set_model_override(store, task, body.model)
-    except LLMConfigError as e:
-        raise HTTPException(status_code=422, detail=str(e))
-    except ImportError as e:
-        raise HTTPException(status_code=503, detail=f"AI not configured: {e}")
-    return ai_config(profile)
+app.include_router(ai_config.router, prefix="/api", tags=["config"])
 
 
 @app.get("/api/health", tags=["health"])

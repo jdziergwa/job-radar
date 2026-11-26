@@ -21,23 +21,23 @@ def _clean_env(monkeypatch):
         monkeypatch.delenv(name, raising=False)
 
 
-def test_provider_defaults_to_anthropic_when_only_its_key_is_set(monkeypatch):
+def test_llm_provider_defaults_to_anthropic_when_only_its_key_is_set(monkeypatch):
     monkeypatch.setenv("ANTHROPIC_API_KEY", "k")
     assert resolve_provider_name() == "anthropic"
 
 
-def test_explicit_provider_wins(monkeypatch):
+def test_explicit_llm_provider_wins(monkeypatch):
     monkeypatch.setenv("LLM_PROVIDER", "anthropic")
     assert resolve_provider_name() == "anthropic"
 
 
-def test_unknown_provider_is_rejected(monkeypatch):
+def test_unknown_llm_provider_is_rejected(monkeypatch):
     monkeypatch.setenv("LLM_PROVIDER", "nope")
     with pytest.raises(LLMConfigError, match="nope"):
         resolve_provider_name()
 
 
-def test_no_key_and_no_provider_falls_back_to_anthropic_default():
+def test_no_key_and_no_llm_provider_falls_back_to_anthropic_default():
     # Keeps the existing behaviour: the missing-key error then names ANTHROPIC_API_KEY.
     assert resolve_provider_name() == "anthropic"
 
@@ -89,7 +89,7 @@ def test_blank_overrides_are_ignored(monkeypatch):
     assert resolve_model(AITask.WIZARD, profile_model="") == SONNET_MODEL
 
 
-def test_model_from_another_provider_fails_fast(monkeypatch):
+def test_model_from_another_llm_provider_fails_fast(monkeypatch):
     monkeypatch.setenv("SCORING_MODEL", "gemini-3.8-flash")
     with pytest.raises(LLMConfigError, match="gemini-3.8-flash"):
         resolve_model(AITask.SCORING)
@@ -107,7 +107,7 @@ def test_auto_detects_gemini_when_only_its_key_is_set(monkeypatch):
     assert resolve_provider_name() == "gemini"
 
 
-def test_both_keys_without_provider_asks_user_to_choose(monkeypatch):
+def test_both_keys_without_llm_provider_asks_user_to_choose(monkeypatch):
     monkeypatch.setenv("ANTHROPIC_API_KEY", "k")
     monkeypatch.setenv("GOOGLE_API_KEY", "k")
     with pytest.raises(LLMConfigError, match="LLM_PROVIDER"):
@@ -122,7 +122,7 @@ def test_anthropic_auth_token_counts_for_detection(monkeypatch):
         resolve_provider_name()
 
 
-def test_explicit_provider_resolves_ambiguity(monkeypatch):
+def test_explicit_llm_provider_resolves_ambiguity(monkeypatch):
     monkeypatch.setenv("ANTHROPIC_API_KEY", "k")
     monkeypatch.setenv("GOOGLE_API_KEY", "k")
     monkeypatch.setenv("LLM_PROVIDER", "gemini")

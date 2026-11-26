@@ -1,6 +1,6 @@
 # Job Providers — Extension Guide
 
-Job Radar collects jobs through pluggable **Job Providers** (in this document, "provider" always means Job Provider; for the AI vendor see **LLM Provider** in the README). The orchestrator in `src/main.py` stays source-agnostic: it loads one or more providers from `PROVIDER_REGISTRY`, calls `fetch_jobs()`, then runs the shared dedupe, hydration, pre-filter, scoring, and reporting stages.
+Job Radar collects jobs through pluggable **Job Providers** (in this document, "provider" always means Job Provider; for the service that serves the AI models, see **LLM Provider** in the README). The orchestrator in `src/main.py` stays source-agnostic: it loads one or more providers from `PROVIDER_REGISTRY`, calls `fetch_jobs()`, then runs the shared dedupe, hydration, pre-filter, scoring, and reporting stages.
 
 To add a new source:
 1. Implement the `JobProvider` protocol in a new module under `src/providers/`.

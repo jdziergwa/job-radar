@@ -1,4 +1,4 @@
-"""Vendor-neutral LLM access: adapter interface, adapters and the resolver."""
+"""LLM Provider-agnostic access to Models: adapter interface, adapters and the resolver."""
 
 from src.llm.base import (
     AITask,

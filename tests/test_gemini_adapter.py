@@ -1,4 +1,3 @@
-import asyncio
 import types
 
 import pytest
@@ -6,6 +5,8 @@ from google.genai import errors
 
 from src.llm import LLMAPIError, LLMRateLimitError
 from src.llm.gemini_adapter import THINKING_HEADROOM_TOKENS, GeminiAdapter
+
+pytestmark = pytest.mark.anyio
 
 
 class _Models:
@@ -25,13 +26,13 @@ def _adapter(models):
     return GeminiAdapter(client=types.SimpleNamespace(aio=types.SimpleNamespace(models=models)))
 
 
-def _complete(adapter, **overrides):
+async def _complete(adapter, **overrides):
     args = dict(
         system="sys", messages=[{"role": "user", "content": "hi"}],
         model="gemini-x", max_tokens=50, cache_system=True,
     )
     args.update(overrides)
-    return asyncio.run(adapter.complete(**args))
+    return await adapter.complete(**args)
 
 
 def _response(text="hello"):
@@ -43,9 +44,9 @@ def _response(text="hello"):
     )
 
 
-def test_request_shape_and_usage_extraction():
+async def test_request_shape_and_usage_extraction():
     models = _Models(_response())
-    result = _complete(_adapter(models), messages=[
+    result = await _complete(_adapter(models), messages=[
         {"role": "user", "content": "hi"}, {"role": "assistant", "content": "yo"},
     ])
     kwargs = models.kwargs
@@ -59,52 +60,52 @@ def test_request_shape_and_usage_extraction():
     assert (result.usage.input_tokens, result.usage.output_tokens, result.usage.cached_input_tokens) == (10, 5, 7)
 
 
-def test_cache_hint_is_ignored_safely():
+async def test_cache_hint_is_ignored_safely():
     with_hint = _Models(_response())
     without_hint = _Models(_response())
-    _complete(_adapter(with_hint), cache_system=True)
-    _complete(_adapter(without_hint), cache_system=False)
+    await _complete(_adapter(with_hint), cache_system=True)
+    await _complete(_adapter(without_hint), cache_system=False)
     assert with_hint.kwargs["config"] == without_hint.kwargs["config"]
 
 
-def test_json_output_requests_json_mime_type():
+async def test_json_output_requests_json_mime_type():
     models = _Models(_response('{"a": 1}'))
-    _complete(_adapter(models), json_output=True)
+    await _complete(_adapter(models), json_output=True)
     assert models.kwargs["config"].response_mime_type == "application/json"
 
 
-def test_rate_limit_maps_with_retry_after():
+async def test_rate_limit_maps_with_retry_after():
     response = types.SimpleNamespace(headers={"retry-after": "3"})
     error = errors.ClientError(429, {"error": {"message": "slow down"}}, response)
     with pytest.raises(LLMRateLimitError) as info:
-        _complete(_adapter(_Models(error=error)))
+        await _complete(_adapter(_Models(error=error)))
     assert info.value.retry_after == 3
 
 
-def test_other_api_errors_map_to_llm_api_error():
+async def test_other_api_errors_map_to_llm_api_error():
     error = errors.ServerError(500, {"error": {"message": "boom"}}, None)
     with pytest.raises(LLMAPIError):
-        _complete(_adapter(_Models(error=error)))
+        await _complete(_adapter(_Models(error=error)))
 
 
-def test_empty_response_is_an_api_error():
+async def test_empty_response_is_an_api_error():
     with pytest.raises(LLMAPIError):
-        _complete(_adapter(_Models(_response(text=None))))
+        await _complete(_adapter(_Models(_response(text=None))))
 
 
-def test_timeout_is_passed_as_http_options_milliseconds():
+async def test_timeout_is_passed_as_http_options_milliseconds():
     models = _Models(_response())
-    _complete(_adapter(models), timeout=2.5)
+    await _complete(_adapter(models), timeout=2.5)
     assert models.kwargs["config"].http_options.timeout == 2500
 
 
-def test_no_timeout_leaves_vendor_default():
+async def test_no_timeout_leaves_sdk_default():
     models = _Models(_response())
-    _complete(_adapter(models))
+    await _complete(_adapter(models))
     assert models.kwargs["config"].http_options is None
 
 
-def test_timed_out_request_maps_to_llm_api_error():
+async def test_timed_out_request_maps_to_llm_api_error():
     import httpx
     with pytest.raises(LLMAPIError):
-        _complete(_adapter(_Models(error=httpx.ReadTimeout("slow"))), timeout=1)
+        await _complete(_adapter(_Models(error=httpx.ReadTimeout("slow"))), timeout=1)
