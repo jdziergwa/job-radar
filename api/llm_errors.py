@@ -2,7 +2,8 @@ from contextlib import contextmanager
 
 from fastapi import HTTPException
 
-from src.llm import LLMAPIError, LLMConfigError, LLMRateLimitError
+from api.deps import get_store, profile_scoring_model
+from src.llm import LLMAPIError, LLMConfigError, LLMRateLimitError, check_scoring_config, load_model_overrides
 
 
 def llm_http_error(exc: Exception, adapter=None) -> HTTPException | None:
@@ -27,3 +28,12 @@ def llm_http_errors(adapter=None):
         if http_error is None:
             raise
         raise http_error from e
+
+
+def require_scoring_config(profile: str) -> None:
+    """Raise the 503 "AI not configured" before a run that will score is launched."""
+    with llm_http_errors():
+        check_scoring_config(
+            profile_model=profile_scoring_model(profile),
+            settings_overrides=load_model_overrides(get_store(profile)),
+        )

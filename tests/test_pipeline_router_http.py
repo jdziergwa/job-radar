@@ -81,7 +81,7 @@ def test_pipeline_endpoints_use_mocked_background_state(monkeypatch):
         assert aggregator_response.json()["total_jobs"] == 5000
 
 
-def test_pipeline_run_conflict_and_missing_status(monkeypatch):
+def test_pipeline_run_conflict_and_missing_status(fake_ai, monkeypatch):
     monkeypatch.setattr(pipeline_router.bg, "get_active", lambda profile: "run-busy")
     monkeypatch.setattr(pipeline_router.bg, "get_status", lambda run_id: {
         "status": "running",

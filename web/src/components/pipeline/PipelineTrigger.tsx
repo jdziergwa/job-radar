@@ -23,6 +23,7 @@ export function PipelineTrigger({ collapsed = false }: { collapsed?: boolean }) 
   const [activeRun, setActiveRun] = useState<{ running: boolean; run_id: string | null } | null>(null)
   const [selectedSources, setSelectedSources] = useState<string[]>([])
   const [dryRun, setDryRun] = useState(false)
+  const aiNotConfigured = aiConfig !== null && !aiConfig.configured
   const [isStarting, setIsStarting] = useState(false)
   const [providers, setProviders] = useState<ProviderInfo[]>([])
   const [aggregatorStatus, setAggregatorStatus] = useState<{
@@ -282,9 +283,9 @@ export function PipelineTrigger({ collapsed = false }: { collapsed?: boolean }) 
             </div>
 
             <div className="shrink-0 space-y-3 pt-8">
-              <Button onClick={handleStart} disabled={isStarting || selectedSources.length === 0} className="w-full h-14 text-lg font-bold gap-3 shadow-xl hover:scale-[1.01] active:scale-[0.99] transition-all">
+              <Button onClick={handleStart} disabled={isStarting || selectedSources.length === 0 || (!dryRun && aiNotConfigured)} className="w-full h-14 text-lg font-bold gap-3 shadow-xl hover:scale-[1.01] active:scale-[0.99] transition-all">
                 {isStarting ? <Loader2 className="h-5 w-5 animate-spin" /> : <Play className="h-5 w-5 fill-current" />}
-                {selectedSources.length === 0 ? 'Select a source' : (dryRun ? 'Start Dry Run' : 'Start Intelligence Pass')}
+                {selectedSources.length === 0 ? 'Select a source' : (dryRun ? 'Start Dry Run' : (aiNotConfigured ? 'AI not configured' : 'Start Intelligence Pass'))}
               </Button>
               {activeRun?.running && (
                 <Button onClick={() => setShowProgress(true)} variant="outline" className="w-full gap-2 italic">

@@ -203,3 +203,14 @@ def client():
 def _isolated_data_dir(tmp_path_factory, monkeypatch):
     """Keep API paths that open the app-side store off the real data/ directory."""
     monkeypatch.setattr("api.deps.DATA_DIR", tmp_path_factory.mktemp("appdata"))
+
+
+@pytest.fixture
+def fake_ai():
+    """Inject the fake LLM adapter so the AI-configured check passes without a key."""
+    from src.llm import set_adapter_override
+    from tests.fake_llm import FakeLLMAdapter
+
+    set_adapter_override(FakeLLMAdapter())
+    yield
+    set_adapter_override(None)

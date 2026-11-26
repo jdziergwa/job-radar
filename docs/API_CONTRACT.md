@@ -229,6 +229,8 @@ Allowed values: `new`, `scored`, `dismissed`, `archived`
 
 Triggers rescoring for a single job.
 
+Returns `503` with an `AI not configured: ...` detail, and starts nothing, when the active LLM Provider's key or scoring Model isn't set up.
+
 Response:
 
 ```json
@@ -262,6 +264,8 @@ Response:
 ### `POST /api/jobs/rescore`
 
 Triggers scoped bulk rescoring.
+
+Returns `503` with an `AI not configured: ...` detail, and starts nothing, when the active LLM Provider's key or scoring Model isn't set up.
 
 Request:
 
@@ -552,6 +556,8 @@ Returns available job source providers for the run dialog.
 ### `POST /api/pipeline/run`
 
 Starts the pipeline.
+
+A run that will score (`dry_run: false`) returns `503` with an `AI not configured: ...` detail, and starts nothing, when the active LLM Provider's key or scoring Model isn't set up. A dry run (fetch only) needs no key and is still accepted.
 
 Body:
 

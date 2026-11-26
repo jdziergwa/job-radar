@@ -64,7 +64,7 @@ def test_jobs_list_tracked_mode_filters(store, seed_sample_jobs, bind_store, cli
     assert [job["id"] for job in exclude_tracked.json()["jobs"]] == [other_id]
 
 
-def test_jobs_rescore_endpoints_use_mocked_pipeline_launcher(seed_sample_jobs, bind_store, client, monkeypatch):
+def test_jobs_rescore_endpoints_use_mocked_pipeline_launcher(fake_ai, seed_sample_jobs, bind_store, client, monkeypatch):
     scored_id = seed_sample_jobs()["job-1"]
     calls: list[dict] = []
 
