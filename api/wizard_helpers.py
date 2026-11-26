@@ -2,7 +2,6 @@ import yaml
 import re
 from typing import Dict, List, Any
 from api.models import CVAnalysisResponse
-from src.claude import HAIKU_MODEL
 
 # Region to regex mapping for common search targets
 REGION_MAPPING = {
@@ -865,7 +864,6 @@ def generate_profile_yaml(analysis: CVAnalysisResponse, preferences: Dict[str, A
         },
         "scoring_context": _build_scoring_context(analysis, preferences),
         "scoring": {
-            "model": HAIKU_MODEL,
             "max_description_chars": 20000,
             "min_score_to_display": 50,
             "concurrency": 25,

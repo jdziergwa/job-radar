@@ -301,3 +301,29 @@ def test_refine_profile_without_key_falls_back_to_drafts(monkeypatch):
     assert response.status_code == 200
     assert response.json()["profile_doc"] == "## Experience Summary\nOld"
     assert response.json()["changes_made"][0].startswith("Refinement skipped")
+
+
+def test_wizard_generated_profile_scores_with_the_gemini_default(monkeypatch, tmp_path):
+    for var in ("LLM_PROVIDER", "ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN", "SCORING_MODEL"):
+        monkeypatch.delenv(var, raising=False)
+    monkeypatch.setenv("GOOGLE_API_KEY", "gemini-key")
+    _write_example_profile(tmp_path)
+    monkeypatch.setattr(wizard_router, "PROFILES_DIR", tmp_path)
+    monkeypatch.setattr("api.deps.PROFILES_DIR", tmp_path)
+    payload = {
+        "profile_name": "default",
+        "cv_analysis": _sample_cv_analysis_payload(),
+        "user_preferences": _sample_user_preferences_payload(),
+    }
+
+    with TestClient(app) as client:
+        generated = client.post("/api/wizard/generate-profile", json=payload).json()
+        saved = client.post("/api/wizard/save-profile", json={**payload, **generated})
+        assert saved.status_code == 200
+
+        body = client.get("/api/ai-config", params={"profile": "default"}).json()
+
+    assert body["configured"] is True
+    assert body["provider"] == "gemini"
+    assert body["models"]["scoring"] == "gemini-3.8-flash"
+    assert body["scoring_from_profile"] is False

@@ -8,5 +8,6 @@
     "stats": "gemini-3.8-flash"
   },
   "overrides": {},
+  "scoring_from_profile": false,
   "error": null
 }

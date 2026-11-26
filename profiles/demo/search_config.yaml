@@ -178,7 +178,7 @@ scoring_context:
     match your strategic preferences: notable brand, strong product company, strong
     cv value.'
 scoring:
-  model: claude-haiku-5-5
+  # model: optional override; unset scoring uses the Settings override, SCORING_MODEL or the LLM Provider default
   max_description_chars: 12000
   min_score_to_display: 50
   concurrency: 10

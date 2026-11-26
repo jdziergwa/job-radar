@@ -643,6 +643,7 @@ class AiConfig(BaseModel):
     provider_display_name: str | None = None
     models: AiModels | None = None
     overrides: dict[str, str] = {}
+    scoring_from_profile: bool = False
     error: str | None = None
 
 

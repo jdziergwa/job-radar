@@ -18,6 +18,12 @@ def _bind_store(bind_store):
     bind_store(ai_config_router)
 
 
+@pytest.fixture(autouse=True)
+def _empty_profiles_dir(monkeypatch, tmp_path):
+    """No profile YAML unless a test writes one."""
+    monkeypatch.setattr("api.deps.PROFILES_DIR", tmp_path)
+
+
 def _clear_env(monkeypatch):
     for var in ("LLM_PROVIDER", "ANTHROPIC_API_KEY", "GOOGLE_API_KEY",
                 "SCORING_MODEL", "WIZARD_MODEL", "STATS_MODEL"):
@@ -142,3 +148,48 @@ def test_stale_override_from_another_llm_provider_can_still_be_cleared(monkeypat
     assert stale["overrides"] == {"scoring": "gemini-custom"}
     assert cleared["configured"] is True
     assert cleared["overrides"] == {}
+
+
+def _write_profile(tmp_path, monkeypatch, scoring_model):
+    profile_dir = tmp_path / "default"
+    profile_dir.mkdir()
+    scoring = f"scoring:\n  model: {scoring_model}\n" if scoring_model else "scoring:\n  concurrency: 5\n"
+    (profile_dir / "search_config.yaml").write_text(scoring, encoding="utf-8")
+    monkeypatch.setattr("api.deps.PROFILES_DIR", tmp_path)
+
+
+def test_profile_scoring_model_is_reported_and_flagged_as_from_profile(monkeypatch, client, tmp_path):
+    _clear_env(monkeypatch)
+    monkeypatch.setenv("GOOGLE_API_KEY", "k")
+    _write_profile(tmp_path, monkeypatch, "gemini-from-profile")
+
+    body = client.get("/api/ai-config").json()
+
+    assert body["configured"] is True
+    assert body["models"]["scoring"] == "gemini-from-profile"
+    assert body["scoring_from_profile"] is True
+    assert body["models"]["wizard"] == "gemini-3.1-pro-preview"
+
+
+def test_profile_without_scoring_model_is_not_flagged(monkeypatch, client, tmp_path):
+    _clear_env(monkeypatch)
+    monkeypatch.setenv("GOOGLE_API_KEY", "k")
+    _write_profile(tmp_path, monkeypatch, None)
+
+    body = client.get("/api/ai-config").json()
+
+    assert body["models"]["scoring"] == "gemini-3.8-flash"
+    assert body["scoring_from_profile"] is False
+
+
+def test_foreign_profile_scoring_model_is_reported_as_error_not_crash(monkeypatch, client, tmp_path):
+    _clear_env(monkeypatch)
+    monkeypatch.setenv("GOOGLE_API_KEY", "k")
+    _write_profile(tmp_path, monkeypatch, "claude-haiku-5-5")
+
+    response = client.get("/api/ai-config")
+
+    body = response.json()
+    assert response.status_code == 200
+    assert body["configured"] is False
+    assert "profile YAML `scoring.model`" in body["error"]

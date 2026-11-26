@@ -376,7 +376,7 @@ Browser will show a native Basic Auth prompt. For a single-user tool, this is su
 | `LLM_PROVIDER` | No | auto-detect | `anthropic` or `gemini`; required if both keys are set |
 | `ANTHROPIC_API_KEY` | One key required | — | Anthropic API key (LLM Provider `anthropic`) |
 | `GOOGLE_API_KEY` | One key required | — | Google Gemini API key (LLM Provider `gemini`) |
-| `SCORING_MODEL` | No | per LLM Provider | Model for scoring; overridden by profile `scoring.model` and the Settings page |
+| `SCORING_MODEL` | No | per LLM Provider | Model for scoring; used when the profile YAML sets no `scoring.model` and no Settings override exists |
 | `WIZARD_MODEL` | No | per LLM Provider | Model for CV wizard analysis |
 | `STATS_MODEL` | No | per LLM Provider | Model for stats insight |
 | `DATA_DIR` | No | `data` | Path to SQLite database directory |

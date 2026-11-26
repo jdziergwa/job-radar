@@ -68,17 +68,18 @@ export function ModelAssignments() {
   return (
     <div className="space-y-4 max-w-2xl">
       <p className="text-sm text-muted-foreground">
-        {config.provider_display_name} Models per AI Task. A profile&apos;s <code>scoring.model</code> still wins for scoring.
+        {config.provider_display_name} Models per AI Task. A profile&apos;s <code>scoring.model</code>, when set, wins for scoring.
         API keys are read from the environment and can&apos;t be edited here.
       </p>
       {TASKS.map(({ task, label }) => {
         const override = config.overrides?.[task]
+        const fromProfile = task === 'scoring' && config.scoring_from_profile
         const draft = drafts[task] ?? ''
         return (
           <div key={task} className="flex flex-wrap items-center gap-3">
             <div className="w-32 text-sm font-medium">{label}</div>
             <div className="w-56 text-xs text-muted-foreground truncate" title={config.models![task]}>
-              {config.models![task]}{override ? ' (Settings)' : ''}
+              {config.models![task]}{fromProfile ? ' (profile YAML)' : override ? ' (Settings)' : ''}
             </div>
             <Input
               className="w-64"

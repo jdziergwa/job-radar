@@ -876,6 +876,11 @@ export interface components {
             overrides: {
                 [key: string]: string;
             };
+            /**
+             * Scoring From Profile
+             * @default false
+             */
+            scoring_from_profile: boolean;
             /** Error */
             error?: string | null;
         };

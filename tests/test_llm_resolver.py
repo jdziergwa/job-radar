@@ -162,3 +162,12 @@ def test_foreign_settings_override_fails_fast(monkeypatch):
     monkeypatch.setenv("LLM_PROVIDER", "gemini")
     with pytest.raises(LLMConfigError, match="does not belong"):
         resolve_model(AITask.WIZARD, settings_overrides={AITask.WIZARD: "claude-sonnet-4-5"})
+
+
+def test_foreign_profile_model_error_names_profile_yaml_as_source(monkeypatch):
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.setenv("GOOGLE_API_KEY", "g")
+    monkeypatch.delenv("LLM_PROVIDER", raising=False)
+
+    with pytest.raises(LLMConfigError, match="from profile YAML `scoring.model`\\) does not belong to LLM Provider 'gemini'"):
+        resolve_model(AITask.SCORING, profile_model=HAIKU_MODEL)
