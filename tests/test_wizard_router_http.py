@@ -1,13 +1,16 @@
 import json
+import types
 from pathlib import Path
 
 import fitz
+import httpx
 import pytest
 
 from fastapi.testclient import TestClient
 
 from api.main import app
 from api.routers import wizard as wizard_router
+from src.llm import anthropic_adapter, gemini_adapter
 from src.llm import LLMAPIError, LLMRateLimitError, set_adapter_override
 from tests.fake_llm import FakeLLMAdapter
 
@@ -267,6 +270,47 @@ def test_analyze_cv_maps_rate_limit_and_api_errors_to_502(monkeypatch):
         response = _analyze(client)
     assert response.status_code == 502
     assert "API Error: boom" in response.json()["detail"]
+
+
+class _SDKConnectionError(Exception):
+    """Stands in for `anthropic.APIConnectionError`, which the test stub flattens to bare Exception."""
+
+
+async def _noop():
+    pass
+
+
+def _anthropic_adapter_failing_to_connect(monkeypatch):
+    async def create(**kwargs):
+        raise _SDKConnectionError("Connection error.")
+
+    monkeypatch.setattr(anthropic_adapter.anthropic, "APIError", _SDKConnectionError)
+    monkeypatch.setattr(anthropic_adapter.anthropic, "RateLimitError", type("_SDKRateLimitError", (Exception,), {}))
+    client = types.SimpleNamespace(messages=types.SimpleNamespace(create=create), close=_noop)
+    client.with_options = lambda **options: client
+    return anthropic_adapter.AnthropicAdapter(client=client)
+
+
+def _gemini_adapter_failing_to_connect(monkeypatch):
+    async def generate_content(**kwargs):
+        raise httpx.ConnectError("refused")
+
+    models = types.SimpleNamespace(generate_content=generate_content)
+    aio = types.SimpleNamespace(models=models, aclose=_noop)
+    return gemini_adapter.GeminiAdapter(client=types.SimpleNamespace(aio=aio))
+
+
+@pytest.mark.parametrize("make_adapter", [_anthropic_adapter_failing_to_connect, _gemini_adapter_failing_to_connect])
+def test_analyze_cv_maps_connection_failure_to_502_on_either_llm_provider(monkeypatch, make_adapter):
+    async def no_sleep(_):
+        pass
+
+    monkeypatch.setattr(wizard_router.asyncio, "sleep", no_sleep)
+    set_adapter_override(make_adapter(monkeypatch))
+    with TestClient(app) as client:
+        response = _analyze(client)
+    assert response.status_code == 502
+    assert "API Error" in response.json()["detail"]
 
 
 def test_analyze_cv_missing_key_returns_ai_not_configured(monkeypatch):

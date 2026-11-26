@@ -137,5 +137,34 @@ def test_classifier_maps_timeouts_to_llm_api_error():
     assert "timed out" in str(failure.error)
 
 
+def _connection_errors():
+    import aiohttp
+    import httpx
+    import httpx2
+    from google.auth import exceptions as auth_exceptions
+
+    return [
+        aiohttp.ClientConnectionError("refused"),
+        aiohttp.ServerDisconnectedError("dropped"),
+        httpx.ConnectError("refused"),
+        httpx.ReadError("reset"),
+        httpx2.ConnectError("refused"),
+        auth_exceptions.TransportError("no route"),
+    ]
+
+
+@pytest.mark.parametrize("error", _connection_errors(), ids=lambda e: type(e).__module__ + "." + type(e).__name__)
+async def test_connection_errors_map_to_llm_api_error(error):
+    with pytest.raises(LLMAPIError, match="Gemini connection error"):
+        await _complete(_adapter(_Models(error=error)))
+
+
+@pytest.mark.parametrize("error", _connection_errors(), ids=lambda e: type(e).__module__ + "." + type(e).__name__)
+def test_classifier_maps_connection_errors_to_llm_api_error(error):
+    failure = classify_error(error, 1.0, "gemini-x")
+    assert type(failure.error) is LLMAPIError
+    assert "Gemini connection error" in str(failure.error)
+
+
 def test_classifier_passes_other_exceptions_through():
     assert classify_error(ValueError("bug"), 1.0, "gemini-x") is None

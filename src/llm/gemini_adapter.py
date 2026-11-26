@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import asyncio
 import base64
+import importlib
 from typing import Any
 
 import httpx
 from google import genai
+from google.auth import exceptions as auth_exceptions
 from google.genai import errors, types
 
 from src.llm.base import (
@@ -37,6 +39,24 @@ def _to_parts(content) -> list[types.Part]:
     ]
 
 
+def _optional_exceptions(module: str, *names: str) -> tuple[type[Exception], ...]:
+    """Exception classes of an HTTP client the Gemini SDK may use, or none when it isn't installed."""
+    try:
+        imported = importlib.import_module(module)
+    except ImportError:
+        return ()
+    return tuple(getattr(imported, name) for name in names)
+
+
+# The SDK re-raises connection failures from whichever HTTP client it uses: aiohttp when installed,
+# otherwise httpx (or its httpx2 fork), plus google-auth transport errors.
+_CONNECTION_ERRORS = (
+    (httpx.TransportError, auth_exceptions.TransportError)
+    + _optional_exceptions("httpx2", "TransportError")
+    + _optional_exceptions("aiohttp", "ClientError")
+)
+
+
 def _part_kinds(parts) -> list[str]:
     """Name the populated field of each response part, e.g. ['thought', 'function_call']."""
     return [
@@ -46,7 +66,7 @@ def _part_kinds(parts) -> list[str]:
 
 
 def classify_error(error: Exception, elapsed: float, model: str) -> Failure | None:
-    """HTTP 429 becomes `LLMRateLimitError` with the retry-after header; other API errors and timeouts `LLMAPIError`."""
+    """HTTP 429 becomes `LLMRateLimitError` with the retry-after header; other API errors, timeouts and connection errors `LLMAPIError`."""
     if isinstance(error, errors.APIError):
         if error.code == 429:
             headers = getattr(getattr(error, "response", None), "headers", None)
@@ -63,6 +83,11 @@ def classify_error(error: Exception, elapsed: float, model: str) -> Failure | No
         return Failure(
             LLMAPIError(f"Gemini request timed out: {error}"),
             f"Gemini request timed out after {elapsed:.1f}s (model={model})",
+        )
+    if isinstance(error, _CONNECTION_ERRORS):
+        return Failure(
+            LLMAPIError(f"Gemini connection error: {error}"),
+            f"Gemini connection error after {elapsed:.1f}s (model={model}, {type(error).__name__}): {error}",
         )
     return None
 

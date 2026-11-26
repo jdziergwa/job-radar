@@ -140,11 +140,53 @@ class _SDKRateLimitError(_SDKAPIError):
     pass
 
 
+class _SDKConnectionError(_SDKAPIError):
+    pass
+
+
+class _SDKTimeoutError(_SDKConnectionError):
+    pass
+
+
 @pytest.fixture
 def sdk_errors(monkeypatch):
     """Stand in for the SDK's error hierarchy, which the test stub flattens to bare Exception."""
     monkeypatch.setattr(anthropic_adapter.anthropic, "APIError", _SDKAPIError)
     monkeypatch.setattr(anthropic_adapter.anthropic, "RateLimitError", _SDKRateLimitError)
+
+
+async def _complete_failing_with(error):
+    messages = types.SimpleNamespace(create=_raising(error))
+    adapter = AnthropicAdapter(client=types.SimpleNamespace(messages=messages))
+    return await adapter.complete(
+        system="sys", messages=[{"role": "user", "content": "hi"}], model=HAIKU_MODEL, max_tokens=50,
+    )
+
+
+def _raising(error):
+    async def create(**kwargs):
+        raise error
+
+    return create
+
+
+async def test_rate_limit_maps_with_retry_after(sdk_errors):
+    with pytest.raises(LLMRateLimitError) as info:
+        await _complete_failing_with(_SDKRateLimitError("slow down", 429, headers={"retry-after": "3"}))
+    assert info.value.retry_after == 3
+
+
+async def test_api_error_maps_to_llm_api_error(sdk_errors):
+    with pytest.raises(LLMAPIError) as info:
+        await _complete_failing_with(_SDKAPIError("boom"))
+    assert type(info.value) is LLMAPIError
+
+
+@pytest.mark.parametrize("error_class", [_SDKConnectionError, _SDKTimeoutError])
+async def test_connection_errors_and_timeouts_map_to_llm_api_error(sdk_errors, error_class):
+    with pytest.raises(LLMAPIError) as info:
+        await _complete_failing_with(error_class("Connection error."))
+    assert type(info.value) is LLMAPIError
 
 
 def test_classifier_maps_rate_limit_with_retry_after(sdk_errors):
