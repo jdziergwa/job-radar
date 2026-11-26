@@ -1,16 +1,34 @@
+import logging
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from pathlib import Path
 from dotenv import load_dotenv
 
+from src.llm import LLMConfigError, check_scoring_config
 from src.log_file import attach_file_log
 
 # Load environment variables from .env
 load_dotenv()
 attach_file_log()
 
+logger = logging.getLogger(__name__)
+
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    """Warn once if AI isn't configured; the API still starts so the UI can show it."""
+    try:
+        check_scoring_config()
+    except (LLMConfigError, ImportError) as error:
+        logger.warning("AI is not configured: %s", error)
+    yield
+
+
 app = FastAPI(
+    lifespan=lifespan,
     title="Job Radar API",
     version="1.0.0",
     description="REST API for Job Radar web interface",

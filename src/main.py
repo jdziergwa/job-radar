@@ -37,7 +37,7 @@ from src.reporter import (
     send_telegram,
     write_report,
 )
-from src.llm import AITask, LLMConfigError, check_api_key, load_model_overrides, resolve_model, sdk_logger_names
+from src.llm import LLMConfigError, check_scoring_config, load_model_overrides, sdk_logger_names
 from src.log_file import attach_file_log
 from src.scorer import score_jobs
 from src.store import Store
@@ -334,6 +334,23 @@ async def run() -> None:
     profile_doc = load_profile_doc(profile_dir)
     keywords_config = config.get("keywords", {})
 
+    scoring_step = 1 if args.rescore else 4
+    done_step = 2 if args.rescore else 5
+
+    # A run that will score checks its AI setup first, before any Job Provider is called.
+    if not args.dry_run:
+        try:
+            check_scoring_config(
+                profile_model=config.get("scoring", {}).get("model"),
+                settings_overrides=load_model_overrides(store),
+            )
+        except LLMConfigError as error:
+            error_msg = f"{error} Run stopped before fetching."
+            logger.error(error_msg)
+            if args.json_progress:
+                emit_progress(scoring_step, "Error", error_msg)
+            sys.exit(1)
+
     skip_collection = bool(args.job_id or args.rescore)
     aggregator_requested = not skip_collection and "aggregator" in args.source
     aggregator_version = None
@@ -571,10 +588,6 @@ async def run() -> None:
         if args.json_progress:
             emit_progress(0, "Starting", "Bypassing pre-filtering for rescore")
 
-    # Choose step indexing for JSON progress
-    scoring_step = 1 if args.rescore else 4
-    done_step = 2 if args.rescore else 5
-
     scan_stats = {
         "sources": companies_scanned,
         "total_market_jobs": len(raw_jobs),
@@ -604,20 +617,6 @@ async def run() -> None:
     if candidates:
         if args.json_progress:
             emit_progress(scoring_step, "Scoring", f"Starting LLM scoring for {len(candidates)} jobs", duration=timer.get_stage_duration())
-
-        try:
-            check_api_key()
-            resolve_model(
-                AITask.SCORING,
-                profile_model=config.get("scoring", {}).get("model"),
-                settings_overrides=load_model_overrides(store),
-            )
-        except LLMConfigError as error:
-            error_msg = f"{error} Scoring skipped."
-            logger.error(error_msg)
-            if args.json_progress:
-                emit_progress(scoring_step, "Error", error_msg)
-            sys.exit(1)
 
         def score_p_callback(curr, tot):
             if args.json_progress:

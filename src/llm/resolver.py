@@ -170,6 +170,18 @@ def set_model_override(store, task: AITask, model: str | None) -> None:
     store.set_metadata(_OVERRIDE_KEY + task.value, model)
 
 
+def check_scoring_config(
+    profile_model: str | None = None,
+    settings_overrides: Mapping[AITask, str] | None = None,
+) -> str:
+    """The one check that the AI setup can score: LLM Provider, key and an owned Model.
+
+    Returns the resolved scoring Model; raises LLMConfigError naming the problem.
+    """
+    check_api_key()
+    return resolve_model(AITask.SCORING, profile_model=profile_model, settings_overrides=settings_overrides)
+
+
 def describe_active(store=None, profile_model: str | None = None) -> dict:
     """Public, key-free view of the active LLM Provider and per-task Models.
 

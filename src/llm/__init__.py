@@ -13,6 +13,7 @@ from src.llm.base import (
 )
 from src.llm.resolver import (
     check_api_key,
+    check_scoring_config,
     describe_active,
     describe_defaults,
     get_adapter,
@@ -35,6 +36,7 @@ __all__ = [
     "Message",
     "Usage",
     "check_api_key",
+    "check_scoring_config",
     "describe_active",
     "describe_defaults",
     "get_adapter",
