@@ -3,8 +3,9 @@ import types
 import pytest
 
 from src.claude import HAIKU_MODEL, SONNET_MODEL
-from src.llm import LLMAPIError
-from src.llm.anthropic_adapter import AnthropicAdapter
+from src.llm import LLMAPIError, LLMRateLimitError
+from src.llm import anthropic_adapter
+from src.llm.anthropic_adapter import AnthropicAdapter, classify_error
 
 pytestmark = pytest.mark.anyio
 
@@ -127,3 +128,43 @@ async def test_no_timeout_leaves_sdk_defaults():
     client = _Client(_Messages())
     await _complete_with(client)
     assert client.options is None
+
+
+class _SDKAPIError(Exception):
+    def __init__(self, message, status_code=500, headers=None):
+        super().__init__(message)
+        self.status_code = status_code
+        self.response = types.SimpleNamespace(headers=headers) if headers is not None else None
+
+
+class _SDKRateLimitError(_SDKAPIError):
+    pass
+
+
+@pytest.fixture
+def sdk_errors(monkeypatch):
+    """Stand in for the SDK's error hierarchy, which the test stub flattens to bare Exception."""
+    monkeypatch.setattr(anthropic_adapter.anthropic, "APIError", _SDKAPIError)
+    monkeypatch.setattr(anthropic_adapter.anthropic, "RateLimitError", _SDKRateLimitError)
+
+
+def test_classifier_maps_rate_limit_with_retry_after(sdk_errors):
+    error = _SDKRateLimitError("slow down", 429, headers={"retry-after": "3"})
+    failure = classify_error(error, 1.0, HAIKU_MODEL)
+    assert isinstance(failure.error, LLMRateLimitError)
+    assert failure.error.retry_after == 3
+
+
+def test_classifier_maps_rate_limit_without_response_to_no_retry_after(sdk_errors):
+    failure = classify_error(_SDKRateLimitError("slow down", 429), 1.0, HAIKU_MODEL)
+    assert isinstance(failure.error, LLMRateLimitError)
+    assert failure.error.retry_after is None
+
+
+def test_classifier_maps_other_api_errors_to_llm_api_error(sdk_errors):
+    failure = classify_error(_SDKAPIError("boom"), 1.0, HAIKU_MODEL)
+    assert type(failure.error) is LLMAPIError
+
+
+def test_classifier_passes_other_exceptions_through(sdk_errors):
+    assert classify_error(ValueError("bug"), 1.0, HAIKU_MODEL) is None

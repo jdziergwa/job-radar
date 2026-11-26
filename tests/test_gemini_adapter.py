@@ -4,7 +4,7 @@ import pytest
 from google.genai import errors
 
 from src.llm import LLMAPIError, LLMRateLimitError
-from src.llm.gemini_adapter import THINKING_HEADROOM_TOKENS, GeminiAdapter
+from src.llm.gemini_adapter import THINKING_HEADROOM_TOKENS, GeminiAdapter, classify_error
 
 pytestmark = pytest.mark.anyio
 
@@ -109,3 +109,33 @@ async def test_timed_out_request_maps_to_llm_api_error():
     import httpx
     with pytest.raises(LLMAPIError):
         await _complete(_adapter(_Models(error=httpx.ReadTimeout("slow"))), timeout=1)
+
+
+def test_classifier_maps_429_to_rate_limit_with_retry_after():
+    response = types.SimpleNamespace(headers={"retry-after": "3"})
+    error = errors.ClientError(429, {"error": {"message": "slow down"}}, response)
+    failure = classify_error(error, 1.0, "gemini-x")
+    assert isinstance(failure.error, LLMRateLimitError)
+    assert failure.error.retry_after == 3
+
+
+def test_classifier_maps_429_without_headers_to_rate_limit_without_retry_after():
+    error = errors.ClientError(429, {"error": {"message": "slow down"}}, None)
+    assert classify_error(error, 1.0, "gemini-x").error.retry_after is None
+
+
+def test_classifier_maps_other_api_errors_to_llm_api_error():
+    error = errors.ServerError(500, {"error": {"message": "boom"}}, None)
+    failure = classify_error(error, 1.0, "gemini-x")
+    assert type(failure.error) is LLMAPIError
+
+
+def test_classifier_maps_timeouts_to_llm_api_error():
+    import httpx
+    failure = classify_error(httpx.ReadTimeout("slow"), 1.0, "gemini-x")
+    assert type(failure.error) is LLMAPIError
+    assert "timed out" in str(failure.error)
+
+
+def test_classifier_passes_other_exceptions_through():
+    assert classify_error(ValueError("bug"), 1.0, "gemini-x") is None

@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import logging
-import time
 from typing import Any
 
 import anthropic
@@ -12,15 +10,15 @@ from anthropic import AsyncAnthropic
 from src.claude import HAIKU_MODEL, SONNET_MODEL, message_text
 from src.llm.base import (
     AITask,
+    Failure,
     LLMAPIError,
     LLMRateLimitError,
     LLMResult,
     Message,
-    Usage,
+    Reading,
+    call_llm,
     parse_retry_after_seconds,
 )
-
-logger = logging.getLogger(__name__)
 
 # Models that run at low effort; Haiku also runs without extended thinking.
 _LOW_EFFORT_MODELS = {HAIKU_MODEL, SONNET_MODEL}
@@ -36,6 +34,54 @@ def _to_anthropic(message: Message) -> Message:
         for b in content
     ]
     return {**message, "content": blocks}
+
+
+def classify_error(error: Exception, elapsed: float, model: str) -> Failure | None:
+    """Rate limits become `LLMRateLimitError` with the retry-after header; other API errors `LLMAPIError`."""
+    if isinstance(error, anthropic.RateLimitError):
+        headers = getattr(getattr(error, "response", None), "headers", None)
+        return Failure(
+            LLMRateLimitError(str(error), parse_retry_after_seconds(headers)),
+            f"Anthropic rate limited after {elapsed:.1f}s (model={model}): {error}",
+        )
+    if isinstance(error, anthropic.APIError):
+        return Failure(
+            LLMAPIError(str(error)),
+            f"Anthropic API error after {elapsed:.1f}s (model={model}, "
+            f"status={getattr(error, 'status_code', None)}): {error}",
+        )
+    return None
+
+
+def read_response(response: Any, model: str, max_tokens: int) -> Reading:
+    """Read text and usage from a Messages response; truncated or empty ones are failures."""
+    usage = getattr(response, "usage", None)
+    stop_reason = getattr(response, "stop_reason", None)
+    summary = (
+        f"model={model} stop_reason={stop_reason} input_tokens={getattr(usage, 'input_tokens', None)} "
+        f"output_tokens={getattr(usage, 'output_tokens', None)} "
+        f"cache_read={getattr(usage, 'cache_read_input_tokens', None)} "
+        f"cache_write={getattr(usage, 'cache_creation_input_tokens', None)}"
+    )
+    warning = (
+        f"Anthropic response hit max_tokens={max_tokens} (model={model}) — output is likely truncated"
+        if stop_reason == "max_tokens" else None
+    )
+    counts = {
+        "input_tokens": getattr(usage, "input_tokens", 0),
+        "output_tokens": getattr(usage, "output_tokens", 0),
+        "cached_input_tokens": getattr(usage, "cache_read_input_tokens", 0),
+    }
+    try:
+        text = message_text(response)
+    except ValueError as error:
+        failure = Failure(
+            LLMAPIError(str(error)),
+            f"Anthropic response unusable (model={model}, stop_reason={stop_reason}): {error}",
+        )
+        failure.error.__cause__ = error
+        return Reading(summary, warning=warning, failure=failure, **counts)
+    return Reading(summary, text, warning=warning, **counts)
 
 
 class AnthropicAdapter:
@@ -91,61 +137,22 @@ class AnthropicAdapter:
 
         # A timeout is a hard cap: disable the SDK's own retries so they don't multiply it.
         client = self._client if timeout is None else self._client.with_options(timeout=timeout, max_retries=0)
-        logger.debug(
-            "Anthropic request: model=%s max_tokens=%d timeout=%s cache_system=%s system_chars=%d messages=%d",
-            model, max_tokens, timeout, cache_system, len(system), len(messages),
-        )
-        started = time.monotonic()
-        try:
-            response = await client.messages.create(
+        return await call_llm(
+            label="Anthropic",
+            model=model,
+            request_summary=(
+                f"model={model} max_tokens={max_tokens} timeout={timeout} cache_system={cache_system} "
+                f"system_chars={len(system)} messages={len(messages)}"
+            ),
+            send=lambda: client.messages.create(
                 model=model,
                 max_tokens=max_tokens,
                 system=[block],
                 messages=[_to_anthropic(m) for m in messages],
                 **self._request_options(model, json_schema),
-            )
-        except anthropic.RateLimitError as error:
-            headers = getattr(getattr(error, "response", None), "headers", None)
-            logger.warning("Anthropic rate limited after %.1fs (model=%s): %s", time.monotonic() - started, model, error)
-            raise LLMRateLimitError(str(error), parse_retry_after_seconds(headers)) from error
-        except anthropic.APIError as error:
-            logger.error(
-                "Anthropic API error after %.1fs (model=%s, status=%s): %s",
-                time.monotonic() - started, model, getattr(error, "status_code", None), error,
-            )
-            raise LLMAPIError(str(error)) from error
-        except Exception:
-            logger.exception("Anthropic call raised an unexpected error (model=%s)", model)
-            raise
-        elapsed = time.monotonic() - started
-
-        usage = getattr(response, "usage", None)
-        stop_reason = getattr(response, "stop_reason", None)
-        logger.debug(
-            "Anthropic response in %.1fs: model=%s stop_reason=%s input_tokens=%s output_tokens=%s "
-            "cache_read=%s cache_write=%s",
-            elapsed, model, stop_reason,
-            getattr(usage, "input_tokens", None), getattr(usage, "output_tokens", None),
-            getattr(usage, "cache_read_input_tokens", None), getattr(usage, "cache_creation_input_tokens", None),
-        )
-        if stop_reason == "max_tokens":
-            logger.warning(
-                "Anthropic response hit max_tokens=%d (model=%s) — output is likely truncated", max_tokens, model
-            )
-
-        try:
-            text = message_text(response)
-        except ValueError as error:
-            logger.error("Anthropic response unusable (model=%s, stop_reason=%s): %s", model, stop_reason, error)
-            raise LLMAPIError(str(error)) from error
-
-        return LLMResult(
-            text=text,
-            usage=Usage(
-                input_tokens=getattr(usage, "input_tokens", 0) or 0,
-                output_tokens=getattr(usage, "output_tokens", 0) or 0,
-                cached_input_tokens=getattr(usage, "cache_read_input_tokens", 0) or 0,
             ),
+            classify=classify_error,
+            read=lambda response, _elapsed: read_response(response, model, max_tokens),
         )
 
     async def aclose(self) -> None:
