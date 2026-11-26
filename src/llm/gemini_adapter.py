@@ -50,8 +50,6 @@ def _part_kinds(parts) -> list[str]:
 class GeminiAdapter:
     name = "gemini"
     display_name = "Gemini"
-    api_key_env = "GOOGLE_API_KEY"
-    credential_envs = ("GOOGLE_API_KEY",)
     default_models = {
         AITask.SCORING: "gemini-3.8-flash",
         AITask.WIZARD: "gemini-3.1-pro-preview",

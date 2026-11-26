@@ -62,9 +62,6 @@ class LLMAdapter(Protocol):
 
     name: str
     display_name: str
-    api_key_env: str
-    # Env vars that can each authenticate; `api_key_env` is the one named in messages.
-    credential_envs: tuple[str, ...]
     default_models: dict[AITask, str]
 
     def owns_model(self, model: str) -> bool:

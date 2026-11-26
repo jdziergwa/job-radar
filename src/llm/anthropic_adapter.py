@@ -41,8 +41,6 @@ def _to_anthropic(message: Message) -> Message:
 class AnthropicAdapter:
     name = "anthropic"
     display_name = "Anthropic"
-    api_key_env = "ANTHROPIC_API_KEY"
-    credential_envs = ("ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN")
     default_models = {
         AITask.SCORING: HAIKU_MODEL,
         AITask.WIZARD: SONNET_MODEL,

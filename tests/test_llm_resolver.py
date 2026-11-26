@@ -33,7 +33,7 @@ def test_explicit_llm_provider_wins(monkeypatch):
 
 def test_unknown_llm_provider_is_rejected(monkeypatch):
     monkeypatch.setenv("LLM_PROVIDER", "nope")
-    with pytest.raises(LLMConfigError, match="nope"):
+    with pytest.raises(LLMConfigError, match="nope.*Supported: anthropic, gemini"):
         resolve_provider_name()
 
 

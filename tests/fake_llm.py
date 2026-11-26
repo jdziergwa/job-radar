@@ -8,8 +8,6 @@ from src.llm import AITask, LLMResult
 class FakeLLMAdapter:
     name = "fake"
     display_name = "Fake"
-    api_key_env = "FAKE_API_KEY"
-    credential_envs = ("FAKE_API_KEY",)
     default_models = {task: "fake-model" for task in AITask}
 
     def __init__(self, outcomes=()):

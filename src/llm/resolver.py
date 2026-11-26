@@ -2,16 +2,34 @@
 
 from __future__ import annotations
 
+import importlib
 import logging
 import os
+from dataclasses import dataclass
 from typing import Mapping
 
 from src.llm.base import AITask, LLMAdapter, LLMConfigError
 
-_PROVIDERS = ("anthropic", "gemini")
-# Env vars that authenticate each LLM Provider, mirrored from the adapters so detection
-# does not import every LLM Provider's SDK.
-_CREDENTIAL_ENVS = {"anthropic": ("ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN"), "gemini": ("GOOGLE_API_KEY",)}
+
+@dataclass(frozen=True)
+class _ProviderEntry:
+    """One LLM Provider: lazy adapter import and the env vars that authenticate it."""
+
+    module: str
+    class_name: str
+    credential_envs: tuple[str, ...]  # the first is the one named in missing-key errors
+
+    def adapter_class(self):
+        """Imported lazily so only the active LLM Provider's SDK is needed."""
+        return getattr(importlib.import_module(self.module), self.class_name)
+
+
+_REGISTRY = {
+    "anthropic": _ProviderEntry(
+        "src.llm.anthropic_adapter", "AnthropicAdapter", ("ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN")
+    ),
+    "gemini": _ProviderEntry("src.llm.gemini_adapter", "GeminiAdapter", ("GOOGLE_API_KEY",)),
+}
 _MODEL_ENV = {
     AITask.SCORING: "SCORING_MODEL",
     AITask.WIZARD: "WIZARD_MODEL",
@@ -29,32 +47,24 @@ def set_adapter_override(adapter: LLMAdapter | None) -> None:
     _adapter_override = adapter
 
 
-def _adapter_class(name: str):
-    """Adapters are imported lazily so only the active LLM Provider's SDK is needed."""
-    if name == "anthropic":
-        from src.llm.anthropic_adapter import AnthropicAdapter
-
-        return AnthropicAdapter
-    if name == "gemini":
-        from src.llm.gemini_adapter import GeminiAdapter
-
-        return GeminiAdapter
-    raise LLMConfigError(f"Unsupported LLM_PROVIDER '{name}'.")
+def _active_adapter_class():
+    """The injected test adapter, or the active LLM Provider's adapter class."""
+    return _adapter_override or _REGISTRY[resolve_provider_name()].adapter_class()
 
 
 def resolve_provider_name() -> str:
     explicit = os.getenv("LLM_PROVIDER", "").strip().lower()
     if explicit:
-        if explicit not in _PROVIDERS:
-            supported = ", ".join(_PROVIDERS)
+        if explicit not in _REGISTRY:
+            supported = ", ".join(_REGISTRY)
             raise LLMConfigError(f"Unsupported LLM_PROVIDER '{explicit}'. Supported: {supported}.")
         logger.debug("LLM Provider '%s' chosen by LLM_PROVIDER", explicit)
         return explicit
 
     configured = {
         name: env
-        for name in _PROVIDERS
-        if (env := next((env for env in _CREDENTIAL_ENVS[name] if os.getenv(env)), None))
+        for name, entry in _REGISTRY.items()
+        if (env := next((env for env in entry.credential_envs if os.getenv(env)), None))
     }
     if len(configured) == 1:
         name, env = next(iter(configured.items()))
@@ -72,18 +82,16 @@ def check_api_key() -> None:
     """Raise LLMConfigError naming the exact missing env var."""
     if _adapter_override is not None:
         return
-    adapter_class = _adapter_class(resolve_provider_name())
-    if not any(os.getenv(env) for env in adapter_class.credential_envs):
-        logger.error("%s not found in environment or .env file", adapter_class.api_key_env)
-        raise LLMConfigError(f"{adapter_class.api_key_env} not found in environment or .env file.")
+    envs = _REGISTRY[resolve_provider_name()].credential_envs
+    if not any(os.getenv(env) for env in envs):
+        logger.error("%s not found in environment or .env file", envs[0])
+        raise LLMConfigError(f"{envs[0]} not found in environment or .env file.")
 
 
 def get_adapter() -> LLMAdapter:
     """Return the active adapter. Callers own it and should `await aclose()` it."""
-    if _adapter_override is not None:
-        return _adapter_override
     check_api_key()
-    return _adapter_class(resolve_provider_name())()
+    return _adapter_override or _active_adapter_class()()  # override is already an instance
 
 
 def resolve_model(
@@ -93,7 +101,7 @@ def resolve_model(
     settings_overrides: Mapping[AITask, str] | None = None,
 ) -> str:
     """Precedence: profile YAML (scoring), Settings override, env, LLM Provider default."""
-    llm_provider = _adapter_override or _adapter_class(resolve_provider_name())
+    llm_provider = _active_adapter_class()
 
     candidates = [
         ("profile YAML", profile_model if task is AITask.SCORING else None),
@@ -136,7 +144,7 @@ def set_model_override(store, task: AITask, model: str | None) -> None:
     """Set, or with an empty `model` clear, a Settings override. Rejects foreign Models."""
     model = (model or "").strip()
     if model:
-        llm_provider = _adapter_override or _adapter_class(resolve_provider_name())
+        llm_provider = _active_adapter_class()
         _require_owned(llm_provider, model)
     store.set_metadata(_OVERRIDE_KEY + task.value, model)
 
@@ -149,7 +157,7 @@ def describe_active(store=None) -> dict:
     """
     try:
         check_api_key()
-        llm_provider = _adapter_override or _adapter_class(resolve_provider_name())
+        llm_provider = _active_adapter_class()
         overrides = load_model_overrides(store) if store is not None else None
         models = {task.value: resolve_model(task, settings_overrides=overrides) for task in AITask}
     except (LLMConfigError, ImportError) as e:
