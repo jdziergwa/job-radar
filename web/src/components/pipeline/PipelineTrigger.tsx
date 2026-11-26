@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label'
 import { PipelineProgressDialog } from './PipelineProgressDialog'
 import type { components } from '@/lib/api/types'
 import { AiLabel } from '@/components/ai/AiLabel'
-import { aiTaskUnavailable, useAiConfig } from '@/lib/ai/use-ai-config'
+import { aiTaskBlock, useAiConfig } from '@/lib/ai/use-ai-config'
 
 type ProviderInfo = components['schemas']['ProviderInfo']
 
@@ -23,7 +23,8 @@ export function PipelineTrigger({ collapsed = false }: { collapsed?: boolean }) 
   const [activeRun, setActiveRun] = useState<{ running: boolean; run_id: string | null } | null>(null)
   const [selectedSources, setSelectedSources] = useState<string[]>([])
   const [dryRun, setDryRun] = useState(false)
-  const aiUnavailable = aiTaskUnavailable(aiConfig, 'scoring')
+  const aiBlock = aiTaskBlock(aiConfig, 'scoring')
+  const aiUnavailable = aiBlock?.reason ?? null
   const aiNotConfigured = aiUnavailable !== null
   const [isStarting, setIsStarting] = useState(false)
   const [providers, setProviders] = useState<ProviderInfo[]>([])
@@ -240,7 +241,7 @@ export function PipelineTrigger({ collapsed = false }: { collapsed?: boolean }) 
                       <div className="flex flex-col">
                         <span className={`text-sm font-bold ${!dryRun ? 'text-primary' : ''}`}>Intelligence Pass</span>
                         {aiUnavailable ? (
-                          <span className="text-[10px] text-amber-500 mt-0.5" title={aiUnavailable}>AI not configured · scoring unavailable</span>
+                          <span className="text-[10px] text-amber-500 mt-0.5" title={aiUnavailable}>{aiBlock?.label} · scoring unavailable</span>
                         ) : (
                           <span className="text-[10px] text-muted-foreground mt-0.5"><AiLabel config={aiConfig} task="scoring" /> · uses API credits</span>
                         )}
@@ -286,7 +287,7 @@ export function PipelineTrigger({ collapsed = false }: { collapsed?: boolean }) 
             <div className="shrink-0 space-y-3 pt-8">
               <Button onClick={handleStart} disabled={isStarting || selectedSources.length === 0 || (!dryRun && aiNotConfigured)} className="w-full h-14 text-lg font-bold gap-3 shadow-xl hover:scale-[1.01] active:scale-[0.99] transition-all">
                 {isStarting ? <Loader2 className="h-5 w-5 animate-spin" /> : <Play className="h-5 w-5 fill-current" />}
-                {selectedSources.length === 0 ? 'Select a source' : (dryRun ? 'Start Dry Run' : (aiNotConfigured ? 'AI not configured' : 'Start Intelligence Pass'))}
+                {selectedSources.length === 0 ? 'Select a source' : (dryRun ? 'Start Dry Run' : (aiBlock ? aiBlock.label : 'Start Intelligence Pass'))}
               </Button>
               {activeRun?.running && (
                 <Button onClick={() => setShowProgress(true)} variant="outline" className="w-full gap-2 italic">

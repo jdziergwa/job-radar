@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { api } from '@/lib/api/client'
-import { aiTaskUnavailable, useAiConfig } from '@/lib/ai/use-ai-config'
+import { aiTaskBlock, useAiConfig } from '@/lib/ai/use-ai-config'
 import type { components } from '@/lib/api/types'
 import { CompleteStageDialog } from '@/components/applications/CompleteStageDialog'
 import { NotesEditor } from '@/components/applications/NotesEditor'
@@ -123,7 +123,8 @@ export function JobDetailView({
   const [deleteImportedJobDialogOpen, setDeleteImportedJobDialogOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const aiConfig = useAiConfig()
-  const aiUnavailable = aiTaskUnavailable(aiConfig, 'scoring')
+  const aiBlock = aiTaskBlock(aiConfig, 'scoring')
+  const aiUnavailable = aiBlock?.reason ?? null
   const aiNotConfigured = aiUnavailable !== null
   const [rescoreRunId, setRescoreRunId] = useState<string | null>(null)
   const trackerMenuRef = useRef<HTMLDetailsElement | null>(null)
@@ -784,7 +785,7 @@ export function JobDetailView({
                             ) : (
                               <>
                                 <RotateCcw className="h-3.5 w-3.5 transition-transform duration-500 group-hover:rotate-180" />
-                                {aiNotConfigured ? 'AI not configured' : scoreActionLabel}
+                                {aiBlock ? aiBlock.label : scoreActionLabel}
                               </>
                             )}
                           </Button>
@@ -837,7 +838,7 @@ export function JobDetailView({
                           ) : (
                             <>
                               <RotateCcw className="h-3.5 w-3.5 transition-transform duration-500 group-hover:rotate-180" />
-                              {aiNotConfigured ? 'AI not configured' : scoreActionLabel}
+                              {aiBlock ? aiBlock.label : scoreActionLabel}
                             </>
                           )}
                         </Button>

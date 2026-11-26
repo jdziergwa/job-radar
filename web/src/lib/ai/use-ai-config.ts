@@ -26,12 +26,24 @@ export function useAiConfig(): AiConfig | null {
   return config
 }
 
+/** Why an AI Task can't run, as a short control label plus the full reason (for tooltips and toasts). */
+export type AiTaskBlock = { label: string; reason: string }
+
 /**
- * Why an AI Task can't run: AI isn't configured, or that task's Model has its own error.
- * Null when the task is available or the config is still loading. The one place every AI control decides this.
+ * What blocks an AI Task: AI isn't configured ("AI not configured"), or AI is configured but that
+ * task's Model has its own error ("Model unavailable"). Null when the task is available or the config
+ * is still loading. The one place every AI control decides this, including its label.
  */
-export function aiTaskUnavailable(config: AiConfig | null, task: AiTask): string | null {
+export function aiTaskBlock(config: AiConfig | null, task: AiTask): AiTaskBlock | null {
   if (config === null) return null
-  if (!config.configured) return `AI not configured: ${config.error ?? 'missing API key'}`
-  return config.model_errors?.[task] ?? null
+  if (!config.configured) {
+    return { label: 'AI not configured', reason: `AI not configured: ${config.error ?? 'missing API key'}` }
+  }
+  const modelError = config.model_errors?.[task]
+  return modelError ? { label: 'Model unavailable', reason: modelError } : null
+}
+
+/** The full reason an AI Task can't run, or null; see `aiTaskBlock` for the control label. */
+export function aiTaskUnavailable(config: AiConfig | null, task: AiTask): string | null {
+  return aiTaskBlock(config, task)?.reason ?? null
 }

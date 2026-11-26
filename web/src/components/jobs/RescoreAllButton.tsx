@@ -19,7 +19,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { PipelineProgressDialog } from '../pipeline/PipelineProgressDialog'
-import { aiTaskUnavailable, useAiConfig } from '@/lib/ai/use-ai-config'
+import { aiTaskBlock, useAiConfig } from '@/lib/ai/use-ai-config'
 
 type RescoreScope = 'failed_recent' | 'unscored_new' | 'recent_scored' | 'all'
 
@@ -78,7 +78,8 @@ export function RescoreAllButton({
   showText = true
 }: RescoreAllButtonProps) {
   const aiConfig = useAiConfig()
-  const aiUnavailable = aiTaskUnavailable(aiConfig, 'scoring')
+  const aiBlock = aiTaskBlock(aiConfig, 'scoring')
+  const aiUnavailable = aiBlock?.reason ?? null
   const aiNotConfigured = aiUnavailable !== null
   const [loading, setLoading] = useState(false)
   const [showProgress, setShowProgress] = useState(false)
@@ -179,7 +180,7 @@ export function RescoreAllButton({
       ) : (
         <RefreshCw className="h-4 w-4" />
       )}
-      {showText && (loading ? 'Rescoring...' : aiNotConfigured ? 'AI not configured' : 'Rescore')}
+      {showText && (loading ? 'Rescoring...' : aiBlock ? aiBlock.label : 'Rescore')}
     </Button>
   )
 
