@@ -19,6 +19,7 @@ from src.llm import (
     AITask,
     LLMAdapter,
     LLMAPIError,
+    LLMNonRetryableError,
     LLMRateLimitError,
     get_adapter,
     load_model_overrides,
@@ -78,15 +79,18 @@ _BATCH_SCORE_SCHEMA = _object_schema({
 
 
 class _ScoringRateLimiter:
-    """Coordinate request pacing and shared cooldowns across concurrent scorers."""
+    """Coordinate request pacing, shared cooldowns and a shared stop across concurrent scorers."""
 
     def __init__(self, min_interval_seconds: float = CALL_DELAY):
         self.min_interval_seconds = max(0.0, float(min_interval_seconds))
         self._next_request_at = 0.0
         self._cooldown_until = 0.0
+        self._stopped_by: LLMNonRetryableError | None = None
         self._lock = asyncio.Lock()
 
     async def wait_for_slot(self) -> None:
+        """Wait for this request's turn. Raises `LLMNonRetryableError` once scoring has been stopped."""
+        self._raise_if_stopped()
         delay = 0.0
         async with self._lock:
             now = asyncio.get_running_loop().time()
@@ -96,6 +100,17 @@ class _ScoringRateLimiter:
 
         if delay > 0:
             await asyncio.sleep(delay)
+            self._raise_if_stopped()
+
+    def stop(self, error: LLMNonRetryableError) -> None:
+        """Fail every later request with `error` instead of sending it."""
+        if self._stopped_by is None:
+            logger.error("Stopping scoring, retrying won't help: %s", error)
+            self._stopped_by = error
+
+    def _raise_if_stopped(self) -> None:
+        if self._stopped_by is not None:
+            raise LLMNonRetryableError(str(self._stopped_by))
 
     async def apply_cooldown(self, seconds: float) -> None:
         if seconds <= 0:
@@ -875,6 +890,12 @@ async def score_job(
                 await asyncio.sleep(wait)
             continue
 
+        except LLMNonRetryableError as error:
+            if rate_limiter is not None:
+                rate_limiter.stop(error)
+            logger.error("Not retrying %s; recording a failed attempt: %s", label, error)
+            return _error_scored_job(job, f"API_ERROR: {error}")
+
         except LLMAPIError as e:
             logger.warning(
                 "API error for %s @ %s: %s (attempt %d/%d)",
@@ -905,8 +926,9 @@ async def score_batch(
     rate_limiter: _ScoringRateLimiter | None = None,
 ) -> list[ScoredJob]:
     """Score multiple jobs at once (batching).
-    
-    If parsing fails, falls back to scoring each job individually.
+
+    If parsing fails, falls back to scoring each job individually. An error retrying
+    cannot fix fails every job in the batch without that fallback.
     """
     if len(jobs) == 1:
         # Optimization: delegate to score_job for single-item batches
@@ -1003,6 +1025,12 @@ async def score_batch(
                 logger.warning("Rate limited (batch), waiting %.1fs (attempt %d/%d)", wait, attempt, MAX_RETRIES)
                 await asyncio.sleep(wait)
             continue
+
+        except LLMNonRetryableError as error:
+            if rate_limiter is not None:
+                rate_limiter.stop(error)
+            logger.error("Not retrying batch db_ids=%s or its jobs; recording failed attempts: %s", batch_ids, error)
+            return [_error_scored_job(job, f"API_ERROR: {error}") for job in jobs]
 
         except (LLMAPIError, ValueError) as e:
             logger.warning("API/JSON error in batch db_ids=%s (attempt %d/%d): %s", batch_ids, attempt, MAX_RETRIES, e)

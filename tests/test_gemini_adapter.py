@@ -3,7 +3,7 @@ import types
 import pytest
 from google.genai import errors
 
-from src.llm import LLMAPIError, LLMRateLimitError
+from src.llm import LLMAPIError, LLMNonRetryableError, LLMRateLimitError
 from src.llm.gemini_adapter import THINKING_HEADROOM_TOKENS, GeminiAdapter, classify_error
 
 pytestmark = pytest.mark.anyio
@@ -128,6 +128,14 @@ def test_classifier_maps_other_api_errors_to_llm_api_error():
     error = errors.ServerError(500, {"error": {"message": "boom"}}, None)
     failure = classify_error(error, 1.0, "gemini-x")
     assert type(failure.error) is LLMAPIError
+
+
+@pytest.mark.parametrize("code", [401, 402, 403, 404], ids=["bad-key", "no-credit", "no-access", "unknown-model"])
+def test_classifier_maps_errors_retrying_cannot_fix_to_non_retryable(code):
+    error = errors.ClientError(code, {"error": {"message": "Your prepayment credits are depleted."}}, None)
+    failure = classify_error(error, 1.0, "gemini-x")
+    assert isinstance(failure.error, LLMNonRetryableError)
+    assert "credits are depleted" in str(failure.error)
 
 
 def test_classifier_maps_timeouts_to_llm_api_error():

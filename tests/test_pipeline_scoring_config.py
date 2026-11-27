@@ -1,3 +1,4 @@
+import json
 import logging
 import sys
 
@@ -6,7 +7,8 @@ from fastapi.testclient import TestClient
 
 import src.main as main_module
 from api.main import app
-from src.llm import LLMConfigError
+from src.llm import LLMNonRetryableError, set_adapter_override
+from tests.fake_llm import FakeLLMAdapter
 
 
 class _CountingProvider:
@@ -83,6 +85,21 @@ async def test_missing_sdk_prints_the_clear_message_and_stops_before_fetching(mo
     assert exit_info.value.code == 1
     assert provider.fetches == 0
     assert "pip install google-genai" in caplog.text
+
+
+@pytest.mark.anyio
+async def test_failed_scoring_tells_the_web_run_why(monkeypatch, raw_job_factory, capsys):
+    _setup(monkeypatch, [raw_job_factory()], argv_extra=["--json-progress"])
+    monkeypatch.setattr(main_module, "print_results", lambda *a, **k: None)
+    set_adapter_override(FakeLLMAdapter([LLMNonRetryableError("402 Your prepayment credits are depleted.")]))
+    try:
+        await main_module.run()
+    finally:
+        set_adapter_override(None)
+
+    events = [json.loads(line)["progress"] for line in capsys.readouterr().out.splitlines() if line.startswith("{")]
+    assert events[-1]["name"] == "Done"
+    assert "credits are depleted" in events[-1]["detail"]
 
 
 @pytest.mark.anyio

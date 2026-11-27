@@ -15,6 +15,7 @@ from src.llm.base import (
     LLMResult,
     Message,
     Reading,
+    api_error_for_status,
     call_llm,
     parse_retry_after_seconds,
 )
@@ -51,7 +52,8 @@ def _to_anthropic(message: Message) -> Message:
 
 
 def classify_error(error: Exception, elapsed: float, model: str) -> Failure | None:
-    """Rate limits become `LLMRateLimitError` with the retry-after header; other API errors `LLMAPIError`."""
+    """Rate limits become `LLMRateLimitError` with the retry-after header; 401/402/403/404 `LLMNonRetryableError`;
+    other API errors `LLMAPIError`."""
     if isinstance(error, anthropic.RateLimitError):
         headers = getattr(getattr(error, "response", None), "headers", None)
         return Failure(
@@ -60,7 +62,7 @@ def classify_error(error: Exception, elapsed: float, model: str) -> Failure | No
         )
     if isinstance(error, anthropic.APIError):
         return Failure(
-            LLMAPIError(str(error)),
+            api_error_for_status(str(error), getattr(error, "status_code", None)),
             f"Anthropic API error after {elapsed:.1f}s (model={model}, "
             f"status={getattr(error, 'status_code', None)}): {error}",
         )

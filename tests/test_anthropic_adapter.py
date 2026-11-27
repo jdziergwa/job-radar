@@ -2,7 +2,7 @@ import types
 
 import pytest
 
-from src.llm import LLMAPIError, LLMRateLimitError
+from src.llm import LLMAPIError, LLMNonRetryableError, LLMRateLimitError
 from src.llm import anthropic_adapter
 from src.llm.anthropic_adapter import HAIKU_MODEL, SONNET_MODEL, AnthropicAdapter, classify_error
 
@@ -205,6 +205,13 @@ def test_classifier_maps_rate_limit_without_response_to_no_retry_after(sdk_error
 def test_classifier_maps_other_api_errors_to_llm_api_error(sdk_errors):
     failure = classify_error(_SDKAPIError("boom"), 1.0, HAIKU_MODEL)
     assert type(failure.error) is LLMAPIError
+
+
+@pytest.mark.parametrize("status_code", [401, 402, 403, 404], ids=["bad-key", "no-credit", "no-access", "unknown-model"])
+def test_classifier_maps_errors_retrying_cannot_fix_to_non_retryable(sdk_errors, status_code):
+    failure = classify_error(_SDKAPIError("Your credit balance is too low.", status_code), 1.0, HAIKU_MODEL)
+    assert isinstance(failure.error, LLMNonRetryableError)
+    assert "credit balance is too low" in str(failure.error)
 
 
 def test_classifier_passes_other_exceptions_through(sdk_errors):

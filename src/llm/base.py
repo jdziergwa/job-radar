@@ -42,6 +42,21 @@ class LLMAPIError(LLMError):
     """Any other LLM Provider API failure."""
 
 
+class LLMNonRetryableError(LLMAPIError):
+    """The LLM Provider refused the request in a way retrying cannot fix: a bad key, no credit, no access or an unknown Model."""
+
+
+# HTTP statuses both LLM Providers use for the refusals in `LLMNonRetryableError`.
+_NON_RETRYABLE_STATUS_CODES = frozenset({401, 402, 403, 404})
+
+
+def api_error_for_status(message: str, status: int | None) -> LLMAPIError:
+    """The shared error for an LLM Provider HTTP error with this status."""
+    if status in _NON_RETRYABLE_STATUS_CODES:
+        return LLMNonRetryableError(message)
+    return LLMAPIError(message)
+
+
 @dataclass(frozen=True)
 class Usage:
     input_tokens: int = 0

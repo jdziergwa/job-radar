@@ -640,7 +640,8 @@ async def run() -> None:
 
         # 6. Report
         successful_scores = [job for job in scored if job.scoring_error is None]
-        failed_count = len(scored) - len(successful_scores)
+        failed = [job for job in scored if job.scoring_error is not None]
+        failed_count = len(failed)
         scan_stats["scored"] = len(successful_scores)
         scan_stats["scoring_failed"] = failed_count
         scan_stats["total_duration"] = format_duration(timer.get_total_duration())
@@ -648,7 +649,9 @@ async def run() -> None:
 
         if failed_count:
             logger.warning("Scoring failed for %d jobs. Retry with --rescore --rescore-scope failed_recent.", failed_count)
-            warnings.append(f"{failed_count} scoring attempts failed and can be retried.")
+            warnings.append(
+                f"{failed_count} scoring attempts failed and can be retried. First error: {failed[0].scoring_error}"
+            )
 
         good_matches = [j for j in successful_scores if j.fit_score >= args.min_score]
         good_matches.sort(key=lambda j: j.fit_score, reverse=True)

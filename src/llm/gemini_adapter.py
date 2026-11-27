@@ -20,6 +20,7 @@ from src.llm.base import (
     LLMResult,
     Message,
     Reading,
+    api_error_for_status,
     call_llm,
     parse_retry_after_seconds,
 )
@@ -66,7 +67,8 @@ def _part_kinds(parts) -> list[str]:
 
 
 def classify_error(error: Exception, elapsed: float, model: str) -> Failure | None:
-    """HTTP 429 becomes `LLMRateLimitError` with the retry-after header; other API errors, timeouts and connection errors `LLMAPIError`."""
+    """HTTP 429 becomes `LLMRateLimitError` with the retry-after header; 401/402/403/404 `LLMNonRetryableError`;
+    other API errors, timeouts and connection errors `LLMAPIError`."""
     if isinstance(error, errors.APIError):
         if error.code == 429:
             headers = getattr(getattr(error, "response", None), "headers", None)
@@ -75,7 +77,7 @@ def classify_error(error: Exception, elapsed: float, model: str) -> Failure | No
                 f"Gemini rate limited after {elapsed:.1f}s (model={model}): {error}",
             )
         return Failure(
-            LLMAPIError(str(error)),
+            api_error_for_status(str(error), error.code),
             f"Gemini API error after {elapsed:.1f}s (model={model}, code={error.code}, "
             f"status={getattr(error, 'status', None)}): {error}",
         )
