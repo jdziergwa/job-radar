@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react'
 import { api } from '@/lib/api/client'
+import { API_BASE_URL } from '@/lib/api/base-url'
 import { BASE_PATH, IS_DEMO } from '@/lib/demo-mode'
 import { QuickStartWizard } from '@/components/wizard/QuickStartWizard'
 import { WizardData } from '@/components/wizard/types'
@@ -54,7 +55,7 @@ export default function SettingsPage() {
     try {
       const stateUrl = IS_DEMO
         ? `${BASE_PATH}/demo-data/wizard-state.json`
-        : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/wizard/state?profile=default`
+        : `${API_BASE_URL}/api/wizard/state?profile=default`
       const response = await fetch(stateUrl)
       if (!response.ok) {
         throw new Error('Failed to load saved wizard state')

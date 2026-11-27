@@ -312,9 +312,10 @@ Key configuration points:
 - demo mode swaps normal API fetches for `demo-fetch.ts` lookups
 
 Important env shape:
-- `NEXT_PUBLIC_API_URL`
-  - in local development this usually points to `http://localhost:8000`
-  - in production it can be empty so the app uses same-origin API calls
+- `NEXT_PUBLIC_API_URL` (resolved in `src/lib/api/base-url.ts`)
+  - unset under `next dev`: API calls go to `http://localhost:8000`
+  - unset in a production build: API calls go to the page's own origin, so the export works from any host
+  - set (even to an empty string): that value is used as is
 
 The typed client should remain the default integration path. Components should not call `fetch` directly unless there is a very specific need.
 
