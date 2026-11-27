@@ -379,7 +379,7 @@ Browser will show a native Basic Auth prompt. For a single-user tool, this is su
 | `APP_PASSWORD` | No | — | Enables HTTP Basic Auth if set |
 | `TELEGRAM_BOT_TOKEN` | No | — | Telegram notifications (optional) |
 | `TELEGRAM_CHAT_ID` | No | — | Telegram chat ID (optional) |
-| `NEXT_PUBLIC_API_URL` | No | `""` | API base URL for frontend (empty = same origin) |
+| `NEXT_PUBLIC_API_URL` | No | see description | API base URL for the frontend, read at build time. Unset: `http://localhost:8000` under `next dev`, the page's own origin in a production build. Set it empty to force the page's own origin |
 
 ---
 
