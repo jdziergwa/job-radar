@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { api } from '@/lib/api/client'
+import { aiTaskBlock, useAiConfig } from '@/lib/ai/use-ai-config'
 import type { components } from '@/lib/api/types'
 import { CompleteStageDialog } from '@/components/applications/CompleteStageDialog'
 import { NotesEditor } from '@/components/applications/NotesEditor'
@@ -121,6 +122,10 @@ export function JobDetailView({
   const [negativeOutcomeInitialStatus, setNegativeOutcomeInitialStatus] = useState<ApplicationStatus | null>(null)
   const [deleteImportedJobDialogOpen, setDeleteImportedJobDialogOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const aiConfig = useAiConfig()
+  const aiBlock = aiTaskBlock(aiConfig, 'scoring')
+  const aiUnavailable = aiBlock?.reason ?? null
+  const aiNotConfigured = aiUnavailable !== null
   const [rescoreRunId, setRescoreRunId] = useState<string | null>(null)
   const trackerMenuRef = useRef<HTMLDetailsElement | null>(null)
   const timelineScrollRef = useRef<HTMLDivElement | null>(null)
@@ -571,7 +576,7 @@ export function JobDetailView({
   const hasScore = job.fit_score != null
   const scoreActionLabel = hasScore ? 'Rescore' : 'Score'
   const scoreActionInProgressLabel = hasScore ? 'Rescoring...' : 'Scoring...'
-  const scoreActionTooltip = hasScore ? 'Rerun AI intelligence pass for this job' : 'Run AI intelligence pass for this job'
+  const scoreActionTooltip = aiUnavailable ?? (hasScore ? 'Rerun AI intelligence pass for this job' : 'Run AI intelligence pass for this job')
   const scoreReasoning = job.score_reasoning || 'No detailed reasoning provided.'
   const hasJobUrl = hasExternalJobUrl(job.url)
   const trackerStatusLabel = job.application_status ? getApplicationStageLabel(job.application_status) : null
@@ -768,7 +773,7 @@ export function JobDetailView({
                             {...triggerProps}
                             variant="outline"
                             size="sm"
-                            disabled={!!rescoreRunId}
+                            disabled={!!rescoreRunId || aiNotConfigured}
                             onClick={handleRescore}
                             className="h-8 shrink-0 self-start gap-2 rounded-full border-primary/20 px-3 text-[10px] font-bold uppercase tracking-wider text-muted-foreground shadow-sm transition-all hover:border-primary/40 hover:bg-primary/5 hover:text-primary disabled:opacity-70"
                           >
@@ -780,7 +785,7 @@ export function JobDetailView({
                             ) : (
                               <>
                                 <RotateCcw className="h-3.5 w-3.5 transition-transform duration-500 group-hover:rotate-180" />
-                                {scoreActionLabel}
+                                {aiBlock ? aiBlock.label : scoreActionLabel}
                               </>
                             )}
                           </Button>
@@ -821,7 +826,7 @@ export function JobDetailView({
                           {...triggerProps}
                           variant="outline"
                           size="sm"
-                          disabled={!!rescoreRunId}
+                          disabled={!!rescoreRunId || aiNotConfigured}
                           onClick={handleRescore}
                           className="h-8 gap-2 rounded-full border-primary/20 px-3 text-[10px] font-bold uppercase tracking-wider text-muted-foreground shadow-sm transition-all hover:border-primary/40 hover:bg-primary/5 hover:text-primary disabled:opacity-70"
                         >
@@ -833,7 +838,7 @@ export function JobDetailView({
                           ) : (
                             <>
                               <RotateCcw className="h-3.5 w-3.5 transition-transform duration-500 group-hover:rotate-180" />
-                              {scoreActionLabel}
+                              {aiBlock ? aiBlock.label : scoreActionLabel}
                             </>
                           )}
                         </Button>

@@ -5,8 +5,11 @@ import { Sparkles, PenLine, CheckCircle2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 import { StepProps } from '../types'
+import { AiLabel } from '@/components/ai/AiLabel'
+import { useAiConfig } from '@/lib/ai/use-ai-config'
 
 export function ChoosePath({ onNext, onBack, onUpdate, data }: StepProps) {
+  const aiConfig = useAiConfig()
   return (
     <div className="flex flex-col gap-6 py-2 animate-in fade-in slide-in-from-bottom-4 duration-500 w-full">
       <div className="text-center space-y-1 bg-background/50 py-4 -mt-4 border-b border-border/10 mb-2 w-full">
@@ -41,7 +44,7 @@ export function ChoosePath({ onNext, onBack, onUpdate, data }: StepProps) {
             </p>
           </div>
           <div className="mt-4 pt-4 border-t border-border/50 flex items-center justify-between gap-3 text-[11px]">
-            <span className="font-medium text-muted-foreground/70">Claude Sonnet</span>
+            <AiLabel config={aiConfig} task="wizard" className="font-medium text-muted-foreground/70" />
             <span className="font-medium text-primary/70 text-right">~2 AI calls, est. $0.15</span>
           </div>
         </button>

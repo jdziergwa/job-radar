@@ -1,27 +1,32 @@
-"""LLM scoring via Claude API — sends candidate jobs for fit assessment.
+"""LLM scoring — sends candidate jobs for fit assessment through the LLM adapter.
 
-Uses anthropic SDK with prompt caching. System prompt (scoring instructions +
-profile doc) is cached; user message (job posting) changes per call.
+The system prompt (scoring instructions + profile doc) is marked cacheable;
+the user message (job posting) changes per call.
 """
 
 from __future__ import annotations
 
 import asyncio
-import email.utils
 import hashlib
 import json
 import logging
 import re
 from dataclasses import replace
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Protocol, runtime_checkable, Optional, Callable
 
-import anthropic
-from anthropic import AsyncAnthropic
-
-from src.claude import HAIKU_MODEL, message_text
-from src.models import CandidateJob, ScoredJob
+from src.llm import (
+    AITask,
+    LLMAdapter,
+    LLMAPIError,
+    LLMNonRetryableError,
+    LLMRateLimitError,
+    get_adapter,
+    load_model_overrides,
+    resolve_model,
+)
+from src.log_file import excerpt
+from src.models import CandidateJob, ScoredJob, ScoringProvenance
 from src.score_normalization import (
     DIMENSION_WEIGHTS,
     VALID_PRIORITIES,
@@ -73,25 +78,19 @@ _BATCH_SCORE_SCHEMA = _object_schema({
 })
 
 
-def _scoring_request_options(model: str, schema: dict[str, Any]) -> dict[str, Any]:
-    if model != HAIKU_MODEL:
-        return {}
-    return {
-        "thinking": {"type": "disabled"},
-        "output_config": {"effort": "low", "format": {"type": "json_schema", "schema": schema}},
-    }
-
-
 class _ScoringRateLimiter:
-    """Coordinate request pacing and shared cooldowns across concurrent scorers."""
+    """Coordinate request pacing, shared cooldowns and a shared stop across concurrent scorers."""
 
     def __init__(self, min_interval_seconds: float = CALL_DELAY):
         self.min_interval_seconds = max(0.0, float(min_interval_seconds))
         self._next_request_at = 0.0
         self._cooldown_until = 0.0
+        self._stopped_by: LLMNonRetryableError | None = None
         self._lock = asyncio.Lock()
 
     async def wait_for_slot(self) -> None:
+        """Wait for this request's turn. Raises `LLMNonRetryableError` once scoring has been stopped."""
+        self._raise_if_stopped()
         delay = 0.0
         async with self._lock:
             now = asyncio.get_running_loop().time()
@@ -101,6 +100,17 @@ class _ScoringRateLimiter:
 
         if delay > 0:
             await asyncio.sleep(delay)
+            self._raise_if_stopped()
+
+    def stop(self, error: LLMNonRetryableError) -> None:
+        """Fail every later request with `error` instead of sending it."""
+        if self._stopped_by is None:
+            logger.error("Stopping scoring, retrying won't help: %s", error)
+            self._stopped_by = error
+
+    def _raise_if_stopped(self) -> None:
+        if self._stopped_by is not None:
+            raise LLMNonRetryableError(str(self._stopped_by))
 
     async def apply_cooldown(self, seconds: float) -> None:
         if seconds <= 0:
@@ -115,49 +125,9 @@ class _ScoringRateLimiter:
                 self._next_request_at = self._cooldown_until
 
 
-def _parse_retry_after_seconds(headers: Any) -> float | None:
-    """Best-effort parsing of retry-after headers from Anthropic responses."""
-    if headers is None:
-        return None
-
-    retry_after_ms = headers.get("retry-after-ms")
-    try:
-        if retry_after_ms is not None:
-            seconds = float(retry_after_ms) / 1000
-            if seconds > 0:
-                return seconds
-    except (TypeError, ValueError):
-        pass
-
-    retry_after = headers.get("retry-after")
-    try:
-        if retry_after is not None:
-            seconds = float(retry_after)
-            if seconds > 0:
-                return seconds
-    except (TypeError, ValueError):
-        pass
-
-    if retry_after:
-        try:
-            retry_dt = email.utils.parsedate_to_datetime(retry_after)
-            if retry_dt is None:
-                return None
-            if retry_dt.tzinfo is None:
-                retry_dt = retry_dt.replace(tzinfo=timezone.utc)
-            seconds = (retry_dt - datetime.now(timezone.utc)).total_seconds()
-            if seconds > 0:
-                return seconds
-        except (TypeError, ValueError, IndexError):
-            return None
-
-    return None
-
-
-def _rate_limit_wait_seconds(error: Exception, attempt: int, *, is_batch: bool) -> float:
+def _rate_limit_wait_seconds(error: LLMRateLimitError, attempt: int, *, is_batch: bool) -> float:
     """Prefer server-provided retry headers, otherwise back off conservatively."""
-    response = getattr(error, "response", None)
-    retry_after = _parse_retry_after_seconds(getattr(response, "headers", None))
+    retry_after = error.retry_after
     if retry_after is not None:
         return min(retry_after, 60.0)
 
@@ -184,6 +154,13 @@ def _log_normalization(raw: ScoredJob, normalized: ScoredJob) -> None:
         audit.get("normalized_skip_reason", normalized.skip_reason),
         ",".join(str(code) for code in audit.get("reason_codes", [])) or "none",
     )
+
+
+def _log_raw_response(context: str, text: str | None) -> None:
+    """Log a short excerpt and the length of a bad LLM response; never the whole of it."""
+    if text is None:
+        return
+    logger.warning("%s — raw response %s", context, excerpt(text))
 
 
 # Resolve paths relative to this file, not cwd
@@ -221,8 +198,8 @@ def load_scoring_philosophy(profile_dir: Path | None = None) -> str:
     return ""
 
 
-def _build_system_prompt(scoring_instructions: str, profile_doc: str, profile_config: dict[str, Any] | None = None) -> list[dict[str, Any]]:
-    """Build the system message with cache_control for prompt caching."""
+def _build_system_prompt(scoring_instructions: str, profile_doc: str, profile_config: dict[str, Any] | None = None) -> str:
+    """Build the system prompt text (sent as a cacheable system prompt)."""
     import yaml
 
     # Send only the scoring-relevant subset of config to avoid token-heavy
@@ -234,11 +211,7 @@ def _build_system_prompt(scoring_instructions: str, profile_doc: str, profile_co
             formatted_config = yaml.dump(prompt_config, sort_keys=False, default_flow_style=False)
             preferences_block = f"\n\nCANDIDATE PREFERENCES (from search_config.yaml):\n\n{formatted_config}"
 
-    return [{
-        "type": "text",
-        "text": f"{scoring_instructions}{preferences_block}\n\nCANDIDATE PROFILE (from profile_doc.md):\n\n{profile_doc}",
-        "cache_control": {"type": "ephemeral"},
-    }]
+    return f"{scoring_instructions}{preferences_block}\n\nCANDIDATE PROFILE (from profile_doc.md):\n\n{profile_doc}"
 
 
 def _build_prompt_profile_config(profile_config: dict[str, Any]) -> dict[str, Any]:
@@ -703,7 +676,7 @@ def _extract_json(text: str, is_array: bool = False) -> str | None:
 
 
 def _parse_score_response(text: str) -> dict[str, Any]:
-    """Parse the JSON response from Claude. Handles common formatting issues."""
+    """Parse the JSON response from the LLM. Handles common formatting issues."""
     json_str = _extract_json(text, is_array=False)
     if not json_str:
         raise ValueError("No JSON object found in response")
@@ -777,14 +750,16 @@ def _parse_batch_response(text: str, expected_count: int, *, structured: bool = 
     try:
         json_str = _extract_json(text, is_array=True)
         if not json_str:
+            logger.warning("Batch parse: no JSON array found in response")
             return None
 
         # Try json.loads()
         try:
             data = json.loads(json_str)
-        except json.JSONDecodeError:
+        except json.JSONDecodeError as e:
             # One more attempt: check if it's a list but wrapped in something
             # (already covered by _extract_json but being defensive)
+            logger.warning("Batch parse: invalid JSON (%s)", e)
             return None
 
         # Validate structure (list of exactly expected_count dicts)
@@ -796,45 +771,63 @@ def _parse_batch_response(text: str, expected_count: int, *, structured: bool = 
             
             if all(isinstance(d, dict) and "fit_score" in d for d in data):
                 return data
+            logger.warning("Batch parse: array items are not all objects with a fit_score")
+        else:
+            logger.warning(
+                "Batch parse: expected a list of %d items, got %s of length %s",
+                expected_count, type(data).__name__, len(data) if isinstance(data, list) else "n/a",
+            )
 
     except Exception as e:
         logger.warning("Batch parse error: %s", e)
         # Log the raw text on failure to aid debugging
-        logger.debug("Raw batch text that failed: %s", text)
+        logger.debug("Raw batch text that failed: %s", excerpt(text))
 
     return None
 
 
 async def score_job(
-    client: AsyncAnthropic,
+    adapter: LLMAdapter,
     job: CandidateJob,
-    system_prompt: list[dict[str, Any]],
+    system_prompt: str,
     profile_config: dict[str, Any] | None = None,
-    model: str = HAIKU_MODEL,
+    model: str | None = None,
     max_desc_chars: int = 20000,
     rate_limiter: _ScoringRateLimiter | None = None,
 ) -> ScoredJob:
-    """Score a single job using Claude API (Async).
+    """Score a single job through the LLM adapter (Async).
 
     Returns a ScoredJob with fit assessment, or a zero-scored job on failure.
     """
+    model = model or resolve_model(AITask.SCORING)
     user_message = _build_user_message(job, max_desc_chars, profile_config)
+    label = f"{job.title} @ {job.company_name} (db_id={job.db_id})"
 
     for attempt in range(1, MAX_RETRIES + 1):
+        raw_text: str | None = None
         try:
             if rate_limiter is not None:
                 await rate_limiter.wait_for_slot()
 
-            response = await client.messages.create(
-                model=model,
-                max_tokens=1536,
+            logger.debug(
+                "Scoring single job %s via %s/%s (attempt %d/%d, user_chars=%d)",
+                label, adapter.name, model, attempt, MAX_RETRIES, len(user_message),
+            )
+            response = await adapter.complete(
                 system=system_prompt,
                 messages=[{"role": "user", "content": user_message}],
-                **_scoring_request_options(model, _SINGLE_SCORE_SCHEMA),
+                model=model,
+                max_tokens=1536,
+                cache_system=True,
+                json_schema=_SINGLE_SCORE_SCHEMA,
+                json_output=True,
             )
 
-            raw_text = message_text(response)
+            raw_text = response.text
             data = _parse_score_response(raw_text)
+            logger.debug(
+                "Scored %s: fit_score=%s priority=%s", label, data.get("fit_score"), data.get("apply_priority")
+            )
 
             metadata = _extract_metadata(data)
             raw_result = ScoredJob(
@@ -864,6 +857,7 @@ async def score_job(
                 salary_max=metadata["salary_max"],
                 salary_currency=metadata["salary_currency"],
                 is_sparse=metadata["is_sparse"],
+                provenance=ScoringProvenance(adapter.name, model),
             )
             normalized_result = normalize_scored_job(raw_result)
             normalized_result = replace(
@@ -878,13 +872,15 @@ async def score_job(
                 "Invalid score for %s @ %s (attempt %d/%d): %s",
                 job.title, job.company_name, attempt, MAX_RETRIES, error,
             )
+            _log_raw_response(f"Unparseable score for {label}", raw_text)
             if attempt < MAX_RETRIES:
                 await asyncio.sleep(1 * attempt)  # Exponential backoff
                 continue
             # Return error score on final failure
+            logger.error("Giving up on %s after %d parse failures; recording a failed attempt", label, MAX_RETRIES)
             return _error_scored_job(job, "PARSE_ERROR")
 
-        except anthropic.RateLimitError as error:
+        except LLMRateLimitError as error:
             wait = _rate_limit_wait_seconds(error, attempt, is_batch=False)
             if rate_limiter is not None:
                 await rate_limiter.apply_cooldown(wait)
@@ -894,7 +890,13 @@ async def score_job(
                 await asyncio.sleep(wait)
             continue
 
-        except anthropic.APIError as e:
+        except LLMNonRetryableError as error:
+            if rate_limiter is not None:
+                rate_limiter.stop(error)
+            logger.error("Not retrying %s; recording a failed attempt: %s", label, error)
+            return _error_scored_job(job, f"API_ERROR: {error}")
+
+        except LLMAPIError as e:
             logger.warning(
                 "API error for %s @ %s: %s (attempt %d/%d)",
                 job.title, job.company_name, e, attempt, MAX_RETRIES,
@@ -902,52 +904,66 @@ async def score_job(
             if attempt < MAX_RETRIES:
                 await asyncio.sleep(2 ** attempt)
                 continue
+            logger.error("Giving up on %s after %d API errors; recording a failed attempt: %s", label, MAX_RETRIES, e)
             return _error_scored_job(job, f"API_ERROR: {e}")
 
         except Exception as e:
-            logger.error("Unexpected error scoring %s @ %s: %s", job.title, job.company_name, e)
+            logger.exception("Unexpected error scoring %s; recording a failed attempt: %s", label, e)
+            _log_raw_response(f"Response for {label} before the error", raw_text)
             return _error_scored_job(job, f"ERROR: {e}")
 
-    return _error_scored_job(job, "Temporary scoring failure: Anthropic rate limits persisted after retries.")
+    logger.error("Giving up on %s: rate limits persisted after %d attempts; recording a failed attempt", label, MAX_RETRIES)
+    return _error_scored_job(job, f"Temporary scoring failure: {adapter.display_name} rate limits persisted after retries.")
 
 
 async def score_batch(
-    client: AsyncAnthropic,
+    adapter: LLMAdapter,
     jobs: list[CandidateJob],
-    system_prompt: list[dict[str, Any]],
+    system_prompt: str,
     profile_config: dict[str, Any] | None = None,
-    model: str = HAIKU_MODEL,
+    model: str | None = None,
     max_desc_chars: int = 20000,
     rate_limiter: _ScoringRateLimiter | None = None,
 ) -> list[ScoredJob]:
     """Score multiple jobs at once (batching).
-    
-    If parsing fails, falls back to scoring each job individually.
+
+    If parsing fails, falls back to scoring each job individually. An error retrying
+    cannot fix fails every job in the batch without that fallback.
     """
     if len(jobs) == 1:
         # Optimization: delegate to score_job for single-item batches
-        return [await score_job(client, jobs[0], system_prompt, profile_config, model, max_desc_chars, rate_limiter)]
+        return [await score_job(adapter, jobs[0], system_prompt, profile_config, model, max_desc_chars, rate_limiter)]
 
+    model = model or resolve_model(AITask.SCORING)
     user_message = _build_batch_user_message(jobs, max_desc_chars, profile_config)
-    structured = model == HAIKU_MODEL
+    structured = adapter.supports_json_schema(model)
     if structured:
         user_message += '\nReturn an object with a "jobs" array. Set each result\'s integer "job_id" to its input job ID.'
     max_tokens = min(1280 * len(jobs), 8192) if structured else min(800 * len(jobs), 4096)
 
+    batch_ids = [job.db_id for job in jobs]
+
     for attempt in range(1, MAX_RETRIES + 1):
+        raw_text: str | None = None
         try:
             if rate_limiter is not None:
                 await rate_limiter.wait_for_slot()
 
-            response = await client.messages.create(
-                model=model,
-                max_tokens=max_tokens,
+            logger.debug(
+                "Scoring batch db_ids=%s via %s/%s (attempt %d/%d, max_tokens=%d, user_chars=%d)",
+                batch_ids, adapter.name, model, attempt, MAX_RETRIES, max_tokens, len(user_message),
+            )
+            response = await adapter.complete(
                 system=system_prompt,
                 messages=[{"role": "user", "content": user_message}],
-                **_scoring_request_options(model, _BATCH_SCORE_SCHEMA),
+                model=model,
+                max_tokens=max_tokens,
+                cache_system=True,
+                json_schema=_BATCH_SCORE_SCHEMA,
+                json_output=True,
             )
 
-            raw_text = message_text(response)
+            raw_text = response.text
             data = _parse_batch_response(raw_text, len(jobs), structured=structured)
 
             if data is not None:
@@ -981,6 +997,7 @@ async def score_batch(
                         salary_max=metadata["salary_max"],
                         salary_currency=metadata["salary_currency"],
                         is_sparse=metadata["is_sparse"],
+                        provenance=ScoringProvenance(adapter.name, model),
                     )
                     normalized_result = normalize_scored_job(raw_result)
                     normalized_result = replace(
@@ -989,13 +1006,17 @@ async def score_batch(
                     )
                     _log_normalization(raw_result, normalized_result)
                     results.append(normalized_result)
+                logger.debug(
+                    "Scored batch db_ids=%s: fit_scores=%s", batch_ids, [r.fit_score for r in results]
+                )
                 return results
 
             # Fallback if None returned from parser
-            logger.warning("Batch scoring fallback for %d jobs (parsing failed)", len(jobs))
+            logger.warning("Batch scoring fallback for %d jobs db_ids=%s (parsing failed)", len(jobs), batch_ids)
+            _log_raw_response(f"Unparseable batch db_ids={batch_ids}", raw_text)
             break # Exit retry loop and use fallback
 
-        except anthropic.RateLimitError as error:
+        except LLMRateLimitError as error:
             wait = _rate_limit_wait_seconds(error, attempt, is_batch=True)
             if rate_limiter is not None:
                 await rate_limiter.apply_cooldown(wait)
@@ -1005,20 +1026,27 @@ async def score_batch(
                 await asyncio.sleep(wait)
             continue
 
-        except (anthropic.APIError, ValueError) as e:
-            logger.warning("API/JSON error in batch (attempt %d/%d): %s", attempt, MAX_RETRIES, e)
+        except LLMNonRetryableError as error:
+            if rate_limiter is not None:
+                rate_limiter.stop(error)
+            logger.error("Not retrying batch db_ids=%s or its jobs; recording failed attempts: %s", batch_ids, error)
+            return [_error_scored_job(job, f"API_ERROR: {error}") for job in jobs]
+
+        except (LLMAPIError, ValueError) as e:
+            logger.warning("API/JSON error in batch db_ids=%s (attempt %d/%d): %s", batch_ids, attempt, MAX_RETRIES, e)
             if attempt < MAX_RETRIES:
                 await asyncio.sleep(2 ** attempt)
                 continue
             break
 
         except Exception as e:
-            logger.error("Unexpected error in batch scoring: %s", e)
+            logger.exception("Unexpected error in batch scoring db_ids=%s: %s", batch_ids, e)
+            _log_raw_response(f"Batch response for db_ids={batch_ids} before the error", raw_text)
             break
 
     # Final fallback for any terminal failure: score each individually
     logger.info("Falling back to individual scoring for %d jobs...", len(jobs))
-    tasks = [score_job(client, job, system_prompt, profile_config, model, max_desc_chars, rate_limiter) for job in jobs]
+    tasks = [score_job(adapter, job, system_prompt, profile_config, model, max_desc_chars, rate_limiter) for job in jobs]
     return await asyncio.gather(*tasks)
 
 
@@ -1027,18 +1055,17 @@ class ScorerProtocol(Protocol):
     """Interface for job scoring implementations."""
     def score_single(self, job: CandidateJob, profile_doc: str) -> ScoredJob: ...
 
-class AnthropicScorer:
-    """Default scorer using Claude Haiku with prompt caching."""
-    
-    def __init__(self, model: str = HAIKU_MODEL, max_desc_chars: int = 20000, profile_dir: Path | None = None):
-        self.model = model
+class LLMScorer:
+    """Default scorer using the active LLM Provider with a cacheable system prompt."""
+
+    def __init__(self, model: str | None = None, max_desc_chars: int = 20000, profile_dir: Path | None = None):
+        self.model = model or resolve_model(AITask.SCORING)
         self.max_desc_chars = max_desc_chars
         self.profile_dir = profile_dir
-        self._client = anthropic.Anthropic()
-        self._system_prompt: list[dict] | None = None
+        self._system_prompt: str | None = None
         self._profile_doc: str | None = None
     
-    def _ensure_system_prompt(self, profile_doc: str) -> list[dict]:
+    def _ensure_system_prompt(self, profile_doc: str) -> str:
         """Build and cache system prompt."""
         if self._system_prompt is None or self._profile_doc != profile_doc:
             philosophy = load_scoring_philosophy(self.profile_dir)
@@ -1049,13 +1076,12 @@ class AnthropicScorer:
         return self._system_prompt
     
     async def score_single(self, job: CandidateJob, profile_doc: str) -> ScoredJob:
-        """Score a single job using Claude API."""
+        """Score a single job through the LLM adapter."""
         system_prompt = self._ensure_system_prompt(profile_doc)
-        # Note: This would need an Async client in the class as well if used,
-        # but the main pipeline uses score_jobs below.
-        async with AsyncAnthropic() as client:
+        adapter = get_adapter()
+        try:
             return await score_job(
-                client,
+                adapter,
                 job,
                 system_prompt,
                 None,
@@ -1063,6 +1089,8 @@ class AnthropicScorer:
                 self.max_desc_chars,
                 _ScoringRateLimiter(),
             )
+        finally:
+            await adapter.aclose()
 
 
 async def score_jobs(
@@ -1076,7 +1104,7 @@ async def score_jobs(
     concurrency: int = 25,
     batch_size: int = 5,
 ) -> list[ScoredJob]:
-    """Score all candidate jobs in parallel using Claude API.
+    """Score all candidate jobs in parallel through the LLM adapter.
 
     Args:
         candidates: Jobs to score.
@@ -1095,7 +1123,11 @@ async def score_jobs(
     batch_size = scoring_config.get("batch_size", batch_size)
     min_request_interval = scoring_config.get("min_request_interval_seconds", CALL_DELAY)
 
-    model = scoring_config.get("model", HAIKU_MODEL)
+    model = resolve_model(
+        AITask.SCORING,
+        profile_model=scoring_config.get("model"),
+        settings_overrides=load_model_overrides(store),
+    )
     max_desc_chars = scoring_config.get("max_description_chars", 20000)
 
     # Load scoring philosophy and assemble template
@@ -1121,11 +1153,11 @@ async def score_jobs(
     rate_limiter = _ScoringRateLimiter(min_request_interval)
     completed_count = 0
 
-    async def worker(batch: list[CandidateJob], client: AsyncAnthropic) -> list[ScoredJob]:
+    async def worker(batch: list[CandidateJob]) -> list[ScoredJob]:
         nonlocal completed_count
         async with semaphore:
             results = await score_batch(
-                client,
+                adapter,
                 batch,
                 system_prompt,
                 effective_profile_config,
@@ -1150,6 +1182,7 @@ async def score_jobs(
                     skip_reason=result.skip_reason,
                     missing_skills=result.missing_skills,
                     normalization_audit=result.normalization_audit,
+                    provenance=result.provenance,
                     salary=result.salary,
                     salary_min=result.salary_min,
                     salary_max=result.salary_max,
@@ -1169,12 +1202,29 @@ async def score_jobs(
             )
             return results
 
-    async with AsyncAnthropic() as client:
-        tasks = [worker(batch, client) for batch in batches]
-        all_results = await asyncio.gather(*tasks)
+    adapter = get_adapter()
+    logger.info(
+        "Scoring via LLM Provider %s (%s), model=%s, system_prompt_chars=%d",
+        adapter.display_name, adapter.name, model, len(system_prompt),
+    )
+    try:
+        all_results = await asyncio.gather(*(worker(batch) for batch in batches))
+    except Exception:
+        logger.exception("Scoring run aborted after %d/%d jobs", completed_count, total)
+        raise
+    finally:
+        await adapter.aclose()
 
     # Flatten results
     scored = [job for batch_result in all_results for job in batch_result]
+    failed = [job for job in scored if job.scoring_error is not None]
+    if failed:
+        logger.error(
+            "Scoring finished: %d/%d jobs failed; their previous scores were kept (first reason: %s)",
+            len(failed), len(scored), failed[0].scoring_error,
+        )
+    else:
+        logger.info("Scoring finished: %d jobs scored", len(scored))
     return scored
 
 

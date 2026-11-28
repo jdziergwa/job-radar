@@ -294,6 +294,11 @@ function buildApplicationStats(jobs: DemoApplicationJobResponse[]): ApplicationS
       ? Number(((jobs.filter((job) => (job.application_status || '') !== 'applied').length / jobs.length) * 100).toFixed(1))
       : 0,
     avg_time_to_response_days: null,
+    screen_rate: 0,
+    pending_replies_count: 0,
+    needs_attention_count: 0,
+    interview_conversion: 0,
+    offer_conversion: 0,
     status_counts: statusCounts,
     weekly_velocity: [],
     funnel: {
@@ -903,6 +908,10 @@ async function handleRead(url: URL): Promise<Response | null> {
 
   if (url.pathname === '/api/profiles') {
     return json(await loadJson('profiles.json'))
+  }
+
+  if (url.pathname === '/api/ai-config') {
+    return json(await loadJson('ai-config.json'))
   }
 
   if (url.pathname === '/api/health') {

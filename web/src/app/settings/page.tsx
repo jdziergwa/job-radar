@@ -34,8 +34,12 @@ import {
   ChevronRight
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
+import { AiLabel } from '@/components/ai/AiLabel'
+import { ModelAssignments } from '@/components/ai/ModelAssignments'
+import { useAiConfig } from '@/lib/ai/use-ai-config'
 
 export default function SettingsPage() {
+  const aiConfig = useAiConfig()
   const [yamlContent, setYamlContent] = useState('')
   const [docContent, setDocContent] = useState('')
   const [philosophyContent, setPhilosophyContent] = useState('')
@@ -216,7 +220,7 @@ export default function SettingsPage() {
               </Button>
               <Button 
                 onClick={handleSave} 
-                disabled={saving || loading}
+                disabled={saving || loading || activeTab === 'ai'}
                 className="gap-2 bg-primary/90 hover:bg-primary shadow-lg border-primary/20 min-w-[120px] transition-all duration-300"
               >
                 {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
@@ -283,7 +287,7 @@ export default function SettingsPage() {
                   </p>
                   <div className="mt-5 border-t border-border/20 pt-3">
                     <div className="inline-flex flex-wrap items-center gap-2 text-[11px]">
-                      <span className="font-medium text-muted-foreground/70">Claude Sonnet</span>
+                      <AiLabel config={aiConfig} task="wizard" className="font-medium text-muted-foreground/70" />
                       <span className="font-medium text-primary/70">1 AI call, est. $0.08</span>
                     </div>
                   </div>
@@ -312,7 +316,7 @@ export default function SettingsPage() {
                   </p>
                   <div className="mt-5 border-t border-border/20 pt-3">
                     <div className="inline-flex flex-wrap items-center gap-2 text-[11px]">
-                      <span className="font-medium text-muted-foreground/70">Claude Sonnet</span>
+                      <AiLabel config={aiConfig} task="wizard" className="font-medium text-muted-foreground/70" />
                       <span className="font-medium text-primary/70">Typically 2 AI calls, est. $0.15</span>
                     </div>
                   </div>
@@ -364,6 +368,13 @@ export default function SettingsPage() {
               >
                 <BrainCircuit className="h-4 w-4" />
                 Scoring Philosophy
+              </TabsTrigger>
+              <TabsTrigger 
+                value="ai" 
+                className="px-5 data-[state=active]:bg-background/60 data-[state=active]:shadow-sm data-[state=active]:text-primary transition-all duration-300 gap-2"
+              >
+                <WandSparkles className="h-4 w-4" />
+                AI Models
               </TabsTrigger>
             </TabsList>
             
@@ -445,6 +456,10 @@ export default function SettingsPage() {
                    <span className="text-amber-500/90 font-medium">Use a scoped rescore to apply changes to saved jobs.</span>
                  </p>
               </div>
+            </TabsContent>
+
+            <TabsContent value="ai" className="animate-in fade-in slide-in-from-top-2 duration-300">
+              <ModelAssignments />
             </TabsContent>
           </Tabs>
         </div>

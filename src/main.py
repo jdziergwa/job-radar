@@ -37,6 +37,8 @@ from src.reporter import (
     send_telegram,
     write_report,
 )
+from src.llm import LLMConfigError, check_scoring_config, load_model_overrides, sdk_logger_names
+from src.log_file import attach_file_log
 from src.scorer import score_jobs
 from src.store import Store
 
@@ -53,7 +55,11 @@ def setup_logging(verbose: bool = False) -> None:
     # Quiet noisy libraries
     logging.getLogger("httpx").setLevel(logging.WARNING)
     logging.getLogger("httpcore").setLevel(logging.WARNING)
-    logging.getLogger("anthropic").setLevel(logging.WARNING)
+    for name in sdk_logger_names():
+        logging.getLogger(name).setLevel(logging.WARNING)
+    log_path = attach_file_log()
+    if log_path:
+        logger.info("Pipeline started (argv=%s); debug log at %s", sys.argv[1:], log_path)
 
 
 def load_config(profile_dir: Path) -> dict[str, Any]:
@@ -98,7 +104,7 @@ def load_profile_doc(profile_dir: Path) -> str:
 def build_parser() -> argparse.ArgumentParser:
     """Build CLI argument parser."""
     parser = argparse.ArgumentParser(
-        description="Job Radar — personalized job monitor powered by Claude AI",
+        description="Job Radar — personalized job monitor powered by an LLM",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""\
 Examples:
@@ -327,6 +333,23 @@ async def run() -> None:
     config = {**config, "runtime": runtime_config}
     profile_doc = load_profile_doc(profile_dir)
     keywords_config = config.get("keywords", {})
+
+    scoring_step = 1 if args.rescore else 4
+    done_step = 2 if args.rescore else 5
+
+    # A run that will score checks its AI setup first, before any Job Provider is called.
+    if not args.dry_run:
+        try:
+            check_scoring_config(
+                profile_model=config.get("scoring", {}).get("model"),
+                settings_overrides=load_model_overrides(store),
+            )
+        except LLMConfigError as error:
+            error_msg = f"{error} Run stopped before fetching."
+            logger.error(error_msg)
+            if args.json_progress:
+                emit_progress(scoring_step, "Error", error_msg)
+            sys.exit(1)
 
     skip_collection = bool(args.job_id or args.rescore)
     aggregator_requested = not skip_collection and "aggregator" in args.source
@@ -565,10 +588,6 @@ async def run() -> None:
         if args.json_progress:
             emit_progress(0, "Starting", "Bypassing pre-filtering for rescore")
 
-    # Choose step indexing for JSON progress
-    scoring_step = 1 if args.rescore else 4
-    done_step = 2 if args.rescore else 5
-
     scan_stats = {
         "sources": companies_scanned,
         "total_market_jobs": len(raw_jobs),
@@ -593,18 +612,11 @@ async def run() -> None:
         finish_run()
         return
 
-    # 5. Score with Claude API
+    # 5. Score with the active LLM Provider
     timer.reset_stage()
     if candidates:
         if args.json_progress:
             emit_progress(scoring_step, "Scoring", f"Starting LLM scoring for {len(candidates)} jobs", duration=timer.get_stage_duration())
-
-        if not (os.getenv("ANTHROPIC_API_KEY") or os.getenv("ANTHROPIC_AUTH_TOKEN")):
-            error_msg = "ANTHROPIC_API_KEY not found in environment or .env file. Scoring skipped."
-            logger.error(error_msg)
-            if args.json_progress:
-                emit_progress(scoring_step, "Error", error_msg)
-            sys.exit(1)
 
         def score_p_callback(curr, tot):
             if args.json_progress:
@@ -628,7 +640,8 @@ async def run() -> None:
 
         # 6. Report
         successful_scores = [job for job in scored if job.scoring_error is None]
-        failed_count = len(scored) - len(successful_scores)
+        failed = [job for job in scored if job.scoring_error is not None]
+        failed_count = len(failed)
         scan_stats["scored"] = len(successful_scores)
         scan_stats["scoring_failed"] = failed_count
         scan_stats["total_duration"] = format_duration(timer.get_total_duration())
@@ -636,7 +649,9 @@ async def run() -> None:
 
         if failed_count:
             logger.warning("Scoring failed for %d jobs. Retry with --rescore --rescore-scope failed_recent.", failed_count)
-            warnings.append(f"{failed_count} scoring attempts failed and can be retried.")
+            warnings.append(
+                f"{failed_count} scoring attempts failed and can be retried. First error: {failed[0].scoring_error}"
+            )
 
         good_matches = [j for j in successful_scores if j.fit_score >= args.min_score]
         good_matches.sort(key=lambda j: j.fit_score, reverse=True)
@@ -662,7 +677,12 @@ async def run() -> None:
 
 def main() -> None:
     """Sync wrapper for the async entry point."""
-    asyncio.run(run())
+    try:
+        asyncio.run(run())
+    except Exception:
+        # The API discards this subprocess's output, so make sure crashes reach the log file.
+        logger.exception("Pipeline crashed")
+        raise
 
 
 if __name__ == "__main__":

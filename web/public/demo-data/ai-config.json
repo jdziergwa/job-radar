@@ -1,0 +1,14 @@
+{
+  "configured": true,
+  "provider": "gemini",
+  "provider_display_name": "Gemini",
+  "models": {
+    "scoring": "gemini-3.8-flash",
+    "wizard": "gemini-3.8-flash",
+    "stats": "gemini-3.8-flash"
+  },
+  "model_errors": {},
+  "overrides": {},
+  "scoring_from_profile": false,
+  "error": null
+}

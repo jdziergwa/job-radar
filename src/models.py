@@ -5,6 +5,21 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 
+@dataclass(frozen=True)
+class ScoringProvenance:
+    """Which LLM Provider and Model produced a score."""
+
+    llm_provider: str
+    model: str
+
+    @classmethod
+    def from_breakdown(cls, data: dict) -> "ScoringProvenance | None":
+        """Rebuild from a persisted `score_breakdown` dict; None for rows scored before provenance."""
+        if data.get("llm_provider") and data.get("llm_model"):
+            return cls(data["llm_provider"], data["llm_model"])
+        return None
+
+
 @dataclass
 class RawJob:
     """Job straight from an ATS API, before dedup or filtering."""
@@ -89,6 +104,7 @@ class ScoredJob:
     skip_reason: str = "none"               # location_onsite | location_timezone | tech_gap | seniority_mismatch | growth_mismatch | none
     missing_skills: list[str] = field(default_factory=list)
     normalization_audit: dict[str, object] = field(default_factory=dict)
+    provenance: ScoringProvenance | None = None
     scored_at: str | None = None
     is_sparse: bool = False
     scoring_error: str | None = None

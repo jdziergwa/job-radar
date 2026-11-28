@@ -1,7 +1,11 @@
 import importlib.util
+import os
 from pathlib import Path
 import sys
 import types
+
+# Keep test runs out of the real logs/ debug file (src/log_file.py).
+os.environ["JOB_RADAR_LOG_FILE"] = ""
 
 from fastapi.testclient import TestClient
 import pytest
@@ -193,3 +197,42 @@ def bind_store(monkeypatch, store: Store):
 def client():
     with TestClient(app) as test_client:
         yield test_client
+
+
+@pytest.fixture(autouse=True)
+def _isolated_data_dir(tmp_path_factory, monkeypatch):
+    """Keep API paths that open the app-side store off the real data/ directory."""
+    monkeypatch.setattr("api.deps.DATA_DIR", tmp_path_factory.mktemp("appdata"))
+
+
+@pytest.fixture
+def fake_ai():
+    """Inject the fake LLM adapter so the AI-configured check passes without a key."""
+    from src.llm import set_adapter_override
+    from tests.fake_llm import FakeLLMAdapter
+
+    set_adapter_override(FakeLLMAdapter())
+    yield
+    set_adapter_override(None)
+
+
+@pytest.fixture
+def no_ai_key(monkeypatch):
+    """No LLM Provider selected, no key, no Model env overrides and no injected adapter."""
+    from src.llm import set_adapter_override
+
+    for env in (
+        "LLM_PROVIDER", "ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN", "GOOGLE_API_KEY",
+        "SCORING_MODEL", "WIZARD_MODEL", "STATS_MODEL",
+    ):
+        monkeypatch.delenv(env, raising=False)
+    set_adapter_override(None)
+
+
+@pytest.fixture
+def pipeline_workspace(tmp_path, monkeypatch):
+    """An empty profiles/ + data/ workspace as the cwd, for tests that run the CLI pipeline."""
+    (tmp_path / "profiles" / "default").mkdir(parents=True)
+    (tmp_path / "data").mkdir()
+    monkeypatch.chdir(tmp_path)
+    return tmp_path

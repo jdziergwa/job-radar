@@ -37,5 +37,9 @@ profiles/*/
 # Generated reports
 reports/
 
+# Debug logs (src/log_file.py)
+logs/
+
 # Personal notes
 notes/
+.scratch/

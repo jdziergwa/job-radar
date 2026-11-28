@@ -5,9 +5,12 @@ from dataclasses import replace
 import pytest
 
 import src.scorer as scorer
+from src.llm import LLMRateLimitError, set_adapter_override
+from src.llm.anthropic_adapter import HAIKU_MODEL, AnthropicAdapter
 from src.models import CandidateJob, RawJob
 from src.scorer import _ScoringRateLimiter, _rate_limit_wait_seconds, score_batch, score_job, score_jobs
 from src.store import Store
+from tests.fake_llm import FakeLLMAdapter
 
 
 def _candidate() -> CandidateJob:
@@ -33,19 +36,13 @@ def _response(text: str):
     ], stop_reason="end_turn")
 
 
-class _FakeRateLimitError(Exception):
-    def __init__(self, headers: dict[str, str] | None = None):
-        super().__init__("rate limited")
-        self.response = types.SimpleNamespace(headers=headers or {})
-
-
 class _FakeMessages:
     def __init__(self, outcomes):
         self._outcomes = list(outcomes)
-        self.calls = 0
+        self.requests: list[dict] = []
 
     async def create(self, *args, **kwargs):
-        self.calls += 1
+        self.requests.append(kwargs)
         outcome = self._outcomes.pop(0)
         if isinstance(outcome, Exception):
             raise outcome
@@ -53,19 +50,18 @@ class _FakeMessages:
 
 
 class _FakeClient:
+    """Stands in for AsyncAnthropic behind the real AnthropicAdapter."""
+
     def __init__(self, outcomes):
         self.messages = _FakeMessages(outcomes)
 
-    async def __aenter__(self):
-        return self
-
-    async def __aexit__(self, *_):
+    async def close(self):
         pass
 
 
 def test_rate_limit_wait_prefers_retry_after_header():
     wait = _rate_limit_wait_seconds(
-        _FakeRateLimitError({"retry-after-ms": "1500"}),
+        LLMRateLimitError(retry_after=1.5),
         1,
         is_batch=False,
     )
@@ -74,8 +70,7 @@ def test_rate_limit_wait_prefers_retry_after_header():
 
 
 def test_score_job_retries_after_rate_limit_and_succeeds(monkeypatch):
-    monkeypatch.setattr(scorer.anthropic, "RateLimitError", _FakeRateLimitError)
-
+    monkeypatch.setenv("LLM_PROVIDER", "anthropic")
     sleeps: list[float] = []
 
     async def fake_sleep(delay: float):
@@ -83,9 +78,9 @@ def test_score_job_retries_after_rate_limit_and_succeeds(monkeypatch):
 
     monkeypatch.setattr(scorer.asyncio, "sleep", fake_sleep)
 
-    client = _FakeClient([
-        _FakeRateLimitError({"retry-after": "3"}),
-        _response("""
+    client = FakeLLMAdapter([
+        LLMRateLimitError(retry_after=3),
+        ("""
         {
           "fit_score": 78,
           "reasoning": "Strong backend fit.",
@@ -109,11 +104,11 @@ def test_score_job_retries_after_rate_limit_and_succeeds(monkeypatch):
     result = asyncio.run(score_job(
         client,
         _candidate(),
-        [{"type": "text", "text": "Score jobs as JSON"}],
+        "Score jobs as JSON",
         rate_limiter=_ScoringRateLimiter(0),
     ))
 
-    assert client.messages.calls == 2
+    assert len(client.calls) == 2
     assert sleeps == pytest.approx([3.0], abs=0.01)
     assert result.fit_score == 78
     assert result.reasoning == "Strong backend fit."
@@ -121,8 +116,7 @@ def test_score_job_retries_after_rate_limit_and_succeeds(monkeypatch):
 
 
 def test_score_job_returns_helpful_message_after_persistent_rate_limits(monkeypatch):
-    monkeypatch.setattr(scorer.anthropic, "RateLimitError", _FakeRateLimitError)
-
+    monkeypatch.setenv("LLM_PROVIDER", "anthropic")
     sleeps: list[float] = []
 
     async def fake_sleep(delay: float):
@@ -130,23 +124,23 @@ def test_score_job_returns_helpful_message_after_persistent_rate_limits(monkeypa
 
     monkeypatch.setattr(scorer.asyncio, "sleep", fake_sleep)
 
-    client = _FakeClient([
-        _FakeRateLimitError(),
-        _FakeRateLimitError(),
-        _FakeRateLimitError(),
+    client = FakeLLMAdapter([
+        LLMRateLimitError(),
+        LLMRateLimitError(),
+        LLMRateLimitError(),
     ])
 
     result = asyncio.run(score_job(
         client,
         _candidate(),
-        [{"type": "text", "text": "Score jobs as JSON"}],
+        "Score jobs as JSON",
         rate_limiter=_ScoringRateLimiter(0),
     ))
 
-    assert client.messages.calls == 3
+    assert len(client.calls) == 3
     assert sleeps == pytest.approx([5.0, 10.0], abs=0.01)
     assert result.fit_score == 0
-    assert result.reasoning == "Temporary scoring failure: Anthropic rate limits persisted after retries."
+    assert result.reasoning == "Temporary scoring failure: Fake rate limits persisted after retries."
     assert result.apply_priority == "skip"
 
 
@@ -158,11 +152,12 @@ def test_structured_batch_maps_reordered_results_by_job_id():
         {"job_id": 1, "fit_score": 80, "reasoning": "First job's own assessment"}
     ]}''')])
 
-    results = asyncio.run(score_batch(client, [first, second], []))
+    results = asyncio.run(score_batch(AnthropicAdapter(client=client), [first, second], "", model=HAIKU_MODEL))
 
     assert [(r.db_id, r.reasoning) for r in results] == [
         (1, "First job's own assessment"), (2, "Second job's own assessment"),
     ]
+    assert client.messages.requests[0]["output_config"]["format"]["schema"] == scorer._BATCH_SCORE_SCHEMA
 
 
 @pytest.mark.parametrize("board_status", ["scored", "archived", "dismissed"])
@@ -189,17 +184,20 @@ def test_failed_rescore_keeps_previous_score_and_is_cleared_by_success(monkeypat
     async def no_sleep(_):
         pass
 
-    monkeypatch.setattr(scorer, "AsyncAnthropic", lambda: client)
     monkeypatch.setattr(scorer.asyncio, "sleep", no_sleep)
+    set_adapter_override(AnthropicAdapter(client=client))
+    try:
+        result, = asyncio.run(score_jobs([job], "Profile", {}, store))
 
-    result, = asyncio.run(score_jobs([job], "Profile", {}, store))
+        truncated_error = "API_ERROR: Claude did not complete the response (max_tokens)"
+        assert result.scoring_error == truncated_error
+        saved = store.get_job_by_id(job.db_id)
+        assert (saved.fit_score, saved.reasoning, saved.salary) == (85, "Previous score", "$100k")
+        assert [candidate.db_id for candidate in store.get_jobs_for_rescore("failed_recent")] == [job.db_id]
 
-    assert result.scoring_error == "PARSE_ERROR"
-    saved = store.get_job_by_id(job.db_id)
-    assert (saved.fit_score, saved.reasoning, saved.salary) == (85, "Previous score", "$100k")
-    assert [candidate.db_id for candidate in store.get_jobs_for_rescore("failed_recent")] == [job.db_id]
-
-    asyncio.run(score_jobs([job], "Profile", {}, store))
+        asyncio.run(score_jobs([job], "Profile", {}, store))
+    finally:
+        set_adapter_override(None)
 
     saved = store.get_job_by_id(job.db_id)
     assert saved.fit_score == 82
@@ -207,6 +205,6 @@ def test_failed_rescore_keeps_previous_score_and_is_cleared_by_success(monkeypat
     assert not store.get_jobs_for_rescore("failed_recent")
     with store._connect() as conn:
         attempts = conn.execute("SELECT model, rubric_version, error FROM job_scoring_attempts ORDER BY id").fetchall()
-    assert [attempt["model"] for attempt in attempts] == [scorer.HAIKU_MODEL, scorer.HAIKU_MODEL]
+    assert [attempt["model"] for attempt in attempts] == [HAIKU_MODEL, HAIKU_MODEL]
     assert attempts[0]["rubric_version"] == attempts[1]["rubric_version"]
-    assert [attempt["error"] for attempt in attempts] == ["PARSE_ERROR", None]
+    assert [attempt["error"] for attempt in attempts] == [truncated_error, None]

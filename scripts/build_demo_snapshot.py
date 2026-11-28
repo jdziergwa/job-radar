@@ -18,6 +18,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from api.deps import get_profile_dir, get_store
 from api.models import (
+    AiConfig,
     CompaniesResponse,
     DismissalStats,
     InsightsResponse,
@@ -28,8 +29,12 @@ from api.models import (
     StatsOverview,
     TrendsResponse,
 )
+from src.llm import describe_defaults
 from src.providers import get_all_info
 from src.score_normalization import normalize_persisted_priority
+
+
+_DEMO_LLM_PROVIDER = "gemini"  # registry key of the LLM Provider the static demo advertises
 
 
 def _now_iso() -> str:
@@ -85,6 +90,11 @@ def _build_insights_response(store: Any, profile: str, days: int) -> InsightsRes
         generated_at=_now_iso(),
         cached=True,
     )
+
+
+def _build_demo_ai_config() -> AiConfig:
+    """The static demo has no API key, so it shows the demo LLM Provider with its default Models."""
+    return AiConfig(configured=True, **describe_defaults(_DEMO_LLM_PROVIDER))
 
 
 def _load_json_or_none(path: Path) -> Any:
@@ -260,6 +270,7 @@ def build_snapshot(profile: str, out_dir: Path, max_jobs: int, days: int) -> Non
     )
 
     _write_json(out_dir / "profiles.json", [{"name": profile, "has_data": True}])
+    _write_model(out_dir / "ai-config.json", _build_demo_ai_config())
     _write_json(out_dir / "health.json", {"status": "ok", "version": "1.0.0", "demo": True})
     _write_json(
         out_dir / "snapshot.json",

@@ -1,8 +1,10 @@
+from dataclasses import asdict
 from datetime import datetime
 from pydantic import BaseModel, Field
 from typing import Optional, Literal
 import json
 
+from src.models import ScoringProvenance
 from src.score_normalization import normalize_persisted_priority
 
 
@@ -13,12 +15,18 @@ class ScoreBreakdownDimensions(BaseModel):
     growth_potential: int = 0
 
 
+class ScoringProvenanceResponse(BaseModel):
+    llm_provider: str
+    model: str
+
+
 class ScoreBreakdown(BaseModel):
     dimensions: ScoreBreakdownDimensions = ScoreBreakdownDimensions()
     key_matches: list[str] = []
     red_flags: list[str] = []
     fit_category: Optional[str] = None
     apply_priority: Literal["high", "medium", "low", "skip"] = "skip"
+    provenance: Optional[ScoringProvenanceResponse] = None
 
 
 class JobResponse(BaseModel):
@@ -81,6 +89,8 @@ class JobResponse(BaseModel):
                 )
                 if isinstance(raw, dict):
                     raw["apply_priority"] = apply_priority
+                    if provenance := ScoringProvenance.from_breakdown(raw):
+                        raw["provenance"] = asdict(provenance)
                 breakdown = ScoreBreakdown(**raw)
             except (json.JSONDecodeError, Exception):
                 pass
@@ -627,3 +637,28 @@ class WizardStateResponse(BaseModel):
     profile_name: str
     cv_analysis: Optional[CVAnalysisResponse] = None
     user_preferences: Optional[UserPreferences] = None
+
+
+class AiModels(BaseModel):
+    scoring: str
+    wizard: str
+    stats: str
+
+
+class AiConfig(BaseModel):
+    """Active LLM Provider and per-task Models. Never carries an API key."""
+
+    configured: bool
+    provider: str | None = None
+    provider_display_name: str | None = None
+    models: AiModels | None = None
+    model_errors: dict[str, str] = {}  # AI Task value -> why its Model can't be used
+    overrides: dict[str, str] = {}
+    scoring_from_profile: bool = False
+    error: str | None = None
+
+
+class AiModelOverrideRequest(BaseModel):
+    """Set a Settings Model override for one AI Task; empty or null clears it."""
+
+    model: str | None = None

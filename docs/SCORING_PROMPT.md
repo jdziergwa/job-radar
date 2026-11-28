@@ -9,7 +9,7 @@ This document explains the logic, structure, and philosophy used by Job Radar's 
 
 ## Overview
 
-The scorer evaluates each job posting that survives the initial keyword pre-filter. It uses Claude AI to perform a nuanced assessment based on the candidate's profile and stated preferences.
+The scorer evaluates each job posting that survives the initial keyword pre-filter. It uses the active LLM Provider's Model (Anthropic or Gemini) to perform a nuanced assessment based on the candidate's profile and stated preferences.
 
 The goal is to provide a structured fit assessment that considers:
 - **Technical Alignment**: Matching core skills and identifying critical gaps.

@@ -1,6 +1,8 @@
 from collections.abc import Callable
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, HTTPException, Query
 from api.deps import get_store
+from api.llm_errors import llm_http_errors
+from src.llm import AITask, get_adapter, load_model_overrides, resolve_model
 from api.models import StatsOverview, TrendsResponse, DismissalStats, MarketIntelligenceResponse, InsightsResponse
 import json
 from datetime import datetime, timedelta
@@ -100,44 +102,47 @@ def get_dismissal_stats(profile: str = Query("default")):
 
 
 async def _generate_insights_report(market_data: dict, days: int, profile: str) -> str:
-    """Call Claude Haiku to generate a markdown market intelligence report."""
-    from anthropic import AsyncAnthropic
+    """Ask the active LLM Provider for a markdown market intelligence report."""
     from api.deps import get_profile_dir
-    from src.claude import HAIKU_MODEL, message_text
 
-    # 1. Load user context from disk instead of hardcoding
-    profile_dir = get_profile_dir(profile)
-    doc_path = profile_dir / "profile_doc.md"
-    profile_summary = ""
-    if doc_path.exists():
-        # Just take the first few sections or the whole thing if it's small
-        profile_summary = doc_path.read_text(encoding="utf-8")
-    
-    async with AsyncAnthropic() as client:
-        response = await client.messages.create(
-            model=HAIKU_MODEL,
-            max_tokens=1200,
-            thinking={"type": "disabled"},
-            output_config={"effort": "low"},
-            system=(
-                "You are a career market analyst. You help a candidate understand their "
-                "positioning based on their profile and recent job market data. "
-                "Analyze the data and produce a concise markdown report. "
-                "Use exactly these 5 sections with ## headers: "
-                "Market Overview, Salary Expectations, Primary Blockers, Skill Gaps to Address, Geographic Patterns. "
-                "Use bullet points only — no paragraphs. Be direct and specific. Max 400 words total."
-            ),
-            messages=[{
-                "role": "user",
-                "content": (
-                    f"CANDIDATE PROFILE:\n{profile_summary}\n\n"
-                    f"MARKET DATA ({days} days):\n{json.dumps(market_data, indent=2)}\n\n"
-                    "Generate the market intelligence report. Focus on how the market "
-                    "aligns with or blocks the candidate's specific goals and background."
-                )
-            }]
-        )
-    return message_text(response)
+    with llm_http_errors():
+        adapter = get_adapter()
+
+    try:
+        with llm_http_errors(adapter):
+            model = resolve_model(AITask.STATS, settings_overrides=load_model_overrides(get_store(profile)))
+            # 1. Load user context from disk instead of hardcoding
+            profile_dir = get_profile_dir(profile)
+            doc_path = profile_dir / "profile_doc.md"
+            profile_summary = ""
+            if doc_path.exists():
+                # Just take the first few sections or the whole thing if it's small
+                profile_summary = doc_path.read_text(encoding="utf-8")
+
+            result = await adapter.complete(
+                model=model,
+                max_tokens=1200,
+                system=(
+                    "You are a career market analyst. You help a candidate understand their "
+                    "positioning based on their profile and recent job market data. "
+                    "Analyze the data and produce a concise markdown report. "
+                    "Use exactly these 5 sections with ## headers: "
+                    "Market Overview, Salary Expectations, Primary Blockers, Skill Gaps to Address, Geographic Patterns. "
+                    "Use bullet points only — no paragraphs. Be direct and specific. Max 400 words total."
+                ),
+                messages=[{
+                    "role": "user",
+                    "content": (
+                        f"CANDIDATE PROFILE:\n{profile_summary}\n\n"
+                        f"MARKET DATA ({days} days):\n{json.dumps(market_data, indent=2)}\n\n"
+                        "Generate the market intelligence report. Focus on how the market "
+                        "aligns with or blocks the candidate's specific goals and background."
+                    )
+                }],
+            )
+    finally:
+        await adapter.aclose()
+    return result.text
 
 
 @router.get("/stats/market", response_model=MarketIntelligenceResponse)

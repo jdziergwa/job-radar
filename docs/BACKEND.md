@@ -8,6 +8,7 @@ FastAPI is the REST layer over the SQLite-backed store and the existing Python j
 api/
 ├── main.py           # FastAPI app setup, router registration, static export mount
 ├── deps.py           # Shared dependencies (store, profile paths)
+├── llm_errors.py     # LLM errors to HTTP responses (503 not configured, 502 LLM Provider failure)
 ├── models.py         # Pydantic request/response models
 ├── background.py     # Pipeline subprocess launcher + in-memory run state
 └── routers/
@@ -17,7 +18,8 @@ api/
     ├── pipeline.py     # Run/cancel/status/provider endpoints
     ├── profile.py      # Raw profile file editing endpoints
     ├── wizard.py       # Guided onboarding / guided edit flow
-    └── companies.py    # Curated ATS company management
+    ├── companies.py    # Curated ATS company management
+    └── ai_config.py    # Active LLM Provider, Models and Settings Model overrides
 ```
 
 ## Router Responsibilities
@@ -79,6 +81,12 @@ Guided onboarding and guided edit flow:
 ### `companies.py`
 
 Direct ATS company watchlist CRUD for `companies.yaml`.
+
+### `ai_config.py`
+
+AI configuration for the Settings page:
+- the active LLM Provider and the Model for each AI Task, never an API key
+- set or clear the Settings Model override for one AI Task
 
 ## Key Models
 
@@ -176,7 +184,7 @@ Current cache behavior:
 The backend serves the same OpenAPI contract in normal mode, while the static demo uses frontend-side emulation for selected endpoints.
 
 Current demo behavior:
-- `scripts/build_demo_snapshot.py` exports `jobs.json`, job details, stats payloads, companies, wizard state, and profile files from `data/demo.db`
+- `scripts/build_demo_snapshot.py` exports `jobs.json`, job details, stats payloads, companies, wizard state, the AI configuration, and profile files from `data/demo.db`
 - the snapshot now includes tracker state because `JobResponse` exports tracker fields
 - demo-specific application list, tracker stats, and timeline responses are implemented in `web/src/lib/api/demo-fetch.ts`
 - demo “today” counters are rebased relative to the latest dataset timestamp rather than raw wall-clock build time

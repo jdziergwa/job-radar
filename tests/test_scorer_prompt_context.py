@@ -50,7 +50,7 @@ def test_build_system_prompt_includes_scoring_context_block():
         },
     )
 
-    text = prompt[0]["text"]
+    text = prompt
 
     assert "CANDIDATE PREFERENCES (from search_config.yaml):" in text
     assert "scoring_context:" in text

@@ -4,6 +4,7 @@ import api.background as bg
 from src.providers.aggregator import get_aggregator_metadata
 from src.providers import get_all_info
 from api.deps import get_store
+from api.llm_errors import require_scoring_config
 
 router = APIRouter()
 
@@ -20,6 +21,9 @@ async def run_pipeline(body: PipelineRunRequest):
     Trigger the job collection + scoring pipeline.
     Returns a run_id immediately; client polls /pipeline/status/{run_id}.
     """
+    if not body.dry_run:
+        require_scoring_config(body.profile)
+
     # Check if a pipeline is already running for this profile
     active = bg.get_active(body.profile)
     if active:

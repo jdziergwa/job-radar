@@ -95,7 +95,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Preview Rescore Jobs */
+        /**
+         * Preview Rescore Jobs
+         * @description Preview the number of jobs selected by a scoped rescore.
+         */
         get: operations["preview_rescore_jobs_api_jobs_rescore_preview_get"];
         put?: never;
         post?: never;
@@ -114,7 +117,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Rescore Jobs */
+        /**
+         * Rescore Jobs
+         * @description Trigger AI rescoring for a scoped set of persisted jobs.
+         */
         post: operations["rescore_jobs_api_jobs_rescore_post"];
         delete?: never;
         options?: never;
@@ -544,7 +550,7 @@ export interface paths {
         put?: never;
         /**
          * Analyze Cv
-         * @description Extract text from PDF and return a structured CV analysis using Claude.
+         * @description Extract text from PDF and return a structured CV analysis using the active LLM Provider.
          */
         post: operations["analyze_cv_api_wizard_analyze_cv_post"];
         delete?: never;
@@ -784,6 +790,46 @@ export interface paths {
         patch: operations["update_company_api_companies__profile___platform___slug__patch"];
         trace?: never;
     };
+    "/api/ai-config": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Ai Config
+         * @description Active LLM Provider and per-task Models. Never includes API keys.
+         */
+        get: operations["ai_config_api_ai_config_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ai-config/models/{task}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Ai Model
+         * @description Set or clear the Settings Model override for an AI Task.
+         */
+        put: operations["set_ai_model_api_ai_config_models__task__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/health": {
         parameters: {
             query?: never;
@@ -805,6 +851,63 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * AITask
+         * @description A distinct job the app gives to an AI model.
+         * @enum {string}
+         */
+        AITask: "scoring" | "wizard" | "stats";
+        /**
+         * AiConfig
+         * @description Active LLM Provider and per-task Models. Never carries an API key.
+         */
+        AiConfig: {
+            /** Configured */
+            configured: boolean;
+            /** Provider */
+            provider?: string | null;
+            /** Provider Display Name */
+            provider_display_name?: string | null;
+            models?: components["schemas"]["AiModels"] | null;
+            /**
+             * Model Errors
+             * @default {}
+             */
+            model_errors: {
+                [key: string]: string;
+            };
+            /**
+             * Overrides
+             * @default {}
+             */
+            overrides: {
+                [key: string]: string;
+            };
+            /**
+             * Scoring From Profile
+             * @default false
+             */
+            scoring_from_profile: boolean;
+            /** Error */
+            error?: string | null;
+        };
+        /**
+         * AiModelOverrideRequest
+         * @description Set a Settings Model override for one AI Task; empty or null clears it.
+         */
+        AiModelOverrideRequest: {
+            /** Model */
+            model?: string | null;
+        };
+        /** AiModels */
+        AiModels: {
+            /** Scoring */
+            scoring: string;
+            /** Wizard */
+            wizard: string;
+            /** Stats */
+            stats: string;
+        };
         /** ApplicationEventResponse */
         ApplicationEventResponse: {
             /** Id */
@@ -953,6 +1056,12 @@ export interface components {
             days_since_applied?: number | null;
             /** Latest Stage Label */
             latest_stage_label?: string | null;
+            /** Latest Activity At */
+            latest_activity_at?: string | null;
+            /** First Screen At */
+            first_screen_at?: string | null;
+            /** First Interview At */
+            first_interview_at?: string | null;
         };
         /** ApplicationListResponse */
         ApplicationListResponse: {
@@ -991,6 +1100,39 @@ export interface components {
             response_rate: number;
             /** Avg Time To Response Days */
             avg_time_to_response_days?: number | null;
+            /**
+             * Screen Rate
+             * @default 0
+             */
+            screen_rate: number;
+            /** Avg Days To Screen */
+            avg_days_to_screen?: number | null;
+            /** Avg Days From Screen To Interview */
+            avg_days_from_screen_to_interview?: number | null;
+            /**
+             * Pending Replies Count
+             * @default 0
+             */
+            pending_replies_count: number;
+            /** Avg Days To Reject */
+            avg_days_to_reject?: number | null;
+            /**
+             * Needs Attention Count
+             * @default 0
+             */
+            needs_attention_count: number;
+            /**
+             * Interview Conversion
+             * @default 0
+             */
+            interview_conversion: number;
+            /**
+             * Offer Conversion
+             * @default 0
+             */
+            offer_conversion: number;
+            /** Avg Process Days */
+            avg_process_days?: number | null;
             /**
              * Status Counts
              * @default {}
@@ -1670,39 +1812,6 @@ export interface components {
             /** Run Id */
             run_id: string;
         };
-        /** RescorePreviewJob */
-        RescorePreviewJob: {
-            /** Id */
-            id?: number | null;
-            /** Title */
-            title: string;
-            /** Company Name */
-            company_name: string;
-        };
-        /** RescorePreviewResponse */
-        RescorePreviewResponse: {
-            /** @enum {string} */
-            scope: "failed_recent" | "unscored_new" | "recent_scored" | "all";
-            /** Days */
-            days: number;
-            /** Count */
-            count: number;
-            /** Sample Jobs */
-            sample_jobs: components["schemas"]["RescorePreviewJob"][];
-        };
-        /** RescoreRequest */
-        RescoreRequest: {
-            /**
-             * @enum {string}
-             * @default failed_recent
-             */
-            scope: "failed_recent" | "unscored_new" | "recent_scored" | "all";
-            /**
-             * Days
-             * @default 7
-             */
-            days: number;
-        };
         /** PipelineStatusResponse */
         PipelineStatusResponse: {
             /**
@@ -1847,6 +1956,46 @@ export interface components {
             /** Shows Aggregator Badge */
             shows_aggregator_badge: boolean;
         };
+        /** RescorePreviewJob */
+        RescorePreviewJob: {
+            /** Id */
+            id?: number | null;
+            /** Title */
+            title: string;
+            /** Company Name */
+            company_name: string;
+        };
+        /** RescorePreviewResponse */
+        RescorePreviewResponse: {
+            /**
+             * Scope
+             * @enum {string}
+             */
+            scope: "failed_recent" | "unscored_new" | "recent_scored" | "all";
+            /** Days */
+            days: number;
+            /** Count */
+            count: number;
+            /**
+             * Sample Jobs
+             * @default []
+             */
+            sample_jobs: components["schemas"]["RescorePreviewJob"][];
+        };
+        /** RescoreRequest */
+        RescoreRequest: {
+            /**
+             * Scope
+             * @default failed_recent
+             * @enum {string}
+             */
+            scope: "failed_recent" | "unscored_new" | "recent_scored" | "all";
+            /**
+             * Days
+             * @default 7
+             */
+            days: number;
+        };
         /** ResponseDateUpdate */
         ResponseDateUpdate: {
             /** Response Date */
@@ -1890,6 +2039,14 @@ export interface components {
              * @enum {string}
              */
             apply_priority: "high" | "medium" | "low" | "skip";
+            provenance?: components["schemas"]["ScoringProvenanceResponse"] | null;
+        };
+        /** ScoringProvenanceResponse */
+        ScoringProvenanceResponse: {
+            /** Llm Provider */
+            llm_provider: string;
+            /** Model */
+            model: string;
         };
         /** ScoreBreakdownDimensions */
         ScoreBreakdownDimensions: {
@@ -1978,7 +2135,7 @@ export interface components {
              */
             dismissed: number;
             /**
-             * Closed
+             * Archived
              * @default 0
              */
             archived: number;
@@ -3854,6 +4011,74 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    ai_config_api_ai_config_get: {
+        parameters: {
+            query?: {
+                profile?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiConfig"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_ai_model_api_ai_config_models__task__put: {
+        parameters: {
+            query?: {
+                profile?: string;
+            };
+            header?: never;
+            path: {
+                task: components["schemas"]["AITask"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AiModelOverrideRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiConfig"];
                 };
             };
             /** @description Validation Error */

@@ -11,15 +11,21 @@ import { Loader2, Play, Terminal, Zap, History, Info } from 'lucide-react'
 import { Label } from '@/components/ui/label'
 import { PipelineProgressDialog } from './PipelineProgressDialog'
 import type { components } from '@/lib/api/types'
+import { AiLabel } from '@/components/ai/AiLabel'
+import { aiTaskBlock, useAiConfig } from '@/lib/ai/use-ai-config'
 
 type ProviderInfo = components['schemas']['ProviderInfo']
 
 export function PipelineTrigger({ collapsed = false }: { collapsed?: boolean }) {
+  const aiConfig = useAiConfig()
   const [open, setOpen] = useState(false)
   const [showProgress, setShowProgress] = useState(false)
   const [activeRun, setActiveRun] = useState<{ running: boolean; run_id: string | null } | null>(null)
   const [selectedSources, setSelectedSources] = useState<string[]>([])
   const [dryRun, setDryRun] = useState(false)
+  const aiBlock = aiTaskBlock(aiConfig, 'scoring')
+  const aiUnavailable = aiBlock?.reason ?? null
+  const aiNotConfigured = aiUnavailable !== null
   const [isStarting, setIsStarting] = useState(false)
   const [providers, setProviders] = useState<ProviderInfo[]>([])
   const [aggregatorStatus, setAggregatorStatus] = useState<{
@@ -87,6 +93,10 @@ export function PipelineTrigger({ collapsed = false }: { collapsed?: boolean }) 
   const handleStart = async () => {
     if (selectedSources.length === 0) {
       toast.error("Please select at least one source")
+      return
+    }
+    if (!dryRun && aiUnavailable) {
+      toast.error(`${aiUnavailable}. Use a Dry Run or fix the setup.`)
       return
     }
     setIsStarting(true)
@@ -230,7 +240,11 @@ export function PipelineTrigger({ collapsed = false }: { collapsed?: boolean }) 
                     >
                       <div className="flex flex-col">
                         <span className={`text-sm font-bold ${!dryRun ? 'text-primary' : ''}`}>Intelligence Pass</span>
-                        <span className="text-[10px] text-muted-foreground mt-0.5">AI scoring · uses API credits</span>
+                        {aiUnavailable ? (
+                          <span className="text-[10px] text-amber-500 mt-0.5" title={aiUnavailable}>{aiBlock?.label} · scoring unavailable</span>
+                        ) : (
+                          <span className="text-[10px] text-muted-foreground mt-0.5"><AiLabel config={aiConfig} task="scoring" /> · uses API credits</span>
+                        )}
                       </div>
                       <div className={`h-2 w-2 rounded-full transition-all ${!dryRun ? 'bg-primary scale-125' : 'bg-muted scale-100'}`} />
                     </div>
@@ -271,9 +285,9 @@ export function PipelineTrigger({ collapsed = false }: { collapsed?: boolean }) 
             </div>
 
             <div className="shrink-0 space-y-3 pt-8">
-              <Button onClick={handleStart} disabled={isStarting || selectedSources.length === 0} className="w-full h-14 text-lg font-bold gap-3 shadow-xl hover:scale-[1.01] active:scale-[0.99] transition-all">
+              <Button onClick={handleStart} disabled={isStarting || selectedSources.length === 0 || (!dryRun && aiNotConfigured)} className="w-full h-14 text-lg font-bold gap-3 shadow-xl hover:scale-[1.01] active:scale-[0.99] transition-all">
                 {isStarting ? <Loader2 className="h-5 w-5 animate-spin" /> : <Play className="h-5 w-5 fill-current" />}
-                {selectedSources.length === 0 ? 'Select a source' : (dryRun ? 'Start Dry Run' : 'Start Intelligence Pass')}
+                {selectedSources.length === 0 ? 'Select a source' : (dryRun ? 'Start Dry Run' : (aiBlock ? aiBlock.label : 'Start Intelligence Pass'))}
               </Button>
               {activeRun?.running && (
                 <Button onClick={() => setShowProgress(true)} variant="outline" className="w-full gap-2 italic">

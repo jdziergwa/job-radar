@@ -1,9 +1,49 @@
+import json
+import types
 from pathlib import Path
+
+import fitz
+import httpx
+import pytest
 
 from fastapi.testclient import TestClient
 
 from api.main import app
 from api.routers import wizard as wizard_router
+from src.llm import anthropic_adapter, gemini_adapter
+from src.llm import LLMAPIError, LLMRateLimitError, set_adapter_override
+from tests.fake_llm import FakeLLMAdapter
+
+
+@pytest.fixture(autouse=True)
+def _reset_adapter():
+    yield
+    set_adapter_override(None)
+
+
+def _pdf_bytes(text: str) -> bytes:
+    doc = fitz.open()
+    doc.new_page().insert_textbox(fitz.Rect(50, 50, 550, 800), text)
+    data = doc.tobytes()
+    doc.close()
+    return data
+
+
+_LONG_CV = "Senior Backend Engineer with many years of platform experience " * 12
+
+
+def _llm_cv_json() -> str:
+    """What the model returns: the analysis minus fields the router fills in."""
+    payload = _sample_cv_analysis_payload()
+    del payload["page_count"], payload["extraction_method"]
+    return json.dumps(payload)
+
+
+def _analyze(client, pdf: bytes | None = None):
+    return client.post(
+        "/api/wizard/analyze-cv",
+        files={"file": ("cv.pdf", pdf or _pdf_bytes(_LONG_CV), "application/pdf")},
+    )
 
 
 def _sample_cv_analysis_payload() -> dict:
@@ -76,29 +116,6 @@ def _write_example_profile(base_dir: Path) -> None:
     (example_dir / "companies.yaml").write_text("greenhouse: []\n", encoding="utf-8")
 
 
-class _FakeAnthropicResponse:
-    def __init__(self, text: str) -> None:
-        self.content = [
-            type("Block", (), {"type": "thinking"})(),
-            type("Block", (), {"type": "text", "text": text})(),
-        ]
-
-
-class _FakeAnthropicClient:
-    def __init__(self, response_text: str) -> None:
-        self._response_text = response_text
-        self.messages = self
-
-    async def __aenter__(self):
-        return self
-
-    async def __aexit__(self, exc_type, exc, tb):
-        return False
-
-    async def create(self, *args, **kwargs):
-        return _FakeAnthropicResponse(self._response_text)
-
-
 def test_wizard_generate_save_state_and_template_endpoints(monkeypatch, tmp_path):
     _write_example_profile(tmp_path)
     monkeypatch.setattr(wizard_router, "PROFILES_DIR", tmp_path)
@@ -147,11 +164,8 @@ def test_wizard_generate_save_state_and_template_endpoints(monkeypatch, tmp_path
 def test_wizard_refine_profile_uses_mocked_llm_response(monkeypatch, tmp_path):
     _write_example_profile(tmp_path)
     monkeypatch.setattr(wizard_router, "PROFILES_DIR", tmp_path)
-    monkeypatch.setattr(
-        wizard_router,
-        "AsyncAnthropic",
-        lambda *args, **kwargs: _FakeAnthropicClient(
-            """{
+    fake = FakeLLMAdapter(
+        ["""{
               "profile_doc_sections": {
                 "Experience Summary": "Refined summary"
               },
@@ -165,9 +179,9 @@ def test_wizard_refine_profile_uses_mocked_llm_response(monkeypatch, tmp_path):
                 }
               },
               "changes_made": ["Refined focus areas"]
-            }"""
-        ),
+            }"""]
     )
+    set_adapter_override(fake)
 
     with TestClient(app) as client:
         response = client.post(
@@ -196,3 +210,154 @@ def test_wizard_refine_profile_uses_mocked_llm_response(monkeypatch, tmp_path):
         assert "## Role Target\nLocked" in payload["profile_doc"]
         assert "\\bsdet\\b" in payload["profile_yaml"]
         assert payload["changes_made"] == ["Refined focus areas"]
+        assert fake.calls[0]["timeout"] == 120.0
+
+
+def test_analyze_cv_uses_adapter_and_wizard_model():
+    fake = FakeLLMAdapter([_llm_cv_json()])
+    set_adapter_override(fake)
+
+    with TestClient(app) as client:
+        response = _analyze(client)
+
+    assert response.status_code == 200
+    assert response.json()["current_role"] == "Senior Backend Engineer"
+    assert response.json()["extraction_method"] == "text"
+    assert fake.calls[0]["model"] == "fake-model"
+    assert fake.calls[0]["timeout"] == 120.0
+
+
+def test_analyze_cv_retries_invalid_json_once_with_fix_up():
+    fake = FakeLLMAdapter(["not json", _llm_cv_json()])
+    set_adapter_override(fake)
+
+    with TestClient(app) as client:
+        response = _analyze(client)
+
+    assert response.status_code == 200
+    assert len(fake.calls) == 2
+    assert [c["timeout"] for c in fake.calls] == [120.0, 120.0]
+    assert fake.calls[1]["messages"][1] == {"role": "assistant", "content": "not json"}
+
+
+def test_analyze_cv_vision_fallback_sends_neutral_image_blocks():
+    fake = FakeLLMAdapter([_llm_cv_json()])
+    set_adapter_override(fake)
+
+    with TestClient(app) as client:
+        response = _analyze(client, _pdf_bytes("x"))
+
+    assert response.status_code == 200
+    content = fake.calls[0]["messages"][0]["content"]
+    assert content[0]["type"] == "image" and content[0]["media_type"] == "image/png"
+    assert "source" not in content[0]
+
+
+def test_analyze_cv_maps_rate_limit_and_api_errors_to_502(monkeypatch):
+    async def no_sleep(_):
+        pass
+
+    monkeypatch.setattr(wizard_router.asyncio, "sleep", no_sleep)
+
+    set_adapter_override(FakeLLMAdapter([LLMRateLimitError()] * 3))
+    with TestClient(app) as client:
+        response = _analyze(client)
+    assert response.status_code == 502
+    assert "Rate Limit" in response.json()["detail"]
+
+    set_adapter_override(FakeLLMAdapter([LLMAPIError("boom")] * 3))
+    response = _analyze(client)
+    assert response.status_code == 502
+    assert "API Error: boom" in response.json()["detail"]
+
+
+class _SDKConnectionError(Exception):
+    """Stands in for `anthropic.APIConnectionError`, which the test stub flattens to bare Exception."""
+
+
+async def _noop():
+    pass
+
+
+def _anthropic_adapter_failing_to_connect(monkeypatch):
+    async def create(**kwargs):
+        raise _SDKConnectionError("Connection error.")
+
+    monkeypatch.setattr(anthropic_adapter.anthropic, "APIError", _SDKConnectionError)
+    monkeypatch.setattr(anthropic_adapter.anthropic, "RateLimitError", type("_SDKRateLimitError", (Exception,), {}))
+    client = types.SimpleNamespace(messages=types.SimpleNamespace(create=create), close=_noop)
+    client.with_options = lambda **options: client
+    return anthropic_adapter.AnthropicAdapter(client=client)
+
+
+def _gemini_adapter_failing_to_connect(monkeypatch):
+    async def generate_content(**kwargs):
+        raise httpx.ConnectError("refused")
+
+    models = types.SimpleNamespace(generate_content=generate_content)
+    aio = types.SimpleNamespace(models=models, aclose=_noop)
+    return gemini_adapter.GeminiAdapter(client=types.SimpleNamespace(aio=aio))
+
+
+@pytest.mark.parametrize("make_adapter", [_anthropic_adapter_failing_to_connect, _gemini_adapter_failing_to_connect])
+def test_analyze_cv_maps_connection_failure_to_502_on_either_llm_provider(monkeypatch, client, make_adapter):
+    async def no_sleep(_):
+        pass
+
+    monkeypatch.setattr(wizard_router.asyncio, "sleep", no_sleep)
+    set_adapter_override(make_adapter(monkeypatch))
+    response = _analyze(client)
+    assert response.status_code == 502
+    assert "API Error" in response.json()["detail"]
+
+
+def test_analyze_cv_missing_key_returns_ai_not_configured(no_ai_key, client):
+    response = _analyze(client)
+
+    assert response.status_code == 503
+    assert response.json()["detail"].startswith("AI not configured")
+    assert "ANTHROPIC_API_KEY" in response.json()["detail"]
+
+
+def test_refine_profile_without_key_falls_back_to_drafts(monkeypatch):
+    monkeypatch.delenv("LLM_PROVIDER", raising=False)
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.delenv("GOOGLE_API_KEY", raising=False)
+
+    with TestClient(app) as client:
+        response = client.post(
+            "/api/wizard/refine-profile",
+            json={
+                "cv_analysis": _sample_cv_analysis_payload(),
+                "user_preferences": _sample_user_preferences_payload(),
+                "draft_doc": "## Experience Summary\nOld",
+                "draft_yaml": "keywords:\n  title_patterns:\n    high_confidence: []\n    broad: []\n",
+            },
+        )
+
+    assert response.status_code == 200
+    assert response.json()["profile_doc"] == "## Experience Summary\nOld"
+    assert response.json()["changes_made"][0].startswith("Refinement skipped")
+
+
+def test_wizard_generated_profile_scores_with_the_gemini_default(no_ai_key, monkeypatch, tmp_path, client):
+    monkeypatch.setenv("GOOGLE_API_KEY", "gemini-key")
+    _write_example_profile(tmp_path)
+    monkeypatch.setattr(wizard_router, "PROFILES_DIR", tmp_path)
+    monkeypatch.setattr("api.deps.PROFILES_DIR", tmp_path)
+    payload = {
+        "profile_name": "default",
+        "cv_analysis": _sample_cv_analysis_payload(),
+        "user_preferences": _sample_user_preferences_payload(),
+    }
+
+    generated = client.post("/api/wizard/generate-profile", json=payload).json()
+    saved = client.post("/api/wizard/save-profile", json={**payload, **generated})
+    assert saved.status_code == 200
+
+    body = client.get("/api/ai-config", params={"profile": "default"}).json()
+
+    assert body["configured"] is True
+    assert body["provider"] == "gemini"
+    assert body["models"]["scoring"] == "gemini-3.8-flash"
+    assert body["scoring_from_profile"] is False

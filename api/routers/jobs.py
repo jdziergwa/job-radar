@@ -12,6 +12,7 @@ from api.models import (
     RescoreScope,
 )
 from api import background as bg
+from api.llm_errors import require_scoring_config
 
 router = APIRouter()
 
@@ -102,6 +103,7 @@ def update_status(job_id: int, body: StatusUpdate, profile: str = Query("default
 @router.post("/jobs/{job_id}/rescore", response_model=PipelineRunResponse)
 async def rescore_job(job_id: int, profile: str = Query("default")):
     """Trigger AI rescoring for a specific job."""
+    require_scoring_config(profile)
     try:
         run_id = await bg.launch_pipeline(
             profile=profile,
@@ -126,6 +128,7 @@ def preview_rescore_jobs(
 @router.post("/jobs/rescore", response_model=PipelineRunResponse)
 async def rescore_jobs(body: RescoreRequest, profile: str = Query("default")):
     """Trigger AI rescoring for a scoped set of persisted jobs."""
+    require_scoring_config(profile)
     try:
         run_id = await bg.launch_pipeline(
             profile=profile,
