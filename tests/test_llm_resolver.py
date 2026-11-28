@@ -122,7 +122,7 @@ def test_gemini_selected_explicitly(monkeypatch):
     monkeypatch.setenv("LLM_PROVIDER", "gemini")
     assert resolve_provider_name() == "gemini"
     assert resolve_model(AITask.SCORING) == "gemini-3.8-flash"
-    assert resolve_model(AITask.WIZARD) == "gemini-3.1-pro-preview"
+    assert resolve_model(AITask.WIZARD) == "gemini-3.8-flash"
 
 
 def test_auto_detects_gemini_when_only_its_key_is_set(monkeypatch):

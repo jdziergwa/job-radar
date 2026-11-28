@@ -2,6 +2,7 @@ import types
 
 import pytest
 from google.genai import errors
+from google.genai import types as genai_types
 
 from src.llm import LLMAPIError, LLMNonRetryableError, LLMRateLimitError
 from src.llm.gemini_adapter import THINKING_HEADROOM_TOKENS, GeminiAdapter, classify_error
@@ -177,3 +178,17 @@ def test_classifier_maps_connection_errors_to_llm_api_error(error):
 
 def test_classifier_passes_other_exceptions_through():
     assert classify_error(ValueError("bug"), 1.0, "gemini-x") is None
+
+
+def test_default_client_calls_the_v1beta_api(monkeypatch):
+    # google-genai defaults to the v1 API, where preview Models such as gemini-3.1-pro-preview
+    # answer 404. v1beta serves every Model v1 does plus the previews, so the adapter pins it,
+    # and a per-request timeout must not undo that.
+    monkeypatch.setenv("GOOGLE_API_KEY", "test-key")
+    monkeypatch.delenv("GOOGLE_GENAI_API_VERSION", raising=False)
+
+    request = GeminiAdapter()._client._api_client._build_request(
+        "post", "models/gemini-3.1-pro-preview:generateContent", {}, genai_types.HttpOptions(timeout=5000)
+    )
+
+    assert request.url.startswith("https://generativelanguage.googleapis.com/v1beta/")

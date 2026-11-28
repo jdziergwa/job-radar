@@ -136,12 +136,14 @@ class GeminiAdapter:
     display_name = "Gemini"
     default_models = {
         AITask.SCORING: "gemini-3.8-flash",
-        AITask.WIZARD: "gemini-3.1-pro-preview",
+        AITask.WIZARD: "gemini-3.8-flash",
         AITask.STATS: "gemini-3.8-flash",
     }
 
     def __init__(self, client: genai.Client | None = None):
-        self._client = client or genai.Client()
+        # google-genai defaults to the v1 API, which answers 404 for preview Models. v1beta serves
+        # every Model v1 does plus the previews, so any Model chosen in Settings or .env works.
+        self._client = client or genai.Client(http_options=types.HttpOptions(api_version="v1beta"))
 
     @classmethod
     def owns_model(cls, model: str) -> bool:

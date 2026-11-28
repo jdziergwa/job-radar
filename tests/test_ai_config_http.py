@@ -166,7 +166,7 @@ def test_profile_scoring_model_is_reported_and_flagged_as_from_profile(monkeypat
     assert body["configured"] is True
     assert body["models"]["scoring"] == "gemini-from-profile"
     assert body["scoring_from_profile"] is True
-    assert body["models"]["wizard"] == "gemini-3.1-pro-preview"
+    assert body["models"]["wizard"] == "gemini-3.8-flash"
 
 
 def test_profile_without_scoring_model_is_not_flagged(monkeypatch, client, tmp_path):
@@ -191,7 +191,7 @@ def test_foreign_profile_scoring_model_only_makes_scoring_unavailable(monkeypatc
     assert body["provider"] == "gemini"
     assert body["error"] is None
     assert body["models"]["scoring"] == "claude-haiku-5-5"
-    assert body["models"]["wizard"] == "gemini-3.1-pro-preview"
+    assert body["models"]["wizard"] == "gemini-3.8-flash"
     assert set(body["model_errors"]) == {"scoring"}
     assert "profile YAML `scoring.model`" in body["model_errors"]["scoring"]
 
